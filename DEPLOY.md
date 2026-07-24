@@ -48,8 +48,12 @@ In MongoDB Atlas → **Network Access**, allow `0.0.0.0/0` (demo) or Render’s 
 
 | Key | Value |
 |-----|--------|
-| `VITE_API_URL` | `https://cubic-api-xxxx.onrender.com/api` |
+| `VITE_API_URL` | `/api` (recommended — Vercel proxies to Render, avoids CORS) |
 | `VITE_GOOGLE_CLIENT_ID` | optional |
+
+> Alternative: set `VITE_API_URL` to `https://cubic-project-management-system.onrender.com/api` and keep Render `CLIENT_URL` = your Vercel URL.
+
+`client/vercel.json` already proxies `/api`, `/uploads`, and `/socket.io` to Render.
 
 4. Deploy. Copy the Vercel URL, e.g. `https://cubic-xxxx.vercel.app`.
 
