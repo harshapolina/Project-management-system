@@ -308,8 +308,11 @@ router.post(
   '/invite',
   requireAuth,
   asyncHandler(async (req, res) => {
-    if (!['admin', 'owner'].includes(req.user.role) && !req.user.isPlatformAdmin) {
-      throw new AppError('Only workspace admins can invite users', 403)
+    if (
+      !['admin', 'owner', 'project_manager'].includes(req.user.role) &&
+      !req.user.isPlatformAdmin
+    ) {
+      throw new AppError('Only workspace admins or PMs can invite users', 403)
     }
 
     const schema = z.object({

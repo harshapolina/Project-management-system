@@ -240,7 +240,8 @@ export function SettingsPage() {
   const [inviteResult, setInviteResult] = useState(null)
   const [pwd, setPwd] = useState({ current: '', next: '' })
   const canInvite =
-    user?.isPlatformAdmin || ['admin', 'owner'].includes(user?.role)
+    user?.isPlatformAdmin ||
+    ['admin', 'owner', 'project_manager'].includes(user?.role)
 
   const save = async () => {
     try {
