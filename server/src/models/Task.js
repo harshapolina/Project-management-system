@@ -1,0 +1,62 @@
+import mongoose from 'mongoose'
+
+const checklistSchema = new mongoose.Schema(
+  {
+    text: String,
+    done: { type: Boolean, default: false },
+  },
+  { _id: true },
+)
+
+const taskSchema = new mongoose.Schema(
+  {
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      required: function requiredProject() {
+        return !this.isPersonal
+      },
+      index: true,
+    },
+    isPersonal: { type: Boolean, default: false, index: true },
+    title: { type: String, required: true },
+    description: { type: String, default: '' },
+    stage: {
+      type: String,
+      enum: ['design', 'planning', 'procurement', 'execution', 'handover'],
+      default: 'design',
+    },
+    status: {
+      type: String,
+      enum: ['todo', 'in_progress', 'review', 'done'],
+      default: 'todo',
+      index: true,
+    },
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high', 'urgent'],
+      default: 'medium',
+    },
+    assignee: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    participants: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    dueDate: Date,
+    startDate: Date,
+    location: { type: String, default: '' },
+    videoLink: { type: String, default: '' },
+    progress: { type: Number, default: 0, min: 0, max: 100 },
+    checklist: [checklistSchema],
+    attachments: [{ url: String, name: String, mime: String }],
+    requiresApproval: { type: Boolean, default: false },
+    approvalStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
+    dependsOn: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
+    isMilestone: { type: Boolean, default: false },
+  },
+  { timestamps: true },
+)
+
+export const Task = mongoose.model('Task', taskSchema)
