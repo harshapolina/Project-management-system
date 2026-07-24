@@ -1,6 +1,7 @@
 import dotenv from 'dotenv'
 import mongoose from 'mongoose'
 import { connectDB } from '../config/db.js'
+import { Tenant } from '../models/Tenant.js'
 import { User } from '../models/User.js'
 import { Project } from '../models/Project.js'
 import { Task } from '../models/Task.js'
@@ -30,6 +31,7 @@ async function seed() {
   await connectDB()
   console.log('Clearing collections…')
   await Promise.all([
+    Tenant.deleteMany({}),
     User.deleteMany({}),
     Project.deleteMany({}),
     Task.deleteMany({}),
@@ -46,18 +48,29 @@ async function seed() {
     Comment.deleteMany({}),
   ])
 
+  const tenant = await Tenant.create({
+    name: 'Cubic Studio',
+    slug: 'cubic',
+    status: 'active',
+    seatLimit: 100,
+  })
+  const tid = tenant._id
+
   console.log('Creating users…')
   const [admin, pm, designer, supervisor, client, vendorUser] = await User.create([
     {
+      tenantId: tid,
       name: 'Aanya Mehta',
       email: 'aanya@cubic.studio',
       password: 'demo1234',
       role: 'admin',
+      isPlatformAdmin: true,
       title: 'Studio Principal',
       onboardingCompleted: true,
       avatar: 'https://i.pravatar.cc/150?u=aanya',
     },
     {
+      tenantId: tid,
       name: 'Rohan Kapoor',
       email: 'rohan@cubic.studio',
       password: 'demo1234',
@@ -67,6 +80,7 @@ async function seed() {
       avatar: 'https://i.pravatar.cc/150?u=rohan',
     },
     {
+      tenantId: tid,
       name: 'Maya Sen',
       email: 'maya@cubic.studio',
       password: 'demo1234',
@@ -76,6 +90,7 @@ async function seed() {
       avatar: 'https://i.pravatar.cc/150?u=maya',
     },
     {
+      tenantId: tid,
       name: 'Vikram Rao',
       email: 'vikram@cubic.studio',
       password: 'demo1234',
@@ -85,6 +100,7 @@ async function seed() {
       avatar: 'https://i.pravatar.cc/150?u=vikram',
     },
     {
+      tenantId: tid,
       name: 'Priya Sharma',
       email: 'priya@client.com',
       password: 'demo1234',
@@ -95,6 +111,7 @@ async function seed() {
       avatar: 'https://i.pravatar.cc/150?u=priya',
     },
     {
+      tenantId: tid,
       name: 'BlueRock Materials',
       email: 'orders@bluerock.com',
       password: 'demo1234',
@@ -671,8 +688,34 @@ async function seed() {
     },
   ])
 
+  // Attach tenantId to every seeded document
+  await Promise.all(
+    [
+      Project,
+      Task,
+      Lead,
+      Quotation,
+      Vendor,
+      PurchaseOrder,
+      Expense,
+      SiteUpdate,
+      Snag,
+      ActivityLog,
+      Notification,
+      Comment,
+      Message,
+    ].map((Model) =>
+      Model.updateMany(
+        { $or: [{ tenantId: { $exists: false } }, { tenantId: null }] },
+        { $set: { tenantId: tid } },
+      ),
+    ),
+  )
+
   console.log('\nSeed complete.\n')
+  console.log('Workspace slug: cubic')
   console.log('Demo logins (password: demo1234):')
+  console.log('  Platform admin: aanya@cubic.studio')
   console.log('  Admin / PM:   aanya@cubic.studio  |  rohan@cubic.studio')
   console.log('  Designer:     maya@cubic.studio')
   console.log('  Supervisor:   vikram@cubic.studio')

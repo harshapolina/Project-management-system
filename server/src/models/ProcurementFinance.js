@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 
 const vendorSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     name: { type: String, required: true },
     contact: { type: String, default: '' },
     email: { type: String, default: '' },
@@ -17,6 +22,11 @@ export const Vendor = mongoose.model('Vendor', vendorSchema)
 
 const purchaseOrderSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',
@@ -50,6 +60,11 @@ export const PurchaseOrder = mongoose.model('PurchaseOrder', purchaseOrderSchema
 
 const expenseSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',
@@ -75,6 +90,11 @@ export const Expense = mongoose.model('Expense', expenseSchema)
 
 const paymentSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', index: true },
     vendorId: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
     amount: { type: Number, required: true },
@@ -94,6 +114,11 @@ export const Payment = mongoose.model('Payment', paymentSchema)
 
 const siteUpdateSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',
@@ -113,6 +138,11 @@ export const SiteUpdate = mongoose.model('SiteUpdate', siteUpdateSchema)
 
 const snagSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',

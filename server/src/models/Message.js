@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 
 const messageSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     from: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',

@@ -13,14 +13,22 @@ export const ROLES = [
 
 const userSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     name: { type: String, required: true, trim: true },
-    email: { type: String, required: true, unique: true, lowercase: true, trim: true },
+    email: { type: String, required: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
     role: { type: String, enum: ROLES, default: 'project_manager' },
+    /** Platform owner (Editco) — can manage all tenants */
+    isPlatformAdmin: { type: Boolean, default: false, index: true },
+    mustChangePassword: { type: Boolean, default: false },
     avatar: { type: String, default: '' },
     phone: { type: String, default: '' },
     title: { type: String, default: '' },
-    company: { type: String, default: 'Cubic Studio' },
+    company: { type: String, default: '' },
     isActive: { type: Boolean, default: true },
     onboardingCompleted: { type: Boolean, default: false },
     inviteToken: { type: String, select: false },
@@ -38,6 +46,9 @@ const userSchema = new mongoose.Schema(
   },
   { timestamps: true },
 )
+
+userSchema.index({ tenantId: 1, email: 1 }, { unique: true, sparse: true })
+userSchema.index({ email: 1 })
 
 userSchema.pre('save', async function hashPassword(next) {
   if (!this.isModified('password')) return next()
@@ -59,6 +70,9 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     phone: this.phone,
     title: this.title,
     company: this.company,
+    tenantId: this.tenantId,
+    isPlatformAdmin: !!this.isPlatformAdmin,
+    mustChangePassword: !!this.mustChangePassword,
     onboardingCompleted: this.onboardingCompleted,
     googleCalendarConnected: !!this.googleCalendar?.connected,
     googleCalendarEmail: this.googleCalendar?.email || '',

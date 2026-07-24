@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken'
 import { google } from 'googleapis'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant } from '../middleware/tenant.js'
 import { User } from '../models/User.js'
 import { WorkspaceSettings } from '../models/WorkspaceSettings.js'
 
@@ -16,11 +17,11 @@ const SCOPES = [
   'profile',
 ]
 
-async function resolveGoogleClientId() {
+async function resolveGoogleClientId(req) {
   if (process.env.GOOGLE_CLIENT_ID?.trim()) {
     return process.env.GOOGLE_CLIENT_ID.trim()
   }
-  const settings = await WorkspaceSettings.findOne({ key: 'default' })
+  const settings = await WorkspaceSettings.findOne(tenantFilter(req, { key: 'default' }))
   return (settings?.googleClientId || '').trim()
 }
 
@@ -78,7 +79,7 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const user = await User.findById(req.user._id)
-    const clientId = await resolveGoogleClientId()
+    const clientId = await resolveGoogleClientId(req)
     res.json({
       success: true,
       // Public Client ID — safe to send to browser (not a secret).
@@ -104,8 +105,11 @@ router.put(
       )
     }
     const settings = await WorkspaceSettings.findOneAndUpdate(
-      { key: 'default' },
-      { $set: { googleClientId: clientId } },
+      tenantFilter(req, { key: 'default' }),
+      {
+        $set: { googleClientId: clientId },
+        $setOnInsert: withTenant(req, { key: 'default' }),
+      },
       { upsert: true, new: true },
     )
     res.json({

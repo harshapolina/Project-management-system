@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Task, ActivityLog, Comment, Notification, User } from '../models/index.js'
 
 const router = express.Router()
@@ -10,7 +11,7 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const { projectId, status, stage, assignee } = req.query
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (projectId) filter.projectId = projectId
     if (status) filter.status = status
     if (stage) filter.stage = stage
@@ -36,15 +37,15 @@ router.get(
       .populate('projectId', 'name')
       .populate('dependsOn', 'title status')
 
-    if (!task) throw new AppError('Task not found', 404)
+    assertTenantDoc(task, req, 'Task')
 
-    const comments = await Comment.find({ taskId: task._id })
+    const comments = await Comment.find(tenantFilter(req, { taskId: task._id }))
       .populate('author', 'name avatar')
       .sort({ createdAt: 1 })
 
-    const activity = await ActivityLog.find({
-      'meta.taskId': task._id,
-    })
+    const activity = await ActivityLog.find(
+      tenantFilter(req, { 'meta.taskId': task._id }),
+    )
       .populate('actor', 'name avatar')
       .sort({ createdAt: -1 })
       .limit(20)
@@ -62,37 +63,43 @@ router.post(
       throw new AppError('projectId is required', 400)
     }
 
-    const task = await Task.create({
-      ...req.body,
-      isPersonal,
-      projectId: isPersonal ? undefined : req.body.projectId,
-      createdBy: req.user._id,
-      assignee: req.body.assignee || req.user._id,
-    })
+    const task = await Task.create(
+      withTenant(req, {
+        ...req.body,
+        isPersonal,
+        projectId: isPersonal ? undefined : req.body.projectId,
+        createdBy: req.user._id,
+        assignee: req.body.assignee || req.user._id,
+      }),
+    )
     await task.populate('assignee', 'name avatar')
     if (task.projectId) await task.populate('projectId', 'name')
 
-    await ActivityLog.create({
-      projectId: task.projectId || undefined,
-      actor: req.user._id,
-      type: 'task_created',
-      message: `${req.user.name} created task “${task.title}”`,
-      meta: { taskId: task._id, isPersonal },
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: task.projectId || undefined,
+        actor: req.user._id,
+        type: 'task_created',
+        message: `${req.user.name} created task “${task.title}”`,
+        meta: { taskId: task._id, isPersonal },
+      }),
+    )
 
     if (
       !isPersonal &&
       task.assignee &&
       String(task.assignee._id || task.assignee) !== String(req.user._id)
     ) {
-      await Notification.create({
-        userId: task.assignee._id || task.assignee,
-        type: 'task',
-        title: 'New task assigned',
-        body: task.title,
-        projectId: task.projectId,
-        link: `/projects/${task.projectId}/tasks`,
-      })
+      await Notification.create(
+        withTenant(req, {
+          userId: task.assignee._id || task.assignee,
+          type: 'task',
+          title: 'New task assigned',
+          body: task.title,
+          projectId: task.projectId,
+          link: `/projects/${task.projectId}/tasks`,
+        }),
+      )
     }
 
     res.status(201).json({ success: true, task })
@@ -104,7 +111,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const task = await Task.findById(req.params.id)
-    if (!task) throw new AppError('Task not found', 404)
+    assertTenantDoc(task, req, 'Task')
 
     const allowed = [
       'title',
@@ -134,13 +141,15 @@ router.patch(
     await task.save()
     await task.populate('assignee', 'name avatar')
 
-    await ActivityLog.create({
-      projectId: task.projectId,
-      actor: req.user._id,
-      type: 'task_updated',
-      message: `${req.user.name} updated “${task.title}”`,
-      meta: { taskId: task._id, changes: Object.keys(req.body) },
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: task.projectId,
+        actor: req.user._id,
+        type: 'task_updated',
+        message: `${req.user.name} updated “${task.title}”`,
+        meta: { taskId: task._id, changes: Object.keys(req.body) },
+      }),
+    )
 
     res.json({ success: true, task })
   }),
@@ -151,12 +160,14 @@ router.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     const task = await Task.findById(req.params.id)
-    if (!task) throw new AppError('Task not found', 404)
+    assertTenantDoc(task, req, 'Task')
 
     let mentions = req.body.mentions || []
     // Resolve @Name mentions from body if not provided
     if (!mentions.length && req.body.body) {
-      const users = await User.find({ isActive: true }).select('name')
+      const users = await User.find(
+        tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
+      ).select('name')
       const found = []
       for (const u of users) {
         const first = u.name.split(' ')[0]
@@ -173,25 +184,29 @@ router.post(
     const assignedTo =
       req.body.assignedTo || (mentions.length ? mentions[0] : undefined)
 
-    const comment = await Comment.create({
-      projectId: task.projectId,
-      taskId: task._id,
-      author: req.user._id,
-      body: req.body.body,
-      mentions,
-      assignedTo,
-    })
+    const comment = await Comment.create(
+      withTenant(req, {
+        projectId: task.projectId,
+        taskId: task._id,
+        author: req.user._id,
+        body: req.body.body,
+        mentions,
+        assignedTo,
+      }),
+    )
     await comment.populate('author', 'name avatar')
     await comment.populate('assignedTo', 'name avatar')
 
-    await ActivityLog.create({
-      projectId: task.projectId,
-      actor: req.user._id,
-      type: 'comment',
-      message: `${req.user.name} commented on “${task.title}”`,
-      meta: { taskId: task._id, commentId: comment._id },
-      mentions,
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: task.projectId,
+        actor: req.user._id,
+        type: 'comment',
+        message: `${req.user.name} commented on “${task.title}”`,
+        meta: { taskId: task._id, commentId: comment._id },
+        mentions,
+      }),
+    )
 
     const notifyIds = new Set(
       [...mentions.map(String), assignedTo ? String(assignedTo) : ''].filter(
@@ -200,14 +215,16 @@ router.post(
     )
     notifyIds.delete(String(req.user._id))
     for (const uid of notifyIds) {
-      await Notification.create({
-        userId: uid,
-        type: 'mention',
-        title: `${req.user.name} mentioned you`,
-        body: req.body.body.slice(0, 140),
-        link: `/assigned-comments`,
-        projectId: task.projectId,
-      })
+      await Notification.create(
+        withTenant(req, {
+          userId: uid,
+          type: 'mention',
+          title: `${req.user.name} mentioned you`,
+          body: req.body.body.slice(0, 140),
+          link: `/assigned-comments`,
+          projectId: task.projectId,
+        }),
+      )
     }
 
     res.status(201).json({ success: true, comment })
@@ -218,8 +235,9 @@ router.delete(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const task = await Task.findByIdAndDelete(req.params.id)
-    if (!task) throw new AppError('Task not found', 404)
+    const task = await Task.findById(req.params.id)
+    assertTenantDoc(task, req, 'Task')
+    await task.deleteOne()
     res.json({ success: true })
   }),
 )

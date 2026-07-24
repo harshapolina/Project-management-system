@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { upload } from '../middleware/upload.js'
 import {
   Lead,
@@ -35,7 +36,7 @@ router.get(
   '/leads',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const leads = await Lead.find()
+    const leads = await Lead.find(tenantFilter(req, {}))
       .populate('owner', 'name avatar')
       .sort({ updatedAt: -1 })
     res.json({ success: true, leads })
@@ -46,7 +47,7 @@ router.post(
   '/leads',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const lead = await Lead.create({ ...req.body, owner: req.user._id })
+    const lead = await Lead.create(withTenant(req, { ...req.body, owner: req.user._id }))
     res.status(201).json({ success: true, lead })
   }),
 )
@@ -55,10 +56,11 @@ router.patch(
   '/leads/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const lead = await Lead.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    }).populate('owner', 'name avatar')
-    if (!lead) throw new AppError('Lead not found', 404)
+    const lead = await Lead.findById(req.params.id)
+    assertTenantDoc(lead, req, 'Lead')
+    Object.assign(lead, req.body)
+    await lead.save()
+    await lead.populate('owner', 'name avatar')
     res.json({ success: true, lead })
   }),
 )
@@ -69,48 +71,54 @@ router.post(
   requireRole('admin', 'owner', 'project_manager'),
   asyncHandler(async (req, res) => {
     const lead = await Lead.findById(req.params.id)
-    if (!lead) throw new AppError('Lead not found', 404)
+    assertTenantDoc(lead, req, 'Lead')
 
-    const project = await Project.create({
-      name: `${lead.clientName} Project`,
-      clientName: lead.clientName,
-      type: 'residential',
-      status: 'in_progress',
-      currentStage: 'design',
-      stages: STAGE_DEFS.map((s, i) => ({
-        ...s,
-        progress: 0,
-        status: i === 0 ? 'in_progress' : 'not_started',
-      })),
-      coverImage:
-        'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&q=80',
-      budget: lead.estimatedValue || 0,
-      projectManager: req.user._id,
-      members: [{ user: req.user._id, role: req.user.role }],
-      leadId: lead._id,
-      code: `CUB-${Math.floor(100 + Math.random() * 900)}`,
-    })
+    const project = await Project.create(
+      withTenant(req, {
+        name: `${lead.clientName} Project`,
+        clientName: lead.clientName,
+        type: 'residential',
+        status: 'in_progress',
+        currentStage: 'design',
+        stages: STAGE_DEFS.map((s, i) => ({
+          ...s,
+          progress: 0,
+          status: i === 0 ? 'in_progress' : 'not_started',
+        })),
+        coverImage:
+          'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&q=80',
+        budget: lead.estimatedValue || 0,
+        projectManager: req.user._id,
+        members: [{ user: req.user._id, role: req.user.role }],
+        leadId: lead._id,
+        code: `CUB-${Math.floor(100 + Math.random() * 900)}`,
+      }),
+    )
 
-    const quotation = await Quotation.create({
-      projectId: project._id,
-      leadId: lead._id,
-      title: `${lead.clientName} — Quotation`,
-      versionLabel: 'Standard',
-      status: 'draft',
-      items: [],
-      createdBy: req.user._id,
-    })
+    const quotation = await Quotation.create(
+      withTenant(req, {
+        projectId: project._id,
+        leadId: lead._id,
+        title: `${lead.clientName} — Quotation`,
+        versionLabel: 'Standard',
+        status: 'draft',
+        items: [],
+        createdBy: req.user._id,
+      }),
+    )
 
     lead.stage = 'won'
     lead.convertedProjectId = project._id
     await lead.save()
 
-    await ActivityLog.create({
-      projectId: project._id,
-      actor: req.user._id,
-      type: 'lead_converted',
-      message: `${req.user.name} converted lead “${lead.clientName}” to a project`,
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: project._id,
+        actor: req.user._id,
+        type: 'lead_converted',
+        message: `${req.user.name} converted lead “${lead.clientName}” to a project`,
+      }),
+    )
 
     res.status(201).json({ success: true, project, quotation })
   }),
@@ -121,7 +129,7 @@ router.get(
   '/quotations',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     if (req.query.leadId) filter.leadId = req.query.leadId
     const quotations = await Quotation.find(filter)
@@ -140,7 +148,7 @@ router.get(
     const quotation = await Quotation.findById(req.params.id)
       .populate('createdBy', 'name')
       .populate('projectId', 'name clientName')
-    if (!quotation) throw new AppError('Quotation not found', 404)
+    assertTenantDoc(quotation, req, 'Quotation')
     res.json({ success: true, quotation })
   }),
 )
@@ -155,15 +163,17 @@ router.post(
     const discount = req.body.discount || 0
     const grandTotal = subtotal + (subtotal * gstPercent) / 100 - discount
 
-    const quotation = await Quotation.create({
-      ...req.body,
-      items,
-      subtotal,
-      gstPercent,
-      discount,
-      grandTotal,
-      createdBy: req.user._id,
-    })
+    const quotation = await Quotation.create(
+      withTenant(req, {
+        ...req.body,
+        items,
+        subtotal,
+        gstPercent,
+        discount,
+        grandTotal,
+        createdBy: req.user._id,
+      }),
+    )
     res.status(201).json({ success: true, quotation })
   }),
 )
@@ -173,7 +183,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const quotation = await Quotation.findById(req.params.id)
-    if (!quotation) throw new AppError('Quotation not found', 404)
+    assertTenantDoc(quotation, req, 'Quotation')
 
     const allowed = [
       'title',
@@ -213,6 +223,8 @@ router.patch(
     if (req.body.status === 'approved') {
       quotation.approvedAt = new Date()
       if (quotation.projectId) {
+        const project = await Project.findById(quotation.projectId)
+        assertTenantDoc(project, req, 'Project')
         await Project.findByIdAndUpdate(quotation.projectId, {
           budget: quotation.grandTotal,
         })
@@ -233,7 +245,7 @@ router.get(
   '/files',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     if (req.query.folder) filter.folder = req.query.folder
     if (req.query.clientVisible === 'true') filter.clientVisible = true
@@ -267,30 +279,34 @@ router.post(
       throw new AppError('projectId, name, and file (or url) required', 400)
     }
 
-    const file = await ProjectFile.create({
-      projectId,
-      folder,
-      name,
-      mime,
-      clientVisible,
-      currentVersion: 1,
-      versions: [
-        {
-          version: 1,
-          url,
-          uploadedBy: req.user._id,
-          note: 'Initial upload',
-        },
-      ],
-      status: 'draft',
-    })
+    const file = await ProjectFile.create(
+      withTenant(req, {
+        projectId,
+        folder,
+        name,
+        mime,
+        clientVisible,
+        currentVersion: 1,
+        versions: [
+          {
+            version: 1,
+            url,
+            uploadedBy: req.user._id,
+            note: 'Initial upload',
+          },
+        ],
+        status: 'draft',
+      }),
+    )
 
-    await ActivityLog.create({
-      projectId,
-      actor: req.user._id,
-      type: 'file_uploaded',
-      message: `${req.user.name} uploaded ${name}`,
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId,
+        actor: req.user._id,
+        type: 'file_uploaded',
+        message: `${req.user.name} uploaded ${name}`,
+      }),
+    )
 
     res.status(201).json({ success: true, file })
   }),
@@ -301,7 +317,7 @@ router.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     const file = await ProjectFile.findById(req.params.id)
-    if (!file) throw new AppError('File not found', 404)
+    assertTenantDoc(file, req, 'File')
     const next = (file.currentVersion || file.versions.length) + 1
     file.versions.push({
       version: next,
@@ -320,18 +336,20 @@ router.patch(
   '/files/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const file = await ProjectFile.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    })
-    if (!file) throw new AppError('File not found', 404)
+    const file = await ProjectFile.findById(req.params.id)
+    assertTenantDoc(file, req, 'File')
+    Object.assign(file, req.body)
+    await file.save()
 
     if (req.body.status === 'sent' || req.body.status === 'approved') {
-      await ActivityLog.create({
-        projectId: file.projectId,
-        actor: req.user._id,
-        type: 'file_status',
-        message: `${req.user.name} marked ${file.name} as ${req.body.status}`,
-      })
+      await ActivityLog.create(
+        withTenant(req, {
+          projectId: file.projectId,
+          actor: req.user._id,
+          type: 'file_status',
+          message: `${req.user.name} marked ${file.name} as ${req.body.status}`,
+        }),
+      )
     }
     res.json({ success: true, file })
   }),
@@ -342,7 +360,7 @@ router.get(
   '/vendors',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const vendors = await Vendor.find().sort({ name: 1 })
+    const vendors = await Vendor.find(tenantFilter(req, {})).sort({ name: 1 })
     res.json({ success: true, vendors })
   }),
 )
@@ -351,7 +369,7 @@ router.post(
   '/vendors',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const vendor = await Vendor.create(req.body)
+    const vendor = await Vendor.create(withTenant(req, req.body))
     res.status(201).json({ success: true, vendor })
   }),
 )
@@ -360,7 +378,7 @@ router.get(
   '/purchase-orders',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     const pos = await PurchaseOrder.find(filter)
       .populate('vendor', 'name contact categories rating')
@@ -375,12 +393,14 @@ router.post(
   '/purchase-orders',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const po = await PurchaseOrder.create({
-      ...req.body,
-      createdBy: req.user._id,
-      poNumber:
-        req.body.poNumber || `PO-${Math.floor(1000 + Math.random() * 9000)}`,
-    })
+    const po = await PurchaseOrder.create(
+      withTenant(req, {
+        ...req.body,
+        createdBy: req.user._id,
+        poNumber:
+          req.body.poNumber || `PO-${Math.floor(1000 + Math.random() * 9000)}`,
+      }),
+    )
     await po.populate('vendor', 'name')
     res.status(201).json({ success: true, purchaseOrder: po })
   }),
@@ -390,10 +410,11 @@ router.patch(
   '/purchase-orders/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const po = await PurchaseOrder.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    }).populate('vendor', 'name')
-    if (!po) throw new AppError('PO not found', 404)
+    const po = await PurchaseOrder.findById(req.params.id)
+    assertTenantDoc(po, req, 'PO')
+    Object.assign(po, req.body)
+    await po.save()
+    await po.populate('vendor', 'name')
     res.json({ success: true, purchaseOrder: po })
   }),
 )
@@ -403,7 +424,7 @@ router.get(
   '/expenses',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     const expenses = await Expense.find(filter)
       .populate('submittedBy', 'name avatar')
@@ -417,10 +438,12 @@ router.post(
   '/expenses',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const expense = await Expense.create({
-      ...req.body,
-      submittedBy: req.user._id,
-    })
+    const expense = await Expense.create(
+      withTenant(req, {
+        ...req.body,
+        submittedBy: req.user._id,
+      }),
+    )
     res.status(201).json({ success: true, expense })
   }),
 )
@@ -430,7 +453,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const expense = await Expense.findById(req.params.id)
-    if (!expense) throw new AppError('Expense not found', 404)
+    assertTenantDoc(expense, req, 'Expense')
     Object.assign(expense, req.body)
     if (req.body.status === 'approved') expense.approvedBy = req.user._id
     await expense.save()
@@ -442,7 +465,7 @@ router.get(
   '/payments',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     const payments = await Payment.find(filter)
       .populate('vendorId', 'name')
@@ -456,10 +479,10 @@ router.get(
   '/finance/summary',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const projects = await Project.find().select(
+    const projects = await Project.find(tenantFilter(req, {})).select(
       'name budget spent status clientName progress',
     )
-    const expenses = await Expense.find({ status: 'approved' })
+    const expenses = await Expense.find(tenantFilter(req, { status: 'approved' }))
     const totalBudget = projects.reduce((s, p) => s + (p.budget || 0), 0)
     const totalSpent = projects.reduce((s, p) => s + (p.spent || 0), 0)
     const pnl = projects.map((p) => ({
@@ -493,7 +516,7 @@ router.get(
   '/site-updates',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     const updates = await SiteUpdate.find(filter)
       .populate('author', 'name avatar')
@@ -507,18 +530,22 @@ router.post(
   '/site-updates',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const update = await SiteUpdate.create({
-      ...req.body,
-      author: req.user._id,
-    })
+    const update = await SiteUpdate.create(
+      withTenant(req, {
+        ...req.body,
+        author: req.user._id,
+      }),
+    )
     await update.populate('author', 'name avatar')
 
-    await ActivityLog.create({
-      projectId: update.projectId,
-      actor: req.user._id,
-      type: 'site_update',
-      message: `${req.user.name} posted a site update`,
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: update.projectId,
+        actor: req.user._id,
+        type: 'site_update',
+        message: `${req.user.name} posted a site update`,
+      }),
+    )
 
     res.status(201).json({ success: true, update })
   }),
@@ -528,7 +555,7 @@ router.get(
   '/snags',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     const snags = await Snag.find(filter)
       .populate('assignee', 'name avatar')
@@ -541,7 +568,7 @@ router.post(
   '/snags',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const snag = await Snag.create(req.body)
+    const snag = await Snag.create(withTenant(req, req.body))
     res.status(201).json({ success: true, snag })
   }),
 )
@@ -550,21 +577,24 @@ router.patch(
   '/snags/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const snag = await Snag.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-    }).populate('assignee', 'name avatar')
-    if (!snag) throw new AppError('Snag not found', 404)
+    const snag = await Snag.findById(req.params.id)
+    assertTenantDoc(snag, req, 'Snag')
+    Object.assign(snag, req.body)
+    await snag.save()
+    await snag.populate('assignee', 'name avatar')
 
     if (req.body.convertToTask && snag.status === 'open') {
-      const task = await Task.create({
-        projectId: snag.projectId,
-        title: `Snag: ${snag.title}`,
-        stage: 'execution',
-        status: 'todo',
-        priority: 'high',
-        assignee: snag.assignee,
-        createdBy: req.user._id,
-      })
+      const task = await Task.create(
+        withTenant(req, {
+          projectId: snag.projectId,
+          title: `Snag: ${snag.title}`,
+          stage: 'execution',
+          status: 'todo',
+          priority: 'high',
+          assignee: snag.assignee,
+          createdBy: req.user._id,
+        }),
+      )
       snag.taskId = task._id
       await snag.save()
       return res.json({ success: true, snag, task })
@@ -579,7 +609,9 @@ router.get(
   '/notifications',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const notifications = await Notification.find({ userId: req.user._id })
+    const notifications = await Notification.find(
+      tenantFilter(req, { userId: req.user._id }),
+    )
       .sort({ createdAt: -1 })
       .limit(50)
     res.json({ success: true, notifications })
@@ -591,7 +623,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const n = await Notification.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user._id },
+      tenantFilter(req, { _id: req.params.id, userId: req.user._id }),
       { read: true },
       { new: true },
     )
@@ -603,7 +635,10 @@ router.post(
   '/notifications/read-all',
   requireAuth,
   asyncHandler(async (req, res) => {
-    await Notification.updateMany({ userId: req.user._id, read: false }, { read: true })
+    await Notification.updateMany(
+      tenantFilter(req, { userId: req.user._id, read: false }),
+      { read: true },
+    )
     res.json({ success: true })
   }),
 )
@@ -612,7 +647,7 @@ router.get(
   '/activity',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const filter = {}
+    const filter = tenantFilter(req, {})
     if (req.query.projectId) filter.projectId = req.query.projectId
     const activity = await ActivityLog.find(filter)
       .populate('actor', 'name avatar')
@@ -628,10 +663,10 @@ router.get(
   '/reports/overview',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const projects = await Project.find()
-    const tasks = await Task.find()
-    const leads = await Lead.find()
-    const pos = await PurchaseOrder.find()
+    const projects = await Project.find(tenantFilter(req, {}))
+    const tasks = await Task.find(tenantFilter(req, {}))
+    const leads = await Lead.find(tenantFilter(req, {}))
+    const pos = await PurchaseOrder.find(tenantFilter(req, {}))
 
     const onTime = projects.filter(
       (p) => !p.isDelayed && p.status !== 'delayed',
@@ -644,17 +679,24 @@ router.get(
       .filter((l) => !['won', 'lost'].includes(l.stage))
       .reduce((s, l) => s + (l.estimatedValue || 0), 0)
 
-    const team = await User.find({
-      role: { $in: ['project_manager', 'designer', 'site_supervisor'] },
-    }).select('name avatar role')
+    const team = await User.find(
+      tenantFilter(req, {
+        role: { $in: ['project_manager', 'designer', 'site_supervisor'] },
+        isPlatformAdmin: { $ne: true },
+      }),
+    ).select('name avatar role')
 
     const teamPerf = await Promise.all(
       team.map(async (u) => {
-        const done = await Task.countDocuments({ assignee: u._id, status: 'done' })
-        const open = await Task.countDocuments({
-          assignee: u._id,
-          status: { $ne: 'done' },
-        })
+        const done = await Task.countDocuments(
+          tenantFilter(req, { assignee: u._id, status: 'done' }),
+        )
+        const open = await Task.countDocuments(
+          tenantFilter(req, {
+            assignee: u._id,
+            status: { $ne: 'done' },
+          }),
+        )
         return { user: u, done, open }
       }),
     )
@@ -709,10 +751,10 @@ router.get(
     const since = new Date()
     since.setDate(since.getDate() - (Number(days) || 90))
 
-    const filter = {
+    const filter = tenantFilter(req, {
       createdAt: { $gte: since },
       taskId: { $ne: null },
-    }
+    })
 
     if (resolved === 'true') filter.resolved = true
     else if (resolved !== 'all') filter.resolved = { $ne: true }
@@ -726,7 +768,7 @@ router.get(
       ]
     } else {
       // Assigned to me — tagged, assigned, or comments on my tasks
-      const myTasks = await Task.find({ assignee: me }).select('_id')
+      const myTasks = await Task.find(tenantFilter(req, { assignee: me })).select('_id')
       const myTaskIds = myTasks.map((t) => t._id)
       filter.$or = [
         { assignedTo: me },
@@ -760,7 +802,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const comment = await Comment.findById(req.params.id)
-    if (!comment) throw new AppError('Comment not found', 404)
+    assertTenantDoc(comment, req, 'Comment')
 
     if (req.body.resolved === true) {
       comment.resolved = true
@@ -787,7 +829,9 @@ router.get(
   '/users',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const users = await User.find({ isActive: true })
+    const users = await User.find(
+      tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
+    )
       .select('name email avatar role title')
       .sort({ name: 1 })
     res.json({ success: true, users })

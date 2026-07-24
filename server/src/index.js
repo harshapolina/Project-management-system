@@ -8,7 +8,12 @@ import { connectDB } from './config/db.js'
 import './models/index.js'
 import { errorHandler } from './middleware/errorHandler.js'
 import { UPLOADS_DIR } from './middleware/upload.js'
+import {
+  resolveTenant,
+  ensureDefaultTenant,
+} from './middleware/tenant.js'
 import authRoutes from './routes/auth.js'
+import platformRoutes from './routes/platform.js'
 import homeRoutes from './routes/home.js'
 import projectRoutes from './routes/projects.js'
 import taskRoutes from './routes/tasks.js'
@@ -39,6 +44,22 @@ function corsOrigin(origin, callback) {
     callback(null, true)
     return
   }
+  // Allow *.editcomedia.com (and preview) subdomains when base domain listed
+  try {
+    if (origin) {
+      const host = new URL(origin).hostname
+      if (
+        host.endsWith('.editcomedia.com') ||
+        host === 'editcomedia.com' ||
+        host.endsWith('.vercel.app')
+      ) {
+        callback(null, true)
+        return
+      }
+    }
+  } catch {
+    /* ignore */
+  }
   callback(null, false)
 }
 
@@ -68,7 +89,11 @@ app.get('/api/health', (_req, res) => {
   res.json({ ok: true, service: 'cubic-api' })
 })
 
+// Tenant resolution for all API routes (except health)
+app.use('/api', resolveTenant)
+
 app.use('/api/auth', authRoutes)
+app.use('/api/platform', platformRoutes)
 app.use('/api', homeRoutes)
 app.use('/api/projects', projectRoutes)
 app.use('/api/tasks', taskRoutes)
@@ -95,7 +120,8 @@ app.use(errorHandler)
 const PORT = process.env.PORT || 5000
 
 connectDB()
-  .then(() => {
+  .then(async () => {
+    await ensureDefaultTenant()
     server.listen(PORT, () => {
       console.log(`Cubic API listening on :${PORT}`)
       console.log(`CORS origins: ${allowedOrigins.join(', ')}`)

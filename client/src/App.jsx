@@ -34,6 +34,7 @@ import {
   SettingsPage,
   MobileSupervisorPage,
 } from './pages/MorePages'
+import { PlatformAdminPage } from './pages/PlatformAdminPage'
 import { InboxPage } from './pages/InboxPage'
 import { AssignedCommentsPage } from './pages/AssignedCommentsPage'
 import { PlannerPage } from './pages/PlannerPage'
@@ -225,6 +226,14 @@ export default function App() {
               element={
                 <PagePad>
                   <SettingsPage />
+                </PagePad>
+              }
+            />
+            <Route
+              path="/platform"
+              element={
+                <PagePad>
+                  <PlatformAdminPage />
                 </PagePad>
               }
             />

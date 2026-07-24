@@ -10,6 +10,11 @@ const checklistSchema = new mongoose.Schema(
 
 const taskSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',

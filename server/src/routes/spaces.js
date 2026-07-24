@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Space } from '../models/Space.js'
 import { Project } from '../models/Project.js'
 
@@ -10,18 +11,22 @@ router.get(
   '/spaces',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const spaces = await Space.find({
-      $or: [
-        { createdBy: req.user._id },
-        { 'members.user': req.user._id },
-      ],
-    })
+    const spaces = await Space.find(
+      tenantFilter(req, {
+        $or: [
+          { createdBy: req.user._id },
+          { 'members.user': req.user._id },
+        ],
+      }),
+    )
       .sort({ name: 1 })
       .lean()
 
     const withCounts = await Promise.all(
       spaces.map(async (s) => {
-        const projectCount = await Project.countDocuments({ spaceId: s._id })
+        const projectCount = await Project.countDocuments(
+          tenantFilter(req, { spaceId: s._id }),
+        )
         return { ...s, projectCount }
       }),
     )
@@ -37,13 +42,15 @@ router.post(
     const name = String(req.body.name || '').trim()
     if (!name) throw new AppError('Space name is required', 400)
 
-    const space = await Space.create({
-      name,
-      description: req.body.description || '',
-      color: req.body.color || '#7B68EE',
-      createdBy: req.user._id,
-      members: [{ user: req.user._id, role: 'owner' }],
-    })
+    const space = await Space.create(
+      withTenant(req, {
+        name,
+        description: req.body.description || '',
+        color: req.body.color || '#7B68EE',
+        createdBy: req.user._id,
+        members: [{ user: req.user._id, role: 'owner' }],
+      }),
+    )
 
     res.status(201).json({ success: true, space })
   }),
@@ -54,7 +61,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const space = await Space.findById(req.params.id)
-    if (!space) throw new AppError('Space not found', 404)
+    assertTenantDoc(space, req, 'Space')
     if (req.body.name !== undefined) space.name = String(req.body.name).trim()
     if (req.body.description !== undefined)
       space.description = req.body.description
@@ -69,8 +76,11 @@ router.delete(
   requireAuth,
   asyncHandler(async (req, res) => {
     const space = await Space.findById(req.params.id)
-    if (!space) throw new AppError('Space not found', 404)
-    await Project.updateMany({ spaceId: space._id }, { $unset: { spaceId: 1 } })
+    assertTenantDoc(space, req, 'Space')
+    await Project.updateMany(
+      tenantFilter(req, { spaceId: space._id }),
+      { $unset: { spaceId: 1 } },
+    )
     await space.deleteOne()
     res.json({ success: true })
   }),

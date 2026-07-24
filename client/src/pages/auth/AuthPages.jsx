@@ -3,10 +3,19 @@ import { Link, useNavigate } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { api, useAuthStore } from '../../lib/api'
+import {
+  api,
+  getTenantSlug,
+  setTenantSlug,
+  useAuthStore,
+} from '../../lib/api'
 import { Button, Input, Card, toast } from '../../components/ui'
 
 const schema = z.object({
+  workspace: z
+    .string()
+    .min(2, 'Workspace slug required')
+    .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/, 'Invalid slug'),
   email: z.string().email('Enter a valid email'),
   password: z.string().min(1, 'Password is required'),
 })
@@ -21,26 +30,39 @@ export function LoginPage() {
     formState: { errors },
   } = useForm({
     resolver: zodResolver(schema),
-    defaultValues: { email: 'rohan@cubic.studio', password: 'demo1234' },
+    defaultValues: {
+      workspace: getTenantSlug() || 'cubic',
+      email: 'rohan@cubic.studio',
+      password: 'demo1234',
+    },
   })
 
   const onSubmit = async (values) => {
     setLoading(true)
     try {
+      setTenantSlug(values.workspace)
       const data = await api('/auth/login', {
         method: 'POST',
-        body: JSON.stringify(values),
+        body: JSON.stringify({
+          email: values.email,
+          password: values.password,
+        }),
       })
       setAuth({
         user: data.user,
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
+        tenant: data.tenant || null,
       })
       toast('Welcome back', { type: 'success' })
-      if (data.user.role === 'site_supervisor') {
+      if (data.user.mustChangePassword) {
+        navigate('/settings')
+      } else if (data.user.role === 'site_supervisor') {
         navigate('/mobile')
       } else if (!data.user.onboardingCompleted) {
         navigate('/onboarding')
+      } else if (data.user.isPlatformAdmin) {
+        navigate('/platform')
       } else {
         navigate('/')
       }
@@ -54,9 +76,16 @@ export function LoginPage() {
   return (
     <AuthLayout
       title="Welcome back"
-      subtitle="Sign in to Cubic — your studio command center."
+      subtitle="Sign in to your company workspace."
     >
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <Input
+          label="Workspace"
+          placeholder="cubic"
+          autoComplete="organization"
+          error={errors.workspace?.message}
+          {...register('workspace')}
+        />
         <Input
           label="Email"
           type="email"
@@ -84,98 +113,33 @@ export function LoginPage() {
         </Button>
       </form>
       <p className="mt-6 text-center text-sm text-secondary">
-        New to Cubic?{' '}
-        <Link to="/register" className="text-accent hover:text-accent-hover font-medium">
-          Create an account
-        </Link>
+        Accounts are invite-only. Contact your workspace admin.
       </p>
       <p className="mt-3 text-center text-[11px] text-secondary/80">
-        Demo: rohan@cubic.studio / demo1234
+        Demo workspace <code>cubic</code> — rohan@cubic.studio / demo1234
       </p>
     </AuthLayout>
   )
 }
 
 export function RegisterPage() {
-  const navigate = useNavigate()
-  const setAuth = useAuthStore((s) => s.setAuth)
-  const [loading, setLoading] = useState(false)
-
-  const regSchema = z
-    .object({
-      name: z.string().min(2, 'Name is required'),
-      email: z.string().email(),
-      password: z.string().min(6, 'At least 6 characters'),
-      confirm: z.string(),
-    })
-    .refine((d) => d.password === d.confirm, {
-      message: 'Passwords do not match',
-      path: ['confirm'],
-    })
-
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm({ resolver: zodResolver(regSchema) })
-
-  const onSubmit = async (values) => {
-    setLoading(true)
-    try {
-      const data = await api('/auth/register', {
-        method: 'POST',
-        body: JSON.stringify({
-          name: values.name,
-          email: values.email,
-          password: values.password,
-        }),
-      })
-      setAuth({
-        user: data.user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-      })
-      toast('Account created', { type: 'success' })
-      navigate('/onboarding')
-    } catch (err) {
-      toast(err.message || 'Registration failed', { type: 'error' })
-    } finally {
-      setLoading(false)
-    }
-  }
-
   return (
-    <AuthLayout title="Create your account" subtitle="Start running projects the Cubic way.">
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        <Input label="Full name" error={errors.name?.message} {...register('name')} />
-        <Input
-          label="Email"
-          type="email"
-          error={errors.email?.message}
-          {...register('email')}
-        />
-        <Input
-          label="Password"
-          type="password"
-          error={errors.password?.message}
-          {...register('password')}
-        />
-        <Input
-          label="Confirm password"
-          type="password"
-          error={errors.confirm?.message}
-          {...register('confirm')}
-        />
-        <Button type="submit" className="w-full" loading={loading} size="lg">
-          Continue
-        </Button>
-      </form>
-      <p className="mt-6 text-center text-sm text-secondary">
-        Already have an account?{' '}
-        <Link to="/login" className="text-accent hover:text-accent-hover font-medium">
-          Sign in
+    <AuthLayout
+      title="Invite only"
+      subtitle="New workspaces are created by Editco. Ask your admin for a login."
+    >
+      <Card className="space-y-3 p-4 text-sm text-secondary">
+        <p>
+          Self-serve registration is disabled. Your company admin can invite you
+          from Settings, or Editco can provision a workspace from Platform Admin.
+        </p>
+        <Link
+          to="/login"
+          className="inline-flex text-accent hover:text-accent-hover font-medium"
+        >
+          Back to sign in
         </Link>
-      </p>
+      </Card>
     </AuthLayout>
   )
 }

@@ -226,11 +226,21 @@ export function NotificationsPage() {
 
 export function SettingsPage() {
   const user = useAuthStore((s) => s.user)
+  const tenant = useAuthStore((s) => s.tenant)
   const setUser = useAuthStore((s) => s.setUser)
   const theme = useUiStore((s) => s.theme)
   const setTheme = useUiStore((s) => s.setTheme)
   const [name, setName] = useStateSafe(user?.name || '')
   const [title, setTitle] = useStateSafe(user?.title || '')
+  const [invite, setInvite] = useState({
+    name: '',
+    email: '',
+    role: 'project_manager',
+  })
+  const [inviteResult, setInviteResult] = useState(null)
+  const [pwd, setPwd] = useState({ current: '', next: '' })
+  const canInvite =
+    user?.isPlatformAdmin || ['admin', 'owner'].includes(user?.role)
 
   const save = async () => {
     try {
@@ -240,6 +250,40 @@ export function SettingsPage() {
       })
       setUser(data.user)
       toast('Profile saved', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
+    }
+  }
+
+  const sendInvite = async () => {
+    try {
+      const data = await api('/auth/invite', {
+        method: 'POST',
+        body: JSON.stringify(invite),
+      })
+      setInviteResult({
+        email: data.user.email,
+        tempPassword: data.tempPassword,
+      })
+      setInvite({ name: '', email: '', role: 'project_manager' })
+      toast('Invite created', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
+    }
+  }
+
+  const changePassword = async () => {
+    try {
+      await api('/auth/change-password', {
+        method: 'POST',
+        body: JSON.stringify({
+          currentPassword: pwd.current || undefined,
+          password: pwd.next,
+        }),
+      })
+      setUser({ ...user, mustChangePassword: false })
+      setPwd({ current: '', next: '' })
+      toast('Password updated', { type: 'success' })
     } catch (e) {
       toast(e.message, { type: 'error' })
     }
@@ -258,7 +302,35 @@ export function SettingsPage() {
         <h1 className="text-[32px] font-semibold tracking-tight leading-none">
           Settings
         </h1>
+        {(tenant?.slug || user?.tenantId) && (
+          <p className="mt-2 text-xs text-secondary">
+            Workspace: <code>{tenant?.slug || '—'}</code>
+            {tenant?.seatLimit != null && ` · ${tenant.seatLimit} seats`}
+          </p>
+        )}
       </div>
+
+      {user?.mustChangePassword && (
+        <Card className="border border-status-delayed/40 space-y-3">
+          <p className="font-semibold text-sm">Set a new password</p>
+          <Input
+            label="Current / temp password"
+            type="password"
+            value={pwd.current}
+            onChange={(e) => setPwd((s) => ({ ...s, current: e.target.value }))}
+          />
+          <Input
+            label="New password"
+            type="password"
+            value={pwd.next}
+            onChange={(e) => setPwd((s) => ({ ...s, next: e.target.value }))}
+          />
+          <Button onClick={changePassword} disabled={pwd.next.length < 6}>
+            Update password
+          </Button>
+        </Card>
+      )}
+
       <Card className="space-y-4">
         <div className="flex items-center gap-3">
           <Avatar src={user?.avatar} name={user?.name} size="lg" />
@@ -266,6 +338,7 @@ export function SettingsPage() {
             <p className="font-semibold">{user?.email}</p>
             <p className="text-xs text-secondary capitalize">
               {(user?.role || '').replace(/_/g, ' ')}
+              {user?.isPlatformAdmin ? ' · platform admin' : ''}
             </p>
           </div>
         </div>
@@ -273,6 +346,58 @@ export function SettingsPage() {
         <Input label="Title" value={title} onChange={(e) => setTitle(e.target.value)} />
         <Button onClick={save}>Save changes</Button>
       </Card>
+
+      {canInvite && (
+        <Card className="space-y-3">
+          <div>
+            <p className="font-semibold">Invite teammate</p>
+            <p className="text-xs text-secondary mt-0.5">
+              Creates a user in this workspace (counts toward seat limit).
+            </p>
+          </div>
+          {inviteResult && (
+            <p className="text-xs rounded-md bg-surface-raised p-2">
+              Sent to <code>{inviteResult.email}</code>
+              {inviteResult.tempPassword && (
+                <>
+                  {' '}
+                  · temp password <code>{inviteResult.tempPassword}</code>
+                </>
+              )}
+            </p>
+          )}
+          <Input
+            label="Name"
+            value={invite.name}
+            onChange={(e) => setInvite((s) => ({ ...s, name: e.target.value }))}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={invite.email}
+            onChange={(e) => setInvite((s) => ({ ...s, email: e.target.value }))}
+          />
+          <Select
+            label="Role"
+            value={invite.role}
+            onChange={(e) => setInvite((s) => ({ ...s, role: e.target.value }))}
+            options={[
+              { value: 'admin', label: 'Admin' },
+              { value: 'project_manager', label: 'Project manager' },
+              { value: 'designer', label: 'Designer' },
+              { value: 'site_supervisor', label: 'Site supervisor' },
+              { value: 'client', label: 'Client' },
+              { value: 'vendor', label: 'Vendor' },
+            ]}
+          />
+          <Button
+            onClick={sendInvite}
+            disabled={!invite.name || !invite.email}
+          >
+            Create invite
+          </Button>
+        </Card>
+      )}
 
       <Card className="space-y-3">
         <div>

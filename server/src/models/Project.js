@@ -34,6 +34,11 @@ const stageSchema = new mongoose.Schema(
 
 const projectSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     spaceId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Space',

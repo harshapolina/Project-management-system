@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 
 const leadSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     clientName: { type: String, required: true },
     contactName: { type: String, default: '' },
     email: { type: String, default: '' },
@@ -44,6 +49,11 @@ const boqItemSchema = new mongoose.Schema(
 
 const quotationSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
     title: { type: String, required: true },
@@ -81,6 +91,11 @@ const fileVersionSchema = new mongoose.Schema(
 
 const fileSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Project',

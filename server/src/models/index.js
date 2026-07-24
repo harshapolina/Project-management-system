@@ -1,5 +1,6 @@
-// Ensure all models are registered before populate()
+﻿// Ensure all models are registered before populate()
 export { User } from './User.js'
+export { Tenant } from './Tenant.js'
 export { Project } from './Project.js'
 export { Task } from './Task.js'
 export { Space } from './Space.js'

@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 
 const spaceSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     name: { type: String, required: true, trim: true },
     description: { type: String, default: '' },
     color: { type: String, default: '#7B68EE' },

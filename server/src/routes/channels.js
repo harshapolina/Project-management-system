@@ -1,17 +1,23 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Channel, ChannelMessage } from '../models/Channel.js'
 import { User } from '../models/User.js'
 
 const router = express.Router()
 
-async function ensureGeneral(userId) {
-  let general = await Channel.findOne({ name: 'general' })
+async function ensureGeneral(userId, tenantId) {
+  let general = await Channel.findOne({ name: 'general', tenantId })
   if (!general) {
-    const users = await User.find({ isActive: true }).select('_id')
+    const users = await User.find({
+      isActive: true,
+      tenantId,
+      isPlatformAdmin: { $ne: true },
+    }).select('_id')
     general = await Channel.create({
       name: 'general',
+      tenantId,
       description: 'Company-wide chat',
       createdBy: userId,
       members: users.map((u) => u._id),
@@ -27,10 +33,12 @@ router.get(
   '/channels',
   requireAuth,
   asyncHandler(async (req, res) => {
-    await ensureGeneral(req.user._id)
-    const channels = await Channel.find({
-      $or: [{ isPrivate: false }, { members: req.user._id }],
-    })
+    await ensureGeneral(req.user._id, req.tenantId)
+    const channels = await Channel.find(
+      tenantFilter(req, {
+        $or: [{ isPrivate: false }, { members: req.user._id }],
+      }),
+    )
       .sort({ name: 1 })
       .lean()
     res.json({ success: true, channels })
@@ -51,19 +59,23 @@ router.post(
       throw new AppError('Use letters, numbers, - or _ only', 400)
     }
 
-    const exists = await Channel.findOne({ name })
+    const exists = await Channel.findOne(tenantFilter(req, { name }))
     if (exists) throw new AppError('Channel already exists', 400)
 
-    const users = await User.find({ isActive: true }).select('_id')
-    const channel = await Channel.create({
-      name,
-      description: req.body.description || '',
-      isPrivate: !!req.body.isPrivate,
-      createdBy: req.user._id,
-      members: req.body.isPrivate
-        ? [req.user._id]
-        : users.map((u) => u._id),
-    })
+    const users = await User.find(
+      tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
+    ).select('_id')
+    const channel = await Channel.create(
+      withTenant(req, {
+        name,
+        description: req.body.description || '',
+        isPrivate: !!req.body.isPrivate,
+        createdBy: req.user._id,
+        members: req.body.isPrivate
+          ? [req.user._id]
+          : users.map((u) => u._id),
+      }),
+    )
 
     res.status(201).json({ success: true, channel })
   }),
@@ -74,9 +86,11 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const channel = await Channel.findById(req.params.id)
-    if (!channel) throw new AppError('Channel not found', 404)
+    assertTenantDoc(channel, req, 'Channel')
 
-    const messages = await ChannelMessage.find({ channelId: channel._id })
+    const messages = await ChannelMessage.find(
+      tenantFilter(req, { channelId: channel._id }),
+    )
       .populate('author', 'name avatar email')
       .sort({ createdAt: 1 })
       .limit(200)
@@ -90,7 +104,7 @@ router.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     const channel = await Channel.findById(req.params.id)
-    if (!channel) throw new AppError('Channel not found', 404)
+    assertTenantDoc(channel, req, 'Channel')
     const body = String(req.body.body || '').trim()
     if (!body) throw new AppError('Message required', 400)
 
@@ -99,11 +113,13 @@ router.post(
       await channel.save()
     }
 
-    const message = await ChannelMessage.create({
-      channelId: channel._id,
-      author: req.user._id,
-      body,
-    })
+    const message = await ChannelMessage.create(
+      withTenant(req, {
+        channelId: channel._id,
+        author: req.user._id,
+        body,
+      }),
+    )
     await message.populate('author', 'name avatar email')
 
     const io = req.app.get('io')

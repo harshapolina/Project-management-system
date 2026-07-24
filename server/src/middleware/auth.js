@@ -4,7 +4,12 @@ import { User } from '../models/User.js'
 
 export function signAccessToken(user) {
   return jwt.sign(
-    { sub: user._id.toString(), role: user.role },
+    {
+      sub: user._id.toString(),
+      role: user.role,
+      tenantId: user.tenantId ? String(user.tenantId) : null,
+      isPlatformAdmin: !!user.isPlatformAdmin,
+    },
     process.env.JWT_ACCESS_SECRET,
     { expiresIn: process.env.JWT_ACCESS_EXPIRES || '15m' },
   )
@@ -12,7 +17,10 @@ export function signAccessToken(user) {
 
 export function signRefreshToken(user) {
   return jwt.sign(
-    { sub: user._id.toString() },
+    {
+      sub: user._id.toString(),
+      tenantId: user.tenantId ? String(user.tenantId) : null,
+    },
     process.env.JWT_REFRESH_SECRET,
     { expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d' },
   )
@@ -28,6 +36,16 @@ export async function requireAuth(req, _res, next) {
     const user = await User.findById(payload.sub).select('-password')
     if (!user || !user.isActive) throw new AppError('User not found', 401)
 
+    // Platform admins can operate across tenants
+    if (
+      !user.isPlatformAdmin &&
+      req.tenantId &&
+      user.tenantId &&
+      String(user.tenantId) !== String(req.tenantId)
+    ) {
+      throw new AppError('Wrong workspace for this account', 403)
+    }
+
     req.user = user
     next()
   } catch (err) {
@@ -41,6 +59,7 @@ export async function requireAuth(req, _res, next) {
 export function requireRole(...roles) {
   return (req, _res, next) => {
     if (!req.user) return next(new AppError('Authentication required', 401))
+    if (req.user.isPlatformAdmin) return next()
     if (!roles.includes(req.user.role)) {
       return next(new AppError('Insufficient permissions', 403))
     }

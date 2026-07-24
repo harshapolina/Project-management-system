@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 
 const channelSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     name: { type: String, required: true, trim: true, lowercase: true },
     description: { type: String, default: '' },
     isPrivate: { type: Boolean, default: false },
@@ -15,10 +20,15 @@ const channelSchema = new mongoose.Schema(
   { timestamps: true },
 )
 
-channelSchema.index({ name: 1 }, { unique: true })
+channelSchema.index({ tenantId: 1, name: 1 }, { unique: true })
 
 const channelMessageSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     channelId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'Channel',

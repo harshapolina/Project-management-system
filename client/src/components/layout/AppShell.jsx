@@ -41,6 +41,7 @@ import {
   Sun,
   Moon,
   ExternalLink,
+  Building2,
   Menu,
   X,
 } from 'lucide-react'
@@ -1087,14 +1088,9 @@ function HomeSidebar({
       <SideItem to="/reports" icon={Diamond} label="Insights" />
 
       {/* My Tasks — expand in place */}
-      <button
-        type="button"
-        onClick={() => {
-          setMyTasksOpen(true)
-          navigate('/?view=all')
-        }}
+      <div
         className={cn(
-          'flex w-full items-center gap-2 rounded-md px-2 py-[6px] text-[13px] transition-colors',
+          'flex w-full items-center gap-1 rounded-md px-2 py-[6px] text-[13px] transition-colors',
           onMyTasks && !myTasksOpen
             ? 'bg-[#2a2a2e] text-white'
             : onMyTasks
@@ -1102,15 +1098,22 @@ function HomeSidebar({
               : 'text-[#c5c5c8] hover:bg-[#252528] hover:text-white',
         )}
       >
-        <CheckSquare className="h-3.5 w-3.5 shrink-0 opacity-80" strokeWidth={1.75} />
-        <span className="min-w-0 flex-1 truncate text-left">My Tasks</span>
         <button
           type="button"
-          onClick={(e) => {
-            e.stopPropagation()
-            setMyTasksOpen((v) => !v)
+          onClick={() => {
+            setMyTasksOpen(true)
+            navigate('/?view=all')
           }}
-          className="rounded p-0.5 text-[#6b6b70] hover:bg-[#3a3a3e] hover:text-white"
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+        >
+          <CheckSquare className="h-3.5 w-3.5 shrink-0 opacity-80" strokeWidth={1.75} />
+          <span className="min-w-0 flex-1 truncate">My Tasks</span>
+        </button>
+        <button
+          type="button"
+          aria-label={myTasksOpen ? 'Collapse My Tasks' : 'Expand My Tasks'}
+          onClick={() => setMyTasksOpen((v) => !v)}
+          className="shrink-0 rounded p-0.5 text-[#6b6b70] hover:bg-[#3a3a3e] hover:text-white"
         >
           {myTasksOpen ? (
             <ChevronDown className="h-3 w-3" />
@@ -1118,7 +1121,7 @@ function HomeSidebar({
             <ChevronRight className="h-3 w-3" />
           )}
         </button>
-      </button>
+      </div>
       {myTasksOpen && (
         <div className="mb-1 ml-2 mt-1 space-y-0.5 border-l border-[#2e2e32] pl-2 pt-0.5">
           <SubSideItem view="all" label="Everything" />
@@ -1157,6 +1160,9 @@ function HomeSidebar({
           <SideItem to="/portfolio" icon={BarChart3} label="Dashboards" dense />
           <SideItem to="/mobile" icon={Smartphone} label="Site mode" dense />
           <SideItem to="/settings" icon={Settings} label="Settings" dense />
+          {user?.isPlatformAdmin && (
+            <SideItem to="/platform" icon={Building2} label="Platform" dense />
+          )}
         </div>
       )}
 

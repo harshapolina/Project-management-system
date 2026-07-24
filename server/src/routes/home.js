@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import '../models/index.js'
 import { Task } from '../models/Task.js'
 import { ActivityLog, Notification, Comment } from '../models/Activity.js'
@@ -23,6 +24,8 @@ router.get(
       { path: 'assignee', select: 'name avatar' },
     ]
 
+    const tf = (extra) => tenantFilter(req, extra)
+
     const [
       today,
       overdue,
@@ -40,40 +43,40 @@ router.get(
       notifications,
       recentTasks,
     ] = await Promise.all([
-      Task.find({
+      Task.find(tf({
         $or: [
           { assignee: userId, isPersonal: { $ne: true } },
           { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
         ],
         status: { $ne: 'done' },
         dueDate: { $gte: todayStart, $lte: todayEnd },
-      })
+      }))
         .populate(populateTask)
         .sort({ priority: -1, dueDate: 1 })
         .limit(40),
-      Task.find({
+      Task.find(tf({
         $or: [
           { assignee: userId, isPersonal: { $ne: true } },
           { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
         ],
         status: { $ne: 'done' },
         dueDate: { $lt: todayStart },
-      })
+      }))
         .populate(populateTask)
         .sort({ dueDate: 1 })
         .limit(40),
-      Task.find({
+      Task.find(tf({
         $or: [
           { assignee: userId, isPersonal: { $ne: true } },
           { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
         ],
         status: { $ne: 'done' },
         dueDate: { $gt: todayEnd, $lte: upcomingEnd },
-      })
+      }))
         .populate(populateTask)
         .sort({ dueDate: 1 })
         .limit(40),
-      Task.find({
+      Task.find(tf({
         status: { $ne: 'done' },
         $and: [
           {
@@ -87,47 +90,47 @@ router.get(
           },
           { $or: [{ dueDate: null }, { dueDate: { $exists: false } }] },
         ],
-      })
+      }))
         .populate(populateTask)
         .sort({ updatedAt: -1 })
         .limit(40),
-      Task.find({
+      Task.find(tf({
         $or: [
           { assignee: userId, isPersonal: { $ne: true } },
           { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
         ],
         status: { $ne: 'done' },
-      })
+      }))
         .populate(populateTask)
         .sort({ status: 1, dueDate: 1, updatedAt: -1 })
         .limit(80),
-      Task.find({
+      Task.find(tf({
         status: 'done',
         $or: [
           { assignee: userId },
           { isPersonal: true, createdBy: userId },
         ],
-      })
+      }))
         .populate(populateTask)
         .sort({ updatedAt: -1 })
         .limit(60),
-      Task.find({
+      Task.find(tf({
         createdBy: userId,
         isPersonal: { $ne: true },
         assignee: { $exists: true, $nin: [null, userId] },
         status: { $ne: 'done' },
-      })
+      }))
         .populate(populateTask)
         .sort({ updatedAt: -1 })
         .limit(40),
-      Task.find({
+      Task.find(tf({
         isPersonal: true,
         $or: [{ assignee: userId }, { createdBy: userId }],
         status: { $ne: 'done' },
-      })
+      }))
         .sort({ createdAt: -1 })
         .limit(40),
-      Task.find({
+      Task.find(tf({
         status: { $ne: 'done' },
         priority: { $in: ['urgent', 'high'] },
         $or: [
@@ -137,14 +140,14 @@ router.get(
             $or: [{ assignee: userId }, { createdBy: userId }],
           },
         ],
-      })
+      }))
         .populate(populateTask)
         .sort({ priority: -1, dueDate: 1 })
         .limit(30),
-      Comment.find({
+      Comment.find(tf({
         resolved: { $ne: true },
         $or: [{ assignedTo: userId }, { mentions: userId }],
-      })
+      }))
         .populate('author', 'name avatar')
         .populate('assignedTo', 'name avatar')
         .populate({
@@ -154,30 +157,30 @@ router.get(
         })
         .sort({ createdAt: -1 })
         .limit(15),
-      Task.find({
+      Task.find(tf({
         requiresApproval: true,
         approvalStatus: 'pending',
         $or: [{ assignee: userId }, { createdBy: userId }],
-      })
+      }))
         .populate('projectId', 'name')
         .populate('assignee', 'name avatar')
         .limit(15),
-      ActivityLog.find({
+      ActivityLog.find(tf({
         $or: [{ actor: userId }, { mentions: userId }],
-      })
+      }))
         .populate('actor', 'name avatar')
         .populate('projectId', 'name')
         .sort({ createdAt: -1 })
         .limit(15),
-      ActivityLog.find({ mentions: userId })
+      ActivityLog.find(tf({ mentions: userId }))
         .populate('actor', 'name avatar')
         .populate('projectId', 'name')
         .sort({ createdAt: -1 })
         .limit(10),
-      Notification.find({ userId }).sort({ createdAt: -1 }).limit(10),
-      Task.find({
+      Notification.find(tf({ userId })).sort({ createdAt: -1 }).limit(10),
+      Task.find(tf({
         $or: [{ assignee: userId }, { createdBy: userId }],
-      })
+      }))
         .populate('projectId', 'name')
         .sort({ updatedAt: -1 })
         .limit(8),
@@ -224,23 +227,23 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const task = await Task.findById(req.params.id)
-    if (!task) {
-      return res.status(404).json({ success: false, message: 'Task not found' })
-    }
+    assertTenantDoc(task, req, 'Task')
 
     const done = task.status === 'done'
     task.status = done ? 'todo' : 'done'
     task.progress = done ? 0 : 100
     await task.save()
 
-    await ActivityLog.create({
-      projectId: task.projectId,
-      actor: req.user._id,
-      type: 'task_toggled',
-      message: done
-        ? `Reopened “${task.title}”`
-        : `Completed “${task.title}”`,
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: task.projectId,
+        actor: req.user._id,
+        type: 'task_toggled',
+        message: done
+          ? `Reopened “${task.title}”`
+          : `Completed “${task.title}”`,
+      }),
+    )
 
     res.json({ success: true, task })
   }),

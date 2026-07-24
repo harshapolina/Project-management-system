@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth, requireRole } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Project, Task, ActivityLog, User } from '../models/index.js'
 
 const router = express.Router()
@@ -54,7 +55,7 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const { status, type, stage, q } = req.query
-    const filter = { ...scopeProjects(req.user) }
+    const filter = tenantFilter(req, { ...scopeProjects(req.user) })
     if (status) filter.status = status
     if (type) filter.type = type
     if (stage) filter.currentStage = stage
@@ -85,7 +86,7 @@ router.get(
   requireAuth,
   requireRole('admin', 'owner', 'project_manager'),
   asyncHandler(async (req, res) => {
-    const projects = await Project.find(scopeProjects(req.user))
+    const projects = await Project.find(tenantFilter(req, scopeProjects(req.user)))
       .populate('projectManager', 'name avatar')
       .populate('members.user', 'name avatar')
 
@@ -114,26 +115,33 @@ router.get(
         endDate: p.endDate,
       }))
 
-    const upcomingDeadlines = await Task.find({
-      status: { $ne: 'done' },
-      dueDate: { $gte: new Date(), $lte: new Date(Date.now() + 14 * 86400000) },
-    })
+    const upcomingDeadlines = await Task.find(
+      tenantFilter(req, {
+        status: { $ne: 'done' },
+        dueDate: { $gte: new Date(), $lte: new Date(Date.now() + 14 * 86400000) },
+      }),
+    )
       .populate('projectId', 'name')
       .populate('assignee', 'name avatar')
       .sort({ dueDate: 1 })
       .limit(8)
 
-    const users = await User.find({
-      role: { $in: ['project_manager', 'designer', 'site_supervisor'] },
-      isActive: true,
-    }).select('name avatar role')
+    const users = await User.find(
+      tenantFilter(req, {
+        role: { $in: ['project_manager', 'designer', 'site_supervisor'] },
+        isActive: true,
+        isPlatformAdmin: { $ne: true },
+      }),
+    ).select('name avatar role')
 
     const workload = await Promise.all(
       users.map(async (u) => {
-        const open = await Task.countDocuments({
-          assignee: u._id,
-          status: { $ne: 'done' },
-        })
+        const open = await Task.countDocuments(
+          tenantFilter(req, {
+            assignee: u._id,
+            status: { $ne: 'done' },
+          }),
+        )
         return { user: u, openTasks: open, load: Math.min(100, open * 12) }
       }),
     )
@@ -149,10 +157,12 @@ router.get(
   '/:id',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const project = await Project.findOne({
-      _id: req.params.id,
-      ...scopeProjects(req.user),
-    })
+    const project = await Project.findOne(
+      tenantFilter(req, {
+        _id: req.params.id,
+        ...scopeProjects(req.user),
+      }),
+    )
       .populate('projectManager', 'name avatar email title')
       .populate('members.user', 'name avatar role email title')
       .populate('clientId', 'name avatar email')
@@ -160,13 +170,17 @@ router.get(
     if (!project) throw new AppError('Project not found', 404)
 
     const [openTasks, pendingApprovals, latestSite] = await Promise.all([
-      Task.countDocuments({ projectId: project._id, status: { $ne: 'done' } }),
-      Task.countDocuments({
-        projectId: project._id,
-        requiresApproval: true,
-        approvalStatus: 'pending',
-      }),
-      ActivityLog.find({ projectId: project._id })
+      Task.countDocuments(
+        tenantFilter(req, { projectId: project._id, status: { $ne: 'done' } }),
+      ),
+      Task.countDocuments(
+        tenantFilter(req, {
+          projectId: project._id,
+          requiresApproval: true,
+          approvalStatus: 'pending',
+        }),
+      ),
+      ActivityLog.find(tenantFilter(req, { projectId: project._id }))
         .populate('actor', 'name avatar')
         .sort({ createdAt: -1 })
         .limit(1),
@@ -214,46 +228,52 @@ router.post(
       status: i === 0 ? 'in_progress' : 'not_started',
     }))
 
-    const project = await Project.create({
-      name,
-      clientName,
-      type,
-      location,
-      startDate,
-      endDate,
-      budget: budget || 0,
-      spaceId: spaceId || undefined,
-      coverImage:
-        coverImage ||
-        'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80',
-      description,
-      status: 'in_progress',
-      currentStage: 'design',
-      stages,
-      projectManager: req.user._id,
-      members: [{ user: req.user._id, role: req.user.role }],
-      code: `CUB-${Math.floor(100 + Math.random() * 900)}`,
-    })
+    const project = await Project.create(
+      withTenant(req, {
+        name,
+        clientName,
+        type,
+        location,
+        startDate,
+        endDate,
+        budget: budget || 0,
+        spaceId: spaceId || undefined,
+        coverImage:
+          coverImage ||
+          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80',
+        description,
+        status: 'in_progress',
+        currentStage: 'design',
+        stages,
+        projectManager: req.user._id,
+        members: [{ user: req.user._id, role: req.user.role }],
+        code: `CUB-${Math.floor(100 + Math.random() * 900)}`,
+      }),
+    )
 
     const template = TEMPLATE_TASKS[type] || TEMPLATE_TASKS.blank
     await Task.insertMany(
-      template.map((t) => ({
-        ...t,
-        projectId: project._id,
-        createdBy: req.user._id,
-        assignee: req.user._id,
-        status: 'todo',
-        priority: 'medium',
-        approvalStatus: t.requiresApproval ? 'pending' : 'none',
-      })),
+      template.map((t) =>
+        withTenant(req, {
+          ...t,
+          projectId: project._id,
+          createdBy: req.user._id,
+          assignee: req.user._id,
+          status: 'todo',
+          priority: 'medium',
+          approvalStatus: t.requiresApproval ? 'pending' : 'none',
+        }),
+      ),
     )
 
-    await ActivityLog.create({
-      projectId: project._id,
-      actor: req.user._id,
-      type: 'project_created',
-      message: `${req.user.name} created project “${name}”`,
-    })
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: project._id,
+        actor: req.user._id,
+        type: 'project_created',
+        message: `${req.user.name} created project “${name}”`,
+      }),
+    )
 
     res.status(201).json({ success: true, project })
   }),
@@ -265,7 +285,7 @@ router.patch(
   requireRole('admin', 'owner', 'project_manager'),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id)
-    if (!project) throw new AppError('Project not found', 404)
+    assertTenantDoc(project, req, 'Project')
 
     const allowed = [
       'name',
@@ -299,7 +319,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const { userId, role } = req.body
     const project = await Project.findById(req.params.id)
-    if (!project) throw new AppError('Project not found', 404)
+    assertTenantDoc(project, req, 'Project')
     const exists = project.members.some((m) => String(m.user) === String(userId))
     if (!exists) project.members.push({ user: userId, role })
     await project.save()
@@ -314,7 +334,7 @@ router.delete(
   requireRole('admin', 'owner', 'project_manager'),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id)
-    if (!project) throw new AppError('Project not found', 404)
+    assertTenantDoc(project, req, 'Project')
     project.members = project.members.filter(
       (m) => String(m.user) !== String(req.params.userId),
     )
@@ -329,11 +349,11 @@ router.delete(
   requireRole('admin', 'owner', 'project_manager'),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id)
-    if (!project) throw new AppError('Project not found', 404)
+    assertTenantDoc(project, req, 'Project')
 
     const id = project._id
-    await Task.deleteMany({ projectId: id })
-    await ActivityLog.deleteMany({ projectId: id })
+    await Task.deleteMany(tenantFilter(req, { projectId: id }))
+    await ActivityLog.deleteMany(tenantFilter(req, { projectId: id }))
     await project.deleteOne()
 
     res.json({ success: true })

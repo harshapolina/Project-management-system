@@ -1,6 +1,7 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Message } from '../models/Message.js'
 import { User } from '../models/User.js'
 import { Notification } from '../models/Activity.js'
@@ -12,10 +13,13 @@ router.get(
   '/mail/directory',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const users = await User.find({
-      isActive: true,
-      _id: { $ne: req.user._id },
-    })
+    const users = await User.find(
+      tenantFilter(req, {
+        isActive: true,
+        isPlatformAdmin: { $ne: true },
+        _id: { $ne: req.user._id },
+      }),
+    )
       .select('name email avatar role title company')
       .sort({ name: 1 })
 
@@ -29,10 +33,12 @@ router.get(
   requireAuth,
   asyncHandler(async (req, res) => {
     const me = req.user._id
-    const messages = await Message.find({
-      $or: [{ from: me }, { to: me }],
-      clearedBy: { $ne: me },
-    })
+    const messages = await Message.find(
+      tenantFilter(req, {
+        $or: [{ from: me }, { to: me }],
+        clearedBy: { $ne: me },
+      }),
+    )
       .populate('from', 'name avatar email role title')
       .populate('to', 'name avatar email role title')
       .sort({ createdAt: -1 })
@@ -72,22 +78,24 @@ router.get(
     const other = await User.findById(otherId).select(
       'name email avatar role title company',
     )
-    if (!other) throw new AppError('User not found', 404)
+    assertTenantDoc(other, req, 'User')
 
-    const messages = await Message.find({
-      $or: [
-        { from: me, to: otherId },
-        { from: otherId, to: me },
-      ],
-      clearedBy: { $ne: me },
-    })
+    const messages = await Message.find(
+      tenantFilter(req, {
+        $or: [
+          { from: me, to: otherId },
+          { from: otherId, to: me },
+        ],
+        clearedBy: { $ne: me },
+      }),
+    )
       .populate('from', 'name avatar')
       .populate('to', 'name avatar')
       .sort({ createdAt: 1 })
 
     // Mark incoming as read
     await Message.updateMany(
-      { from: otherId, to: me, readAt: null },
+      tenantFilter(req, { from: otherId, to: me, readAt: null }),
       { readAt: new Date() },
     )
 
@@ -104,25 +112,29 @@ router.post(
     if (!to || !body?.trim()) throw new AppError('Recipient and message required')
 
     const recipient = await User.findById(to)
-    if (!recipient) throw new AppError('Recipient not found', 404)
+    assertTenantDoc(recipient, req, 'Recipient')
 
-    const message = await Message.create({
-      from: req.user._id,
-      to,
-      subject: subject || '',
-      body: body.trim(),
-    })
+    const message = await Message.create(
+      withTenant(req, {
+        from: req.user._id,
+        to,
+        subject: subject || '',
+        body: body.trim(),
+      }),
+    )
 
     await message.populate('from', 'name avatar email')
     await message.populate('to', 'name avatar email')
 
-    await Notification.create({
-      userId: to,
-      type: 'mail',
-      title: `Mail from ${req.user.name}`,
-      body: body.trim().slice(0, 120),
-      link: `/inbox?tab=mail&with=${req.user._id}`,
-    })
+    await Notification.create(
+      withTenant(req, {
+        userId: to,
+        type: 'mail',
+        title: `Mail from ${req.user.name}`,
+        body: body.trim().slice(0, 120),
+        link: `/inbox?tab=mail&with=${req.user._id}`,
+      }),
+    )
 
     const io = req.app.get('io')
     if (io) {
@@ -142,7 +154,7 @@ router.patch(
   requireAuth,
   asyncHandler(async (req, res) => {
     const message = await Message.findById(req.params.id)
-    if (!message) throw new AppError('Message not found', 404)
+    assertTenantDoc(message, req, 'Message')
 
     const me = req.user._id
     if (

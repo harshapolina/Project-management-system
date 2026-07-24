@@ -2,6 +2,11 @@ import mongoose from 'mongoose'
 
 const activityLogSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', index: true },
     actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     type: { type: String, required: true },
@@ -16,6 +21,11 @@ export const ActivityLog = mongoose.model('ActivityLog', activityLogSchema)
 
 const notificationSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -36,6 +46,11 @@ export const Notification = mongoose.model('Notification', notificationSchema)
 
 const commentSchema = new mongoose.Schema(
   {
+    tenantId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Tenant',
+      index: true,
+    },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project', index: true },
     taskId: { type: mongoose.Schema.Types.ObjectId, ref: 'Task' },
     author: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
