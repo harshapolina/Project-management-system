@@ -11,7 +11,6 @@ import {
   CalendarDays,
   Sparkles,
   Users,
-  MoreHorizontal,
   Inbox,
   MessageSquare,
   CheckSquare,
@@ -42,6 +41,7 @@ import {
   Moon,
   ExternalLink,
   Building2,
+  LayoutGrid,
   Menu,
   X,
 } from 'lucide-react'
@@ -204,11 +204,13 @@ export function AppShell({ children }) {
 
   const goHome = () => {
     setGlobalNav('home')
+    setMoreOpen(false)
     navigate('/?view=all')
   }
 
   const goPlanner = () => {
     setGlobalNav('planner')
+    setMoreOpen(false)
     navigate('/planner')
   }
 
@@ -286,13 +288,16 @@ export function AppShell({ children }) {
         <Users className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </RailIcon>
       <RailIcon
+        active={moreOpen || globalNav === 'more'}
         title="More"
         onClick={() => {
           setMoreOpen(true)
-          navigate('/?view=all')
+          setGlobalNav('more')
+          setSidebarCollapsed(false)
+          if (isPlanner) navigate('/?view=all')
         }}
       >
-        <MoreHorizontal className="h-[18px] w-[18px]" strokeWidth={1.75} />
+        <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </RailIcon>
 
       <div className="mt-auto flex flex-col items-center gap-1.5 pb-1">
@@ -1132,27 +1137,13 @@ function HomeSidebar({
         </div>
       )}
 
-      {/* More — expand in place (does NOT leave Home) */}
-      <button
-        type="button"
-        onClick={() => setMoreOpen((v) => !v)}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-md px-2 py-[6px] text-[13px] transition-colors',
-          moreOpen
-            ? 'bg-[#2a2a2e] text-white'
-            : 'text-[#c5c5c8] hover:bg-[#252528] hover:text-white',
-        )}
-      >
-        <MoreHorizontal className="h-3.5 w-3.5 shrink-0 opacity-80" strokeWidth={1.75} />
-        <span className="min-w-0 flex-1 truncate text-left">More</span>
-        {moreOpen ? (
-          <ChevronDown className="h-3 w-3 text-[#6b6b70]" />
-        ) : (
-          <ChevronRight className="h-3 w-3 text-[#6b6b70]" />
-        )}
-      </button>
+      {/* More apps — opened from far-left rail (LayoutGrid), not a nested sidebar toggle */}
       {moreOpen && (
-        <div className="mb-1 ml-2 mt-1 space-y-0.5 border-l border-[#2e2e32] pl-2 pt-0.5">
+        <div className="mb-2 space-y-0.5 rounded-lg border border-[#2e2e32] bg-[#18181a] p-1.5">
+          <p className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#8b8b90]">
+            <LayoutGrid className="h-3 w-3" />
+            More
+          </p>
           <SideItem to="/leads" icon={Users} label="Leads / CRM" dense />
           <SideItem to="/quotations" icon={FileSpreadsheet} label="Quotations & BOQ" dense />
           <SideItem to="/procurement" icon={Truck} label="Procurement" dense />

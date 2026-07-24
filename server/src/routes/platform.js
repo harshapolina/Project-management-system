@@ -177,4 +177,37 @@ router.post(
   }),
 )
 
+router.post(
+  '/tenants/:id/users/:userId/reset-password',
+  asyncHandler(async (req, res) => {
+    const schema = z.object({
+      password: z.string().min(6).optional(),
+    })
+    const data = schema.parse(req.body || {})
+    const tenant = await Tenant.findById(req.params.id)
+    if (!tenant) throw new AppError('Tenant not found', 404)
+
+    const user = await User.findOne({
+      _id: req.params.userId,
+      tenantId: tenant._id,
+      isPlatformAdmin: { $ne: true },
+    }).select('+refreshTokens +password')
+    if (!user) throw new AppError('User not found in this workspace', 404)
+
+    const tempPassword = data.password || crypto.randomBytes(8).toString('hex')
+    user.password = tempPassword
+    user.mustChangePassword = true
+    user.refreshTokens = []
+    await user.save()
+
+    res.json({
+      success: true,
+      user: user.toSafeJSON(),
+      tempPassword,
+      tenant: { id: tenant._id, name: tenant.name, slug: tenant.slug },
+      message: 'Password reset. Share the temp password with the user.',
+    })
+  }),
+)
+
 export default router

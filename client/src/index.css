@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Outfit:wght@300;400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
 @theme {
@@ -24,6 +24,8 @@
   --color-cu-row: var(--cu-row);
   --color-cu-hover: var(--cu-hover);
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-display: "Instrument Serif", Georgia, "Times New Roman", serif;
+  --font-landing: "Outfit", "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 :root,
@@ -227,4 +229,32 @@ body {
 
 .planner-day-col.planner-drag-over {
   background-color: rgb(123 104 238 / 0.12) !important;
+}
+
+/* Landing — clean ClickUp/Jira-inspired atmosphere */
+.lp-root {
+  scroll-behavior: smooth;
+}
+.lp-hero-product {
+  transform: translateZ(0);
+}
+.lp-feat,
+.lp-mod-cell,
+.lp-replace-row {
+  will-change: transform;
+}
+@media (prefers-reduced-motion: reduce) {
+  .lp-root {
+    scroll-behavior: auto;
+  }
+  .lp-hero-product,
+  .lp-float-a,
+  .lp-float-b,
+  .lp-float-c,
+  .lp-chip-a,
+  .lp-chip-b,
+  .lp-chip-c {
+    animation: none !important;
+    transition: none !important;
+  }
 }

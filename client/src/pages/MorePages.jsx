@@ -20,9 +20,10 @@ import {
   Moon,
   Monitor,
 } from 'lucide-react'
-import { api, useAuthStore } from '../lib/api'
+import { api, getTenantSlug, useAuthStore } from '../lib/api'
 import { formatInr, stageLabel } from '../lib/format'
 import { useUiStore } from '../store/uiStore'
+import { InviteDetailsModal } from '../components/layout/GlobalChrome'
 import {
   Avatar,
   Button,
@@ -263,8 +264,10 @@ export function SettingsPage() {
         body: JSON.stringify(invite),
       })
       setInviteResult({
+        workspace: tenant?.slug || getTenantSlug(),
         email: data.user.email,
         tempPassword: data.tempPassword,
+        loginUrl: window.location.origin + '/login',
       })
       setInvite({ name: '', email: '', role: 'project_manager' })
       toast('Invite created', { type: 'success' })
@@ -353,20 +356,10 @@ export function SettingsPage() {
           <div>
             <p className="font-semibold">Invite teammate</p>
             <p className="text-xs text-secondary mt-0.5">
-              Creates a user in this workspace (counts toward seat limit).
+              Creates a user in this workspace (counts toward seat limit). Details
+              open in a popup to copy and share.
             </p>
           </div>
-          {inviteResult && (
-            <p className="text-xs rounded-md bg-surface-raised p-2">
-              Sent to <code>{inviteResult.email}</code>
-              {inviteResult.tempPassword && (
-                <>
-                  {' '}
-                  · temp password <code>{inviteResult.tempPassword}</code>
-                </>
-              )}
-            </p>
-          )}
           <Input
             label="Name"
             value={invite.name}
@@ -399,6 +392,12 @@ export function SettingsPage() {
           </Button>
         </Card>
       )}
+
+      <InviteDetailsModal
+        open={!!inviteResult}
+        details={inviteResult}
+        onClose={() => setInviteResult(null)}
+      />
 
       <Card className="space-y-3">
         <div>

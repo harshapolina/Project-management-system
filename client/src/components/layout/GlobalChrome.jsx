@@ -18,8 +18,8 @@ import {
   ListChecks,
   SlidersHorizontal,
 } from 'lucide-react'
-import { api } from '../../lib/api'
-import { Modal, Drawer, toast } from '../ui'
+import { api, getTenantSlug, useAuthStore } from '../../lib/api'
+import { Modal, Drawer, toast, Button, Input, Select } from '../ui'
 import { cn } from '../../lib/utils'
 
 /* ─────────────────────────── Global Search ─────────────────────────── */
@@ -321,11 +321,83 @@ function ResultRow({ icon: Icon, title, subtitle, active, onClick, onMouseEnter 
   )
 }
 
+/* ─────────────────────────── Invite details popup ─────────────────────────── */
+
+export function InviteDetailsModal({ open, onClose, details }) {
+  if (!details) return null
+
+  const text = [
+    details.workspace && `Workspace: ${details.workspace}`,
+    details.email && `Email: ${details.email}`,
+    details.tempPassword && `Temp password: ${details.tempPassword}`,
+    details.loginUrl && `Login: ${details.loginUrl}`,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const copyAll = async () => {
+    try {
+      await navigator.clipboard.writeText(text)
+      toast('Invite details copied', { type: 'success' })
+    } catch {
+      toast('Could not copy', { type: 'error' })
+    }
+  }
+
+  return (
+    <Modal open={open} onClose={onClose} title="Share these login details" size="sm">
+      <div className="space-y-3 text-sm">
+        <p className="text-xs text-secondary">
+          Send this to the person (WhatsApp / email). There is no magic link yet —
+          they sign in with workspace + email + password.
+        </p>
+        <div className="space-y-2 rounded-xl border border-border bg-surface-raised px-3 py-3 font-mono text-[12px]">
+          {details.workspace && (
+            <p>
+              Workspace:{' '}
+              <span className="text-primary">{details.workspace}</span>
+            </p>
+          )}
+          {details.email && (
+            <p>
+              Email: <span className="text-primary">{details.email}</span>
+            </p>
+          )}
+          {details.tempPassword && (
+            <p>
+              Temp password:{' '}
+              <span className="text-accent">{details.tempPassword}</span>
+            </p>
+          )}
+        </div>
+        <div className="flex gap-2">
+          <Button type="button" className="flex-1" onClick={copyAll}>
+            <Copy className="mr-1.5 h-3.5 w-3.5" />
+            Copy all
+          </Button>
+          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>
+            Done
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  )
+}
+
 /* ─────────────────────────── Invite Modal ─────────────────────────── */
 
 export function InviteModal({ open, onClose }) {
+  const tenant = useAuthStore((s) => s.tenant)
+  const user = useAuthStore((s) => s.user)
+  const [name, setName] = useState('')
   const [email, setEmail] = useState('')
-  const [message, setMessage] = useState('')
+  const [role, setRole] = useState('project_manager')
+  const [loading, setLoading] = useState(false)
+  const [details, setDetails] = useState(null)
+
+  const canInvite =
+    user?.isPlatformAdmin ||
+    ['admin', 'owner', 'project_manager'].includes(user?.role)
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
@@ -336,132 +408,144 @@ export function InviteModal({ open, onClose }) {
 
   useEffect(() => {
     if (open) {
+      setName('')
       setEmail('')
-      setMessage('')
+      setRole('project_manager')
+      setDetails(null)
     }
   }, [open])
 
-  const inviteLink = `${window.location.origin}/register`
-
-  const copyLink = async () => {
-    try {
-      await navigator.clipboard.writeText(inviteLink)
-      toast('Invite link copied', { type: 'success' })
-    } catch {
-      toast('Could not copy link', { type: 'error' })
+  const sendInvite = async () => {
+    if (!canInvite) {
+      toast('Only admins or PMs can invite', { type: 'error' })
+      return
     }
-  }
-
-  const sendInvite = () => {
     const trimmed = email.trim().toLowerCase()
+    const inviteName = name.trim() || trimmed.split('@')[0]
     if (!trimmed) {
       toast('Enter an email address', { type: 'error' })
       return
     }
-    const existing = users.find((u) => u.email?.toLowerCase() === trimmed)
-    if (existing) {
-      toast(`Already on Cubic: ${existing.name}`, { type: 'info' })
-      return
+    setLoading(true)
+    try {
+      const data = await api('/auth/invite', {
+        method: 'POST',
+        body: JSON.stringify({
+          name: inviteName,
+          email: trimmed,
+          role,
+        }),
+      })
+      setDetails({
+        workspace: tenant?.slug || getTenantSlug(),
+        email: data.user.email,
+        tempPassword: data.tempPassword,
+        loginUrl: window.location.origin + '/login',
+      })
+      toast('Invite created', { type: 'success' })
+    } catch (e) {
+      toast(e.message || 'Invite failed', { type: 'error' })
+    } finally {
+      setLoading(false)
     }
-    const subject = encodeURIComponent('Join me on Cubic')
-    const bodyLines = [
-      message.trim() || "I'm using Cubic to manage projects — join me here:",
-      '',
-      inviteLink,
-    ]
-    const body = encodeURIComponent(bodyLines.join('\n'))
-    window.location.href = `mailto:${encodeURIComponent(email.trim())}?subject=${subject}&body=${body}`
-    toast('Invite email opened', { type: 'success' })
-    setEmail('')
-    setMessage('')
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Invite people" size="sm">
-      <div className="space-y-4">
-        <div className="space-y-2.5">
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[12px] font-medium text-[#8b8b90]">
-              Email address
-            </span>
-            <input
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && sendInvite()}
-              placeholder="teammate@company.com"
-              type="email"
-              className="h-9 w-full rounded-lg border border-[#2e2e32] bg-[#121214] px-3 text-[13px] text-white outline-none placeholder:text-[#6b6b70] focus:border-[#3a3a3e]"
-            />
-          </label>
-          <label className="flex flex-col gap-1.5">
-            <span className="text-[12px] font-medium text-[#8b8b90]">
-              Message (optional)
-            </span>
-            <textarea
-              value={message}
-              onChange={(e) => setMessage(e.target.value)}
-              rows={2}
-              placeholder="Add a personal note…"
-              className="w-full resize-none rounded-lg border border-[#2e2e32] bg-[#121214] px-3 py-2 text-[13px] text-white outline-none placeholder:text-[#6b6b70] focus:border-[#3a3a3e]"
-            />
-          </label>
-        </div>
+    <>
+      <Modal
+        open={open && !details}
+        onClose={onClose}
+        title="Invite people"
+        size="sm"
+      >
+        <div className="space-y-4">
+          {!canInvite && (
+            <p className="text-xs text-secondary">
+              Ask a workspace admin or project manager to invite teammates.
+            </p>
+          )}
+          <Input
+            label="Name"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Teammate name"
+            disabled={!canInvite}
+          />
+          <Input
+            label="Email"
+            type="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            placeholder="teammate@company.com"
+            disabled={!canInvite}
+          />
+          <Select
+            label="Role"
+            value={role}
+            onChange={(e) => setRole(e.target.value)}
+            disabled={!canInvite}
+            options={[
+              { value: 'project_manager', label: 'Project manager' },
+              { value: 'admin', label: 'Admin' },
+              { value: 'designer', label: 'Designer' },
+              { value: 'site_supervisor', label: 'Site supervisor' },
+              { value: 'client', label: 'Client' },
+              { value: 'vendor', label: 'Vendor' },
+            ]}
+          />
 
-        <div className="flex gap-2">
-          <button
+          <Button
             type="button"
-            onClick={copyLink}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg border border-[#2e2e32] text-[12.5px] font-medium text-[#c5c5c8] hover:bg-[#252528] hover:text-white"
-          >
-            <Copy className="h-3.5 w-3.5" />
-            Copy invite link
-          </button>
-          <button
-            type="button"
+            className="w-full"
+            loading={loading}
+            disabled={!canInvite || !email.trim()}
             onClick={sendInvite}
-            className="flex h-9 flex-1 items-center justify-center gap-1.5 rounded-lg bg-[#7B68EE] text-[12.5px] font-semibold text-white hover:bg-[#6a58d9]"
           >
-            <Send className="h-3.5 w-3.5" />
-            Send invite
-          </button>
-        </div>
+            <Send className="mr-1.5 h-3.5 w-3.5" />
+            Create invite
+          </Button>
 
-        <div className="border-t border-[#2e2e32] pt-3">
-          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-[#8b8b90]">
-            <UserPlus className="h-3.5 w-3.5" />
-            Workspace members · {users.length}
-          </p>
-          <div className="max-h-52 space-y-0.5 overflow-y-auto">
-            {users.map((u) => (
-              <div
-                key={u._id}
-                className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[#252528]"
-              >
-                <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#2a2a2e] text-[11px] font-semibold text-white">
-                  {(u.name || '?').charAt(0).toUpperCase()}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-[12.5px] font-medium text-white">
-                    {u.name}
-                  </p>
-                  <p className="truncate text-[11px] text-[#8b8b90]">{u.email}</p>
+          <div className="border-t border-[#2e2e32] pt-3">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-[#8b8b90]">
+              <UserPlus className="h-3.5 w-3.5" />
+              Workspace members · {users.length}
+            </p>
+            <div className="max-h-52 space-y-0.5 overflow-y-auto">
+              {users.map((u) => (
+                <div
+                  key={u.id || u._id}
+                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[#252528]"
+                >
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3a3a3e] text-[10px] font-semibold">
+                    {(u.name || '?')
+                      .split(' ')
+                      .map((n) => n[0])
+                      .join('')
+                      .slice(0, 2)
+                      .toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[12.5px] font-medium text-white">
+                      {u.name}
+                    </p>
+                    <p className="truncate text-[11px] text-[#8b8b90]">{u.email}</p>
+                  </div>
                 </div>
-                {u.role && (
-                  <span className="shrink-0 rounded-full bg-[#252528] px-2 py-0.5 text-[10px] capitalize text-[#8b8b90]">
-                    {u.role.replace(/_/g, ' ')}
-                  </span>
-                )}
-              </div>
-            ))}
-            {users.length === 0 && (
-              <p className="px-2 py-3 text-[12px] text-[#6b6b70]">
-                No members found.
-              </p>
-            )}
+              ))}
+            </div>
           </div>
         </div>
-      </div>
-    </Modal>
+      </Modal>
+
+      <InviteDetailsModal
+        open={!!details}
+        details={details}
+        onClose={() => {
+          setDetails(null)
+          onClose()
+        }}
+      />
+    </>
   )
 }
 
