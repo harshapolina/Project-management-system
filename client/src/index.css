@@ -231,30 +231,133 @@ body {
   background-color: rgb(123 104 238 / 0.12) !important;
 }
 
-/* Landing — clean ClickUp/Jira-inspired atmosphere */
+/* Landing — dark premium, GPU-friendly motion */
 .lp-root {
   scroll-behavior: smooth;
 }
-.lp-hero-product {
+.lp-nav > div,
+.lp-hero-visual,
+.lp-feat-card,
+.lp-stat-card,
+.lp-step-card,
+.lp-test-card,
+.lp-price-card,
+.lp-float-tag {
+  backface-visibility: hidden;
   transform: translateZ(0);
 }
-.lp-feat,
-.lp-mod-cell,
-.lp-replace-row {
+.lp-trust-track {
   will-change: transform;
 }
+
+/* Rotating border highlight for image cards */
+.lp-glow-frame {
+  position: relative;
+  isolation: isolate;
+  border-radius: 22px;
+  padding: 1.5px;
+  background: #1c1c1e;
+  overflow: hidden;
+}
+.lp-glow-frame::before {
+  content: '';
+  position: absolute;
+  z-index: 0;
+  inset: -60%;
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    transparent 60deg,
+    rgba(198, 255, 61, 0.15) 100deg,
+    #c6ff3d 140deg,
+    rgba(59, 130, 246, 0.85) 175deg,
+    rgba(198, 255, 61, 0.35) 210deg,
+    transparent 250deg,
+    transparent 360deg
+  );
+  animation: lp-border-spin 5.5s linear infinite;
+  will-change: transform;
+}
+.lp-glow-frame::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+  pointer-events: none;
+}
+.lp-glow-inner {
+  position: relative;
+  z-index: 1;
+  height: 100%;
+  overflow: hidden;
+  border-radius: 21px;
+  background: #121214;
+}
+.lp-glow-frame--hero {
+  border-radius: 20px;
+  box-shadow:
+    0 40px 100px -24px rgba(0, 0, 0, 0.85),
+    0 0 40px -12px rgba(198, 255, 61, 0.12);
+}
+.lp-glow-frame--hero .lp-glow-inner {
+  border-radius: 19px;
+}
+.lp-glow-frame--sm {
+  border-radius: 14px;
+  padding: 1px;
+}
+.lp-glow-frame--sm .lp-glow-inner {
+  border-radius: 13px;
+}
+.lp-glow-frame--card {
+  height: 100%;
+}
+@keyframes lp-border-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.lp-feat-card:nth-child(2) .lp-glow-frame::before {
+  animation-delay: -1.1s;
+}
+.lp-feat-card:nth-child(3) .lp-glow-frame::before {
+  animation-delay: -2.2s;
+}
+.lp-feat-card:nth-child(4) .lp-glow-frame::before {
+  animation-delay: -3.3s;
+}
+.lp-feat-card:nth-child(5) .lp-glow-frame::before {
+  animation-delay: -4.4s;
+}
+.lp-step-card:nth-child(2) .lp-glow-frame::before {
+  animation-delay: -1.8s;
+}
+.lp-step-card:nth-child(3) .lp-glow-frame::before {
+  animation-delay: -3.5s;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .lp-root {
     scroll-behavior: auto;
   }
-  .lp-hero-product,
   .lp-float-a,
   .lp-float-b,
   .lp-float-c,
-  .lp-chip-a,
-  .lp-chip-b,
-  .lp-chip-c {
+  .lp-trust-track,
+  .lp-glow-frame::before {
     animation: none !important;
     transition: none !important;
+    transform: none !important;
+  }
+  .lp-glow-frame::before {
+    background: linear-gradient(
+      135deg,
+      rgba(198, 255, 61, 0.45),
+      rgba(59, 130, 246, 0.35),
+      transparent 60%
+    );
+    inset: 0;
   }
 }

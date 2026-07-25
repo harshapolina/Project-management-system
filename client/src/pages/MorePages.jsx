@@ -424,7 +424,159 @@ export function SettingsPage() {
           ))}
         </div>
       </Card>
+
+      <CustomFieldsSettings />
     </div>
+  )
+}
+
+function CustomFieldsSettings() {
+  const qc = useQueryClient()
+  const [draft, setDraft] = useState({
+    name: '',
+    type: 'text',
+    options: '',
+  })
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['custom-fields', 'all'],
+    queryFn: () => api('/custom-fields/all'),
+  })
+  const fields = data?.fields || []
+
+  const createField = useMutation({
+    mutationFn: (body) =>
+      api('/custom-fields', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['custom-fields'] })
+      setDraft({ name: '', type: 'text', options: '' })
+      toast('Field created', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const patchField = useMutation({
+    mutationFn: ({ id, ...body }) =>
+      api(`/custom-fields/${id}`, {
+        method: 'PATCH',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['custom-fields'] })
+      toast('Field updated', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const removeField = useMutation({
+    mutationFn: (id) => api(`/custom-fields/${id}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['custom-fields'] })
+      toast('Field deactivated', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  return (
+    <Card className="space-y-4">
+      <div>
+        <p className="font-semibold">Task custom fields</p>
+        <p className="text-xs text-secondary mt-0.5">
+          Workspace-wide fields (e.g. Developer) appear on every task sheet.
+        </p>
+      </div>
+
+      {isLoading ? (
+        <p className="text-xs text-secondary">Loading…</p>
+      ) : fields.length === 0 ? (
+        <p className="text-xs text-secondary">No custom fields yet.</p>
+      ) : (
+        <ul className="space-y-2">
+          {fields.map((f) => (
+            <li
+              key={f._id}
+              className="flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-[13px]"
+            >
+              <div className="min-w-0 flex-1">
+                <p className="font-medium truncate">{f.name}</p>
+                <p className="text-[11px] text-secondary">
+                  {f.slug} · {f.type}
+                  {!f.isActive ? ' · inactive' : ''}
+                </p>
+              </div>
+              {f.isActive ? (
+                <button
+                  type="button"
+                  className="text-[12px] text-secondary hover:text-primary"
+                  onClick={() => removeField.mutate(f._id)}
+                >
+                  Remove
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  className="text-[12px] text-secondary hover:text-primary"
+                  onClick={() =>
+                    patchField.mutate({ id: f._id, isActive: true })
+                  }
+                >
+                  Restore
+                </button>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <div className="space-y-2 border-t border-border pt-3">
+        <p className="text-[12px] font-medium">Add field</p>
+        <Input
+          label="Name"
+          value={draft.name}
+          onChange={(e) => setDraft((s) => ({ ...s, name: e.target.value }))}
+          placeholder="Developer"
+        />
+        <Select
+          label="Type"
+          value={draft.type}
+          onChange={(e) => setDraft((s) => ({ ...s, type: e.target.value }))}
+          options={[
+            { value: 'text', label: 'Text' },
+            { value: 'user', label: 'Person' },
+            { value: 'select', label: 'Select' },
+            { value: 'number', label: 'Number' },
+          ]}
+        />
+        {draft.type === 'select' && (
+          <Input
+            label="Options"
+            value={draft.options}
+            onChange={(e) =>
+              setDraft((s) => ({ ...s, options: e.target.value }))
+            }
+            placeholder="Option A, Option B"
+          />
+        )}
+        <Button
+          disabled={!draft.name.trim() || createField.isPending}
+          onClick={() =>
+            createField.mutate({
+              name: draft.name.trim(),
+              type: draft.type,
+              options:
+                draft.type === 'select'
+                  ? draft.options
+                      .split(',')
+                      .map((o) => o.trim())
+                      .filter(Boolean)
+                  : [],
+            })
+          }
+        >
+          Add field
+        </Button>
+      </div>
+    </Card>
   )
 }
 

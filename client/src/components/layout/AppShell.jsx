@@ -39,6 +39,8 @@ import {
   Diamond,
   Sun,
   Moon,
+  Square,
+  Clock,
   ExternalLink,
   Building2,
   LayoutGrid,
@@ -49,6 +51,10 @@ import { api, useAuthStore } from '../../lib/api'
 import { useUiStore } from '../../store/uiStore'
 import { Avatar, toast } from '../ui'
 import { cn } from '../../lib/utils'
+import {
+  formatTrackedSeconds,
+  liveTrackedSeconds,
+} from '../../lib/taskStatus'
 import {
   GlobalSearchModal,
   InviteModal,
@@ -61,10 +67,25 @@ import {
   CreateChannelModal,
 } from '../CreateModals'
 
+const MORE_PATHS = [
+  '/leads',
+  '/quotations',
+  '/procurement',
+  '/finance',
+  '/portfolio',
+  '/mobile',
+  '/settings',
+  '/platform',
+]
+
+function isMorePath(pathname) {
+  return MORE_PATHS.some((p) => pathname.startsWith(p))
+}
+
 function navFromPath(pathname) {
   if (pathname.startsWith('/planner')) return 'planner'
   if (pathname.startsWith('/projects')) return 'spaces'
-  if (pathname.startsWith('/portfolio')) return 'dashboards'
+  if (isMorePath(pathname)) return 'more'
   return 'home'
 }
 
@@ -110,6 +131,58 @@ export function AppShell({ children }) {
   const [projectModalOpen, setProjectModalOpen] = useState(false)
   const [channelModalOpen, setChannelModalOpen] = useState(false)
   const [projectSpaceId, setProjectSpaceId] = useState('')
+  const [timerTick, setTimerTick] = useState(0)
+  const qc = useQueryClient()
+
+  const { data: activeTimerData } = useQuery({
+    queryKey: ['active-timer'],
+    queryFn: () => api('/tasks/active-timer'),
+    refetchInterval: 15_000,
+  })
+  const activeTimer = activeTimerData?.task || null
+
+  useEffect(() => {
+    if (!activeTimer?.timeTrackingStartedAt) return undefined
+    const id = window.setInterval(() => setTimerTick((n) => n + 1), 1000)
+    return () => window.clearInterval(id)
+  }, [activeTimer?.timeTrackingStartedAt])
+
+  const stopActiveTimer = async () => {
+    if (!activeTimer?._id) return
+    try {
+      const spent = liveTrackedSeconds(
+        activeTimer.timeSpent,
+        activeTimer.timeTrackingStartedAt,
+      )
+      await api(`/tasks/${activeTimer._id}`, {
+        method: 'PATCH',
+        body: JSON.stringify({
+          timeSpent: spent,
+          timeTrackingStartedAt: null,
+          timeTrackingUserId: null,
+        }),
+      })
+      qc.invalidateQueries({ queryKey: ['active-timer'] })
+      qc.invalidateQueries({ queryKey: ['task', activeTimer._id] })
+      qc.invalidateQueries({ queryKey: ['home'] })
+      toast('Timer stopped', { type: 'success' })
+    } catch (e) {
+      toast(e.message || 'Could not stop timer', { type: 'error' })
+    }
+  }
+
+  const openActiveTimerTask = () => {
+    if (!activeTimer) return
+    const projectId =
+      typeof activeTimer.projectId === 'object'
+        ? activeTimer.projectId?._id
+        : activeTimer.projectId
+    if (activeTimer.isPersonal || !projectId) {
+      navigate(`/?view=all`)
+      return
+    }
+    navigate(`/projects/${projectId}/tasks?task=${activeTimer._id}`)
+  }
 
   useEffect(() => {
     const onSpace = () => setSpaceModalOpen(true)
@@ -151,22 +224,10 @@ export function AppShell({ children }) {
     return () => window.removeEventListener('keydown', onKeyDown)
   }, [openSearch])
 
-  // Keep My Tasks / More expanded when those routes are active
+  // Keep My Tasks expanded / More sidebar when those routes are active
   useEffect(() => {
     if (location.pathname === '/') setMyTasksOpen(true)
-    if (
-      [
-        '/leads',
-        '/quotations',
-        '/procurement',
-        '/finance',
-        '/portfolio',
-        '/mobile',
-        '/settings',
-      ].some((p) => location.pathname.startsWith(p))
-    ) {
-      setMoreOpen(true)
-    }
+    if (isMorePath(location.pathname)) setMoreOpen(true)
     if (location.pathname.startsWith('/projects')) {
       setSpacesExpanded(true)
       setTeamOpen(true)
@@ -196,6 +257,8 @@ export function AppShell({ children }) {
   const channels = channelsData?.channels || []
 
   const isPlanner = location.pathname.startsWith('/planner')
+  const isMore = !isPlanner && (moreOpen || isMorePath(location.pathname))
+  const sidebarTitle = isPlanner ? 'Planner' : isMore ? 'More' : 'Home'
 
   const openNewProject = (spaceId = '') => {
     setProjectSpaceId(spaceId || '')
@@ -214,6 +277,13 @@ export function AppShell({ children }) {
     navigate('/planner')
   }
 
+  const goMore = () => {
+    setGlobalNav('more')
+    setMoreOpen(true)
+    setSidebarCollapsed(false)
+    navigate('/leads')
+  }
+
   const openCreate = () => {
     if (isPlanner) {
       useUiStore.getState().requestPlannerCreate()
@@ -225,6 +295,8 @@ export function AppShell({ children }) {
 
   const sidebarBody = isPlanner ? (
     <PlannerSidebar />
+  ) : isMore ? (
+    <MoreSidebar user={user} />
   ) : (
     <HomeSidebar
       user={user}
@@ -233,8 +305,6 @@ export function AppShell({ children }) {
       channels={channels}
       myTasksOpen={myTasksOpen}
       setMyTasksOpen={setMyTasksOpen}
-      moreOpen={moreOpen}
-      setMoreOpen={setMoreOpen}
       spacesExpanded={spacesExpanded}
       toggleSpacesExpanded={toggleSpacesExpanded}
       teamOpen={teamOpen}
@@ -288,14 +358,9 @@ export function AppShell({ children }) {
         <Users className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </RailIcon>
       <RailIcon
-        active={moreOpen || globalNav === 'more'}
+        active={isMore || globalNav === 'more'}
         title="More"
-        onClick={() => {
-          setMoreOpen(true)
-          setGlobalNav('more')
-          setSidebarCollapsed(false)
-          if (isPlanner) navigate('/?view=all')
-        }}
+        onClick={goMore}
       >
         <LayoutGrid className="h-[18px] w-[18px]" strokeWidth={1.75} />
       </RailIcon>
@@ -327,7 +392,7 @@ export function AppShell({ children }) {
   )
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-[#121214] text-white">
+    <div className="flex h-[100dvh] overflow-hidden bg-[#0F0F10] text-white">
       {/* Desktop far-left rail */}
       <aside className="z-50 hidden w-[52px] shrink-0 flex-col items-center border-r border-[#2e2e32] bg-[#0f0f10] py-2.5 lg:flex">
         {rail}
@@ -338,7 +403,7 @@ export function AppShell({ children }) {
         <aside className="z-40 hidden w-[260px] shrink-0 flex-col border-r border-[#2e2e32] bg-[#1c1c1e] lg:flex">
           <div className="flex h-12 items-center gap-1 border-b border-[#2e2e32]/60 px-2">
             <span className="flex-1 truncate px-1 text-[14px] font-semibold tracking-tight">
-              {isPlanner ? 'Planner' : 'Home'}
+              {sidebarTitle}
             </span>
             <IconBtn title="Search" onClick={openSearch}>
               <Search className="h-3.5 w-3.5" />
@@ -417,7 +482,7 @@ export function AppShell({ children }) {
             <aside className="flex min-w-0 flex-1 flex-col bg-[#1c1c1e]">
               <div className="flex h-12 items-center gap-2 border-b border-[#2e2e32] px-3">
                 <span className="flex-1 truncate text-[14px] font-semibold">
-                  {isPlanner ? 'Planner' : 'Home'}
+                  {sidebarTitle}
                 </span>
                 <button
                   type="button"
@@ -446,8 +511,8 @@ export function AppShell({ children }) {
       )}
 
       {/* Main column */}
-      <div className="relative flex min-w-0 flex-1 flex-col bg-[#121214]">
-        <header className="relative flex h-12 shrink-0 items-center gap-2 border-b border-[#2e2e32] px-2 sm:px-4">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-[#0F0F10]">
+        <header className="relative flex h-14 shrink-0 items-center gap-2 border-b border-[#2e2e32] px-2 sm:px-4">
           <button
             type="button"
             className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#c5c5c8] hover:bg-[#1c1c1e] lg:hidden"
@@ -457,7 +522,7 @@ export function AppShell({ children }) {
             <Menu className="h-5 w-5" />
           </button>
 
-          <div className="hidden text-[12px] text-[#8b8b90] md:block">
+          <div className="hidden text-[13px] font-semibold tracking-tight text-white md:block">
             Cubic Studio
           </div>
 
@@ -473,6 +538,39 @@ export function AppShell({ children }) {
           </div>
 
           <div className="flex shrink-0 items-center gap-0.5">
+            {activeTimer?.timeTrackingStartedAt ? (
+              <div className="mr-1 flex items-center gap-1 rounded-full border border-red-500/30 bg-red-500/10 pl-2 pr-1 py-0.5">
+                <button
+                  type="button"
+                  onClick={openActiveTimerTask}
+                  title={activeTimer.title || 'Open task'}
+                  className="flex max-w-[140px] items-center gap-1.5 text-left sm:max-w-[200px]"
+                >
+                  <span className="relative flex h-2 w-2 shrink-0">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                  </span>
+                  <Clock className="hidden h-3 w-3 shrink-0 text-red-400 sm:block" />
+                  <span className="truncate text-[11px] font-medium text-white sm:text-[12px]">
+                    {formatTrackedSeconds(
+                      liveTrackedSeconds(
+                        activeTimer.timeSpent,
+                        activeTimer.timeTrackingStartedAt,
+                      ) +
+                        timerTick * 0,
+                    )}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={stopActiveTimer}
+                  title="Stop timer"
+                  className="flex h-6 w-6 items-center justify-center rounded-full text-red-400 hover:bg-red-500/20"
+                >
+                  <Square className="h-2.5 w-2.5 fill-current" />
+                </button>
+              </div>
+            ) : null}
             <TopIcon
               title={resolvedTheme === 'light' ? 'Dark mode' : 'Light mode'}
               onClick={() => toggleTheme()}
@@ -506,7 +604,7 @@ export function AppShell({ children }) {
           </div>
         </header>
 
-        <main className="flex min-h-0 flex-1 flex-col overflow-hidden pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden pb-[calc(3.75rem+env(safe-area-inset-bottom))] lg:pb-0">
           {children}
         </main>
 
@@ -1048,6 +1146,28 @@ function PlannerSidebar() {
   )
 }
 
+/* ─── More sidebar (apps) ─── */
+
+function MoreSidebar({ user }) {
+  return (
+    <div className="space-y-0.5">
+      <p className="mb-2 px-2 text-[11px] font-medium uppercase tracking-wide text-[#8b8b90]">
+        Apps
+      </p>
+      <SideItem to="/leads" icon={Users} label="Leads / CRM" />
+      <SideItem to="/quotations" icon={FileSpreadsheet} label="Quotations & BOQ" />
+      <SideItem to="/procurement" icon={Truck} label="Procurement" />
+      <SideItem to="/finance" icon={Wallet} label="Finance" />
+      <SideItem to="/portfolio" icon={BarChart3} label="Dashboards" />
+      <SideItem to="/mobile" icon={Smartphone} label="Site mode" />
+      <SideItem to="/settings" icon={Settings} label="Settings" />
+      {user?.isPlatformAdmin && (
+        <SideItem to="/platform" icon={Building2} label="Platform" />
+      )}
+    </div>
+  )
+}
+
 /* ─── Home sidebar (ClickUp-style) ─── */
 
 function HomeSidebar({
@@ -1057,8 +1177,6 @@ function HomeSidebar({
   channels = [],
   myTasksOpen,
   setMyTasksOpen,
-  moreOpen,
-  setMoreOpen,
   spacesExpanded,
   toggleSpacesExpanded,
   teamOpen,
@@ -1134,26 +1252,6 @@ function HomeSidebar({
           <SubSideItem view="today" label="Today & Overdue" />
           <SubSideItem view="personal" label="Personal List" />
           <SubSideItem view="history" label="Done history" />
-        </div>
-      )}
-
-      {/* More apps — opened from far-left rail (LayoutGrid), not a nested sidebar toggle */}
-      {moreOpen && (
-        <div className="mb-2 space-y-0.5 rounded-lg border border-[#2e2e32] bg-[#18181a] p-1.5">
-          <p className="flex items-center gap-1.5 px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-[#8b8b90]">
-            <LayoutGrid className="h-3 w-3" />
-            More
-          </p>
-          <SideItem to="/leads" icon={Users} label="Leads / CRM" dense />
-          <SideItem to="/quotations" icon={FileSpreadsheet} label="Quotations & BOQ" dense />
-          <SideItem to="/procurement" icon={Truck} label="Procurement" dense />
-          <SideItem to="/finance" icon={Wallet} label="Finance" dense />
-          <SideItem to="/portfolio" icon={BarChart3} label="Dashboards" dense />
-          <SideItem to="/mobile" icon={Smartphone} label="Site mode" dense />
-          <SideItem to="/settings" icon={Settings} label="Settings" dense />
-          {user?.isPlatformAdmin && (
-            <SideItem to="/platform" icon={Building2} label="Platform" dense />
-          )}
         </div>
       )}
 

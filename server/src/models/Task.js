@@ -60,6 +60,23 @@ const taskSchema = new mongoose.Schema(
     },
     dependsOn: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     isMilestone: { type: Boolean, default: false },
+    tags: [{ type: String }],
+    timeEstimate: { type: Number, default: null }, // minutes
+    /** Accumulated tracked seconds (stopped segments). */
+    timeSpent: { type: Number, default: 0 },
+    /** When set, timer is running from this timestamp. */
+    timeTrackingStartedAt: { type: Date, default: null },
+    /** Who started the running timer (for top-bar indicator). */
+    timeTrackingUserId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    customFields: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
   },
   { timestamps: true },
 )

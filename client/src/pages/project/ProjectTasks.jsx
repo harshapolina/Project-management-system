@@ -26,6 +26,7 @@ import { api } from '../../lib/api'
 import { Avatar, toast } from '../../components/ui'
 import { ClickUpListToolbar } from './ProjectWorkspace'
 import { TaskDetailPanel } from './TaskDetailPanel'
+import { StatusBadge } from '../../components/tasks'
 import { cn } from '../../lib/utils'
 
 const BOARD = [
@@ -119,8 +120,9 @@ export function ProjectTasks({ forcedView }) {
         projectName={project?.name}
         initialStatus={createStatus}
         onClose={() => setCreateOpen(false)}
-        onCreated={() => {
+        onCreated={(task) => {
           setCreateOpen(false)
+          if (task?._id) setSelectedId(task._id)
           qc.invalidateQueries({ queryKey: ['tasks', id] })
           qc.invalidateQueries({ queryKey: ['home'] })
         }}
@@ -254,21 +256,7 @@ export function ProjectTasks({ forcedView }) {
                   ) : (
                     <ChevronDown className="h-3.5 w-3.5 text-[#8b8b90]" />
                   )}
-                  <span
-                    className="rounded px-1.5 py-0.5 text-[11px] font-bold tracking-wide text-white"
-                    style={{
-                      background:
-                        col.key === 'todo'
-                          ? '#3a3a3e'
-                          : col.key === 'done'
-                            ? '#065f46'
-                            : col.key === 'in_progress'
-                              ? '#1e3a5f'
-                              : '#3b2f1a',
-                    }}
-                  >
-                    {col.label}
-                  </span>
+                  <StatusBadge status={col.key} size="sm" />
                   <span className="text-[12px] text-[#6b6b70]">{list.length}</span>
                 </button>
 
@@ -471,7 +459,7 @@ function BoardView({
             )}
           >
             <div className="flex items-center gap-2 border-b border-[#2e2e32] px-3 py-2 text-[11px] font-semibold tracking-wide text-[#8b8b90]">
-              {col.label}
+              <StatusBadge status={col.key} size="sm" />
               <span className="rounded bg-[#252528] px-1.5 text-[10px]">
                 {byStatus[col.key]?.length || 0}
               </span>
@@ -526,14 +514,7 @@ function BoardView({
 }
 
 function StatusPill({ status }) {
-  const label =
-    BOARD.find((b) => b.key === status)?.label ||
-    String(status || '').replace(/_/g, ' ').toUpperCase()
-  return (
-    <span className="inline-flex rounded px-1.5 py-0.5 text-[10px] font-semibold tracking-wide bg-[#3a3a3e] text-[#c5c5c8]">
-      {label}
-    </span>
-  )
+  return <StatusBadge status={status} size="sm" />
 }
 
 function GanttView({ tasks, onSelect, onReschedule }) {

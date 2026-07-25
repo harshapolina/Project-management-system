@@ -26,13 +26,13 @@ export function DataTable({
   return (
     <div
       className={cn(
-        'overflow-hidden rounded-[18px] border',
+        'min-w-0 w-full max-w-full overflow-hidden rounded-[18px] border',
         light ? 'border-border-light bg-white' : 'border-border bg-surface',
         className,
       )}
     >
-      <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+      <div className="min-w-0 w-full overflow-x-auto overscroll-x-contain">
+        <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
             <tr
               className={cn(
@@ -46,7 +46,7 @@ export function DataTable({
                 <th
                   key={col.key}
                   className={cn(
-                    'px-4 py-3 font-medium',
+                    'whitespace-nowrap px-3 py-3 font-medium sm:px-4',
                     col.align === 'right' && 'text-right',
                     col.className,
                   )}
@@ -73,7 +73,7 @@ export function DataTable({
                   <td
                     key={col.key}
                     className={cn(
-                      'px-4 py-3',
+                      'px-3 py-3 sm:px-4',
                       light ? 'text-on-light' : 'text-primary',
                       col.numeric && 'tabular-nums',
                       col.align === 'right' && 'text-right',

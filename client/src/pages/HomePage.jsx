@@ -5,6 +5,7 @@ import {
   format,
   isToday,
   isYesterday,
+  isTomorrow,
   isBefore,
   startOfDay,
   formatDistanceToNow,
@@ -21,14 +22,13 @@ import {
   Plus,
   Info,
   MessageSquare,
-  Sparkles,
   BookHeart,
   X,
   History,
 } from 'lucide-react'
 import { api, useAuthStore } from '../lib/api'
 import { Avatar, toast } from '../components/ui'
-import { TaskDetailPanel } from './project/TaskDetailPanel'
+import { TaskDetailPanel } from '../components/tasks/TaskDetailPanel'
 import { cn } from '../lib/utils'
 import {
   clearGcalSession,
@@ -136,8 +136,6 @@ export function HomePage() {
   const [selected, setSelected] = useState(null)
   const [createPersonal, setCreatePersonal] = useState(false)
   const [personalDraft, setPersonalDraft] = useState('')
-  const [standup, setStandup] = useState('')
-  const [standupBusy, setStandupBusy] = useState(false)
   const [assignedSearch, setAssignedSearch] = useState('')
   const [historySearch, setHistorySearch] = useState('')
   const [collapsed, setCollapsed] = useState({})
@@ -318,40 +316,6 @@ export function HomePage() {
     toast('Calendar refreshed', { type: 'success' })
   }
 
-  const generateStandup = () => {
-    setStandupBusy(true)
-    const todayN = (tasks.today || []).length
-    const overdueN = (tasks.overdue || []).length
-    const nextN = (tasks.next || []).length
-    const doneN = (tasks.done || []).length
-    const pri = (tasks.priorities || []).slice(0, 3)
-    const commentsN = (home?.assignedComments || []).length
-    const lines = [
-      `Stand-up for ${firstName} · ${format(new Date(), 'EEE, MMM d')}`,
-      '',
-      `Completed recently: ${doneN} in Done history.`,
-      `Carry-over: ${overdueN} overdue.`,
-      `Today: ${todayN} due.`,
-      `Next: ${nextN} in the next two weeks.`,
-      commentsN
-        ? `Open assigned comments: ${commentsN}.`
-        : 'No open assigned comments.',
-      '',
-      'Top priorities:',
-      ...(pri.length
-        ? pri.map(
-            (t, i) =>
-              `  ${i + 1}. [${(t.priority || 'medium').toUpperCase()}] ${t.title}`,
-          )
-        : ['  None flagged urgent/high right now.']),
-    ]
-    window.setTimeout(() => {
-      setStandup(lines.join('\n'))
-      setStandupBusy(false)
-      toast('Daily summary ready', { type: 'success' })
-    }, 450)
-  }
-
   const assignedByStatus = useMemo(() => {
     let list = tasks.assigned || []
     if (assignedSearch.trim()) {
@@ -396,9 +360,6 @@ export function HomePage() {
     setCreatePersonal,
     personalDraft,
     setPersonalDraft,
-    standup,
-    standupBusy,
-    generateStandup,
     gcalStatus,
     gcalStatusLoading,
     gcalConnected,
@@ -430,13 +391,13 @@ export function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="h-full space-y-4 overflow-y-auto p-3 sm:p-5">
+      <div className="h-full space-y-4 overflow-y-auto bg-[#0F0F10] p-4 sm:p-6">
         <div className="h-8 w-48 animate-pulse rounded-lg bg-[#1c1c1e]" />
         <div className="grid gap-4 lg:grid-cols-2">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-[280px] animate-pulse rounded-xl bg-[#1c1c1e]"
+              className="h-[280px] animate-pulse rounded-[10px] bg-[#1c1c1e]"
             />
           ))}
         </div>
@@ -445,45 +406,47 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#121214]">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-[#2e2e32] px-5 py-3">
-        <div className="min-w-0">
-          <div className="flex items-center gap-2">
-            <h1 className="text-[15px] font-semibold tracking-tight text-white">
-              My Tasks
-            </h1>
-            <span className="rounded-full bg-[#252528] px-2 py-0.5 text-[11px] text-[#8b8b90]">
-              {meta.title}
-            </span>
+    <div className="flex h-full min-h-0 flex-col bg-[#0F0F10]">
+      <header className="flex shrink-0 flex-col gap-3 border-b border-[#2e2e32] px-4 py-4 sm:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-[18px] font-semibold tracking-tight text-white">
+                My Tasks
+              </h1>
+              <span className="rounded-full bg-[#252528] px-2.5 py-0.5 text-[11px] font-medium text-[#c5c5c8]">
+                {meta.title}
+              </span>
+            </div>
+            <p className="mt-1 text-[13px] text-[#8b8b90]">{meta.hint}</p>
           </div>
-          <p className="mt-0.5 text-[12px] text-[#6b6b70]">{meta.hint}</p>
-        </div>
 
-        <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#2e2e32] bg-[#1c1c1e] p-0.5">
-          {FILTER_PILLS.map((f) => (
-            <button
-              key={f.id}
-              type="button"
-              onClick={() => setParams({ view: f.id })}
-              className={cn(
-                'rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
-                view === f.id
-                  ? 'bg-[#2a2a2e] text-white shadow-sm'
-                  : 'text-[#8b8b90] hover:text-white',
-              )}
-            >
-              {f.label}
-            </button>
-          ))}
+          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#2e2e32] bg-[#1c1c1e] p-0.5">
+            {FILTER_PILLS.map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setParams({ view: f.id })}
+                className={cn(
+                  'rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
+                  view === f.id
+                    ? 'bg-[#2a2a2e] text-white shadow-sm'
+                    : 'text-[#8b8b90] hover:text-white',
+                )}
+              >
+                {f.label}
+              </button>
+            ))}
+          </div>
         </div>
       </header>
 
-      <div className="min-h-0 flex-1 overflow-y-auto px-3 py-4 sm:px-5 sm:py-5">
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
         <motion.p
           key={view}
           initial={{ opacity: 0, y: 4 }}
           animate={{ opacity: 1, y: 0 }}
-          className="mb-5 text-[22px] font-semibold tracking-tight text-white"
+          className="mb-6 text-[26px] font-semibold tracking-tight text-white sm:text-[28px]"
         >
           {greeting}
         </motion.p>
@@ -510,43 +473,39 @@ export function HomePage() {
       </div>
 
       <TaskDetailPanel
-        open={!!selected && !selected.isPersonal && !!selected.projectId}
+        open={!!selected}
         mode="edit"
         taskId={selected?.taskId}
-        projectId={selected?.projectId}
+        projectId={
+          selected?.isPersonal
+            ? undefined
+            : selected?.projectId
+        }
         projectName={selected?.projectName}
+        isPersonal={!!selected?.isPersonal}
         onClose={() => setSelected(null)}
       />
-
-      <AnimatePresence>
-        {selected?.isPersonal && (
-          <PersonalQuickSheet
-            task={selected}
-            onClose={() => setSelected(null)}
-            onComplete={() => {
-              toggleTask.mutate(selected.taskId)
-              setSelected(null)
-            }}
-          />
-        )}
-      </AnimatePresence>
     </div>
   )
 }
 
-/* ─── ALL: every card related to me ─── */
+/* ─── ALL: Everything dashboard — exact 6-card grid ─── */
 
 function AllOverview(props) {
   return (
-    <div className="grid gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 lg:grid-cols-2 lg:gap-5">
+      {/* Row 1 */}
       <AssignedCard {...props} preview />
       <TodayPreview {...props} />
+      {/* Row 2 */}
       <PersonalCard {...props} preview />
       <CommentsCard comments={props.home?.assignedComments || []} />
+      {/* Row 3 */}
       <PrioritiesCard
         priorities={props.tasks.priorities || []}
         onToggle={props.onToggle}
         onOpenTask={props.onOpenTask}
+        onSeeAll={() => props.go('assigned')}
       />
       <AgendaCard
         gcalStatus={props.gcalStatus}
@@ -568,12 +527,6 @@ function AllOverview(props) {
         cubicAgenda={props.home?.agenda || []}
         onOpenTask={props.onOpenTask}
       />
-      <StandupCard
-        standup={props.standup}
-        busy={props.standupBusy}
-        onGenerate={props.generateStandup}
-      />
-      <HistoryCard {...props} preview />
     </div>
   )
 }
@@ -639,21 +592,22 @@ function TodayFocus(props) {
 function TodayPreview(props) {
   const overdue = props.tasks.overdue || []
   const today = props.tasks.today || []
-  const items = [...overdue, ...today].slice(0, 6)
+  const items = [...overdue, ...today].slice(0, 5)
   return (
     <Card
       title="Today & Overdue"
-      accent="#f59e0b"
+      accent="#ef4444"
       badge={overdue.length + today.length}
       badgeTone={overdue.length ? 'danger' : undefined}
       action={<SeeAll onClick={() => props.go('today')} />}
     >
       <TaskList
         items={items}
-        empty="Nothing due today or overdue."
+        empty="Nothing due today — you're all caught up."
         onToggle={props.onToggle}
         onOpenTask={props.onOpenTask}
         showPriority
+        tone={overdue.length ? 'danger' : undefined}
       />
     </Card>
   )
@@ -676,6 +630,18 @@ function AssignedCard({
   focus,
 }) {
   const total = (tasks.assigned || []).length
+  const PREVIEW_CAP = 5
+
+  // In preview mode, distribute ~5 visible rows across status groups
+  let remaining = PREVIEW_CAP
+  const previewGroups = STATUS_GROUPS.map((g) => {
+    const all = assignedByStatus[g.key] || []
+    if (!preview) return { ...g, items: all }
+    const take = Math.min(all.length, remaining)
+    remaining -= take
+    return { ...g, items: all.slice(0, take) }
+  }).filter((g) => g.items.length > 0 || (!preview && !assignedSearch))
+
   return (
     <Card
       title="Assigned to me"
@@ -691,7 +657,7 @@ function AssignedCard({
                 value={assignedSearch}
                 onChange={(e) => setAssignedSearch(e.target.value)}
                 placeholder="Filter"
-                className="h-7 w-[120px] rounded-md border border-[#2e2e32] bg-[#121214] pl-7 pr-2 text-[12px] outline-none focus:border-[#3a3a3e]"
+                className="h-7 w-[120px] rounded-md border border-[#2e2e32] bg-[#0F0F10] pl-7 pr-2 text-[12px] outline-none focus:border-[#3a3a3e]"
               />
             </div>
           )}
@@ -705,11 +671,9 @@ function AssignedCard({
           text="No open tasks assigned to you."
         />
       ) : (
-        STATUS_GROUPS.map((g) => {
-          let items = assignedByStatus[g.key] || []
-          if (preview) items = items.slice(0, 4)
-          if (!items.length && (preview || assignedSearch)) return null
-          if (preview && !items.length) return null
+        (preview ? previewGroups : STATUS_GROUPS).map((g) => {
+          const items = preview ? g.items : assignedByStatus[g.key] || []
+          if (!items.length) return null
           const open = preview ? true : !collapsed[g.key]
           return (
             <div key={g.key} className="mb-1">
@@ -737,8 +701,8 @@ function AssignedCard({
                   </span>
                 </button>
               )}
-              {preview && items.length > 0 && (
-                <div className="mb-1 px-1 text-[10px] font-bold tracking-wide text-[#6b6b70]">
+              {preview && (
+                <div className="mb-1.5 px-1 text-[10px] font-bold uppercase tracking-[0.08em] text-[#6b6b70]">
                   {g.label}
                 </div>
               )}
@@ -792,7 +756,7 @@ function PersonalCard({
         value={personalDraft}
         onChange={(e) => setPersonalDraft(e.target.value)}
         placeholder="What do you need to do?"
-        className="h-9 flex-1 rounded-md border border-[#2e2e32] bg-[#121214] px-3 text-[13px] outline-none focus:border-[#3a3a3e]"
+        className="h-9 flex-1 rounded-md border border-[#2e2e32] bg-[#0F0F10] px-3 text-[13px] outline-none focus:border-[#3a3a3e]"
       />
       <button
         type="submit"
@@ -858,10 +822,10 @@ function PersonalCard({
       <div className="mx-auto grid w-full max-w-5xl gap-4 lg:grid-cols-2">
         <Card
           title="Personal List"
-          accent="#C6FF3D"
+          accent="#22c55e"
           badge={personal.length}
           tall
-          info="Private to you"
+          info="Private to you — only you can see this list"
         >
           {body}
         </Card>
@@ -873,10 +837,10 @@ function PersonalCard({
   return (
     <Card
       title="Personal List"
-      accent="#C6FF3D"
+      accent="#22c55e"
       badge={personal.length}
       tall={tall || focus}
-      info="Private to you"
+      info="Private to you — only you can see this list"
       action={preview ? <SeeAll onClick={() => go('personal')} /> : null}
     >
       {body}
@@ -991,12 +955,12 @@ function CommentsCard({ comments = [] }) {
   return (
     <Card
       title="Assigned comments"
-      accent="#7c9cff"
+      accent="#8b5cf6"
       badge={list.length}
       action={
         <Link
           to="/assigned-comments"
-          className="text-[11px] text-[#9b8cff] hover:underline"
+          className="text-[11px] font-medium text-[#9b8cff] hover:underline"
         >
           Open all
         </Link>
@@ -1010,11 +974,11 @@ function CommentsCard({ comments = [] }) {
               strokeWidth={1.4}
             />
           }
-          text="You don’t have any assigned comments."
+          text="You don't have any assigned comments."
         />
       ) : (
         <ul className="space-y-1">
-          {list.slice(0, 8).map((c) => {
+          {list.slice(0, 5).map((c) => {
             const task = c.taskId
             const projectId =
               typeof task?.projectId === 'object'
@@ -1058,16 +1022,17 @@ function CommentsCard({ comments = [] }) {
   )
 }
 
-function PrioritiesCard({ priorities, onToggle, onOpenTask }) {
+function PrioritiesCard({ priorities, onToggle, onOpenTask, onSeeAll }) {
   return (
     <Card
       title="Priorities"
       accent="#ef4444"
       badge={priorities.length}
-      info="Urgent & high"
+      info="Urgent & high priority across all your work"
+      action={onSeeAll ? <SeeAll onClick={onSeeAll} /> : null}
     >
       <TaskList
-        items={priorities}
+        items={(priorities || []).slice(0, 5)}
         empty="No urgent or high-priority tasks."
         onToggle={onToggle}
         onOpenTask={onOpenTask}
@@ -1100,9 +1065,9 @@ function AgendaCard({
   return (
     <Card
       title="Agenda"
-      accent="#7B68EE"
+      accent="#a855f7"
       badge={connected ? events.length : undefined}
-      className={cn('min-h-[320px]', className)}
+      className={cn('min-h-[280px]', className)}
       action={
         connected ? (
           <div className="flex items-center gap-2">
@@ -1129,121 +1094,101 @@ function AgendaCard({
           Checking calendar…
         </p>
       ) : !connected ? (
-        <div className="flex flex-col items-center px-3 py-8 text-center sm:flex-row sm:items-start sm:gap-8 sm:text-left">
-          <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#252528] sm:mb-0">
-            <Calendar className="h-7 w-7 text-[#9b8cff]" strokeWidth={1.5} />
+        <div className="flex flex-col items-center px-3 py-8 text-center">
+          <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#252528]">
+            <Calendar className="h-7 w-7 text-[#a855f7]" strokeWidth={1.5} />
           </div>
-          <div className="min-w-0 flex-1">
-            <p className="text-[14px] font-medium text-white">
-              Connect your Google Calendar
-            </p>
-            <p className="mt-1 max-w-lg text-[13px] leading-relaxed text-[#8b8b90]">
-              Click Connect — Google asks you to sign in and allow calendar
-              access. Your events then appear here.
-            </p>
+          <p className="text-[14px] font-semibold text-white">
+            Connect your Google Calendar
+          </p>
+          <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-[#8b8b90]">
+            Click Connect — Google asks you to sign in and allow calendar
+            access. Your events then appear here.
+          </p>
 
-            {showSetup ? (
-              <div className="mt-4 rounded-xl border border-[#2e2e32] bg-[#121214] p-4 text-left">
-                <p className="text-[13px] font-medium text-white">
-                  One-time workspace setup
-                </p>
-                <p className="mt-1 text-[12px] leading-relaxed text-[#8b8b90]">
-                  Create an OAuth Client ID in Google Cloud (Web application),
-                  add origin{' '}
-                  <code className="text-[#c5c5c8]">http://localhost:5173</code>,
-                  enable Calendar API, then paste the Client ID below. Teammates
-                  never do this — they only click Connect.
-                </p>
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noreferrer"
-                  className="mt-2 inline-block text-[12px] text-[#9b8cff] hover:underline"
+          {showSetup ? (
+            <div className="mt-4 w-full rounded-xl border border-[#2e2e32] bg-[#0F0F10] p-4 text-left">
+              <p className="text-[13px] font-medium text-white">
+                One-time workspace setup
+              </p>
+              <p className="mt-1 text-[12px] leading-relaxed text-[#8b8b90]">
+                Create an OAuth Client ID in Google Cloud (Web application),
+                add origin{' '}
+                <code className="text-[#c5c5c8]">http://localhost:5173</code>,
+                enable Calendar API, then paste the Client ID below.
+              </p>
+              <a
+                href="https://console.cloud.google.com/apis/credentials"
+                target="_blank"
+                rel="noreferrer"
+                className="mt-2 inline-block text-[12px] text-[#9b8cff] hover:underline"
+              >
+                Open Google Cloud Credentials →
+              </a>
+              <input
+                value={clientDraft}
+                onChange={(e) => setClientDraft(e.target.value)}
+                placeholder="xxxx.apps.googleusercontent.com"
+                className="mt-3 h-10 w-full rounded-md border border-[#2e2e32] bg-[#1c1c1e] px-3 text-[13px] text-white outline-none focus:border-[#a855f7]"
+              />
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  disabled={savingClientId || connecting}
+                  onClick={onSaveAndConnect}
+                  className="rounded-md bg-[#a855f7] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#9333ea] disabled:opacity-50"
                 >
-                  Open Google Cloud Credentials →
-                </a>
-                <input
-                  value={clientDraft}
-                  onChange={(e) => setClientDraft(e.target.value)}
-                  placeholder="xxxx.apps.googleusercontent.com"
-                  className="mt-3 h-10 w-full rounded-md border border-[#2e2e32] bg-[#1c1c1e] px-3 text-[13px] text-white outline-none focus:border-[#7B68EE]"
+                  {savingClientId || connecting
+                    ? 'Working…'
+                    : 'Save & connect Google'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSetup(false)}
+                  className="rounded-md px-3 py-2 text-[12px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : (
+            <button
+              type="button"
+              disabled={connecting}
+              onClick={() => onConnectGoogle()}
+              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#0F0F10] px-4 py-2.5 text-[13px] text-[#e8e8ea] hover:bg-[#252528] disabled:opacity-50"
+            >
+              <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
+                <path
+                  fill="#4285F4"
+                  d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
                 />
-                <div className="mt-3 flex flex-wrap gap-2">
-                  <button
-                    type="button"
-                    disabled={savingClientId || connecting}
-                    onClick={onSaveAndConnect}
-                    className="rounded-md bg-[#7B68EE] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#6a58d9] disabled:opacity-50"
-                  >
-                    {savingClientId || connecting
-                      ? 'Working…'
-                      : 'Save & connect Google'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setShowSetup(false)}
-                    className="rounded-md px-3 py-2 text-[12px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-4 flex flex-wrap gap-2">
-                <button
-                  type="button"
-                  disabled={connecting}
-                  onClick={() => onConnectGoogle()}
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#121214] px-3 py-2.5 text-[13px] text-[#e8e8ea] hover:bg-[#252528] disabled:opacity-50"
-                >
-                  <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
-                    <path
-                      fill="#4285F4"
-                      d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
-                    />
-                    <path
-                      fill="#34A853"
-                      d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
-                    />
-                    <path
-                      fill="#FBBC05"
-                      d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
-                    />
-                    <path
-                      fill="#EA4335"
-                      d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
-                    />
-                  </svg>
-                  {connecting ? 'Opening Google…' : 'Google Calendar'}
-                  <span className="rounded bg-[#7B68EE] px-2 py-0.5 text-[11px] font-semibold text-white">
-                    Connect
-                  </span>
-                </button>
-                <button
-                  type="button"
-                  disabled
-                  title="Coming soon"
-                  className="inline-flex items-center gap-2 rounded-lg border border-[#2e2e32] px-3 py-2.5 text-[13px] text-[#6b6b70] opacity-60"
-                >
-                  Microsoft Outlook
-                  <span className="rounded bg-[#2a2a2e] px-2 py-0.5 text-[11px]">
-                    Soon
-                  </span>
-                </button>
-              </div>
-            )}
-          </div>
+                <path
+                  fill="#34A853"
+                  d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+                />
+                <path
+                  fill="#FBBC05"
+                  d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+                />
+                <path
+                  fill="#EA4335"
+                  d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+                />
+              </svg>
+              {connecting ? 'Opening Google…' : 'Connect'}
+            </button>
+          )}
         </div>
       ) : (
         <div>
-          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#121214] px-3 py-2 text-[12px]">
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#0F0F10] px-3 py-2 text-[12px]">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
             <span className="text-[#c5c5c8]">
               Connected to{' '}
               <strong className="text-white">Google Calendar</strong>
               {email ? ` · ${email}` : ''}
             </span>
-            <span className="text-[#6b6b70]">· next 30 days</span>
           </div>
 
           {eventsLoading ? (
@@ -1252,18 +1197,20 @@ function AgendaCard({
             </p>
           ) : events.length === 0 ? (
             <p className="py-8 text-center text-[13px] text-[#6b6b70]">
-              No upcoming events in your Google calendars for the next 30 days.
+              No upcoming events for the next 30 days.
             </p>
           ) : (
-            <ul className="max-h-[360px] space-y-0.5 overflow-y-auto">
-              {events.map((ev) => {
+            <ul className="max-h-[320px] space-y-0.5 overflow-y-auto">
+              {events.slice(0, 8).map((ev) => {
                 const d = new Date(ev.start)
                 const timeLabel = ev.allDay ? 'All day' : format(d, 'h:mm a')
                 const dayLabel = isToday(d)
                   ? 'Today'
                   : isYesterday(d)
                     ? 'Yesterday'
-                    : format(d, 'EEE, MMM d')
+                    : isTomorrow(d)
+                      ? 'Tomorrow'
+                      : format(d, 'EEE, MMM d')
                 return (
                   <li key={`${ev.calendarId}-${ev.id}-${ev.start}`}>
                     <a
@@ -1274,10 +1221,10 @@ function AgendaCard({
                     >
                       <div
                         className="mt-1 h-8 w-1 shrink-0 rounded-full"
-                        style={{ background: ev.calendarColor || '#7B68EE' }}
+                        style={{ background: ev.calendarColor || '#a855f7' }}
                       />
                       <div className="w-[88px] shrink-0">
-                        <p className="text-[12px] font-medium text-[#9b8cff]">
+                        <p className="text-[12px] font-medium text-[#c4b5fd]">
                           {dayLabel}
                         </p>
                         <p className="text-[11px] text-[#6b6b70]">{timeLabel}</p>
@@ -1290,11 +1237,6 @@ function AgendaCard({
                           {ev.calendarName}
                           {ev.location ? ` · ${ev.location}` : ''}
                         </p>
-                        {ev.hangoutLink && (
-                          <span className="mt-0.5 inline-block text-[11px] text-[#34A853]">
-                            Meet link available
-                          </span>
-                        )}
                       </div>
                     </a>
                   </li>
@@ -1308,7 +1250,7 @@ function AgendaCard({
               <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-[#6b6b70]">
                 Cubic due dates
               </p>
-              {cubicAgenda.slice(0, 6).map((t) => {
+              {cubicAgenda.slice(0, 5).map((t) => {
                 const d = new Date(t.dueDate)
                 return (
                   <button
@@ -1317,7 +1259,7 @@ function AgendaCard({
                     onClick={() => onOpenTask(t)}
                     className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-[#252528]"
                   >
-                    <span className="w-[88px] shrink-0 text-[12px] text-[#C6FF3D]">
+                    <span className="w-[88px] shrink-0 text-[12px] text-[#c4b5fd]">
                       {isToday(d) ? 'Today' : format(d, 'MMM d')}
                     </span>
                     <span className="min-w-0 flex-1 truncate text-[13px] text-[#e8e8ea]">
@@ -1328,49 +1270,6 @@ function AgendaCard({
               })}
             </div>
           )}
-        </div>
-      )}
-    </Card>
-  )
-}
-
-
-function StandupCard({ standup, busy, onGenerate }) {
-  return (
-    <Card
-      title="Daily summary"
-      accent="#a78bfa"
-      titleIcon={<Sparkles className="mr-1.5 h-3.5 w-3.5 text-[#a78bfa]" />}
-    >
-      {!standup ? (
-        <EmptyArt
-          icon={
-            <Sparkles className="h-7 w-7 text-[#a78bfa]" strokeWidth={1.4} />
-          }
-          text="Generate a daily stand-up from your tasks & history."
-          action={
-            <button
-              type="button"
-              disabled={busy}
-              onClick={onGenerate}
-              className="mt-3 rounded-md bg-[#7B68EE] px-3 py-2 text-[12px] font-semibold text-white disabled:opacity-50"
-            >
-              {busy ? 'Generating…' : 'Generate summary'}
-            </button>
-          }
-        />
-      ) : (
-        <div>
-          <pre className="max-h-[220px] overflow-y-auto whitespace-pre-wrap rounded-lg bg-[#121214] p-3 font-sans text-[12px] leading-relaxed text-[#d4d4d8]">
-            {standup}
-          </pre>
-          <button
-            type="button"
-            onClick={onGenerate}
-            className="mt-2 text-[12px] text-[#9b8cff] hover:underline"
-          >
-            Refresh
-          </button>
         </div>
       )}
     </Card>
@@ -1394,12 +1293,12 @@ function Card({
   return (
     <section
       className={cn(
-        'flex flex-col overflow-hidden rounded-xl border border-[#2e2e32] bg-[#1c1c1e]',
-        tall ? 'min-h-[420px]' : 'min-h-[260px]',
+        'flex flex-col overflow-hidden rounded-[10px] border border-[#2e2e32] bg-[#1c1c1e]',
+        tall ? 'min-h-[420px]' : 'min-h-[280px]',
         className,
       )}
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-[#2e2e32] px-3.5 py-2.5">
+      <div className="flex shrink-0 items-center gap-2 border-b border-[#2e2e32] px-3.5 py-3">
         {accent && (
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -1455,21 +1354,6 @@ function EmptyArt({ icon, text, action }) {
       </p>
       {action}
     </div>
-  )
-}
-
-function ConnectBtn({ label, onClick }) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#121214] px-3 py-2 text-[12px] text-[#e8e8ea] hover:bg-[#252528]"
-    >
-      {label}
-      <span className="rounded bg-[#7B68EE] px-2 py-0.5 text-[11px] font-semibold text-white">
-        Connect
-      </span>
-    </button>
   )
 }
 
@@ -1565,57 +1449,16 @@ function DueChip({ dueDate, danger }) {
   let label = format(d, 'MMM d')
   if (isToday(d)) label = 'Today'
   else if (isYesterday(d)) label = 'Yesterday'
+  else if (isTomorrow(d)) label = 'Tomorrow'
   return (
     <span
       className={cn(
         'inline-flex shrink-0 items-center gap-1 text-[11px]',
-        danger || overdue ? 'text-red-400' : 'text-[#8b8b90]',
+        danger || overdue || isToday(d) ? 'text-red-400' : 'text-[#8b8b90]',
       )}
     >
       <Calendar className="h-3 w-3" />
       {label}
     </span>
-  )
-}
-
-function PersonalQuickSheet({ task, onClose, onComplete }) {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 z-[80] flex items-end justify-center bg-black/50 p-4 sm:items-center"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ y: 20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        exit={{ y: 12, opacity: 0 }}
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-md rounded-xl border border-[#2e2e32] bg-[#1c1c1e] p-5 shadow-2xl"
-      >
-        <div className="mb-1 text-[11px] font-medium uppercase tracking-wide text-[#6b6b70]">
-          Personal List
-        </div>
-        <h3 className="text-[16px] font-semibold text-white">{task.title}</h3>
-        <div className="mt-5 flex gap-2">
-          <button
-            type="button"
-            onClick={onComplete}
-            className="flex flex-1 items-center justify-center gap-2 rounded-md bg-accent py-2.5 text-[13px] font-semibold text-[#0E0E10]"
-          >
-            <CheckCircle2 className="h-4 w-4" />
-            {task.done ? 'Reopen' : 'Mark complete'}
-          </button>
-          <button
-            type="button"
-            onClick={onClose}
-            className="rounded-md border border-[#2e2e32] px-4 text-[13px] text-[#c5c5c8] hover:bg-[#252528]"
-          >
-            Close
-          </button>
-        </div>
-      </motion.div>
-    </motion.div>
   )
 }

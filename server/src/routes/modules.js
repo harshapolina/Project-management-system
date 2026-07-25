@@ -829,11 +829,23 @@ router.get(
   '/users',
   requireAuth,
   asyncHandler(async (req, res) => {
-    const users = await User.find(
-      tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
-    )
-      .select('name email avatar role title')
+    const filter = tenantFilter(req, {
+      isPlatformAdmin: { $ne: true },
+      $or: [{ isActive: true }, { isActive: { $exists: false } }],
+    })
+    let users = await User.find(filter)
+      .select('name email avatar role title isActive')
       .sort({ name: 1 })
+      .lean()
+
+    // Fallback: tenant members without active filter (legacy rows)
+    if (!users.length) {
+      users = await User.find(tenantFilter(req, { isPlatformAdmin: { $ne: true } }))
+        .select('name email avatar role title isActive')
+        .sort({ name: 1 })
+        .lean()
+    }
+
     res.json({ success: true, users })
   }),
 )

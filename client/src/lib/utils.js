@@ -8,7 +8,7 @@ export const statusColorMap = {
   todo: 'var(--status-not-started)',
   'in-progress': 'var(--status-in-progress)',
   'in_progress': 'var(--status-in-progress)',
-  review: 'var(--status-in-progress)',
+  review: 'var(--status-on-hold)',
   'on-hold': 'var(--status-on-hold)',
   'on_hold': 'var(--status-on-hold)',
   completed: 'var(--status-completed)',
