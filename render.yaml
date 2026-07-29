@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: cubic-api
+    name: epm-api
     runtime: node
     rootDir: server
     plan: free
@@ -10,8 +10,6 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: PORT
-        value: 10000
       - key: MONGODB_URI
         sync: false
       - key: JWT_ACCESS_SECRET
@@ -24,5 +22,9 @@ services:
         value: 7d
       - key: CLIENT_URL
         sync: false
+      - key: DEFAULT_TENANT_SLUG
+        value: cubic
+      - key: PLATFORM_ADMIN_EMAIL
+        value: editcomedia@gmail.com
       - key: GOOGLE_CLIENT_ID
         sync: false
