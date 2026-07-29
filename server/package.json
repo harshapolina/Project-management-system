@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.js",
+    "build": "echo \"API needs no build step\"",
     "start": "node src/index.js",
     "seed": "node src/seed/seed.js",
     "seed:roles": "node src/seed/seedRoleAccounts.js"
