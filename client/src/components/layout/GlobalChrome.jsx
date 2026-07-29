@@ -19,6 +19,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { api, getTenantSlug, useAuthStore } from '../../lib/api'
+import { canInviteUsers, INVITE_ROLE_OPTIONS } from '../../lib/roles'
 import { Modal, Drawer, toast, Button, Input, Select } from '../ui'
 import { cn } from '../../lib/utils'
 
@@ -395,9 +396,7 @@ export function InviteModal({ open, onClose }) {
   const [loading, setLoading] = useState(false)
   const [details, setDetails] = useState(null)
 
-  const canInvite =
-    user?.isPlatformAdmin ||
-    ['admin', 'owner', 'project_manager'].includes(user?.role)
+  const canInvite = canInviteUsers(user)
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
@@ -484,14 +483,7 @@ export function InviteModal({ open, onClose }) {
             value={role}
             onChange={(e) => setRole(e.target.value)}
             disabled={!canInvite}
-            options={[
-              { value: 'project_manager', label: 'Project manager' },
-              { value: 'admin', label: 'Admin' },
-              { value: 'designer', label: 'Designer' },
-              { value: 'site_supervisor', label: 'Site supervisor' },
-              { value: 'client', label: 'Client' },
-              { value: 'vendor', label: 'Vendor' },
-            ]}
+            options={INVITE_ROLE_OPTIONS}
           />
 
           <Button

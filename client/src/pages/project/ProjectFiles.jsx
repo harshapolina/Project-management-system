@@ -2,13 +2,13 @@ import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
 import { FolderOpen, Upload as UploadIcon } from 'lucide-react'
-import { api, assetUrl } from '../../lib/api'
+import { api, assetUrl, useAuthStore } from '../../lib/api'
+import { capabilitiesForUser } from '../../lib/roles'
 import {
   Button,
   EmptyState,
   FileThumbnail,
   StatusChip,
-  Tabs,
   toast,
 } from '../../components/ui'
 import { cn } from '../../lib/utils'
@@ -18,15 +18,17 @@ const FOLDERS = [
   { value: 'drawings', label: 'Drawings' },
   { value: 'renders', label: '3D Renders' },
   { value: 'approvals', label: 'Approvals' },
-  { value: 'site_photos', label: 'Site Photos' },
+  { value: 'site_photos', label: 'Site photos' },
 ]
 
 export function ProjectFiles() {
   const { id } = useParams()
-  const [folder, setFolder] = useState('concepts')
+  const [folder, setFolder] = useState('drawings')
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef(null)
   const qc = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const canManage = capabilitiesForUser(user).manageFiles
 
   const { data, isLoading } = useQuery({
     queryKey: ['files', id, folder],
@@ -37,7 +39,6 @@ export function ProjectFiles() {
     mutationFn: async (fileList) => {
       const files = Array.from(fileList || [])
       if (!files.length) return { ok: 0, fail: 0 }
-
       let ok = 0
       let fail = 0
       for (const file of files) {
@@ -58,7 +59,7 @@ export function ProjectFiles() {
     onSuccess: ({ ok, fail }) => {
       qc.invalidateQueries({ queryKey: ['files', id] })
       if (ok) toast(`${ok} file${ok > 1 ? 's' : ''} uploaded`, { type: 'success' })
-      if (fail) toast(`${fail} file${fail > 1 ? 's' : ''} failed`, { type: 'error' })
+      if (fail) toast(`${fail} failed`, { type: 'error' })
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
@@ -74,15 +75,14 @@ export function ProjectFiles() {
 
   const files = data?.files || []
   const openPicker = () => inputRef.current?.click()
-
   const onPick = (e) => {
-    const list = e.target.files
-    if (list?.length) upload.mutate(list)
+    if (e.target.files?.length) upload.mutate(e.target.files)
     e.target.value = ''
   }
+  const folderLabel = FOLDERS.find((f) => f.value === folder)?.label
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-4 p-4 md:p-5">
       <input
         ref={inputRef}
         type="file"
@@ -91,16 +91,39 @@ export function ProjectFiles() {
         onChange={onPick}
       />
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <Tabs
-          value={folder}
-          onChange={setFolder}
-          tabs={FOLDERS.map((f) => ({ value: f.value, label: f.label }))}
-        />
-        <Button size="sm" onClick={openPicker} loading={upload.isPending}>
-          <UploadIcon className="h-3.5 w-3.5" />
-          Upload file
-        </Button>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-[18px] font-semibold text-[#0f172a]">
+            Drawings & files
+          </h2>
+          <p className="text-[13px] text-[#64748b]">
+            Plans, concepts, renders, and site photos
+          </p>
+        </div>
+        {canManage && (
+          <Button onClick={openPicker} loading={upload.isPending}>
+            <UploadIcon className="h-3.5 w-3.5" />
+            Upload
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap gap-1.5">
+        {FOLDERS.map((f) => (
+          <button
+            key={f.value}
+            type="button"
+            onClick={() => setFolder(f.value)}
+            className={cn(
+              'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
+              folder === f.value
+                ? 'bg-[#2563eb] text-white shadow-sm'
+                : 'bg-white text-[#64748b] ring-1 ring-[#e2e8f0] hover:bg-[#f8fafc]',
+            )}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       <div
@@ -118,31 +141,40 @@ export function ProjectFiles() {
         onDrop={(e) => {
           e.preventDefault()
           setDragging(false)
-          if (e.dataTransfer.files?.length) upload.mutate(e.dataTransfer.files)
+          if (canManage && e.dataTransfer.files?.length) {
+            upload.mutate(e.dataTransfer.files)
+          }
         }}
         className={cn(
-          'rounded-xl border border-dashed transition-colors',
+          'min-h-[280px] rounded-2xl border border-dashed bg-white p-4 shadow-sm transition',
           dragging
-            ? 'border-accent bg-accent/5'
-            : 'border-transparent',
+            ? 'border-[#2563eb] bg-[#eff6ff]'
+            : 'border-[#d6e4f5]',
         )}
       >
         {isLoading ? (
-          <div className="h-40 animate-pulse rounded-xl bg-[#1c1c1e]" />
+          <div className="h-40 animate-pulse rounded-xl bg-[#f1f5f9]" />
         ) : files.length === 0 ? (
           <EmptyState
             icon={FolderOpen}
-            title="This folder is empty"
-            description="Upload concepts, drawings, or site photos from your computer to start the version trail."
-            actionLabel="Upload"
-            onAction={openPicker}
+            title={`No files in ${folderLabel}`}
+            description={
+              canManage
+                ? 'Drag files here or click Upload — keep drawings versioned by folder.'
+                : 'No files have been shared in this folder.'
+            }
+            actionLabel={canManage ? 'Upload files' : undefined}
+            onAction={canManage ? openPicker : undefined}
           />
         ) : (
-          <div className="grid gap-4 p-1 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {files.map((f) => {
               const latest = f.versions?.[f.versions.length - 1]
               return (
-                <div key={f._id} className="space-y-2">
+                <div
+                  key={f._id}
+                  className="overflow-hidden rounded-xl border border-[#e8eef4] bg-[#f8fafc]"
+                >
                   <FileThumbnail
                     name={f.name}
                     mime={f.mime}
@@ -150,18 +182,24 @@ export function ProjectFiles() {
                     version={`v${f.currentVersion || f.versions?.length || 1}`}
                     status={f.status}
                     onClick={() => {
-                      if (latest?.url) window.open(assetUrl(latest.url), '_blank')
+                      if (latest?.url)
+                        window.open(assetUrl(latest.url), '_blank')
                     }}
                   />
-                  <div className="flex flex-wrap gap-1">
-                    {['draft', 'sent', 'approved', 'rejected'].map((s) => (
+                  <div className="flex flex-wrap gap-1.5 p-3">
+                    {canManage && ['draft', 'sent', 'approved', 'rejected'].map((s) => (
                       <button
                         key={s}
                         type="button"
                         onClick={() =>
                           updateStatus.mutate({ fileId: f._id, status: s })
                         }
-                        className="text-[10px] text-secondary hover:text-accent"
+                        className={cn(
+                          'rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize',
+                          f.status === s
+                            ? 'bg-[#2563eb] text-white'
+                            : 'bg-white text-[#64748b] ring-1 ring-[#e2e8f0]',
+                        )}
                       >
                         {s}
                       </button>
@@ -178,8 +216,8 @@ export function ProjectFiles() {
       </div>
 
       {dragging && (
-        <p className="text-center text-[12px] text-accent">
-          Drop files to upload into {FOLDERS.find((f) => f.value === folder)?.label}
+        <p className="text-center text-[12px] font-medium text-[#2563eb]">
+          Drop to upload into {folderLabel}
         </p>
       )}
     </div>

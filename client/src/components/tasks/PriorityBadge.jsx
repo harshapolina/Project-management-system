@@ -31,11 +31,7 @@ export function PrioritySelect({ value, onChange, className, hideIcon }) {
         style={{ color: meta.color }}
       >
         {TASK_PRIORITIES.map((p) => (
-          <option
-            key={p.value}
-            value={p.value}
-            className="bg-[#1c1c1e] text-white"
-          >
+          <option key={p.value} value={p.value}>
             {p.label}
           </option>
         ))}

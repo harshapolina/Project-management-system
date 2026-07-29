@@ -1,6 +1,6 @@
 import { cn } from '../../lib/utils'
 
-/** ClickUp-style attribute row: icon/label | value */
+/** Attribute row: icon/label | value */
 export function AttrRow({ label, icon: Icon, children, className }) {
   return (
     <div
@@ -9,7 +9,7 @@ export function AttrRow({ label, icon: Icon, children, className }) {
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2 text-[#8b8b90]">
+      <div className="flex min-w-0 items-center gap-2 text-[#64748b]">
         {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} /> : null}
         <span className="truncate text-[13px]">{label}</span>
       </div>

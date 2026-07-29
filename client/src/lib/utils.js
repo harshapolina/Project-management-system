@@ -22,6 +22,10 @@ export const statusColorMap = {
   rejected: 'var(--status-delayed)',
   draft: 'var(--status-not-started)',
   sent: 'var(--status-in-progress)',
+  /* Snags: open is a live defect, fixed awaits sign-off, verified is closed */
+  open: 'var(--status-delayed)',
+  fixed: 'var(--status-in-progress)',
+  verified: 'var(--status-completed)',
 }
 
 export function formatCurrency(value, currency = 'USD') {

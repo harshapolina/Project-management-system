@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Navigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Building2, KeyRound, Plus, Users } from 'lucide-react'
+import { Building2, Plus, Users } from 'lucide-react'
 import { api, useAuthStore } from '../lib/api'
 import { InviteDetailsModal } from '../components/layout/GlobalChrome'
 import { Button, Card, Input, Select, toast } from '../components/ui'
@@ -28,14 +28,7 @@ export function PlatformAdminPage() {
     email: '',
     role: 'project_manager',
   })
-  const [manageTenantId, setManageTenantId] = useState('')
   const [details, setDetails] = useState(null)
-
-  const { data: usersData, isLoading: usersLoading } = useQuery({
-    queryKey: ['platform-tenant-users', manageTenantId],
-    queryFn: () => api(`/platform/tenants/${manageTenantId}/users`),
-    enabled: !!user?.isPlatformAdmin && !!manageTenantId,
-  })
 
   const createTenant = useMutation({
     mutationFn: () =>
@@ -87,29 +80,6 @@ export function PlatformAdminPage() {
       })
       setInvite((s) => ({ ...s, name: '', email: '' }))
       qc.invalidateQueries({ queryKey: ['platform-tenants'] })
-      if (manageTenantId === invite.tenantId) {
-        qc.invalidateQueries({
-          queryKey: ['platform-tenant-users', manageTenantId],
-        })
-      }
-    },
-    onError: (e) => toast(e.message, { type: 'error' }),
-  })
-
-  const resetPassword = useMutation({
-    mutationFn: ({ tenantId, userId }) =>
-      api(`/platform/tenants/${tenantId}/users/${userId}/reset-password`, {
-        method: 'POST',
-        body: JSON.stringify({}),
-      }),
-    onSuccess: (res) => {
-      toast('Password reset', { type: 'success' })
-      setDetails({
-        workspace: res.tenant?.slug,
-        email: res.user.email,
-        tempPassword: res.tempPassword,
-        loginUrl: window.location.origin + '/login',
-      })
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
@@ -119,18 +89,15 @@ export function PlatformAdminPage() {
   }
 
   const tenants = data?.tenants || []
-  const managedUsers = usersData?.users || []
-
   return (
     <div className="mx-auto max-w-3xl space-y-6">
       <div>
-        <p className="mb-1 text-sm text-secondary">Editco platform</p>
+        <p className="mb-1 text-sm text-secondary">EPM · Editco platform</p>
         <h1 className="text-[28px] font-semibold tracking-tight">
           Workspaces
         </h1>
         <p className="mt-1 text-sm text-secondary">
-          Create companies, add users, and reset passwords if an admin forgets
-          theirs.
+          Create companies and provision their first workspace users.
         </p>
       </div>
 
@@ -248,65 +215,6 @@ export function PlatformAdminPage() {
         </Button>
       </Card>
 
-      <Card className="space-y-3">
-        <div className="flex items-center gap-2 font-semibold">
-          <KeyRound className="h-4 w-4" />
-          Reset company user password
-        </div>
-        <p className="text-xs text-secondary">
-          If a company admin forgets their password, pick their workspace and
-          reset — a new temp password appears in a popup to share.
-        </p>
-        <Select
-          label="Workspace"
-          value={manageTenantId}
-          onChange={(e) => setManageTenantId(e.target.value)}
-          options={[
-            { value: '', label: 'Select…' },
-            ...tenants.map((t) => ({
-              value: t._id,
-              label: `${t.name} (${t.slug})`,
-            })),
-          ]}
-        />
-        {manageTenantId && (
-          <ul className="divide-y divide-border rounded-lg border border-border">
-            {usersLoading && (
-              <li className="px-3 py-2 text-sm text-secondary">Loading…</li>
-            )}
-            {!usersLoading && managedUsers.length === 0 && (
-              <li className="px-3 py-2 text-sm text-secondary">No users</li>
-            )}
-            {managedUsers.map((u) => (
-              <li
-                key={u.id || u._id}
-                className="flex items-center justify-between gap-3 px-3 py-2.5 text-sm"
-              >
-                <div className="min-w-0">
-                  <p className="truncate font-medium">{u.name}</p>
-                  <p className="truncate text-xs text-secondary">
-                    {u.email} · {(u.role || '').replace(/_/g, ' ')}
-                  </p>
-                </div>
-                <Button
-                  size="sm"
-                  variant="secondary"
-                  loading={resetPassword.isPending}
-                  onClick={() =>
-                    resetPassword.mutate({
-                      tenantId: manageTenantId,
-                      userId: u.id || u._id,
-                    })
-                  }
-                >
-                  Reset password
-                </Button>
-              </li>
-            ))}
-          </ul>
-        )}
-      </Card>
-
       <Card className="space-y-2">
         <p className="font-semibold">All workspaces</p>
         {isLoading && (
@@ -324,13 +232,6 @@ export function PlatformAdminPage() {
                   {t.slug} · {t.status} · {t.seatsUsed ?? 0}/{t.seatLimit} seats
                 </p>
               </div>
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => setManageTenantId(t._id)}
-              >
-                Manage users
-              </Button>
             </li>
           ))}
           {!isLoading && tenants.length === 0 && (

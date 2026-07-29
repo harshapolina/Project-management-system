@@ -22,7 +22,7 @@ export function RegisterPage() {
         to="/login"
         className="mt-6 inline-flex text-sm font-medium text-accent hover:text-accent-hover"
       >
-        ← Back to Cubic home
+        ← Back to EPM home
       </Link>
     </AuthShell>
   )
@@ -58,7 +58,7 @@ export function ForgotPasswordPage() {
   return (
     <AuthShell
       title="Reset password"
-      subtitle="We’ll send a reset link if that email is on Cubic."
+      subtitle="We’ll send a reset link if that email is on EPM."
     >
       {sent ? (
         <div className="space-y-4">
@@ -103,9 +103,9 @@ function AuthShell({ title, subtitle, children }) {
       <div className="w-full max-w-md rounded-[24px] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] md:p-10">
         <Link to="/login" className="mb-8 flex items-center gap-2">
           <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-[#0F172A] text-[12px] font-bold text-accent">
-            C
+            E
           </span>
-          <span className="text-[16px] font-semibold">Cubic</span>
+          <span className="text-[16px] font-semibold">EPM</span>
         </Link>
         <h1 className="text-[26px] font-bold tracking-tight">{title}</h1>
         <p className="mt-2 mb-8 text-[14px] text-slate-500">{subtitle}</p>

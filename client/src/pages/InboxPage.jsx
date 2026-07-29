@@ -79,7 +79,7 @@ function useInboxBuckets() {
 export function InboxPage() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
-  const tab = params.get('tab') || 'mail'
+  const tab = params.get('tab') || 'primary'
   const withUser = params.get('with') || ''
   const compose = params.get('compose') === '1'
   const buckets = useInboxBuckets()
@@ -203,12 +203,13 @@ function MarkAllReadButton() {
 
 function PrimaryNotifications({ buckets, mode = 'primary' }) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const { data } = useQuery({
     queryKey: ['notifications'],
     queryFn: () => api('/notifications'),
   })
 
-  const all = data?.notifications || []
+  const all = useMemo(() => data?.notifications || [], [data?.notifications])
   const items = useMemo(() => {
     if (mode === 'later') {
       return all.filter((n) => buckets.laterIds.includes(n._id))
@@ -238,10 +239,8 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
             ? 'Use Later on a notification to park it here.'
             : mode === 'cleared'
               ? 'Cleared notifications will appear here.'
-              : 'Company mail lets you message anyone on the Cubic team.'
+              : 'Task assigns and @mentions show up here.'
         }
-        actionLabel={mode === 'primary' ? 'Open Company Mail' : undefined}
-        actionTo={mode === 'primary' ? '/inbox?tab=mail' : undefined}
       />
     )
   }
@@ -251,7 +250,10 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
       {items.map((n) => (
         <div
           key={n._id}
-          className="flex w-full items-start gap-3 border-b border-[#2e2e32]/50 px-5 py-3.5 hover:bg-[#1c1c1e]"
+          className={cn(
+            'flex w-full items-start gap-3 border-b border-[#e2e8f0] px-5 py-3.5 transition hover:bg-[#f8fafc]',
+            !n.read && 'bg-[#eff6ff]/50',
+          )}
         >
           <button
             type="button"
@@ -261,18 +263,19 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
                 await api(`/notifications/${n._id}/read`, { method: 'PATCH' })
                 qc.invalidateQueries({ queryKey: ['notifications'] })
               }
+              if (n.link) navigate(n.link)
             }}
           >
             <span
               className={cn(
                 'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                n.read ? 'bg-[#3a3a3e]' : 'bg-accent',
+                n.read ? 'bg-[#cbd5e1]' : 'bg-[#2563eb]',
               )}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold">{n.title}</p>
-              <p className="mt-0.5 text-[12px] text-[#8b8b90]">{n.body}</p>
-              <p className="mt-1 text-[11px] text-[#6b6b70]">
+              <p className="text-[13px] font-semibold text-[#0f172a]">{n.title}</p>
+              <p className="mt-0.5 text-[12px] text-[#64748b]">{n.body}</p>
+              <p className="mt-1 text-[11px] text-[#94a3b8]">
                 {n.createdAt &&
                   formatDistanceToNow(new Date(n.createdAt), {
                     addSuffix: true,
@@ -345,8 +348,11 @@ function CompanyMail({
     refetchInterval: 15000,
   })
 
-  const people = dirData?.users || []
-  const threads = threadsData?.threads || []
+  const people = useMemo(() => dirData?.users || [], [dirData?.users])
+  const threads = useMemo(
+    () => threadsData?.threads || [],
+    [threadsData?.threads],
+  )
 
   const filteredPeople = useMemo(() => {
     if (!query.trim()) return people
@@ -424,7 +430,7 @@ function CompanyMail({
           )}
 
           <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-wider text-[#6b6b70]">
-            Everyone at Cubic
+            Everyone at Editco
           </p>
           {filteredPeople.map((u) => (
             <PersonRow
@@ -452,7 +458,7 @@ function CompanyMail({
         {!activeId || !activeUser ? (
           <EmptyInbox
             title="Company mail"
-            body="Pick anyone in Cubic Studio and send them a message — like internal company email."
+            body="Pick anyone in your workspace and send them a message — like internal company email."
             icon
           />
         ) : (

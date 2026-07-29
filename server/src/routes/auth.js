@@ -20,17 +20,6 @@ const registerSchema = z.object({
   name: z.string().min(2),
   email: z.string().email(),
   password: z.string().min(6),
-  role: z
-    .enum([
-      'admin',
-      'owner',
-      'project_manager',
-      'designer',
-      'site_supervisor',
-      'vendor',
-      'client',
-    ])
-    .optional(),
 })
 
 const loginSchema = z.object({
@@ -62,7 +51,7 @@ router.post(
       withTenant(req, {
         ...data,
         email: data.email.toLowerCase(),
-        role: data.role || 'project_manager',
+        role: 'project_manager',
       }),
     )
 
@@ -220,7 +209,6 @@ router.patch(
       'avatar',
       'company',
       'onboardingCompleted',
-      'role',
     ]
     for (const key of allowed) {
       if (req.body[key] !== undefined) req.user[key] = req.body[key]
@@ -309,10 +297,10 @@ router.post(
   requireAuth,
   asyncHandler(async (req, res) => {
     if (
-      !['admin', 'owner', 'project_manager'].includes(req.user.role) &&
+      !['admin', 'owner', 'hr'].includes(req.user.role) &&
       !req.user.isPlatformAdmin
     ) {
-      throw new AppError('Only workspace admins or PMs can invite users', 403)
+      throw new AppError('Only company management can invite users', 403)
     }
 
     const schema = z.object({
@@ -321,6 +309,7 @@ router.post(
       role: z.enum([
         'admin',
         'owner',
+        'hr',
         'project_manager',
         'designer',
         'site_supervisor',
@@ -329,6 +318,13 @@ router.post(
       ]),
     })
     const data = schema.parse(req.body)
+    if (
+      req.user.role === 'hr' &&
+      ['admin', 'owner', 'hr'].includes(data.role) &&
+      !req.user.isPlatformAdmin
+    ) {
+      throw new AppError('Only an Admin or Owner can invite management users', 403)
+    }
     const email = data.email.toLowerCase()
     const tenantId = req.user.tenantId || req.tenantId
 

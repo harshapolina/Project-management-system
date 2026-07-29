@@ -4,7 +4,7 @@ import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Message } from '../models/Message.js'
 import { User } from '../models/User.js'
-import { Notification } from '../models/Activity.js'
+import { notifyUser, actorSummary } from '../lib/notify.js'
 
 const router = express.Router()
 
@@ -126,15 +126,17 @@ router.post(
     await message.populate('from', 'name avatar email')
     await message.populate('to', 'name avatar email')
 
-    await Notification.create(
-      withTenant(req, {
-        userId: to,
-        type: 'mail',
-        title: `Mail from ${req.user.name}`,
-        body: body.trim().slice(0, 120),
-        link: `/inbox?tab=mail&with=${req.user._id}`,
-      }),
-    )
+    await notifyUser(req, {
+      userId: to,
+      type: 'mail',
+      title: `${req.user.name} sent you a message`,
+      body: body.trim().slice(0, 200),
+      link: `/inbox?tab=mail&with=${req.user._id}`,
+      meta: {
+        subject: subject || '',
+        actor: actorSummary(req.user),
+      },
+    })
 
     const io = req.app.get('io')
     if (io) {

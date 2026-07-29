@@ -16,36 +16,43 @@ import {
   CheckSquare,
   Receipt,
   AlertTriangle,
-  Sun,
-  Moon,
-  Monitor,
+  BarChart3,
+  Clock3,
+  Download,
+  FolderKanban,
+  RefreshCw,
+  Search,
+  Sparkles,
+  TrendingUp,
+  Users,
 } from 'lucide-react'
 import { api, getTenantSlug, useAuthStore } from '../lib/api'
 import { formatInr, stageLabel } from '../lib/format'
-import { useUiStore } from '../store/uiStore'
 import { InviteDetailsModal } from '../components/layout/GlobalChrome'
 import {
   Avatar,
   Button,
   Card,
   Input,
-  KpiCard,
   Select,
   StatusChip,
   toast,
 } from '../components/ui'
 
 export function ReportsPage() {
-  const { data } = useQuery({
+  const { data, isLoading, isError, refetch, isFetching } = useQuery({
     queryKey: ['reports'],
     queryFn: () => api('/reports/overview'),
   })
   const [query, setQuery] = useState('')
+  const [askedQuery, setAskedQuery] = useState('')
+  const [peopleSearch, setPeopleSearch] = useState('')
+  const [roleFilter, setRoleFilter] = useState('all')
   const d = data?.data
 
   const answer = useMemo(() => {
-    if (!query.trim() || !d) return null
-    const q = query.toLowerCase()
+    if (!askedQuery.trim() || !d) return null
+    const q = askedQuery.toLowerCase()
     if (q.includes('risk') || q.includes('delay')) {
       return `${d.health.delayed} project(s) are delayed. On-time rate is ${d.health.onTimePct}%.`
     }
@@ -58,101 +65,583 @@ export function ReportsPage() {
     if (q.includes('team')) {
       const top = [...(d.teamPerf || [])].sort((a, b) => b.done - a.done)[0]
       return top
-        ? `${top.user.name} leads completions with ${top.done} done / ${top.open} open.`
+        ? `${top.user.name} leads completions with ${top.done} done, ${top.open} open, and a ${top.completionRate}% completion rate.`
         : 'No team data.'
     }
+    if (q.includes('overdue')) {
+      const people = [...(d.teamPerf || [])]
+        .filter((person) => person.overdue > 0)
+        .sort((a, b) => b.overdue - a.overdue)
+      return people.length
+        ? `${people[0].user.name} has the highest overdue workload (${people[0].overdue}). ${d.taskCompletion.overdue} tasks are overdue company-wide.`
+        : 'There are no overdue assigned tasks.'
+    }
     return 'Try: “which projects are at risk”, “pipeline value”, “budget variance”, or “team performance”.'
-  }, [query, d])
+  }, [askedQuery, d])
 
   const stageChart = (d?.leadStages || []).map((s) => ({
     name: stageLabel(s.stage).split(' ')[0],
     count: s.count,
   }))
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <p className="text-sm text-secondary mb-1">Insights</p>
-        <h1 className="text-[32px] font-semibold tracking-tight leading-none">
-          Reports & Analytics
-        </h1>
+  const taskChart = (d?.taskStatus || []).map((item) => ({
+    name:
+      {
+        todo: 'To do',
+        in_progress: 'In progress',
+        review: 'Review',
+        done: 'Done',
+      }[item.status] || item.status,
+    count: item.count,
+  }))
+
+  const people = useMemo(() => {
+    const term = peopleSearch.trim().toLowerCase()
+    return [...(d?.teamPerf || [])]
+      .filter(({ user }) => {
+        const matchesRole = roleFilter === 'all' || user.role === roleFilter
+        const matchesSearch =
+          !term ||
+          [user.name, user.title, user.role]
+            .filter(Boolean)
+            .some((value) => String(value).toLowerCase().includes(term))
+        return matchesRole && matchesSearch
+      })
+      .sort(
+        (a, b) =>
+          b.overdue - a.overdue ||
+          b.open - a.open ||
+          b.completionRate - a.completionRate,
+      )
+  }, [d?.teamPerf, peopleSearch, roleFilter])
+
+  const roles = useMemo(
+    () => [...new Set((d?.teamPerf || []).map(({ user }) => user.role))].sort(),
+    [d?.teamPerf],
+  )
+
+  const completionPct = d?.taskCompletion?.total
+    ? Math.round((d.taskCompletion.done / d.taskCompletion.total) * 100)
+    : 0
+
+  const exportPeople = () => {
+    if (!people.length) return
+    const escape = (value) => `"${String(value ?? '').replaceAll('"', '""')}"`
+    const rows = [
+      [
+        'Name',
+        'Role',
+        'Status',
+        'Assigned',
+        'Done',
+        'Open',
+        'In progress',
+        'Review',
+        'Overdue',
+        'Completion %',
+        'Tracked hours',
+      ],
+      ...people.map((person) => [
+        person.user.name,
+        person.user.role,
+        person.user.isActive === false ? 'Inactive' : 'Active',
+        person.total,
+        person.done,
+        person.open,
+        person.inProgress,
+        person.review,
+        person.overdue,
+        person.completionRate,
+        person.trackedHours,
+      ]),
+    ]
+    const blob = new Blob([rows.map((row) => row.map(escape).join(',')).join('\n')], {
+      type: 'text/csv;charset=utf-8',
+    })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `team-report-${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="space-y-5">
+        <div className="h-20 animate-pulse rounded-2xl bg-white" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          {[0, 1, 2, 3].map((i) => (
+            <div key={i} className="h-32 animate-pulse rounded-2xl bg-white" />
+          ))}
+        </div>
+        <div className="h-72 animate-pulse rounded-2xl bg-white" />
       </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="flex min-h-[420px] items-center justify-center">
+        <div className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+          <AlertTriangle className="mx-auto h-7 w-7 text-red-500" />
+          <h2 className="mt-3 text-lg font-semibold text-[#0f172a]">
+            Reports could not be loaded
+          </h2>
+          <Button className="mt-4" onClick={() => refetch()}>
+            Try again
+          </Button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="mx-auto w-full max-w-[1500px] space-y-5 pb-8">
+      <header className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
+            <BarChart3 className="h-3.5 w-3.5 text-[#2563eb]" />
+            Company intelligence
+          </div>
+          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-[#0f172a]">
+            Reports &amp; Analytics
+          </h1>
+          <p className="mt-1 text-[13px] text-[#64748b]">
+            Live portfolio, task, pipeline, and people performance in one view.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => refetch()}
+            disabled={isFetching}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#dce4ee] bg-white px-3 text-[12px] font-semibold text-[#475569] shadow-sm transition hover:bg-[#f8fafc] disabled:opacity-50"
+          >
+            <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
+            Refresh
+          </button>
+          <button
+            type="button"
+            onClick={exportPeople}
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#2563eb] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1d4ed8]"
+          >
+            <Download className="h-3.5 w-3.5" />
+            Export team
+          </button>
+        </div>
+      </header>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <KpiCard label="On-time %" value={`${d?.health?.onTimePct ?? 0}%`} accentValue />
-        <KpiCard label="Delayed projects" value={d?.health?.delayed ?? 0} />
-        <KpiCard
-          label="CRM pipeline"
-          value={formatInr(d?.crmPipelineValue)}
+        <ReportKpi
+          icon={TrendingUp}
+          label="On-time delivery"
+          value={`${d?.health?.onTimePct ?? 0}%`}
+          note={`${d?.health?.total ?? 0} active projects`}
+          tone="blue"
+          progress={d?.health?.onTimePct ?? 0}
         />
-        <KpiCard
+        <ReportKpi
+          icon={CheckSquare}
+          label="Task completion"
+          value={`${completionPct}%`}
+          note={`${d?.taskCompletion?.done ?? 0} of ${d?.taskCompletion?.total ?? 0} tasks done`}
+          tone="emerald"
+          progress={completionPct}
+        />
+        <ReportKpi
+          icon={Users}
+          label="Active workforce"
+          value={(d?.teamPerf || []).filter((p) => p.user.isActive !== false).length}
+          note={`${d?.taskCompletion?.overdue ?? 0} overdue tasks`}
+          tone="violet"
+        />
+        <ReportKpi
+          icon={FolderKanban}
           label="Budget variance"
           value={formatInr(d?.budgetVariance)}
+          note={`Pipeline ${formatInr(d?.crmPipelineValue)}`}
+          tone={d?.budgetVariance < 0 ? 'rose' : 'amber'}
         />
       </div>
 
-      <Card className="space-y-3">
-        <h3 className="text-sm font-semibold">AI copilot (rules engine)</h3>
-        <div className="flex gap-2">
+      <section className="rounded-2xl border border-[#dce7f5] bg-gradient-to-r from-[#f7faff] to-white p-4 shadow-sm">
+        <div className="flex items-center gap-2">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eaf2ff] text-[#2563eb]">
+            <Sparkles className="h-4 w-4" />
+          </span>
+          <div>
+            <h3 className="text-[13px] font-semibold text-[#0f172a]">
+              Insights assistant
+            </h3>
+            <p className="text-[11px] text-[#94a3b8]">
+              Ask about risk, workload, pipeline, or budgets
+            </p>
+          </div>
+        </div>
+        <form
+          className="mt-3 flex gap-2"
+          onSubmit={(event) => {
+            event.preventDefault()
+            setAskedQuery(query.trim())
+          }}
+        >
           <Input
             placeholder='Ask e.g. "which projects are at risk this month"'
             value={query}
             onChange={(e) => setQuery(e.target.value)}
           />
-          <Button onClick={() => setQuery(query)}>Ask</Button>
-        </div>
+          <Button type="submit" disabled={!query.trim()}>
+            Ask
+          </Button>
+        </form>
         {answer && (
-          <p className="rounded-[14px] border border-border bg-surface-raised px-4 py-3 text-sm text-secondary">
+          <p className="mt-3 rounded-xl border border-[#dce7f5] bg-white px-4 py-3 text-[13px] leading-relaxed text-[#475569]">
             {answer}
           </p>
         )}
-      </Card>
+      </section>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card>
-          <h3 className="text-sm font-semibold mb-4">CRM pipeline stages</h3>
-          <div className="h-56">
+      <div className="grid gap-4 xl:grid-cols-2">
+        <ReportPanel
+          title="Task distribution"
+          subtitle={`${d?.taskCompletion?.unassigned ?? 0} tasks currently unassigned`}
+        >
+          <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={stageChart}>
-                <CartesianGrid stroke="#2A2A2E" vertical={false} />
-                <XAxis dataKey="name" stroke="#9A9A9E" fontSize={11} />
-                <YAxis stroke="#9A9A9E" fontSize={11} allowDecimals={false} />
+              <BarChart data={taskChart} margin={{ top: 8, right: 8, left: -18 }}>
+                <CartesianGrid stroke="#e6ecf4" vertical={false} />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    background: '#1A1A1D',
-                    border: '1px solid #2A2A2E',
+                    background: '#ffffff',
+                    border: '1px solid #dce4ee',
                     borderRadius: 12,
+                    color: '#0f172a',
+                    boxShadow: '0 6px 24px rgba(11,27,43,0.1)',
                   }}
                 />
-                <Bar dataKey="count" fill="#C6FF3D" radius={[6, 6, 0, 0]} />
+                <Bar dataKey="count" fill="#2563eb" radius={[7, 7, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
-        </Card>
+        </ReportPanel>
 
-        <Card>
-          <h3 className="text-sm font-semibold mb-3">Team performance</h3>
-          <div className="space-y-3">
-            {(d?.teamPerf || []).map((t) => (
-              <div key={t.user._id} className="flex items-center gap-3">
-                <Avatar src={t.user.avatar} name={t.user.name} size="sm" />
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium truncate">{t.user.name}</p>
-                  <p className="text-xs text-secondary">
-                    {t.done} done · {t.open} open
+        <ReportPanel
+          title="CRM pipeline"
+          subtitle={`${formatInr(d?.crmPipelineValue)} open opportunity value`}
+        >
+          <div className="h-64">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={stageChart} margin={{ top: 8, right: 8, left: -18 }}>
+                <CartesianGrid stroke="#e6ecf4" vertical={false} />
+                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
+                <YAxis stroke="#94a3b8" fontSize={11} allowDecimals={false} />
+                <Tooltip
+                  contentStyle={{
+                    background: '#ffffff',
+                    border: '1px solid #dce4ee',
+                    borderRadius: 12,
+                    color: '#0f172a',
+                    boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
+                  }}
+                />
+                <Bar dataKey="count" fill="#7c3aed" radius={[7, 7, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </ReportPanel>
+      </div>
+
+      <ReportPanel
+        title="People performance"
+        subtitle="Workload, delivery, tracked time, and task health for every company user"
+        action={
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="relative">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+              <input
+                value={peopleSearch}
+                onChange={(e) => setPeopleSearch(e.target.value)}
+                placeholder="Search people"
+                className="h-8 w-44 rounded-lg border border-[#dce4ee] bg-[#f8fafc] pl-8 pr-2 text-[11.5px] outline-none focus:border-[#93b4ec] focus:bg-white"
+              />
+            </div>
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="h-8 rounded-lg border border-[#dce4ee] bg-[#f8fafc] px-2 text-[11.5px] font-medium text-[#475569] outline-none focus:border-[#93b4ec]"
+            >
+              <option value="all">All roles</option>
+              {roles.map((role) => (
+                <option key={role} value={role}>
+                  {roleLabel(role)}
+                </option>
+              ))}
+            </select>
+          </div>
+        }
+        noPadding
+      >
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[980px] border-collapse">
+            <thead>
+              <tr className="border-y border-[#e8eef5] bg-[#f8fafc] text-left text-[10px] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
+                <th className="px-5 py-2.5">Team member</th>
+                <th className="px-3 py-2.5">Status</th>
+                <th className="px-3 py-2.5 text-center">Assigned</th>
+                <th className="px-3 py-2.5 text-center">Done</th>
+                <th className="px-3 py-2.5 text-center">Open</th>
+                <th className="px-3 py-2.5 text-center">Review</th>
+                <th className="px-3 py-2.5 text-center">Overdue</th>
+                <th className="w-52 px-3 py-2.5">Completion</th>
+                <th className="px-5 py-2.5 text-right">Tracked</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#edf1f6]">
+              {people.map((person) => (
+                <tr key={person.user._id} className="transition hover:bg-[#fbfdff]">
+                  <td className="px-5 py-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar
+                        src={person.user.avatar}
+                        name={person.user.name}
+                        size="sm"
+                      />
+                      <div className="min-w-0">
+                        <p className="truncate text-[12.5px] font-semibold text-[#0f172a]">
+                          {person.user.name}
+                        </p>
+                        <p className="truncate text-[10.5px] text-[#94a3b8]">
+                          {person.user.title || roleLabel(person.user.role)}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-3 py-3">
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10.5px] font-semibold ${
+                        person.user.isActive === false
+                          ? 'bg-slate-100 text-slate-500'
+                          : 'bg-emerald-50 text-emerald-700'
+                      }`}
+                    >
+                      <span
+                        className={`h-1.5 w-1.5 rounded-full ${
+                          person.user.isActive === false
+                            ? 'bg-slate-400'
+                            : 'bg-emerald-500'
+                        }`}
+                      />
+                      {person.user.isActive === false ? 'Inactive' : 'Active'}
+                    </span>
+                  </td>
+                  <MetricCell value={person.total} />
+                  <MetricCell value={person.done} tone="success" />
+                  <MetricCell value={person.open} />
+                  <MetricCell value={person.review} tone="violet" />
+                  <MetricCell
+                    value={person.overdue}
+                    tone={person.overdue ? 'danger' : 'muted'}
+                  />
+                  <td className="px-3 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                        <div
+                          className={`h-full rounded-full ${
+                            person.completionRate >= 75
+                              ? 'bg-emerald-500'
+                              : person.completionRate >= 40
+                                ? 'bg-[#2563eb]'
+                                : 'bg-amber-500'
+                          }`}
+                          style={{ width: `${person.completionRate}%` }}
+                        />
+                      </div>
+                      <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-[#475569]">
+                        {person.completionRate}%
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-5 py-3 text-right text-[11.5px] font-semibold tabular-nums text-[#475569]">
+                    {person.trackedHours}h
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!people.length && (
+            <div className="px-5 py-12 text-center text-[12px] text-[#94a3b8]">
+              No users match these filters.
+            </div>
+          )}
+        </div>
+      </ReportPanel>
+
+      <ReportPanel
+        title="Project health"
+        subtitle="Projects requiring attention are shown first"
+        noPadding
+      >
+        <div className="grid gap-px bg-[#edf1f6] sm:grid-cols-2 xl:grid-cols-3">
+          {(d?.projectHealth || []).map((project) => (
+            <div key={project._id} className="bg-white p-4">
+              <div className="flex items-start justify-between gap-3">
+                <div className="min-w-0">
+                  <p className="truncate text-[13px] font-semibold text-[#0f172a]">
+                    {project.name}
+                  </p>
+                  <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">
+                    {project.done}/{project.totalTasks} tasks completed
                   </p>
                 </div>
+                {project.overdue > 0 ? (
+                  <span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold text-red-600">
+                    {project.overdue} overdue
+                  </span>
+                ) : (
+                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                    On track
+                  </span>
+                )}
               </div>
-            ))}
-          </div>
-          <div className="mt-4 rounded-[12px] border border-border px-3 py-2 text-xs text-secondary">
-            Vendor POs: {d?.vendorPerformance?.delivered ?? 0} delivered /{' '}
-            {d?.vendorPerformance?.totalPOs ?? 0} total
-          </div>
-        </Card>
+              <div className="mt-4 flex items-center gap-2">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                  <div
+                    className={`h-full rounded-full ${
+                      project.isDelayed ? 'bg-red-500' : 'bg-[#2563eb]'
+                    }`}
+                    style={{ width: `${project.progress}%` }}
+                  />
+                </div>
+                <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-[#475569]">
+                  {project.progress}%
+                </span>
+              </div>
+              <div className="mt-3 flex items-center justify-between text-[10.5px] text-[#94a3b8]">
+                <span>Budget {formatInr(project.budget)}</span>
+                <span>Spent {formatInr(project.spent)}</span>
+              </div>
+            </div>
+          ))}
+        </div>
+      </ReportPanel>
+
+      <div className="grid gap-4 sm:grid-cols-3">
+        <MiniStat
+          icon={AlertTriangle}
+          label="Delayed projects"
+          value={d?.health?.delayed ?? 0}
+          tone="red"
+        />
+        <MiniStat
+          icon={Clock3}
+          label="POs in transit"
+          value={d?.vendorPerformance?.inTransit ?? 0}
+          tone="amber"
+        />
+        <MiniStat
+          icon={Receipt}
+          label="Delivered POs"
+          value={`${d?.vendorPerformance?.delivered ?? 0} / ${d?.vendorPerformance?.totalPOs ?? 0}`}
+          tone="emerald"
+        />
       </div>
     </div>
   )
+}
+
+function ReportKpi({ icon: Icon, label, value, note, tone = 'blue', progress }) {
+  const tones = {
+    blue: 'bg-blue-50 text-blue-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+    violet: 'bg-violet-50 text-violet-600',
+    amber: 'bg-amber-50 text-amber-600',
+    rose: 'bg-rose-50 text-rose-600',
+  }
+  return (
+    <section className="rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <div className="flex items-start justify-between gap-3">
+        <div>
+          <p className="text-[11px] font-medium text-[#64748b]">{label}</p>
+          <p className="mt-2 text-[24px] font-semibold leading-none tabular-nums tracking-[-0.03em] text-[#0f172a]">
+            {value}
+          </p>
+        </div>
+        <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${tones[tone]}`}>
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      <p className="mt-3 truncate text-[10.5px] text-[#94a3b8]">{note}</p>
+      {progress !== undefined && (
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#edf1f6]">
+          <div
+            className={`h-full rounded-full ${
+              tone === 'emerald' ? 'bg-emerald-500' : 'bg-[#2563eb]'
+            }`}
+            style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
+          />
+        </div>
+      )}
+    </section>
+  )
+}
+
+function ReportPanel({ title, subtitle, action, children, noPadding = false }) {
+  return (
+    <section className="overflow-hidden rounded-2xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+        <div>
+          <h2 className="text-[13.5px] font-semibold text-[#0f172a]">{title}</h2>
+          {subtitle && <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">{subtitle}</p>}
+        </div>
+        {action}
+      </div>
+      <div className={noPadding ? '' : 'px-4 pb-4'}>{children}</div>
+    </section>
+  )
+}
+
+function MetricCell({ value, tone = 'default' }) {
+  const tones = {
+    default: 'text-[#475569]',
+    success: 'text-emerald-600',
+    violet: 'text-violet-600',
+    danger: 'text-red-600',
+    muted: 'text-[#94a3b8]',
+  }
+  return (
+    <td className={`px-3 py-3 text-center text-[12px] font-semibold tabular-nums ${tones[tone]}`}>
+      {value}
+    </td>
+  )
+}
+
+function MiniStat({ icon: Icon, label, value, tone }) {
+  const tones = {
+    red: 'bg-red-50 text-red-600',
+    amber: 'bg-amber-50 text-amber-600',
+    emerald: 'bg-emerald-50 text-emerald-600',
+  }
+  return (
+    <div className="flex items-center gap-3 rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-sm">
+      <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${tones[tone]}`}>
+        <Icon className="h-4 w-4" />
+      </span>
+      <div>
+        <p className="text-[10.5px] text-[#94a3b8]">{label}</p>
+        <p className="text-[16px] font-semibold tabular-nums text-[#0f172a]">{value}</p>
+      </div>
+    </div>
+  )
+}
+
+function roleLabel(role) {
+  return String(role || 'member')
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
 }
 
 export function NotificationsPage() {
@@ -229,8 +718,6 @@ export function SettingsPage() {
   const user = useAuthStore((s) => s.user)
   const tenant = useAuthStore((s) => s.tenant)
   const setUser = useAuthStore((s) => s.setUser)
-  const theme = useUiStore((s) => s.theme)
-  const setTheme = useUiStore((s) => s.setTheme)
   const [name, setName] = useStateSafe(user?.name || '')
   const [title, setTitle] = useStateSafe(user?.title || '')
   const [invite, setInvite] = useState({
@@ -242,7 +729,7 @@ export function SettingsPage() {
   const [pwd, setPwd] = useState({ current: '', next: '' })
   const canInvite =
     user?.isPlatformAdmin ||
-    ['admin', 'owner', 'project_manager'].includes(user?.role)
+    ['admin', 'owner', 'hr', 'project_manager'].includes(user?.role)
 
   const save = async () => {
     try {
@@ -292,12 +779,6 @@ export function SettingsPage() {
       toast(e.message, { type: 'error' })
     }
   }
-
-  const themeOptions = [
-    { id: 'light', label: 'Light', icon: Sun },
-    { id: 'dark', label: 'Dark', icon: Moon },
-    { id: 'system', label: 'System', icon: Monitor },
-  ]
 
   return (
     <div className="space-y-6 max-w-xl">
@@ -377,6 +858,8 @@ export function SettingsPage() {
             onChange={(e) => setInvite((s) => ({ ...s, role: e.target.value }))}
             options={[
               { value: 'admin', label: 'Admin' },
+              { value: 'owner', label: 'Owner' },
+              { value: 'hr', label: 'HR' },
               { value: 'project_manager', label: 'Project manager' },
               { value: 'designer', label: 'Designer' },
               { value: 'site_supervisor', label: 'Site supervisor' },
@@ -398,32 +881,6 @@ export function SettingsPage() {
         details={inviteResult}
         onClose={() => setInviteResult(null)}
       />
-
-      <Card className="space-y-3">
-        <div>
-          <p className="font-semibold">Appearance</p>
-          <p className="text-xs text-secondary mt-0.5">
-            Switch between light and dark mode
-          </p>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {themeOptions.map(({ id, label, icon: Icon }) => (
-            <button
-              key={id}
-              type="button"
-              onClick={() => setTheme(id)}
-              className={`flex flex-col items-center gap-1.5 rounded-lg border px-3 py-3 text-[12px] font-medium transition-colors ${
-                theme === id
-                  ? 'border-[#7B68EE] bg-[#7B68EE]/15 text-primary'
-                  : 'border-border text-secondary hover:bg-surface-raised hover:text-primary'
-              }`}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </button>
-          ))}
-        </div>
-      </Card>
 
       <CustomFieldsSettings />
     </div>

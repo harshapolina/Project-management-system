@@ -1,24 +1,15 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-function resolveTheme(theme) {
-  if (theme === 'system') {
-    return window.matchMedia('(prefers-color-scheme: light)').matches
-      ? 'light'
-      : 'dark'
-  }
-  return theme === 'light' ? 'light' : 'dark'
-}
-
-export function applyTheme(theme) {
-  const resolved = resolveTheme(theme)
-  document.documentElement.setAttribute('data-theme', resolved)
-  document.documentElement.style.colorScheme = resolved
+/** The app ships a single light theme (navy rail + light canvas). */
+export function applyTheme() {
+  document.documentElement.setAttribute('data-theme', 'light')
+  document.documentElement.style.colorScheme = 'light'
 }
 
 export const useUiStore = create(
   persist(
-    (set, get) => ({
+    (set) => ({
       /** ClickUp-style: home | inbox | spaces | dashboards | hubs */
       globalNav: 'home',
       setGlobalNav: (globalNav) => set({ globalNav }),
@@ -37,17 +28,6 @@ export const useUiStore = create(
             ? s.favorites.filter((f) => f !== id)
             : [...s.favorites, id],
         })),
-      /** dark | light | system */
-      theme: 'dark',
-      setTheme: (theme) => {
-        set({ theme })
-        applyTheme(theme)
-      },
-      toggleTheme: () => {
-        const next = resolveTheme(get().theme) === 'light' ? 'dark' : 'light'
-        set({ theme: next })
-        applyTheme(next)
-      },
       /** Bump to open Planner create modal (not persisted) */
       plannerCreateTick: 0,
       requestPlannerCreate: () =>
@@ -89,11 +69,10 @@ export const useUiStore = create(
         sidebarCollapsed: s.sidebarCollapsed,
         spacesExpanded: s.spacesExpanded,
         favorites: s.favorites,
-        theme: s.theme,
         sidebarSections: s.sidebarSections,
       }),
-      onRehydrateStorage: () => (state) => {
-        if (state?.theme) applyTheme(state.theme)
+      onRehydrateStorage: () => () => {
+        applyTheme()
       },
     },
   ),

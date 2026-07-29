@@ -57,23 +57,60 @@ async function seed() {
   const tid = tenant._id
 
   console.log('Creating users…')
-  const [admin, pm, designer, supervisor, client, vendorUser] = await User.create([
+  const [
+    platformAdmin,
+    owner,
+    admin,
+    hr,
+    pm,
+    designer,
+    supervisor,
+    client,
+    vendorUser,
+  ] = await User.create([
+    {
+      tenantId: tid,
+      name: 'Editco Platform Admin',
+      email: 'editcomedia@gmail.com',
+      password: 'DTH@editco',
+      role: 'admin',
+      isPlatformAdmin: true,
+      title: 'Platform Administrator',
+      onboardingCompleted: true,
+    },
+    {
+      tenantId: tid,
+      name: 'Demo Company Owner',
+      email: 'owner@cubic.demo',
+      password: 'Company@Owner123',
+      role: 'owner',
+      title: 'Company Owner',
+      onboardingCompleted: true,
+    },
     {
       tenantId: tid,
       name: 'Aanya Mehta',
-      email: 'aanya@cubic.studio',
-      password: 'demo1234',
+      email: 'admin@cubic.demo',
+      password: 'Company@Admin123',
       role: 'admin',
-      isPlatformAdmin: true,
       title: 'Studio Principal',
       onboardingCompleted: true,
       avatar: 'https://i.pravatar.cc/150?u=aanya',
     },
     {
       tenantId: tid,
+      name: 'Demo Company HR',
+      email: 'hr@cubic.demo',
+      password: 'Company@HR123',
+      role: 'hr',
+      title: 'Human Resources',
+      onboardingCompleted: true,
+    },
+    {
+      tenantId: tid,
       name: 'Rohan Kapoor',
-      email: 'rohan@cubic.studio',
-      password: 'demo1234',
+      email: 'employee@cubic.demo',
+      password: 'Employee@Demo123',
       role: 'project_manager',
       title: 'Project Manager',
       onboardingCompleted: true,
@@ -714,12 +751,12 @@ async function seed() {
 
   console.log('\nSeed complete.\n')
   console.log('Workspace slug: cubic')
-  console.log('Demo logins (password: demo1234):')
-  console.log('  Platform admin: aanya@cubic.studio')
-  console.log('  Admin / PM:   aanya@cubic.studio  |  rohan@cubic.studio')
-  console.log('  Designer:     maya@cubic.studio')
-  console.log('  Supervisor:   vikram@cubic.studio')
-  console.log('  Client:       priya@client.com')
+  console.log('Demo role-tier logins:')
+  console.log('  Platform: editcomedia@gmail.com')
+  console.log('  Owner:    owner@cubic.demo')
+  console.log('  Admin:    admin@cubic.demo')
+  console.log('  HR:       hr@cubic.demo')
+  console.log('  Employee: employee@cubic.demo')
   console.log(`  Tasks created: ${tasks.length}`)
 
   await mongoose.disconnect()

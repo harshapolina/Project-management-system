@@ -43,6 +43,18 @@ const boqItemSchema = new mongoose.Schema(
     rate: { type: Number, default: 0 },
     amount: { type: Number, default: 0 },
     room: { type: String, default: 'General' },
+    image: { type: String, default: '' },
+  },
+  { _id: true },
+)
+
+const quotationAttachmentSchema = new mongoose.Schema(
+  {
+    name: { type: String, default: '' },
+    url: { type: String, required: true },
+    mime: { type: String, default: '' },
+    uploadedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdAt: { type: Date, default: Date.now },
   },
   { _id: true },
 )
@@ -64,6 +76,7 @@ const quotationSchema = new mongoose.Schema(
       default: 'draft',
     },
     items: [boqItemSchema],
+    attachments: [quotationAttachmentSchema],
     subtotal: { type: Number, default: 0 },
     gstPercent: { type: Number, default: 18 },
     discount: { type: Number, default: 0 },

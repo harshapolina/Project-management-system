@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useSearchParams } from 'react-router-dom'
 import { useForm } from 'react-hook-form'
 import { z } from 'zod'
 import { zodResolver } from '@hookform/resolvers/zod'
@@ -13,6 +13,7 @@ import {
   useAuthStore,
 } from '../../lib/api'
 import { Button, Input, toast } from '../../components/ui'
+import { homePathForUser, isAdminRole } from '../../lib/roles'
 import {
   ArrowRight,
   Check,
@@ -21,7 +22,6 @@ import {
   Zap,
   Users,
   Clock,
-  Quote,
 } from 'lucide-react'
 
 gsap.registerPlugin(useGSAP, ScrollTrigger)
@@ -56,7 +56,6 @@ const NAV = [
   { href: '#top', label: 'Home' },
   { href: '#features', label: 'Features' },
   { href: '#why', label: 'Why Choose' },
-  { href: '#testimonials', label: 'Testimonial' },
   { href: '#pricing', label: 'Pricing' },
 ]
 
@@ -168,30 +167,6 @@ const STEPS = [
   },
 ]
 
-const TESTIMONIALS = [
-  {
-    quote:
-      'Cubic replaced our spreadsheet chaos. Everyone from design to site finally works from one board.',
-    name: 'Priya Mehta',
-    role: 'Studio Director',
-    company: 'Atelier North',
-  },
-  {
-    quote:
-      'BOQ, snags, and client updates used to live in five apps. Now the project thread is just… there.',
-    name: 'James Okonkwo',
-    role: 'Project Manager',
-    company: 'Form & Field',
-  },
-  {
-    quote:
-      'The Home view alone cut our morning standup prep. Assigned, overdue, and comments in one place.',
-    name: 'Sofia Alvarez',
-    role: 'Ops Lead',
-    company: 'Lumen Interiors',
-  },
-]
-
 const PLANS = [
   {
     name: 'Studio',
@@ -264,30 +239,57 @@ function LogoMark({ size = 'md' }) {
   const box = size === 'sm' ? 'h-7 w-7 text-[11px]' : 'h-8 w-8 text-[12px]'
   return (
     <span
-      className={`flex ${box} items-center justify-center rounded-xl bg-accent font-bold text-[#0E0E10] shadow-[0_0_0_1px_rgba(198,255,61,0.25)]`}
+      className={`flex ${box} items-center justify-center rounded-xl bg-[#2563eb] font-bold text-white shadow-[0_4px_12px_rgba(37,99,235,0.32)]`}
     >
-      C
+      E
     </span>
   )
+}
+
+const DEMO_CREDENTIALS = {
+  staff: {
+    workspace: 'cubic',
+    email: 'employee@cubic.demo',
+    password: 'Employee@Demo123',
+  },
+  admin: {
+    workspace: 'cubic',
+    email: 'owner@cubic.demo',
+    password: 'Company@Owner123',
+  },
 }
 
 export function LoginPage() {
   const root = useRef(null)
   const navigate = useNavigate()
+  const [searchParams, setSearchParams] = useSearchParams()
   const setAuth = useAuthStore((s) => s.setAuth)
   const [loading, setLoading] = useState(false)
+  const portal =
+    searchParams.get('portal') === 'admin' ? 'admin' : 'staff'
   const {
     register,
     handleSubmit,
+    reset,
     formState: { errors },
   } = useForm({
     resolver: zodResolver(loginSchema),
     defaultValues: {
-      workspace: getTenantSlug() || 'cubic',
-      email: 'rohan@cubic.studio',
-      password: 'demo1234',
+      ...DEMO_CREDENTIALS[portal],
+      workspace: getTenantSlug() || DEMO_CREDENTIALS[portal].workspace,
     },
   })
+
+  const setPortal = (next) => {
+    reset({
+      ...DEMO_CREDENTIALS[next],
+      workspace: getTenantSlug() || DEMO_CREDENTIALS[next].workspace,
+    })
+    const p = new URLSearchParams(searchParams)
+    if (next === 'admin') p.set('portal', 'admin')
+    else p.delete('portal')
+    setSearchParams(p, { replace: true })
+  }
 
   useGSAP(
     () => {
@@ -423,19 +425,6 @@ export function LoginPage() {
       )
 
       reveal(
-        '.lp-test-head > *',
-        { from: { y: 16 }, stagger: 0.08, duration: 0.65 },
-        '.lp-testimonials',
-        'top 84%',
-      )
-      reveal(
-        '.lp-test-card',
-        { from: { y: 18 }, stagger: 0.09, duration: 0.65 },
-        '.lp-test-grid',
-        'top 88%',
-      )
-
-      reveal(
         '.lp-price-head > *',
         { from: { y: 16 }, stagger: 0.08, duration: 0.65 },
         '.lp-pricing',
@@ -514,18 +503,26 @@ export function LoginPage() {
           password: values.password,
         }),
       })
+
+      if (portal === 'admin' && !isAdminRole(data.user) && !data.user.isPlatformAdmin) {
+        toast('This account is not Admin / HR. Use Staff sign-in.', {
+          type: 'error',
+        })
+        return
+      }
+
       setAuth({
         user: data.user,
         accessToken: data.accessToken,
         refreshToken: data.refreshToken,
         tenant: data.tenant || null,
       })
-      toast('Welcome back', { type: 'success' })
-      if (data.user.mustChangePassword) navigate('/settings')
-      else if (data.user.role === 'site_supervisor') navigate('/mobile')
-      else if (!data.user.onboardingCompleted) navigate('/onboarding')
-      else if (data.user.isPlatformAdmin) navigate('/platform')
-      else navigate('/')
+      toast(
+        portal === 'admin' ? 'Welcome to Admin' : 'Welcome back',
+        { type: 'success' },
+      )
+      const dest = homePathForUser(data.user, portal === 'admin' ? 'admin' : 'staff')
+      navigate(dest || '/projects')
     } catch (err) {
       toast(err.message || 'Login failed', { type: 'error' })
     } finally {
@@ -541,19 +538,19 @@ export function LoginPage() {
     >
       {/* ── FLOATING GLASSY NAV ── */}
       <header className="lp-nav pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4 md:px-6">
-        <div className="pointer-events-auto mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-white/10 bg-[#1c1c1e]/55 px-3 py-2.5 shadow-[0_8px_40px_rgba(0,0,0,0.45)] backdrop-blur-2xl sm:gap-4 sm:px-5 sm:py-3">
+        <div className="pointer-events-auto mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-[#e2e8f0] bg-[rgba(255,255,255,0.82)] px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-2xl sm:gap-4 sm:px-5 sm:py-3">
           <a href="#top" className="flex items-center gap-2.5">
             <LogoMark />
-            <span className="text-[16px] font-bold tracking-tight text-white">
-              Cubic
+            <span className="text-[16px] font-bold tracking-tight text-[#0f172a]">
+              EPM
             </span>
           </a>
-          <nav className="hidden items-center gap-5 text-[13px] font-medium text-[#8b8b90] md:flex lg:gap-7">
+          <nav className="hidden items-center gap-5 text-[13px] font-medium text-[#475569] md:flex lg:gap-7">
             {NAV.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-accent"
+                className="transition-colors hover:text-[#2563eb]"
               >
                 {item.label}
               </a>
@@ -561,7 +558,7 @@ export function LoginPage() {
           </nav>
           <a
             href="#enter"
-            className="rounded-full bg-white/95 px-4 py-2 text-[12px] font-semibold text-[#0E0E10] shadow-sm transition hover:bg-accent sm:px-5 sm:text-[13px]"
+            className="rounded-full bg-[#2563eb] px-4 py-2 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(37,99,235,0.28)] transition hover:bg-[#1d4ed8] sm:px-5 sm:text-[13px]"
           >
             Contact Us
           </a>
@@ -573,32 +570,36 @@ export function LoginPage() {
         id="top"
         className="lp-hero relative overflow-hidden bg-[#0F0F10] pb-16 pt-28 text-white md:pb-24 md:pt-32"
       >
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,_rgba(198,255,61,0.14)_0%,_transparent_55%)]" />
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_40%,_rgba(59,130,246,0.08)_0%,_transparent_45%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,_rgba(37,99,235,0.10)_0%,_transparent_58%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_35%,_rgba(14,165,233,0.08)_0%,_transparent_45%)]" />
 
         <div className="relative z-10 mx-auto max-w-5xl px-4 text-center md:px-6">
           <div className="lp-hero-copy mx-auto max-w-3xl">
-            <h1 className="text-[clamp(2.35rem,6vw,3.85rem)] font-bold leading-[1.08] tracking-[-0.035em] text-white">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#dbeafe] bg-[#eff6ff] px-3.5 py-1.5 text-[12px] font-semibold text-[#1d4ed8]">
+              <Sparkles className="h-3.5 w-3.5" />
+              EPM · Editco Project Management
+            </span>
+            <h1 className="mt-5 text-[clamp(2.35rem,6vw,3.85rem)] font-bold leading-[1.08] tracking-[-0.035em] text-[#0f172a]">
               Simplify Task Management
               <br />
-              <span className="text-[#8b8b90]">Boost Productivity.</span>
+              <span className="text-[#2563eb]">Boost Productivity.</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[#8b8b90] md:text-[16px]">
-              Cubic is the interior project OS — tasks, boards, Gantt, BOQ, site,
+            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[#64748b] md:text-[16px]">
+              EPM is the interior project OS — tasks, boards, Gantt, BOQ, site,
               and channels in one private workspace built for studios that ship
               spaces.
             </p>
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <a
                 href="#enter"
-                className="inline-flex items-center gap-2 rounded-full bg-accent px-7 py-3.5 text-[14px] font-semibold text-[#0E0E10] shadow-lg shadow-[rgba(198,255,61,0.28)] transition hover:bg-accent-hover"
+                className="inline-flex items-center gap-2 rounded-full bg-[#2563eb] px-7 py-3.5 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.3)] transition hover:bg-[#1d4ed8]"
               >
                 Get Started Free
                 <ArrowRight className="h-4 w-4" />
               </a>
               <a
                 href="#features"
-                className="rounded-full border border-[#2e2e32] bg-[#1c1c1e]/80 px-7 py-3.5 text-[14px] font-semibold text-white backdrop-blur transition hover:border-[#3a3a3e] hover:bg-[#252528]"
+                className="rounded-full border border-[#cbd5e1] bg-[rgba(255,255,255,0.9)] px-7 py-3.5 text-[14px] font-semibold text-[#0f172a] shadow-[0_6px_18px_rgba(15,23,42,0.06)] backdrop-blur transition hover:border-[#93c5fd] hover:text-[#1d4ed8]"
               >
                 Book a Demo
               </a>
@@ -609,7 +610,7 @@ export function LoginPage() {
             {FLOAT_TAGS.map((tag) => (
               <span
                 key={tag.label}
-                className={`absolute z-20 hidden rounded-full border border-[#2e2e32] bg-[#1c1c1e]/90 px-3.5 py-1.5 text-[11px] font-semibold text-[#c5c5c8] shadow-lg shadow-black/40 backdrop-blur sm:inline-flex ${tag.className}`}
+                className={`absolute z-20 hidden rounded-full border border-[#e2e8f0] bg-[rgba(255,255,255,0.95)] px-3.5 py-1.5 text-[11px] font-semibold text-[#334155] shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur sm:inline-flex ${tag.className}`}
               >
                 {tag.label}
               </span>
@@ -714,7 +715,7 @@ export function LoginPage() {
         <div className="mx-auto max-w-6xl">
           <div className="lp-why-head mx-auto max-w-2xl text-center">
             <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-white">
-              Why Teams Choose Cubic
+              Why Teams Choose EPM
             </h2>
             <p className="mt-3 text-[15px] text-[#8b8b90]">
               Built for interior delivery — from lead to handover — with the
@@ -813,43 +814,6 @@ export function LoginPage() {
         </div>
       </section>
 
-      {/* ── TESTIMONIALS ── */}
-      <section
-        id="testimonials"
-        className="lp-testimonials bg-[#0F0F10] px-4 py-16 md:px-6 md:py-24"
-      >
-        <div className="mx-auto max-w-6xl">
-          <div className="lp-test-head mx-auto max-w-2xl text-center">
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-white">
-              Real Results, Real Impact. Our Success Stories.
-            </h2>
-            <p className="mt-3 text-[15px] text-[#8b8b90]">
-              Studios and PMs who moved delivery onto Cubic.
-            </p>
-          </div>
-
-          <div className="lp-test-grid mt-12 grid gap-5 md:grid-cols-3">
-            {TESTIMONIALS.map((t) => (
-              <article
-                key={t.name}
-                className="lp-test-card flex flex-col rounded-[22px] border border-[#2e2e32] bg-[#1c1c1e] p-6"
-              >
-                <Quote className="h-7 w-7 text-accent" />
-                <p className="mt-4 flex-1 text-[14px] leading-relaxed text-[#c5c5c8]">
-                  “{t.quote}”
-                </p>
-                <div className="mt-6 border-t border-[#2e2e32] pt-4">
-                  <p className="text-[14px] font-bold text-white">{t.name}</p>
-                  <p className="text-[12px] text-[#8b8b90]">
-                    {t.role} · {t.company}
-                  </p>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── PRICING ── */}
       <section
         id="pricing"
@@ -871,7 +835,7 @@ export function LoginPage() {
                 key={plan.name}
                 className={`lp-price-card flex flex-col rounded-[22px] border p-6 md:p-7 ${
                   plan.featured
-                    ? 'border-accent/40 bg-[#1c1c1e] text-white shadow-xl shadow-[rgba(198,255,61,0.12)] ring-1 ring-accent/20'
+                    ? 'border-accent/40 bg-[#1c1c1e] text-white shadow-xl shadow-[rgba(37,99,235,0.16)] ring-1 ring-accent/25'
                     : 'border-[#2e2e32] bg-[#0F0F10]'
                 }`}
               >
@@ -912,7 +876,7 @@ export function LoginPage() {
 
       {/* ── SIGN IN ── */}
       <section id="enter" className="bg-[#0F0F10] px-4 py-16 md:px-6 md:py-20">
-        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[28px] border border-[#2e2e32] bg-[#1c1c1e] shadow-[0_24px_60px_rgba(0,0,0,0.45)] md:grid-cols-2">
+        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[28px] border border-[#2e2e32] bg-[#1c1c1e] shadow-[0_24px_60px_rgba(15,23,42,0.12)] md:grid-cols-2">
           <div className="lp-enter-left relative overflow-hidden bg-[#121214] px-7 py-10 text-white md:px-10 md:py-12">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-accent/15" />
             <div className="pointer-events-none absolute -bottom-16 -left-8 h-48 w-48 rounded-full bg-white/5" />
@@ -921,14 +885,19 @@ export function LoginPage() {
                 Enter
               </p>
               <h2 className="mt-3 text-[clamp(1.5rem,3vw,2.1rem)] font-bold leading-tight">
-                Sign in to your company workspace
+                {portal === 'admin'
+                  ? 'Company owner sign-in'
+                  : 'Staff sign-in'}
               </h2>
               <p className="mt-4 text-[14px] leading-relaxed text-[#8b8b90]">
-                Workspace slug + credentials from your admin — or Editco for
-                platform access.
+                {portal === 'admin'
+                  ? 'People, company operations, permissions, and workspace administration.'
+                  : 'Projects, tasks, and site work — for your studio team.'}
               </p>
               <p className="mt-8 text-[11px] text-[#6b6b70]">
-                Demo · cubic · rohan@cubic.studio · demo1234
+                {portal === 'admin'
+                  ? 'Demo owner · cubic · owner@cubic.demo · Company@Owner123'
+                  : 'Demo employee · cubic · employee@cubic.demo · Employee@Demo123'}
               </p>
             </div>
           </div>
@@ -936,6 +905,30 @@ export function LoginPage() {
             onSubmit={handleSubmit(onSubmit)}
             className="lp-enter-right space-y-3.5 px-7 py-10 md:px-10 md:py-12"
           >
+            <div className="flex rounded-full border border-[#2e2e32] bg-[#121214] p-1">
+              <button
+                type="button"
+                onClick={() => setPortal('staff')}
+                className={`flex-1 rounded-full py-2 text-[12px] font-semibold transition ${
+                  portal === 'staff'
+                    ? 'bg-accent text-[#0E0E10]'
+                    : 'text-[#8b8b90] hover:text-white'
+                }`}
+              >
+                Staff
+              </button>
+              <button
+                type="button"
+                onClick={() => setPortal('admin')}
+                className={`flex-1 rounded-full py-2 text-[12px] font-semibold transition ${
+                  portal === 'admin'
+                    ? 'bg-accent text-[#0E0E10]'
+                    : 'text-[#8b8b90] hover:text-white'
+                }`}
+              >
+                Admin / Owner
+              </button>
+            </div>
             <Input
               label="Workspace"
               placeholder="your-company"
@@ -981,7 +974,7 @@ export function LoginPage() {
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <LogoMark size="sm" />
-            <span className="text-[13px] font-bold text-white">Cubic</span>
+            <span className="text-[13px] font-bold text-white">EPM</span>
           </div>
           <p className="text-[12px] text-[#6b6b70]">by Editco</p>
         </div>

@@ -1,69 +1,96 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOutletContext, useParams, useSearchParams } from 'react-router-dom'
-import {
-  addDays,
-  eachDayOfInterval,
-  endOfMonth,
-  format,
-  isSameDay,
-  isSameMonth,
-  startOfMonth,
-  startOfWeek,
-  endOfWeek,
-} from 'date-fns'
+import { format, isPast, isToday } from 'date-fns'
 import {
   Plus,
-  ChevronDown,
-  ChevronRight,
-  Flag,
-  MessageSquare,
-  Calendar as CalIcon,
+  Search,
   Circle,
   CheckCircle2,
+  ChevronDown,
+  Calendar,
+  User,
 } from 'lucide-react'
-import { api } from '../../lib/api'
-import { Avatar, toast } from '../../components/ui'
-import { ClickUpListToolbar } from './ProjectWorkspace'
+import { api, useAuthStore } from '../../lib/api'
+import { capabilitiesForUser } from '../../lib/roles'
+import { toast } from '../../components/ui'
 import { TaskDetailPanel } from './TaskDetailPanel'
-import { StatusBadge } from '../../components/tasks'
 import { cn } from '../../lib/utils'
+import {
+  getTaskStatus,
+  nextTaskStatus,
+} from '../../lib/taskStatus'
 
-const BOARD = [
-  { key: 'todo', label: 'TO DO' },
-  { key: 'in_progress', label: 'IN PROGRESS' },
-  { key: 'review', label: 'REVIEW' },
-  { key: 'done', label: 'DONE' },
+const GROUPS = [
+  {
+    key: 'todo',
+    label: 'Not started',
+    hint: 'Waiting to begin',
+    dot: 'bg-slate-400',
+    tint: 'bg-slate-50',
+    ring: 'ring-slate-200',
+  },
+  {
+    key: 'in_progress',
+    label: 'Working on it',
+    hint: 'Happening now',
+    dot: 'bg-blue-500',
+    tint: 'bg-blue-50',
+    ring: 'ring-blue-100',
+  },
+  {
+    key: 'review',
+    label: 'Needs check',
+    hint: 'Ready for review',
+    dot: 'bg-amber-500',
+    tint: 'bg-amber-50',
+    ring: 'ring-amber-100',
+  },
+  {
+    key: 'done',
+    label: 'Finished',
+    hint: 'Done',
+    dot: 'bg-emerald-500',
+    tint: 'bg-emerald-50',
+    ring: 'ring-emerald-100',
+  },
 ]
 
-const PRIORITY_COLOR = {
-  urgent: '#ef4444',
-  high: '#f59e0b',
-  medium: '#3b82f6',
-  low: '#6b6b70',
+const PRIORITY = {
+  urgent: { label: 'Urgent', className: 'bg-red-100 text-red-700' },
+  high: { label: 'High', className: 'bg-orange-100 text-orange-700' },
+  medium: { label: 'Normal', className: 'bg-slate-100 text-slate-600' },
+  low: { label: 'Low', className: 'bg-slate-50 text-slate-500' },
 }
 
-export function ProjectTasks({ forcedView }) {
+function dueLabel(dueDate) {
+  if (!dueDate) return { text: 'No date', className: 'text-[#94a3b8]' }
+  const d = new Date(dueDate)
+  const text = format(d, 'dd MMM')
+  if (isToday(d)) return { text: `Today`, className: 'text-blue-700 font-bold' }
+  if (isPast(d)) return { text: `Late · ${text}`, className: 'text-red-600 font-bold' }
+  return { text, className: 'text-[#475569]' }
+}
+
+export function ProjectTasks() {
   const { id } = useParams()
   const { project } = useOutletContext()
   const [searchParams, setSearchParams] = useSearchParams()
-  const [view, setView] = useState(forcedView || 'list')
   const [selectedId, setSelectedId] = useState(null)
   const [createOpen, setCreateOpen] = useState(false)
   const [createStatus, setCreateStatus] = useState('todo')
   const [search, setSearch] = useState('')
   const [collapsed, setCollapsed] = useState({})
+  const [filter, setFilter] = useState('open')
   const qc = useQueryClient()
+  const user = useAuthStore((s) => s.user)
+  const caps = capabilitiesForUser(user)
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
     queryFn: () => api('/users'),
   })
   const users = usersData?.users || []
-
-  useEffect(() => {
-    if (forcedView) setView(forcedView)
-  }, [forcedView])
 
   useEffect(() => {
     const taskFromUrl = searchParams.get('task')
@@ -85,11 +112,15 @@ export function ProjectTasks({ forcedView }) {
   })
 
   const tasks = useMemo(() => {
-    const list = data?.tasks || []
-    if (!search.trim()) return list
-    const q = search.toLowerCase()
-    return list.filter((t) => t.title?.toLowerCase().includes(q))
-  }, [data?.tasks, search])
+    let list = data?.tasks || []
+    if (filter === 'open') list = list.filter((t) => t.status !== 'done')
+    if (filter === 'done') list = list.filter((t) => t.status === 'done')
+    if (search.trim()) {
+      const q = search.toLowerCase()
+      list = list.filter((t) => t.title?.toLowerCase().includes(q))
+    }
+    return list
+  }, [data?.tasks, search, filter])
 
   const patch = useMutation({
     mutationFn: ({ taskId, body }) =>
@@ -97,13 +128,13 @@ export function ProjectTasks({ forcedView }) {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tasks', id] })
       qc.invalidateQueries({ queryKey: ['home'] })
+      qc.invalidateQueries({ queryKey: ['project', id] })
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
 
   const byStatus = useMemo(() => {
-    const map = {}
-    for (const col of BOARD) map[col.key] = []
+    const map = Object.fromEntries(GROUPS.map((g) => [g.key, []]))
     for (const t of tasks) {
       const k = map[t.status] ? t.status : 'todo'
       map[k].push(t)
@@ -111,8 +142,191 @@ export function ProjectTasks({ forcedView }) {
     return map
   }, [tasks])
 
-  const panel = (
-    <>
+  const allTasks = data?.tasks || []
+  const counts = {
+    open: allTasks.filter((t) => t.status !== 'done').length,
+    done: allTasks.filter((t) => t.status === 'done').length,
+    late: allTasks.filter(
+      (t) =>
+        t.status !== 'done' &&
+        t.dueDate &&
+        isPast(new Date(t.dueDate)) &&
+        !isToday(new Date(t.dueDate)),
+    ).length,
+  }
+
+  if (isLoading) {
+    return <div className="m-3 h-40 animate-pulse rounded-xl bg-[#e2e8f0]" />
+  }
+
+  const visibleGroups =
+    filter === 'open'
+      ? GROUPS.filter((g) => g.key !== 'done')
+      : filter === 'done'
+        ? GROUPS.filter((g) => g.key === 'done')
+        : GROUPS
+
+  const gridClass =
+    filter === 'all'
+      ? 'grid-cols-1 sm:grid-cols-2'
+      : filter === 'done'
+        ? 'grid-cols-1 max-w-2xl'
+        : 'grid-cols-1 lg:grid-cols-3'
+
+  return (
+    <div className="flex h-full min-h-0 flex-col bg-[#E8EEF5]">
+      {/* Single packed toolbar — filters sit with actions, no empty stretch */}
+      <div className="shrink-0 border-b border-[#d0dbe8] bg-white px-3 py-2 sm:px-4">
+        <div className="flex flex-wrap items-center gap-2">
+          <h2 className="shrink-0 text-[13px] font-semibold text-[#0f172a]">
+            Who does what
+          </h2>
+
+          <div className="inline-flex rounded-lg bg-[#f1f5f9] p-0.5">
+            {[
+              { id: 'open', label: 'Active', count: counts.open },
+              { id: 'done', label: 'Finished', count: counts.done },
+              { id: 'all', label: 'All', count: allTasks.length },
+            ].map((f) => (
+              <button
+                key={f.id}
+                type="button"
+                onClick={() => setFilter(f.id)}
+                className={cn(
+                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition',
+                  filter === f.id
+                    ? 'bg-white text-[#0f172a] shadow-sm'
+                    : 'text-[#64748b] hover:text-[#334155]',
+                )}
+              >
+                {f.label}
+                <span
+                  className={cn(
+                    'tabular-nums',
+                    filter === f.id ? 'text-[#2563eb]' : 'text-[#94a3b8]',
+                  )}
+                >
+                  {f.count}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {counts.late > 0 && (
+            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-[11px] font-bold text-red-700 ring-1 ring-red-100">
+              Late {counts.late}
+            </span>
+          )}
+
+          <div className="flex flex-1 items-center justify-end gap-1.5 min-w-[140px]">
+            <div className="relative min-w-0 flex-1 max-w-[200px]">
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Find…"
+                className="h-8 w-full rounded-lg border border-[#e2e8f0] bg-[#f8fafc] pl-7 pr-2 text-[12px] outline-none focus:border-[#93c5fd] focus:bg-white"
+              />
+            </div>
+            {caps.createTask && (
+              <button
+                type="button"
+                onClick={() => {
+                  setCreateStatus('todo')
+                  setCreateOpen(true)
+                }}
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-[#2563eb] px-2.5 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                New
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-auto p-2.5 sm:p-3">
+        <div className={cn('grid gap-2.5', gridClass)}>
+          {visibleGroups.map((g) => {
+            const list = byStatus[g.key] || []
+            const closed = collapsed[g.key]
+            return (
+              <section
+                key={g.key}
+                className={cn(
+                  'flex min-h-0 flex-col overflow-hidden rounded-xl border border-[#cfdceb] bg-white shadow-sm ring-1',
+                  g.ring,
+                  filter === 'all' && 'min-h-[180px]',
+                )}
+              >
+                <button
+                  type="button"
+                  onClick={() =>
+                    setCollapsed((s) => ({ ...s, [g.key]: !s[g.key] }))
+                  }
+                  className={cn(
+                    'flex w-full items-center gap-2 px-3 py-2 text-left',
+                    g.tint,
+                  )}
+                >
+                  <ChevronDown
+                    className={cn(
+                      'h-3.5 w-3.5 shrink-0 text-[#64748b] transition',
+                      closed && '-rotate-90',
+                    )}
+                  />
+                  <span className={cn('h-2 w-2 shrink-0 rounded-full', g.dot)} />
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[12px] font-bold text-[#0f172a]">
+                      {g.label}
+                    </p>
+                    <p className="text-[10px] text-[#94a3b8]">{g.hint}</p>
+                  </div>
+                  <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-[#334155] ring-1 ring-[#e2e8f0]">
+                    {list.length}
+                  </span>
+                </button>
+
+                {!closed && (
+                  <div className="flex flex-1 flex-col divide-y divide-[#eef2f7]">
+                    {list.length === 0 && (
+                      <p className="px-3 py-6 text-center text-[11px] text-[#94a3b8]">
+                        Nothing here yet
+                      </p>
+                    )}
+                    {list.map((t) => (
+                      <TaskCard
+                        key={t._id}
+                        task={t}
+                        users={users}
+                        canManage={caps.manageTasks}
+                        onOpen={() => setSelectedId(t._id)}
+                        onPatch={(body) =>
+                          patch.mutate({ taskId: t._id, body })
+                        }
+                      />
+                    ))}
+                    {caps.createTask && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setCreateStatus(g.key === 'done' ? 'todo' : g.key)
+                          setCreateOpen(true)
+                        }}
+                        className="mt-auto flex w-full items-center justify-center gap-1 py-2 text-[11px] font-semibold text-[#2563eb] hover:bg-[#f8fafc]"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add task
+                      </button>
+                    )}
+                  </div>
+                )}
+              </section>
+            )
+          })}
+        </div>
+      </div>
+
       <TaskDetailPanel
         open={createOpen}
         mode="create"
@@ -135,507 +349,132 @@ export function ProjectTasks({ forcedView }) {
         projectName={project?.name}
         onClose={closeTask}
       />
-    </>
-  )
-
-  if (isLoading) {
-    return <div className="h-40 animate-pulse bg-[#1c1c1e]" />
-  }
-
-  if (view === 'board') {
-    return (
-      <BoardView
-        byStatus={byStatus}
-        search={search}
-        onSearch={setSearch}
-        onAddTask={(status) => {
-          setCreateStatus(status || 'todo')
-          setCreateOpen(true)
-        }}
-        onOpenTask={(taskId) => setSelectedId(taskId)}
-        onMoveTask={(taskId, status) => {
-          if (!taskId || !status) return
-          const task = tasks.find((t) => t._id === taskId)
-          if (!task || task.status === status) return
-          // Optimistic UI
-          qc.setQueryData(['tasks', id], (old) => {
-            if (!old?.tasks) return old
-            return {
-              ...old,
-              tasks: old.tasks.map((t) =>
-                t._id === taskId ? { ...t, status } : t,
-              ),
-            }
-          })
-          patch.mutate({ taskId, body: { status } })
-        }}
-        panel={panel}
-      />
-    )
-  }
-
-  if (view === 'gantt') {
-    return (
-      <div>
-        <ClickUpListToolbar
-          onAddTask={() => {
-            setCreateStatus('todo')
-            setCreateOpen(true)
-          }}
-          search={search}
-          onSearch={setSearch}
-        />
-        <div className="p-4">
-          <GanttView
-            tasks={tasks}
-            onSelect={(t) => setSelectedId(t._id)}
-            onReschedule={(taskId, dueDate) =>
-              patch.mutate({ taskId, body: { dueDate } })
-            }
-          />
-        </div>
-        {panel}
-      </div>
-    )
-  }
-
-  if (view === 'calendar') {
-    return (
-      <div>
-        <ClickUpListToolbar
-          onAddTask={() => {
-            setCreateStatus('todo')
-            setCreateOpen(true)
-          }}
-          search={search}
-          onSearch={setSearch}
-        />
-        <div className="p-4">
-          <CalendarView tasks={tasks} onSelect={(t) => setSelectedId(t._id)} />
-        </div>
-        {panel}
-      </div>
-    )
-  }
-
-  return (
-    <div className="flex h-full min-h-0 flex-col">
-      <ClickUpListToolbar
-        onAddTask={() => setCreateOpen(true)}
-        search={search}
-        onSearch={setSearch}
-      />
-
-      <div className="min-h-0 flex-1 overflow-auto">
-        <div className="min-w-[720px]">
-          <div className="grid grid-cols-[minmax(220px,1fr)_120px_130px_100px_130px_44px] items-center gap-0 border-b border-[#2e2e32] px-3 py-1.5 text-[11px] font-medium text-[#6b6b70]">
-            <div className="pl-7">Name</div>
-            <div>Assignee</div>
-            <div>Due date</div>
-            <div>Priority</div>
-            <div>Status</div>
-            <div className="text-center">
-              <MessageSquare className="mx-auto h-3 w-3" />
-            </div>
-          </div>
-
-          {BOARD.map((col) => {
-            const list = byStatus[col.key] || []
-            const isCollapsed = collapsed[col.key]
-            return (
-              <div key={col.key} className="border-b border-[#2e2e32]/60">
-                <button
-                  type="button"
-                  onClick={() =>
-                    setCollapsed((s) => ({ ...s, [col.key]: !s[col.key] }))
-                  }
-                  className="flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#1c1c1e]/80"
-                >
-                  {isCollapsed ? (
-                    <ChevronRight className="h-3.5 w-3.5 text-[#8b8b90]" />
-                  ) : (
-                    <ChevronDown className="h-3.5 w-3.5 text-[#8b8b90]" />
-                  )}
-                  <StatusBadge status={col.key} size="sm" />
-                  <span className="text-[12px] text-[#6b6b70]">{list.length}</span>
-                </button>
-
-                {!isCollapsed && (
-                  <>
-                    {list.map((t) => (
-                      <TaskRow
-                        key={t._id}
-                        task={t}
-                        users={users}
-                        onOpen={() => setSelectedId(t._id)}
-                        onPatch={(body) =>
-                          patch.mutate({ taskId: t._id, body })
-                        }
-                      />
-                    ))}
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setCreateStatus(col.key)
-                        setCreateOpen(true)
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 pl-10 text-[13px] text-[#6b6b70] hover:bg-[#1c1c1e] hover:text-white"
-                    >
-                      <Plus className="h-3.5 w-3.5" />
-                      Add Task
-                    </button>
-                  </>
-                )}
-              </div>
-            )
-          })}
-        </div>
-      </div>
-
-      {panel}
     </div>
   )
 }
 
-function TaskRow({ task, users = [], onOpen, onPatch }) {
-  const done = task.status === 'done'
+function TaskCard({ task, users, canManage, onOpen, onPatch }) {
+  const status = task.status || 'todo'
+  const statusMeta = getTaskStatus(status)
+  const next = nextTaskStatus(status)
+  const done = status === 'done'
   const assigneeId = task.assignee?._id || task.assignee || ''
+  const due = dueLabel(task.dueDate)
+  const pri = PRIORITY[task.priority] || PRIORITY.medium
 
   return (
-    <div className="group grid grid-cols-[minmax(220px,1fr)_120px_130px_100px_130px_44px] items-center gap-0 border-t border-[#2e2e32]/40 px-3 py-[7px] hover:bg-[#1c1c1e]">
-      <div className="flex min-w-0 items-center gap-2">
+    <div className="px-2.5 py-2 hover:bg-[#f8fafc]">
+      <div className="flex items-start gap-2">
         <button
           type="button"
-          onClick={() =>
-            onPatch({ status: done ? 'todo' : 'done' })
-          }
-          className="shrink-0 text-[#6b6b70] hover:text-accent"
-          title={done ? 'Mark todo' : 'Mark done'}
+          onClick={() => onPatch({ status: next.value })}
+          className="mt-0.5 shrink-0"
+          title={`${statusMeta.shortLabel} → ${next.shortLabel}`}
+          aria-label={`Advance status to ${next.shortLabel}`}
         >
           {done ? (
-            <CheckCircle2 className="h-4 w-4 text-accent" />
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          ) : status === 'in_progress' ? (
+            <Circle
+              className="h-4 w-4 fill-blue-500/25 text-blue-500"
+              strokeWidth={2.5}
+            />
+          ) : status === 'review' ? (
+            <Circle
+              className="h-4 w-4 fill-amber-500/30 text-amber-500"
+              strokeWidth={2.5}
+            />
           ) : (
-            <Circle className="h-4 w-4" />
+            <Circle className="h-4 w-4 text-[#94a3b8]" />
           )}
         </button>
-        <button
-          type="button"
-          onClick={onOpen}
-          className={cn(
-            'truncate text-left text-[13px] hover:text-accent',
-            done && 'text-[#6b6b70] line-through',
-          )}
-        >
-          {task.title}
-        </button>
-      </div>
 
-      <div>
-        <select
-          value={assigneeId}
-          onChange={(e) =>
-            onPatch({ assignee: e.target.value || null })
-          }
-          className="h-7 w-full max-w-[110px] rounded-md border border-transparent bg-transparent px-1 text-[11px] text-[#c5c5c8] outline-none hover:border-[#2e2e32] focus:border-[#2e2e32] focus:bg-[#121214]"
-          title="Assignee"
-        >
-          <option value="">Unassigned</option>
-          {users.map((u) => (
-            <option key={u._id} value={u._id}>
-              {u.name}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div>
-        <input
-          type="date"
-          value={
-            task.dueDate
-              ? format(new Date(task.dueDate), 'yyyy-MM-dd')
-              : ''
-          }
-          onChange={(e) =>
-            onPatch({
-              dueDate: e.target.value
-                ? new Date(e.target.value).toISOString()
-                : null,
-            })
-          }
-          className="h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-[11px] text-[#8b8b90] outline-none hover:border-[#2e2e32] focus:border-[#2e2e32] focus:bg-[#121214]"
-        />
-      </div>
-
-      <div>
-        <select
-          value={task.priority || 'medium'}
-          onChange={(e) => onPatch({ priority: e.target.value })}
-          className="h-7 w-full rounded-md border border-transparent bg-transparent px-1 text-[11px] outline-none hover:border-[#2e2e32] focus:border-[#2e2e32] focus:bg-[#121214]"
-          style={{ color: PRIORITY_COLOR[task.priority] || '#6b6b70' }}
-        >
-          <option value="urgent">Urgent</option>
-          <option value="high">High</option>
-          <option value="medium">Medium</option>
-          <option value="low">Low</option>
-        </select>
-      </div>
-
-      <div>
-        <select
-          value={task.status || 'todo'}
-          onChange={(e) => onPatch({ status: e.target.value })}
-          className="h-7 w-full rounded-md border border-transparent bg-[#3a3a3e] px-1.5 text-[10px] font-semibold tracking-wide text-[#c5c5c8] outline-none hover:border-[#2e2e32]"
-        >
-          {BOARD.map((b) => (
-            <option key={b.key} value={b.key}>
-              {b.label}
-            </option>
-          ))}
-        </select>
-      </div>
-
-      <div className="flex justify-center">
-        <button
-          type="button"
-          onClick={onOpen}
-          className="rounded p-1 text-[#6b6b70] hover:bg-[#252528] hover:text-white"
-          title="Comments"
-        >
-          <MessageSquare className="h-3.5 w-3.5" />
-        </button>
-      </div>
-    </div>
-  )
-}
-
-function BoardView({
-  byStatus,
-  search,
-  onSearch,
-  onAddTask,
-  onOpenTask,
-  onMoveTask,
-  panel,
-}) {
-  const [dragOverCol, setDragOverCol] = useState(null)
-  const [draggingId, setDraggingId] = useState(null)
-
-  return (
-    <div>
-      <ClickUpListToolbar
-        onAddTask={() => onAddTask('todo')}
-        search={search}
-        onSearch={onSearch}
-      />
-        <div className="grid gap-3 p-3 sm:gap-3 sm:p-4 md:grid-cols-2 xl:grid-cols-4">
-        {BOARD.map((col) => (
-          <div
-            key={col.key}
-            onDragOver={(e) => {
-              e.preventDefault()
-              e.dataTransfer.dropEffect = 'move'
-              setDragOverCol(col.key)
-            }}
-            onDragLeave={(e) => {
-              if (!e.currentTarget.contains(e.relatedTarget)) {
-                setDragOverCol((cur) => (cur === col.key ? null : cur))
-              }
-            }}
-            onDrop={(e) => {
-              e.preventDefault()
-              const taskId =
-                e.dataTransfer.getData('text/task-id') ||
-                e.dataTransfer.getData('text/plain')
-              setDragOverCol(null)
-              setDraggingId(null)
-              onMoveTask(taskId, col.key)
-            }}
+        <div className="min-w-0 flex-1">
+          <button
+            type="button"
+            onClick={onOpen}
             className={cn(
-              'min-h-[220px] rounded-xl border bg-[#1c1c1e] transition-colors',
-              dragOverCol === col.key
-                ? 'border-accent/60 bg-accent/5'
-                : 'border-[#2e2e32]',
+              'block w-full text-left text-[13px] font-semibold leading-snug text-[#0f172a] hover:text-[#2563eb]',
+              done && 'font-medium text-[#94a3b8] line-through',
             )}
           >
-            <div className="flex items-center gap-2 border-b border-[#2e2e32] px-3 py-2 text-[11px] font-semibold tracking-wide text-[#8b8b90]">
-              <StatusBadge status={col.key} size="sm" />
-              <span className="rounded bg-[#252528] px-1.5 text-[10px]">
-                {byStatus[col.key]?.length || 0}
-              </span>
-            </div>
-            <div className="space-y-1.5 p-2">
-              {(byStatus[col.key] || []).map((t) => (
-                <div
-                  key={t._id}
-                  draggable
-                  onDragStart={(e) => {
-                    e.dataTransfer.setData('text/task-id', t._id)
-                    e.dataTransfer.setData('text/plain', t._id)
-                    e.dataTransfer.effectAllowed = 'move'
-                    setDraggingId(t._id)
-                  }}
-                  onDragEnd={() => {
-                    setDraggingId(null)
-                    setDragOverCol(null)
-                  }}
-                  onDoubleClick={() => onOpenTask(t._id)}
-                  title="Drag to move · Double-click for details"
-                  className={cn(
-                    'cursor-grab rounded-md border border-[#2e2e32] bg-[#121214] p-2.5 text-left active:cursor-grabbing hover:border-[#3a3a3e]',
-                    draggingId === t._id && 'opacity-40',
-                  )}
-                >
-                  <p className="text-[13px] font-medium select-none">{t.title}</p>
-                  <div className="mt-2 flex items-center justify-between">
-                    <Avatar
-                      src={t.assignee?.avatar}
-                      name={t.assignee?.name}
-                      size="xs"
-                    />
-                    <StatusPill status={t.status} />
-                  </div>
-                </div>
-              ))}
-              <button
-                type="button"
-                onClick={() => onAddTask(col.key)}
-                className="w-full rounded-md px-2 py-1.5 text-left text-[12px] text-[#6b6b70] hover:bg-[#252528] hover:text-white"
+            {task.title}
+          </button>
+
+          <div className="mt-1.5 flex flex-nowrap items-center gap-1 overflow-x-auto">
+            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#f1f5f9] px-1.5 py-0.5">
+              <User className="h-3 w-3 shrink-0 text-[#94a3b8]" />
+              <select
+                value={assigneeId}
+                disabled={!canManage}
+                onChange={(e) =>
+                  onPatch({ assignee: e.target.value || null })
+                }
+                className="max-w-[72px] truncate bg-transparent text-[10px] font-semibold text-[#334155] outline-none"
               >
-                + Add Task
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-      {panel}
-    </div>
-  )
-}
+                <option value="">Anyone</option>
+                {users.map((u) => (
+                  <option key={u._id} value={u._id}>
+                    {u.name?.split(' ')[0] || u.name}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-function StatusPill({ status }) {
-  return <StatusBadge status={status} size="sm" />
-}
-
-function GanttView({ tasks, onSelect, onReschedule }) {
-  const start = startOfMonth(new Date())
-  const days = eachDayOfInterval({ start, end: addDays(start, 27) })
-
-  return (
-    <div className="overflow-x-auto rounded-lg border border-[#2e2e32]">
-      <div className="min-w-[900px]">
-        <div className="grid grid-cols-[200px_1fr] border-b border-[#2e2e32] text-[11px] text-[#8b8b90]">
-          <div className="px-3 py-2 font-medium">Task</div>
-          <div
-            className="grid"
-            style={{
-              gridTemplateColumns: `repeat(${days.length}, minmax(28px, 1fr))`,
-            }}
-          >
-            {days.map((d) => (
-              <div
-                key={d.toISOString()}
+            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#f1f5f9] px-1.5 py-0.5">
+              <Calendar className="h-3 w-3 shrink-0 text-[#94a3b8]" />
+              <input
+                type="date"
+                disabled={!canManage}
+                value={
+                  task.dueDate
+                    ? format(new Date(task.dueDate), 'yyyy-MM-dd')
+                    : ''
+                }
+                onChange={(e) =>
+                  onPatch({
+                    dueDate: e.target.value
+                      ? new Date(e.target.value).toISOString()
+                      : null,
+                  })
+                }
                 className={cn(
-                  'border-l border-[#2e2e32] px-0.5 py-2 text-center',
-                  isSameDay(d, new Date()) && 'bg-accent/10 text-accent',
+                  'w-[78px] bg-transparent text-[10px] font-semibold outline-none',
+                  due.className,
                 )}
-              >
-                {format(d, 'd')}
-              </div>
-            ))}
-          </div>
-        </div>
-        {tasks.map((t) => {
-          const due = t.dueDate ? new Date(t.dueDate) : addDays(start, 7)
-          const s = t.startDate ? new Date(t.startDate) : addDays(due, -3)
-          const startIdx = Math.max(0, Math.round((s - start) / 86400000))
-          const endIdx = Math.min(
-            days.length - 1,
-            Math.round((due - start) / 86400000),
-          )
-          const span = Math.max(1, endIdx - startIdx + 1)
-          return (
-            <div
-              key={t._id}
-              className="grid grid-cols-[200px_1fr] border-b border-[#2e2e32] last:border-0"
-            >
-              <button
-                type="button"
-                onClick={() => onSelect(t)}
-                className="truncate px-3 py-2.5 text-left text-[13px] hover:text-accent"
-              >
-                {t.title}
-              </button>
-              <div
-                className="relative grid py-2"
-                style={{
-                  gridTemplateColumns: `repeat(${days.length}, minmax(28px, 1fr))`,
-                }}
-              >
-                <button
-                  type="button"
-                  onClick={() =>
-                    onReschedule(t._id, addDays(due, 1).toISOString())
-                  }
-                  className="h-5 rounded-full bg-accent text-[10px] font-semibold text-[#0E0E10]"
-                  style={{ gridColumn: `${startIdx + 1} / span ${span}` }}
-                >
-                  {t.progress}%
-                </button>
-              </div>
-            </div>
-          )
-        })}
-      </div>
-    </div>
-  )
-}
+                title={due.text}
+              />
+            </label>
 
-function CalendarView({ tasks, onSelect }) {
-  const monthStart = startOfMonth(new Date())
-  const days = eachDayOfInterval({
-    start: startOfWeek(monthStart),
-    end: endOfWeek(endOfMonth(monthStart)),
-  })
-
-  return (
-    <div className="rounded-lg border border-[#2e2e32] p-4">
-      <h3 className="mb-3 text-[14px] font-semibold">
-        {format(monthStart, 'MMMM yyyy')}
-      </h3>
-      <div className="mb-1 grid grid-cols-7 gap-1 text-center text-[11px] text-[#6b6b70]">
-        {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div key={d}>{d}</div>
-        ))}
-      </div>
-      <div className="grid grid-cols-7 gap-1">
-        {days.map((d) => {
-          const dayTasks = tasks.filter(
-            (t) => t.dueDate && isSameDay(new Date(t.dueDate), d),
-          )
-          return (
-            <div
-              key={d.toISOString()}
+            <select
+              value={task.priority || 'medium'}
+              disabled={!canManage}
+              onChange={(e) => onPatch({ priority: e.target.value })}
               className={cn(
-                'min-h-[72px] rounded-md border border-[#2e2e32] p-1.5',
-                !isSameMonth(d, monthStart) && 'opacity-40',
-                isSameDay(d, new Date()) && 'border-accent/40 bg-accent/5',
+                'shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold outline-none',
+                pri.className,
               )}
             >
-              <p className="mb-1 text-[11px] text-[#8b8b90]">{format(d, 'd')}</p>
-              {dayTasks.slice(0, 2).map((t) => (
-                <button
-                  key={t._id}
-                  type="button"
-                  onClick={() => onSelect(t)}
-                  className="mb-0.5 block w-full truncate rounded bg-[#1c1c1e] px-1 py-0.5 text-left text-[10px] hover:text-accent"
-                >
-                  {t.title}
-                </button>
+              {Object.entries(PRIORITY).map(([k, v]) => (
+                <option key={k} value={k}>
+                  {v.label}
+                </option>
               ))}
-            </div>
-          )
-        })}
+            </select>
+
+            <select
+              value={task.status || 'todo'}
+              onChange={(e) => onPatch({ status: e.target.value })}
+              className="shrink-0 rounded-md bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-bold text-[#1d4ed8] outline-none"
+            >
+              {GROUPS.map((g) => (
+                <option key={g.key} value={g.key}>
+                  {g.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
       </div>
     </div>
   )

@@ -32,7 +32,7 @@ export function StatusBadge({
   )
 }
 
-/** ClickUp-style outlined status control */
+/** Outlined status control */
 export function StatusSelect({ value, onChange, className }) {
   const meta = getTaskStatus(value)
 
@@ -46,11 +46,11 @@ export function StatusSelect({ value, onChange, className }) {
       <select
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        className="cursor-pointer appearance-none rounded border border-[#3a3a3e] bg-transparent py-1 pl-6 pr-6 text-[11px] font-semibold tracking-wide text-white outline-none hover:bg-[#1c1c1e]"
+        className="cursor-pointer appearance-none rounded border border-[#e2e8f0] bg-white py-1 pl-6 pr-6 text-[11px] font-semibold tracking-wide text-[#0f172a] outline-none hover:border-[#cbd5e1]"
       >
         {TASK_STATUSES.map((s) => (
-          <option key={s.value} value={s.value} className="bg-[#1c1c1e]">
-            {s.label}
+          <option key={s.value} value={s.value}>
+            {s.shortLabel}
           </option>
         ))}
       </select>
@@ -78,7 +78,7 @@ export function StatusInline({ status }) {
         className="inline-block h-2 w-2 rounded-full"
         style={{ background: meta.dot }}
       />
-      <span className="font-medium text-[#e5e5e5]">{meta.shortLabel}</span>
+      <span className="font-medium text-[#0f172a]">{meta.shortLabel}</span>
     </span>
   )
 }

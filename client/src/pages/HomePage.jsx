@@ -10,7 +10,6 @@ import {
   startOfDay,
   formatDistanceToNow,
 } from 'date-fns'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
   CheckCircle2,
   Circle,
@@ -96,15 +95,17 @@ export function HomePage() {
     'history',
   ].includes(rawView)
     ? rawView
-    : 'all'
+    : 'assigned'
 
   useEffect(() => {
     if (!rawView || !VIEW_META[rawView]) {
       const next = new URLSearchParams(params)
-      next.set('view', 'all')
+      next.set('view', 'assigned')
       setParams(next, { replace: true })
     }
-  }, [rawView, setParams, params])
+    // Only react to the view string — not the whole params object (avoids loops).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rawView])
 
   useEffect(() => {
     if (params.get('create') !== '1') return
@@ -112,7 +113,8 @@ export function HomePage() {
     const next = new URLSearchParams(params)
     next.delete('create')
     setParams(next, { replace: true })
-  }, [params, setParams])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.get('create')])
 
   // Handle return from Google OAuth redirect (optional server flow)
   useEffect(() => {
@@ -129,9 +131,10 @@ export function HomePage() {
     const next = new URLSearchParams(params)
     next.delete('gcal')
     next.delete('message')
-    if (!next.get('view')) next.set('view', 'all')
+    if (!next.get('view')) next.set('view', 'assigned')
     setParams(next, { replace: true })
-  }, [params, setParams, qc])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.get('gcal')])
 
   const [selected, setSelected] = useState(null)
   const [createPersonal, setCreatePersonal] = useState(false)
@@ -150,11 +153,16 @@ export function HomePage() {
   const { data, isLoading } = useQuery({
     queryKey: ['home'],
     queryFn: () => api('/home'),
+    staleTime: 30_000,
   })
 
+  /** Calendar status is only needed on All / Today (Agenda card). */
+  const needsGcal = view === 'all' || view === 'today'
   const { data: gcalStatus, isLoading: gcalStatusLoading } = useQuery({
     queryKey: ['gcal-status'],
     queryFn: () => api('/calendar/google/status'),
+    enabled: needsGcal,
+    staleTime: 60_000,
   })
 
   const gcalConnected = !!gcalSession?.accessToken
@@ -175,24 +183,73 @@ export function HomePage() {
   }
 
   useEffect(() => {
+    if (!needsGcal) return
     if (gcalSession?.accessToken) {
       loadGoogleEvents(gcalSession.accessToken)
     } else {
       setGoogleEvents([])
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gcalSession?.accessToken])
+  }, [gcalSession?.accessToken, needsGcal])
+
+  const STATUS_ORDER = ['todo', 'in_progress', 'review', 'done']
 
   const toggleTask = useMutation({
     mutationFn: (id) => api(`/tasks/${id}/toggle`, { method: 'PATCH' }),
-    onSuccess: (_d, id) => {
-      qc.invalidateQueries({ queryKey: ['home'] })
-      const wasDone = (tasks.done || []).some((t) => t._id === id)
-      toast(wasDone ? 'Reopened' : 'Marked done — see Done history', {
+    onMutate: async (id) => {
+      await qc.cancelQueries({ queryKey: ['home'] })
+      const prev = qc.getQueryData(['home'])
+      qc.setQueryData(['home'], (old) => {
+        if (!old?.data?.tasks) return old
+        const bump = (list = []) =>
+          list.map((t) => {
+            if (String(t._id) !== String(id)) return t
+            const i = STATUS_ORDER.indexOf(t.status || 'todo')
+            const next =
+              STATUS_ORDER[(i < 0 ? 0 : i + 1) % STATUS_ORDER.length]
+            return { ...t, status: next }
+          })
+        const tasks = old.data.tasks
+        return {
+          ...old,
+          data: {
+            ...old.data,
+            tasks: {
+              ...tasks,
+              assigned: bump(tasks.assigned),
+              today: bump(tasks.today),
+              overdue: bump(tasks.overdue),
+              next: bump(tasks.next),
+              upcoming: bump(tasks.upcoming),
+              unscheduled: bump(tasks.unscheduled),
+              personal: bump(tasks.personal),
+              priorities: bump(tasks.priorities),
+              done: bump(tasks.done),
+            },
+          },
+        }
+      })
+      return { prev }
+    },
+    onError: (e, _id, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['home'], ctx.prev)
+      toast(e.message, { type: 'error' })
+    },
+    onSuccess: (data) => {
+      const to = data?.to || data?.task?.status
+      const labels = {
+        todo: 'Not started',
+        in_progress: 'Working on it',
+        review: 'Needs check',
+        done: 'Finished',
+      }
+      toast(labels[to] ? `Moved to ${labels[to]}` : 'Status updated', {
         type: 'success',
       })
     },
-    onError: (e) => toast(e.message, { type: 'error' }),
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['home'] })
+    },
   })
 
   const createPersonalMut = useMutation({
@@ -391,13 +448,13 @@ export function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="h-full space-y-4 overflow-y-auto bg-[#0F0F10] p-4 sm:p-6">
-        <div className="h-8 w-48 animate-pulse rounded-lg bg-[#1c1c1e]" />
+      <div className="h-full space-y-5 overflow-y-auto bg-[#EEF2F7] p-4 sm:p-6">
+        <div className="h-10 w-56 animate-pulse rounded-xl bg-white/80" />
         <div className="grid gap-4 lg:grid-cols-2">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-[280px] animate-pulse rounded-[10px] bg-[#1c1c1e]"
+              className="h-[280px] animate-pulse rounded-2xl border border-[#e2e8f0] bg-white"
             />
           ))}
         </div>
@@ -406,32 +463,37 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#0F0F10]">
-      <header className="flex shrink-0 flex-col gap-3 border-b border-[#2e2e32] px-4 py-4 sm:px-6">
-        <div className="flex flex-wrap items-start justify-between gap-3">
+    <div className="flex h-full min-h-0 flex-col bg-[#EEF2F7]">
+      <header className="shrink-0 border-b border-[#e2e8f0]/bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6">
+        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-end justify-between gap-4">
           <div className="min-w-0">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-[18px] font-semibold tracking-tight text-white">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#64748b]">
+              EPM · Home
+            </p>
+            <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
+              <h1 className="text-[22px] font-semibold tracking-tight text-[#0f172a]">
                 My Tasks
               </h1>
-              <span className="rounded-full bg-[#252528] px-2.5 py-0.5 text-[11px] font-medium text-[#c5c5c8]">
+              <span className="rounded-full border border-[#dbe4f0] bg-[#f8fafc] px-2.5 py-0.5 text-[11px] font-medium text-[#475569]">
                 {meta.title}
               </span>
             </div>
-            <p className="mt-1 text-[13px] text-[#8b8b90]">{meta.hint}</p>
+            <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-[#64748b]">
+              {meta.hint}
+            </p>
           </div>
 
-          <div className="flex shrink-0 items-center gap-0.5 rounded-lg border border-[#2e2e32] bg-[#1c1c1e] p-0.5">
+          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-1 shadow-sm">
             {FILTER_PILLS.map((f) => (
               <button
                 key={f.id}
                 type="button"
                 onClick={() => setParams({ view: f.id })}
                 className={cn(
-                  'rounded-md px-2.5 py-1.5 text-[12px] font-medium transition-colors',
+                  'rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors',
                   view === f.id
-                    ? 'bg-[#2a2a2e] text-white shadow-sm'
-                    : 'text-[#8b8b90] hover:text-white',
+                    ? 'bg-[#0f172a] text-white shadow-sm'
+                    : 'text-[#64748b] hover:bg-white hover:text-[#0f172a]',
                 )}
               >
                 {f.label}
@@ -442,34 +504,26 @@ export function HomePage() {
       </header>
 
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
-        <motion.p
-          key={view}
-          initial={{ opacity: 0, y: 4 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-6 text-[26px] font-semibold tracking-tight text-white sm:text-[28px]"
-        >
-          {greeting}
-        </motion.p>
+        <div className="mx-auto w-full max-w-6xl">
+          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+            <div>
+              <p className="text-[26px] font-semibold tracking-tight text-[#0f172a] sm:text-[30px]">
+                {greeting}
+              </p>
+              <p className="mt-1 text-[13px] text-[#64748b]">
+                Editco Project Management — your day, aligned.
+              </p>
+            </div>
+          </div>
 
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={view}
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -6 }}
-            transition={{ duration: 0.22 }}
-          >
-            {view === 'all' && <AllOverview {...shared} />}
-            {view === 'assigned' && (
-              <AssignedCard {...shared} focus tall />
-            )}
-            {view === 'today' && <TodayFocus {...shared} />}
-            {view === 'personal' && (
-              <PersonalCard {...shared} focus tall extras />
-            )}
-            {view === 'history' && <HistoryCard {...shared} focus tall />}
-          </motion.div>
-        </AnimatePresence>
+          {view === 'all' && <AllOverview {...shared} />}
+          {view === 'assigned' && <AssignedCard {...shared} focus tall />}
+          {view === 'today' && <TodayFocus {...shared} />}
+          {view === 'personal' && (
+            <PersonalCard {...shared} focus tall extras />
+          )}
+          {view === 'history' && <HistoryCard {...shared} focus tall />}
+        </div>
       </div>
 
       <TaskDetailPanel
@@ -552,7 +606,7 @@ function TodayFocus(props) {
       </Card>
       <Card
         title="Today"
-        accent="#C6FF3D"
+        accent="#2563eb"
         badge={(props.tasks.today || []).length}
         tall
       >
@@ -648,6 +702,7 @@ function AssignedCard({
       accent="#3b82f6"
       badge={total}
       tall={tall || focus}
+      className={focus || tall ? 'mx-auto w-full max-w-5xl' : undefined}
       action={
         <div className="flex items-center gap-1.5">
           {!preview && (
@@ -657,7 +712,7 @@ function AssignedCard({
                 value={assignedSearch}
                 onChange={(e) => setAssignedSearch(e.target.value)}
                 placeholder="Filter"
-                className="h-7 w-[120px] rounded-md border border-[#2e2e32] bg-[#0F0F10] pl-7 pr-2 text-[12px] outline-none focus:border-[#3a3a3e]"
+                className="h-7 w-[120px] rounded-md border border-[#e2e8f0] bg-[#F4F7FB] pl-7 pr-2 text-[12px] outline-none focus:border-[#cbd5e1]"
               />
             </div>
           )}
@@ -683,7 +738,7 @@ function AssignedCard({
                   onClick={() =>
                     setCollapsed((c) => ({ ...c, [g.key]: !c[g.key] }))
                   }
-                  className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 hover:bg-[#252528]/60"
+                  className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-[#eff6ff]"
                 >
                   {open ? (
                     <ChevronDown className="h-3.5 w-3.5 text-[#6b6b70]" />
@@ -745,7 +800,7 @@ function PersonalCard({
 
   const composer = createPersonal ? (
     <form
-      className="mt-2 flex gap-2 border-t border-[#2e2e32] pt-3"
+      className="mt-2 flex gap-2 border-t border-[#e2e8f0] pt-3"
       onSubmit={(e) => {
         e.preventDefault()
         onCreatePersonal()
@@ -756,12 +811,12 @@ function PersonalCard({
         value={personalDraft}
         onChange={(e) => setPersonalDraft(e.target.value)}
         placeholder="What do you need to do?"
-        className="h-9 flex-1 rounded-md border border-[#2e2e32] bg-[#0F0F10] px-3 text-[13px] outline-none focus:border-[#3a3a3e]"
+        className="h-9 flex-1 rounded-md border border-[#e2e8f0] bg-[#F4F7FB] px-3 text-[13px] outline-none focus:border-[#cbd5e1]"
       />
       <button
         type="submit"
         disabled={creating || !personalDraft.trim()}
-        className="h-9 rounded-md bg-white px-3 text-[12px] font-semibold text-[#0E0E10] disabled:opacity-40"
+        className="h-9 rounded-md bg-[#2563eb] px-3 text-[12px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40"
       >
         Add
       </button>
@@ -771,7 +826,7 @@ function PersonalCard({
           setCreatePersonal(false)
           setPersonalDraft('')
         }}
-        className="h-9 rounded-md px-2 text-[#8b8b90] hover:bg-[#252528]"
+        className="h-9 rounded-md px-2 text-[#8b8b90] hover:bg-[#f1f5f9]"
       >
         <X className="h-4 w-4" />
       </button>
@@ -780,7 +835,7 @@ function PersonalCard({
     <button
       type="button"
       onClick={() => setCreatePersonal(true)}
-      className="mt-2 flex items-center gap-1.5 rounded-md px-1 py-2 text-[12px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
+      className="mt-2 flex items-center gap-1.5 rounded-md px-1 py-2 text-[12px] text-[#8b8b90] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
     >
       <Plus className="h-3.5 w-3.5" />
       Create a task
@@ -798,7 +853,7 @@ function PersonalCard({
           <button
             type="button"
             onClick={() => setCreatePersonal(true)}
-            className="mt-3 rounded-md bg-white px-3 py-2 text-[12px] font-semibold text-[#0E0E10]"
+            className="mt-3 rounded-md bg-[#2563eb] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
           >
             + Create a task
           </button>
@@ -869,6 +924,7 @@ function HistoryCard({
       accent="#10b981"
       badge={total}
       tall={tall || focus}
+      className={focus || tall ? 'mx-auto w-full max-w-5xl' : undefined}
       info="Completed tasks — click to reopen"
       action={
         <div className="flex items-center gap-1.5">
@@ -879,7 +935,7 @@ function HistoryCard({
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
                 placeholder="Search history"
-                className="h-7 w-[140px] rounded-md border border-[#2e2e32] bg-[#121214] pl-7 pr-2 text-[12px] outline-none focus:border-[#3a3a3e]"
+                className="h-7 w-[140px] rounded-md border border-[#e2e8f0] bg-[#f8fafc] pl-7 pr-2 text-[12px] outline-none focus:border-[#cbd5e1]"
               />
             </div>
           )}
@@ -898,7 +954,7 @@ function HistoryCard({
               <button
                 type="button"
                 onClick={() => go('all')}
-                className="mt-3 text-[12px] text-[#9b8cff] hover:underline"
+                className="mt-3 text-[12px] text-[#2563eb] hover:underline"
               >
                 Back to all my tasks
               </button>
@@ -910,12 +966,12 @@ function HistoryCard({
           {items.map((t) => (
             <li
               key={t._id}
-              className="group flex items-center gap-2 rounded-lg px-1.5 py-2 hover:bg-[#252528]/80"
+              className="group flex items-center gap-2 rounded-lg px-1.5 py-2 transition-colors hover:bg-[#eff6ff]"
             >
               <button
                 type="button"
                 onClick={() => onToggle(t._id)}
-                className="shrink-0 text-emerald-400 hover:text-accent"
+                className="shrink-0 text-emerald-600 hover:text-accent"
                 title="Reopen"
               >
                 <CheckCircle2 className="h-4 w-4" />
@@ -938,7 +994,7 @@ function HistoryCard({
                 </p>
               </button>
               {t.isPersonal && (
-                <span className="rounded bg-[#252528] px-1.5 py-0.5 text-[10px] text-[#8b8b90]">
+                <span className="rounded bg-[#f1f5f9] px-1.5 py-0.5 text-[10px] text-[#8b8b90]">
                   Personal
                 </span>
               )}
@@ -960,7 +1016,7 @@ function CommentsCard({ comments = [] }) {
       action={
         <Link
           to="/assigned-comments"
-          className="text-[11px] font-medium text-[#9b8cff] hover:underline"
+          className="text-[11px] font-medium text-[#2563eb] hover:underline"
         >
           Open all
         </Link>
@@ -992,7 +1048,7 @@ function CommentsCard({ comments = [] }) {
               <li key={c._id}>
                 <Link
                   to={href}
-                  className="block rounded-lg px-2 py-2 hover:bg-[#252528]"
+                  className="block rounded-lg px-2 py-2 hover:bg-[#f1f5f9]"
                 >
                   <div className="flex gap-2.5">
                     <Avatar
@@ -1002,7 +1058,7 @@ function CommentsCard({ comments = [] }) {
                     />
                     <div className="min-w-0">
                       <p className="truncate text-[12px] text-[#8b8b90]">
-                        <span className="font-medium text-[#e8e8ea]">
+                        <span className="font-medium text-[#0f172a]">
                           {c.author?.name}
                         </span>
                         {task?.title ? ` · ${task.title}` : ''}
@@ -1074,14 +1130,14 @@ function AgendaCard({
             <button
               type="button"
               onClick={onRefresh}
-              className="text-[11px] text-[#8b8b90] hover:text-white"
+              className="text-[11px] text-[#8b8b90] hover:text-[#0f172a]"
             >
               Refresh
             </button>
             <button
               type="button"
               onClick={onDisconnect}
-              className="text-[11px] text-[#8b8b90] hover:text-white"
+              className="text-[11px] text-[#8b8b90] hover:text-[#0f172a]"
             >
               Disconnect
             </button>
@@ -1095,10 +1151,10 @@ function AgendaCard({
         </p>
       ) : !connected ? (
         <div className="flex flex-col items-center px-3 py-8 text-center">
-          <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#252528]">
+          <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f1f5f9]">
             <Calendar className="h-7 w-7 text-[#a855f7]" strokeWidth={1.5} />
           </div>
-          <p className="text-[14px] font-semibold text-white">
+          <p className="text-[14px] font-semibold text-[#0f172a]">
             Connect your Google Calendar
           </p>
           <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-[#8b8b90]">
@@ -1107,21 +1163,21 @@ function AgendaCard({
           </p>
 
           {showSetup ? (
-            <div className="mt-4 w-full rounded-xl border border-[#2e2e32] bg-[#0F0F10] p-4 text-left">
-              <p className="text-[13px] font-medium text-white">
+            <div className="mt-4 w-full rounded-xl border border-[#e2e8f0] bg-[#F4F7FB] p-4 text-left">
+              <p className="text-[13px] font-medium text-[#0f172a]">
                 One-time workspace setup
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-[#8b8b90]">
                 Create an OAuth Client ID in Google Cloud (Web application),
                 add origin{' '}
-                <code className="text-[#c5c5c8]">http://localhost:5173</code>,
+                <code className="text-[#64748b]">http://localhost:5173</code>,
                 enable Calendar API, then paste the Client ID below.
               </p>
               <a
                 href="https://console.cloud.google.com/apis/credentials"
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 inline-block text-[12px] text-[#9b8cff] hover:underline"
+                className="mt-2 inline-block text-[12px] text-[#2563eb] hover:underline"
               >
                 Open Google Cloud Credentials →
               </a>
@@ -1129,14 +1185,14 @@ function AgendaCard({
                 value={clientDraft}
                 onChange={(e) => setClientDraft(e.target.value)}
                 placeholder="xxxx.apps.googleusercontent.com"
-                className="mt-3 h-10 w-full rounded-md border border-[#2e2e32] bg-[#1c1c1e] px-3 text-[13px] text-white outline-none focus:border-[#a855f7]"
+                className="mt-3 h-10 w-full rounded-md border border-[#e2e8f0] bg-white px-3 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd]"
               />
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   disabled={savingClientId || connecting}
                   onClick={onSaveAndConnect}
-                  className="rounded-md bg-[#a855f7] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#9333ea] disabled:opacity-50"
+                  className="rounded-md bg-[#2563eb] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
                 >
                   {savingClientId || connecting
                     ? 'Working…'
@@ -1145,7 +1201,7 @@ function AgendaCard({
                 <button
                   type="button"
                   onClick={() => setShowSetup(false)}
-                  className="rounded-md px-3 py-2 text-[12px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
+                  className="rounded-md px-3 py-2 text-[12px] text-[#8b8b90] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
                 >
                   Cancel
                 </button>
@@ -1156,7 +1212,7 @@ function AgendaCard({
               type="button"
               disabled={connecting}
               onClick={() => onConnectGoogle()}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#0F0F10] px-4 py-2.5 text-[13px] text-[#e8e8ea] hover:bg-[#252528] disabled:opacity-50"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#F4F7FB] px-4 py-2.5 text-[13px] text-[#0f172a] hover:bg-[#f1f5f9] disabled:opacity-50"
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
                 <path
@@ -1182,11 +1238,11 @@ function AgendaCard({
         </div>
       ) : (
         <div>
-          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#2e2e32] bg-[#0F0F10] px-3 py-2 text-[12px]">
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#F4F7FB] px-3 py-2 text-[12px]">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            <span className="text-[#c5c5c8]">
+            <span className="text-[#64748b]">
               Connected to{' '}
-              <strong className="text-white">Google Calendar</strong>
+              <strong className="text-[#0f172a]">Google Calendar</strong>
               {email ? ` · ${email}` : ''}
             </span>
           </div>
@@ -1217,7 +1273,7 @@ function AgendaCard({
                       href={ev.htmlLink || '#'}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-[#252528]"
+                      className="flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-[#f1f5f9]"
                     >
                       <div
                         className="mt-1 h-8 w-1 shrink-0 rounded-full"
@@ -1230,7 +1286,7 @@ function AgendaCard({
                         <p className="text-[11px] text-[#6b6b70]">{timeLabel}</p>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] text-[#e8e8ea]">
+                        <p className="truncate text-[13px] text-[#0f172a]">
                           {ev.title}
                         </p>
                         <p className="truncate text-[11px] text-[#6b6b70]">
@@ -1246,9 +1302,9 @@ function AgendaCard({
           )}
 
           {cubicAgenda.length > 0 && (
-            <div className="mt-4 border-t border-[#2e2e32] pt-3">
+            <div className="mt-4 border-t border-[#e2e8f0] pt-3">
               <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-[#6b6b70]">
-                Cubic due dates
+                EPM due dates
               </p>
               {cubicAgenda.slice(0, 5).map((t) => {
                 const d = new Date(t.dueDate)
@@ -1257,12 +1313,12 @@ function AgendaCard({
                     key={t._id}
                     type="button"
                     onClick={() => onOpenTask(t)}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-[#252528]"
+                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-[#f1f5f9]"
                   >
-                    <span className="w-[88px] shrink-0 text-[12px] text-[#c4b5fd]">
+                    <span className="w-[88px] shrink-0 text-[12px] font-medium text-[#2563eb]">
                       {isToday(d) ? 'Today' : format(d, 'MMM d')}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] text-[#e8e8ea]">
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-[#0f172a]">
                       {t.title}
                     </span>
                   </button>
@@ -1293,12 +1349,12 @@ function Card({
   return (
     <section
       className={cn(
-        'flex flex-col overflow-hidden rounded-[10px] border border-[#2e2e32] bg-[#1c1c1e]',
+        'flex flex-col overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
         tall ? 'min-h-[420px]' : 'min-h-[280px]',
         className,
       )}
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-[#2e2e32] px-3.5 py-3">
+      <div className="flex shrink-0 items-center gap-2 border-b border-[#eef2f7] bg-[#fafbfc] px-4 py-3">
         {accent && (
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -1306,27 +1362,27 @@ function Card({
           />
         )}
         {titleIcon}
-        <h2 className="text-[13px] font-semibold text-white">{title}</h2>
+        <h2 className="text-[13px] font-semibold text-[#0f172a]">{title}</h2>
         {typeof badge === 'number' && (
           <span
             className={cn(
               'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
               badgeTone === 'danger'
-                ? 'bg-red-500/15 text-red-400'
-                : 'bg-[#252528] text-[#8b8b90]',
+                ? 'bg-red-50 text-red-600'
+                : 'bg-[#eef2f7] text-[#64748b]',
             )}
           >
             {badge}
           </span>
         )}
         {info && (
-          <span title={info} className="text-[#6b6b70]">
+          <span title={info} className="text-[#94a3b8]">
             <Info className="h-3.5 w-3.5" />
           </span>
         )}
         <div className="ml-auto">{action}</div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-3.5">{children}</div>
     </section>
   )
 }
@@ -1336,7 +1392,7 @@ function SeeAll({ onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-[11px] font-medium text-[#9b8cff] hover:underline"
+      className="text-[11px] font-medium text-[#2563eb] hover:underline"
     >
       See all
     </button>
@@ -1346,10 +1402,10 @@ function SeeAll({ onClick }) {
 function EmptyArt({ icon, text, action }) {
   return (
     <div className="flex h-full min-h-[160px] flex-col items-center justify-center px-4 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-[#252528]">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#e2e8f0] bg-[#f8fafc]">
         {icon}
       </div>
-      <p className="max-w-[260px] text-[13px] leading-relaxed text-[#8b8b90]">
+      <p className="max-w-[260px] text-[13px] leading-relaxed text-[#64748b]">
         {text}
       </p>
       {action}
@@ -1392,26 +1448,48 @@ function TaskLine({
   showProject = true,
   tone,
 }) {
-  const done = task.status === 'done'
+  const status = task.status || 'todo'
+  const done = status === 'done'
+  const nextLabel =
+    status === 'todo'
+      ? 'Working on it'
+      : status === 'in_progress'
+        ? 'Needs check'
+        : status === 'review'
+          ? 'Finished'
+          : 'Not started'
+
   return (
-    <div className="group flex items-center gap-2 rounded-lg px-1.5 py-2 hover:bg-[#252528]/80">
+    <div className="group flex items-center gap-2 rounded-lg px-1.5 py-2 transition-colors hover:bg-[#eff6ff]">
       <button
         type="button"
         onClick={onToggle}
-        className="shrink-0 text-[#6b6b70] hover:text-accent"
+        className="shrink-0"
+        title={`Move to ${nextLabel}`}
+        aria-label={`Move to ${nextLabel}`}
       >
         {done ? (
-          <CheckCircle2 className="h-4 w-4 text-accent" />
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+        ) : status === 'in_progress' ? (
+          <Circle
+            className="h-4 w-4 fill-blue-500/25 text-blue-600"
+            strokeWidth={2.5}
+          />
+        ) : status === 'review' ? (
+          <Circle
+            className="h-4 w-4 fill-amber-500/30 text-amber-600"
+            strokeWidth={2.5}
+          />
         ) : (
-          <Circle className="h-4 w-4" />
+          <Circle className="h-4 w-4 text-[#6b6b70]" />
         )}
       </button>
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
         <p
           className={cn(
-            'truncate text-[13px] text-[#e8e8ea]',
+            'truncate text-[13px] text-[#0f172a]',
             done && 'text-[#6b6b70] line-through',
-            tone === 'danger' && !done && 'text-[#fecaca]',
+            tone === 'danger' && !done && 'text-red-600',
           )}
         >
           {task.title}
@@ -1454,7 +1532,7 @@ function DueChip({ dueDate, danger }) {
     <span
       className={cn(
         'inline-flex shrink-0 items-center gap-1 text-[11px]',
-        danger || overdue || isToday(d) ? 'text-red-400' : 'text-[#8b8b90]',
+        danger || overdue || isToday(d) ? 'text-red-600' : 'text-[#8b8b90]',
       )}
     >
       <Calendar className="h-3 w-3" />

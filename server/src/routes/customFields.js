@@ -3,6 +3,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { CustomFieldDefinition } from '../models/CustomField.js'
+import { requirePermission } from '../lib/permissions.js'
 
 const router = express.Router()
 
@@ -42,6 +43,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
+  requirePermission('tasks.manage'),
   asyncHandler(async (req, res) => {
     const name = String(req.body.name || '').trim()
     if (!name) throw new AppError('name is required', 400)
@@ -81,6 +83,7 @@ router.post(
 router.patch(
   '/:id',
   requireAuth,
+  requirePermission('tasks.manage'),
   asyncHandler(async (req, res) => {
     const field = await CustomFieldDefinition.findById(req.params.id)
     assertTenantDoc(field, req, 'Custom field')
@@ -103,6 +106,7 @@ router.patch(
 router.delete(
   '/:id',
   requireAuth,
+  requirePermission('tasks.manage'),
   asyncHandler(async (req, res) => {
     const field = await CustomFieldDefinition.findById(req.params.id)
     assertTenantDoc(field, req, 'Custom field')

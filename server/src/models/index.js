@@ -18,3 +18,4 @@ export {
 export { Message } from './Message.js'
 export { WorkspaceSettings } from './WorkspaceSettings.js'
 export { CustomFieldDefinition } from './CustomField.js'
+export { ImpactRule, ImpactLedger, ImpactScore } from './Impact.js'

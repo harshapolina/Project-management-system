@@ -44,7 +44,7 @@ export function UiKitPage() {
         <p className="text-sm text-secondary mb-1">Design system</p>
         <h1 className="text-[32px] font-semibold tracking-tight">UI Kit</h1>
         <p className="mt-2 text-sm text-secondary max-w-xl">
-          Shared components matching the Cubic visual language — dark canvas,
+          Shared components matching the EPM visual language — light canvas,
           neon accent, light invoice-style panels.
         </p>
       </div>

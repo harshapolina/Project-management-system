@@ -26,128 +26,63 @@ router.get(
 
     const tf = (extra) => tenantFilter(req, extra)
 
+    /** One open-task query replaces 7 overlapping Task.find calls. */
+    const mineOpen = {
+      status: { $ne: 'done' },
+      $or: [
+        { assignee: userId, isPersonal: { $ne: true } },
+        {
+          isPersonal: true,
+          $or: [{ assignee: userId }, { createdBy: userId }],
+        },
+      ],
+    }
+
     const [
-      today,
-      overdue,
-      next,
-      unscheduled,
-      assignedOpen,
+      openTasks,
       done,
       delegated,
-      personal,
-      priorities,
       assignedComments,
       approvals,
       activity,
-      mentions,
       notifications,
-      recentTasks,
     ] = await Promise.all([
-      Task.find(tf({
-        $or: [
-          { assignee: userId, isPersonal: { $ne: true } },
-          { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
-        ],
-        status: { $ne: 'done' },
-        dueDate: { $gte: todayStart, $lte: todayEnd },
-      }))
-        .populate(populateTask)
-        .sort({ priority: -1, dueDate: 1 })
-        .limit(40),
-      Task.find(tf({
-        $or: [
-          { assignee: userId, isPersonal: { $ne: true } },
-          { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
-        ],
-        status: { $ne: 'done' },
-        dueDate: { $lt: todayStart },
-      }))
-        .populate(populateTask)
-        .sort({ dueDate: 1 })
-        .limit(40),
-      Task.find(tf({
-        $or: [
-          { assignee: userId, isPersonal: { $ne: true } },
-          { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
-        ],
-        status: { $ne: 'done' },
-        dueDate: { $gt: todayEnd, $lte: upcomingEnd },
-      }))
-        .populate(populateTask)
-        .sort({ dueDate: 1 })
-        .limit(40),
-      Task.find(tf({
-        status: { $ne: 'done' },
-        $and: [
-          {
-            $or: [
-              { assignee: userId, isPersonal: { $ne: true } },
-              {
-                isPersonal: true,
-                $or: [{ assignee: userId }, { createdBy: userId }],
-              },
-            ],
-          },
-          { $or: [{ dueDate: null }, { dueDate: { $exists: false } }] },
-        ],
-      }))
-        .populate(populateTask)
-        .sort({ updatedAt: -1 })
-        .limit(40),
-      Task.find(tf({
-        $or: [
-          { assignee: userId, isPersonal: { $ne: true } },
-          { isPersonal: true, $or: [{ assignee: userId }, { createdBy: userId }] },
-        ],
-        status: { $ne: 'done' },
-      }))
+      Task.find(tf(mineOpen))
         .populate(populateTask)
         .sort({ status: 1, dueDate: 1, updatedAt: -1 })
-        .limit(80),
-      Task.find(tf({
-        status: 'done',
-        $or: [
-          { assignee: userId },
-          { isPersonal: true, createdBy: userId },
-        ],
-      }))
+        .limit(120)
+        .lean(),
+      Task.find(
+        tf({
+          status: 'done',
+          $or: [
+            { assignee: userId },
+            { isPersonal: true, createdBy: userId },
+          ],
+        }),
+      )
         .populate(populateTask)
         .sort({ updatedAt: -1 })
-        .limit(60),
-      Task.find(tf({
-        createdBy: userId,
-        isPersonal: { $ne: true },
-        assignee: { $exists: true, $nin: [null, userId] },
-        status: { $ne: 'done' },
-      }))
+        .limit(40)
+        .lean(),
+      Task.find(
+        tf({
+          createdBy: userId,
+          isPersonal: { $ne: true },
+          assignee: { $exists: true, $nin: [null, userId] },
+          status: { $ne: 'done' },
+        }),
+      )
         .populate(populateTask)
         .sort({ updatedAt: -1 })
-        .limit(40),
-      Task.find(tf({
-        isPersonal: true,
-        $or: [{ assignee: userId }, { createdBy: userId }],
-        status: { $ne: 'done' },
-      }))
-        .sort({ createdAt: -1 })
-        .limit(40),
-      Task.find(tf({
-        status: { $ne: 'done' },
-        priority: { $in: ['urgent', 'high'] },
-        $or: [
-          { assignee: userId, isPersonal: { $ne: true } },
-          {
-            isPersonal: true,
-            $or: [{ assignee: userId }, { createdBy: userId }],
-          },
-        ],
-      }))
-        .populate(populateTask)
-        .sort({ priority: -1, dueDate: 1 })
-        .limit(30),
-      Comment.find(tf({
-        resolved: { $ne: true },
-        $or: [{ assignedTo: userId }, { mentions: userId }],
-      }))
+        .limit(30)
+        .lean(),
+      Comment.find(
+        tf({
+          resolved: { $ne: true },
+          $or: [{ assignedTo: userId }, { mentions: userId }],
+        }),
+      )
         .populate('author', 'name avatar')
         .populate('assignedTo', 'name avatar')
         .populate({
@@ -156,40 +91,53 @@ router.get(
           populate: { path: 'projectId', select: 'name' },
         })
         .sort({ createdAt: -1 })
-        .limit(15),
-      Task.find(tf({
-        requiresApproval: true,
-        approvalStatus: 'pending',
-        $or: [{ assignee: userId }, { createdBy: userId }],
-      }))
+        .limit(12)
+        .lean(),
+      Task.find(
+        tf({
+          requiresApproval: true,
+          approvalStatus: 'pending',
+          $or: [{ assignee: userId }, { createdBy: userId }],
+        }),
+      )
         .populate('projectId', 'name')
         .populate('assignee', 'name avatar')
-        .limit(15),
-      ActivityLog.find(tf({
-        $or: [{ actor: userId }, { mentions: userId }],
-      }))
+        .limit(12)
+        .lean(),
+      ActivityLog.find(
+        tf({
+          $or: [{ actor: userId }, { mentions: userId }],
+        }),
+      )
         .populate('actor', 'name avatar')
         .populate('projectId', 'name')
         .sort({ createdAt: -1 })
-        .limit(15),
-      ActivityLog.find(tf({ mentions: userId }))
-        .populate('actor', 'name avatar')
-        .populate('projectId', 'name')
-        .sort({ createdAt: -1 })
-        .limit(10),
-      Notification.find(tf({ userId })).sort({ createdAt: -1 }).limit(10),
-      Task.find(tf({
-        $or: [{ assignee: userId }, { createdBy: userId }],
-      }))
-        .populate('projectId', 'name')
-        .sort({ updatedAt: -1 })
-        .limit(8),
+        .limit(12)
+        .lean(),
+      Notification.find(tf({ userId })).sort({ createdAt: -1 }).limit(10).lean(),
     ])
 
-    // Keep legacy "upcoming" key for compatibility
-    const upcoming = next
+    const today = []
+    const overdue = []
+    const next = []
+    const unscheduled = []
+    const personal = []
+    const priorities = []
 
-    // Agenda = dated tasks for next 7 days (for calendar view)
+    for (const t of openTasks) {
+      if (t.isPersonal) personal.push(t)
+      if (t.priority === 'urgent' || t.priority === 'high') priorities.push(t)
+
+      if (!t.dueDate) {
+        unscheduled.push(t)
+        continue
+      }
+      const due = new Date(t.dueDate)
+      if (due >= todayStart && due <= todayEnd) today.push(t)
+      else if (due < todayStart) overdue.push(t)
+      else if (due <= upcomingEnd) next.push(t)
+    }
+
     const agenda = [...today, ...overdue, ...next]
       .filter((t) => t.dueDate)
       .sort((a, b) => new Date(a.dueDate) - new Date(b.dueDate))
@@ -200,22 +148,26 @@ router.get(
         greeting: getGreeting(req.user.name),
         tasks: {
           today,
-          upcoming,
+          upcoming: next,
           overdue,
           next,
           unscheduled,
-          assigned: assignedOpen,
+          assigned: openTasks.filter((t) => !t.isPersonal),
           done,
           delegated,
           personal,
-          priorities,
+          priorities: priorities.slice(0, 30),
         },
         agenda,
         assignedComments,
-        recents: recentTasks,
+        recents: openTasks.slice(0, 8),
         approvals,
         activity,
-        mentions,
+        mentions: activity.filter((a) =>
+          (a.mentions || []).some(
+            (m) => String(m) === String(userId) || String(m?._id) === String(userId),
+          ),
+        ),
         notifications,
       },
     })
@@ -229,9 +181,20 @@ router.patch(
     const task = await Task.findById(req.params.id)
     assertTenantDoc(task, req, 'Task')
 
-    const done = task.status === 'done'
-    task.status = done ? 'todo' : 'done'
-    task.progress = done ? 0 : 100
+    const order = ['todo', 'in_progress', 'review', 'done']
+    const progressMap = { todo: 0, in_progress: 40, review: 80, done: 100 }
+    const labels = {
+      todo: 'Not started',
+      in_progress: 'Working on it',
+      review: 'Needs check',
+      done: 'Finished',
+    }
+    const current = order.includes(task.status) ? task.status : 'todo'
+    const next = order[(order.indexOf(current) + 1) % order.length]
+    const prev = current
+
+    task.status = next
+    task.progress = progressMap[next] ?? 0
     await task.save()
 
     await ActivityLog.create(
@@ -239,13 +202,18 @@ router.patch(
         projectId: task.projectId,
         actor: req.user._id,
         type: 'task_toggled',
-        message: done
-          ? `Reopened “${task.title}”`
-          : `Completed “${task.title}”`,
+        message: `Moved “${task.title}” from ${labels[prev]} to ${labels[next]}`,
+        meta: {
+          field: 'status',
+          from: labels[prev],
+          to: labels[next],
+          fromValue: prev,
+          toValue: next,
+        },
       }),
     )
 
-    res.json({ success: true, task })
+    res.json({ success: true, task, from: prev, to: next })
   }),
 )
 

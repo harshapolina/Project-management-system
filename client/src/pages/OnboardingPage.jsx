@@ -48,7 +48,13 @@ export function OnboardingPage() {
       })
       setUser(data.user)
       toast('You’re all set', { type: 'success' })
-      navigate(role === 'site_supervisor' ? '/mobile' : '/')
+      navigate(
+        role === 'site_supervisor'
+          ? '/mobile'
+          : ['admin', 'owner', 'hr'].includes(role)
+            ? '/admin'
+            : '/projects',
+      )
     } catch (err) {
       toast(err.message, { type: 'error' })
     } finally {
@@ -80,7 +86,7 @@ export function OnboardingPage() {
                     Welcome, {user?.name?.split(' ')[0] || 'there'}
                   </h1>
                   <p className="mt-2 text-sm text-secondary">
-                    Let’s set up your profile so Cubic feels like home.
+                    Let’s set up your profile so EPM feels like home.
                   </p>
                   <div className="mt-6">
                     <Input
@@ -136,7 +142,7 @@ export function OnboardingPage() {
               <Button onClick={() => setStep((s) => s + 1)}>Continue</Button>
             ) : (
               <Button onClick={finish} loading={loading}>
-                Enter Cubic
+                Enter EPM
               </Button>
             )}
           </div>

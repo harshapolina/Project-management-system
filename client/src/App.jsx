@@ -1,6 +1,17 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  Navigate,
+  useParams,
+} from 'react-router-dom'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
-import { RequireAuth, GuestOnly } from './components/auth/RequireAuth'
+import {
+  RequireAuth,
+  GuestOnly,
+  RoleGate,
+  CapabilityGate,
+} from './components/auth/RequireAuth'
 import {
   LoginPage,
   RegisterPage,
@@ -8,27 +19,20 @@ import {
 } from './pages/auth/AuthPages'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { HomePage } from './pages/HomePage'
-import { UiKitPage } from './pages/UiKitPage'
 import { PortfolioPage } from './pages/PortfolioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectWorkspace } from './pages/project/ProjectWorkspace'
 import { ProjectOverview } from './pages/project/ProjectOverview'
 import { ProjectTasks } from './pages/project/ProjectTasks'
 import { ProjectFiles } from './pages/project/ProjectFiles'
-import { ProjectBoq } from './pages/project/ProjectBoq'
+import { BoqPage } from './pages/BoqPage'
 import {
   ProjectProcurement,
   ProjectSite,
   ProjectTeam,
-  ProjectActivity,
-  ProjectClientPortal,
 } from './pages/project/ProjectModules'
 import { LeadsPage } from './pages/LeadsPage'
-import {
-  QuotationsPage,
-  ProcurementPage,
-  FinancePage,
-} from './pages/OpsPages'
+import { ProcurementPage, FinancePage } from './pages/OpsPages'
 import {
   ReportsPage,
   SettingsPage,
@@ -36,12 +40,17 @@ import {
 } from './pages/MorePages'
 import { PlatformAdminPage } from './pages/PlatformAdminPage'
 import { InboxPage } from './pages/InboxPage'
-import { AssignedCommentsPage } from './pages/AssignedCommentsPage'
-import { PlannerPage } from './pages/PlannerPage'
-import { ChannelsPage } from './pages/ChannelsPage'
+import { AdminPeoplePage } from './pages/AdminPeoplePage'
+import { SiteFeedPage } from './pages/SiteFeedPage'
+import { ImpactPointsPage } from './pages/ImpactPointsPage'
+import { CompanyAdminDashboard } from './pages/CompanyAdminDashboard'
 import { PagePad } from './components/layout/PagePad'
 import { ToastViewport } from './components/ui'
 import { useAuthStore } from './lib/api'
+import {
+  homePathForUser,
+  COMPANY_ADMIN_ROLES,
+} from './lib/roles'
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,8 +69,20 @@ function OnboardingRoute() {
   return <OnboardingPage />
 }
 
-function W({ children }) {
-  return <div className="p-4">{children}</div>
+function HomeRedirect() {
+  const user = useAuthStore((s) => s.user)
+  return <Navigate to={homePathForUser(user) || '/projects'} replace />
+}
+
+function ProjectTabRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/projects/${id}/overview`} replace />
+}
+
+/** BOQ moved out of the project workspace into its own top-level module. */
+function ProjectBoqRedirect() {
+  const { id } = useParams()
+  return <Navigate to={`/boq/${id}`} replace />
 }
 
 export default function App() {
@@ -79,32 +100,62 @@ export default function App() {
 
           <Route element={<RequireAuth />}>
             <Route path="/" element={<HomePage />} />
-            <Route path="/planner" element={<PlannerPage />} />
-            <Route path="/inbox" element={<InboxPage />} />
-            <Route path="/channels" element={<ChannelsPage />} />
-            <Route path="/channels/:channelId" element={<ChannelsPage />} />
+            <Route path="/home" element={<Navigate to="/portfolio" replace />} />
             <Route
-              path="/assigned-comments"
-              element={<AssignedCommentsPage />}
+              path="/my-tasks"
+              element={<Navigate to="/?view=assigned" replace />}
             />
+            <Route path="/inbox" element={<InboxPage />} />
             <Route
               path="/notifications"
-              element={<Navigate to="/inbox?tab=primary" replace />}
+              element={<Navigate to="/inbox" replace />}
+            />
+            <Route
+              path="/site-feed"
+              element={
+                <CapabilityGate capability="siteFeed">
+                  <PagePad>
+                    <SiteFeedPage />
+                  </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/company-admin"
+              element={
+                <RoleGate roles={COMPANY_ADMIN_ROLES}>
+                  <PagePad>
+                    <CompanyAdminDashboard />
+                  </PagePad>
+                </RoleGate>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <CapabilityGate capability="people">
+                  <AdminPeoplePage />
+                </CapabilityGate>
+              }
             />
             <Route
               path="/portfolio"
               element={
-                <PagePad>
-                  <PortfolioPage />
-                </PagePad>
+                <CapabilityGate capability="portfolio">
+                  <PagePad>
+                    <PortfolioPage />
+                  </PagePad>
+                </CapabilityGate>
               }
             />
             <Route
               path="/leads"
               element={
-                <PagePad>
-                  <LeadsPage />
-                </PagePad>
+                <CapabilityGate capability="leads">
+                  <PagePad>
+                    <LeadsPage />
+                  </PagePad>
+                </CapabilityGate>
               }
             />
             <Route
@@ -116,109 +167,108 @@ export default function App() {
               }
             />
             <Route path="/projects/:id" element={<ProjectWorkspace />}>
-              <Route index element={<Navigate to="tasks" replace />} />
-              <Route
-                path="overview"
-                element={
-                  <W>
-                    <ProjectOverview />
-                  </W>
-                }
-              />
-              <Route path="tasks" element={<ProjectTasks forcedView="list" />} />
-              <Route path="board" element={<ProjectTasks forcedView="board" />} />
-              <Route path="gantt" element={<ProjectTasks forcedView="gantt" />} />
+              <Route index element={<Navigate to="overview" replace />} />
+              <Route path="overview" element={<ProjectOverview />} />
+              <Route path="tasks" element={<ProjectTasks />} />
+              <Route path="board" element={<Navigate to="../tasks" replace />} />
+              <Route path="gantt" element={<Navigate to="../tasks" replace />} />
               <Route
                 path="calendar"
-                element={<ProjectTasks forcedView="calendar" />}
+                element={<Navigate to="../tasks" replace />}
               />
               <Route
-                path="files"
-                element={
-                  <W>
-                    <ProjectFiles />
-                  </W>
-                }
+                path="activity"
+                element={<Navigate to="../overview" replace />}
               />
               <Route
-                path="boq"
-                element={
-                  <W>
-                    <ProjectBoq />
-                  </W>
-                }
-              />
-              <Route
-                path="procurement"
-                element={
-                  <W>
-                    <ProjectProcurement />
-                  </W>
-                }
+                path="portal"
+                element={<Navigate to="../team" replace />}
               />
               <Route
                 path="site"
                 element={
-                  <W>
+                  <CapabilityGate capability="siteFeed">
                     <ProjectSite />
-                  </W>
+                  </CapabilityGate>
                 }
               />
               <Route
                 path="team"
                 element={
-                  <W>
+                  <CapabilityGate capability="manageProjects">
                     <ProjectTeam />
-                  </W>
+                  </CapabilityGate>
                 }
               />
               <Route
-                path="portal"
-                element={
-                  <W>
-                    <ProjectClientPortal />
-                  </W>
-                }
+                path="files"
+                element={<ProjectFiles />}
               />
+              <Route path="boq" element={<ProjectBoqRedirect />} />
               <Route
-                path="activity"
+                path="procurement"
                 element={
-                  <W>
-                    <ProjectActivity />
-                  </W>
+                  <CapabilityGate capability="procurement">
+                    <ProjectProcurement />
+                  </CapabilityGate>
                 }
               />
+              <Route path="*" element={<ProjectTabRedirect />} />
             </Route>
             <Route
-              path="/quotations"
+              path="/boq"
               element={
-                <PagePad>
-                  <QuotationsPage />
-                </PagePad>
+                <CapabilityGate capability="boq">
+                  <BoqPage />
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/boq/:projectId"
+              element={
+                <CapabilityGate capability="boq">
+                  <BoqPage />
+                </CapabilityGate>
               }
             />
             <Route
               path="/procurement"
               element={
-                <PagePad>
-                  <ProcurementPage />
-                </PagePad>
+                <CapabilityGate capability="procurement">
+                  <PagePad>
+                    <ProcurementPage />
+                  </PagePad>
+                </CapabilityGate>
               }
             />
             <Route
               path="/finance"
               element={
-                <PagePad>
-                  <FinancePage />
-                </PagePad>
+                <CapabilityGate capability="finance">
+                  <PagePad>
+                    <FinancePage />
+                  </PagePad>
+                </CapabilityGate>
               }
             />
             <Route
               path="/reports"
               element={
-                <PagePad>
-                  <ReportsPage />
-                </PagePad>
+                <CapabilityGate capability="reports">
+                  <PagePad>
+                    <ReportsPage />
+                  </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/impact"
+              element={
+                <CapabilityGate capability="impact">
+                  <PagePad>
+                    <ImpactPointsPage />
+                  </PagePad>
+                </CapabilityGate>
               }
             />
             <Route
@@ -232,30 +282,40 @@ export default function App() {
             <Route
               path="/platform"
               element={
-                <PagePad>
-                  <PlatformAdminPage />
-                </PagePad>
+                <CapabilityGate capability="platform">
+                  <PagePad>
+                    <PlatformAdminPage />
+                  </PagePad>
+                </CapabilityGate>
               }
             />
             <Route
               path="/mobile"
               element={
-                <PagePad>
-                  <MobileSupervisorPage />
-                </PagePad>
+                <CapabilityGate capability="mobile">
+                  <PagePad>
+                    <MobileSupervisorPage />
+                  </PagePad>
+                </CapabilityGate>
               }
+            />
+
+            {/* Old ClickUp-style routes → simple redirects */}
+            <Route path="/planner" element={<Navigate to="/projects" replace />} />
+            <Route path="/channels" element={<Navigate to="/inbox" replace />} />
+            <Route
+              path="/channels/:channelId"
+              element={<Navigate to="/inbox" replace />}
             />
             <Route
-              path="/ui-kit"
-              element={
-                <PagePad>
-                  <UiKitPage />
-                </PagePad>
-              }
+              path="/assigned-comments"
+              element={<Navigate to="/inbox" replace />}
             />
+            <Route path="/quotations" element={<Navigate to="/boq" replace />} />
+            <Route path="/ui-kit" element={<Navigate to="/projects" replace />} />
           </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<HomeRedirect />} />
         </Routes>
         <ToastViewport />
       </BrowserRouter>

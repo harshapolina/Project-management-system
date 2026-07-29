@@ -2,10 +2,9 @@ import { useQuery } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { AlertTriangle, CalendarClock } from 'lucide-react'
 import { api } from '../lib/api'
-import { formatInr, stageLabel } from '../lib/format'
+import { stageLabel } from '../lib/format'
 import {
   Avatar,
-  AvatarStack,
   Button,
   Card,
   KpiCard,
@@ -14,7 +13,6 @@ import {
   SkeletonCard,
   StatusChip,
 } from '../components/ui'
-import { cn } from '../lib/utils'
 
 export function PortfolioPage() {
   const { data, isLoading } = useQuery({
@@ -41,9 +39,9 @@ export function PortfolioPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-secondary mb-1">Studio health</p>
-          <h1 className="text-[32px] font-semibold tracking-tight leading-none">
-            Portfolio
+          <p className="text-sm text-secondary mb-1">Real-time visibility across all interior projects</p>
+          <h1 className="text-[28px] font-semibold tracking-tight leading-none text-[#0f172a] md:text-[32px]">
+            Project Dashboard
           </h1>
         </div>
         <Link to="/projects">
@@ -111,12 +109,18 @@ export function PortfolioPage() {
                     backgroundImage: `linear-gradient(to top, rgba(14,14,16,.92), transparent), url(${p.coverImage})`,
                   }}
                 >
-                  <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
+                  <div className="on-dark absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
                     <div>
                       <p className="text-sm font-semibold text-white">{p.name}</p>
                       <p className="text-xs text-white/70">{p.clientName}</p>
                     </div>
-                    <ProgressRing value={p.progress} size={44} stroke={3} />
+                    <ProgressRing
+                      value={p.progress}
+                      size={44}
+                      stroke={3}
+                      trackColor="rgba(255,255,255,0.35)"
+                      color="#ffffff"
+                    />
                   </div>
                 </div>
                 <div className="flex items-center justify-between gap-2 p-4">
@@ -134,7 +138,7 @@ export function PortfolioPage() {
           <Card padding={false}>
             <div className="border-b border-border px-4 py-3 flex items-center gap-2">
               <AlertTriangle className="h-4 w-4 text-status-delayed" />
-              <h3 className="text-sm font-semibold">Delay alerts</h3>
+              <h3 className="text-sm font-semibold">Alerts & risks</h3>
             </div>
             <div className="divide-y divide-border">
               {(d?.delayAlerts || []).length === 0 && (

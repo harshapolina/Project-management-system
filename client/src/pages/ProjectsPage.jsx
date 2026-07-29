@@ -103,12 +103,12 @@ export function ProjectsPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="text-sm text-secondary mb-1">Hierarchy</p>
-          <h1 className="text-[32px] font-semibold tracking-tight leading-none">
-            Spaces
+          <p className="text-sm text-secondary mb-1">All studio work</p>
+          <h1 className="text-[28px] font-semibold tracking-tight leading-none text-[#0f172a] md:text-[32px]">
+            Projects
           </h1>
           <p className="mt-2 text-sm text-secondary">
-            Projects live here as Lists — open one for List, Board, Gantt, and more.
+            Open a project for overview, tasks, quotation, materials, site, and team.
           </p>
         </div>
         <Button onClick={() => setOpen(true)}>
@@ -181,8 +181,13 @@ export function ProjectsPage() {
                   <div className="absolute top-3 left-3">
                     <StatusChip status={p.type} label={p.type} />
                   </div>
-                  <div className="absolute bottom-3 right-3">
-                    <ProgressRing value={p.progress} size={48} />
+                  <div className="on-dark absolute bottom-3 right-3">
+                    <ProgressRing
+                      value={p.progress}
+                      size={48}
+                      trackColor="rgba(255,255,255,0.35)"
+                      color="#ffffff"
+                    />
                   </div>
                 </div>
                 <div className="p-4 space-y-2">
@@ -209,7 +214,7 @@ export function ProjectsPage() {
                   e.stopPropagation()
                   setDeleteTarget(p)
                 }}
-                className="absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
+                className="on-dark absolute top-3 right-3 flex h-8 w-8 items-center justify-center rounded-md bg-black/50 text-white opacity-0 transition-opacity hover:bg-red-600 group-hover:opacity-100"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>

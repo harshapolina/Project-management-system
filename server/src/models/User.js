@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs'
 export const ROLES = [
   'admin',
   'owner',
+  'hr',
   'project_manager',
   'designer',
   'site_supervisor',
@@ -24,6 +25,11 @@ const userSchema = new mongoose.Schema(
     role: { type: String, enum: ROLES, default: 'project_manager' },
     /** Platform owner (Editco) — can manage all tenants */
     isPlatformAdmin: { type: Boolean, default: false, index: true },
+    /** Per-user overrides layered over role defaults (plain object; keys may contain dots). */
+    permissions: {
+      type: mongoose.Schema.Types.Mixed,
+      default: {},
+    },
     mustChangePassword: { type: Boolean, default: false },
     avatar: { type: String, default: '' },
     phone: { type: String, default: '' },
@@ -72,6 +78,10 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
     company: this.company,
     tenantId: this.tenantId,
     isPlatformAdmin: !!this.isPlatformAdmin,
+    permissions:
+      this.permissions && typeof this.permissions === 'object'
+        ? { ...this.permissions }
+        : {},
     mustChangePassword: !!this.mustChangePassword,
     onboardingCompleted: this.onboardingCompleted,
     googleCalendarConnected: !!this.googleCalendar?.connected,

@@ -3,7 +3,7 @@ import { cn } from '../../lib/utils'
 
 const variants = {
   primary:
-    'bg-accent text-[#0E0E10] hover:bg-accent-hover shadow-[0_1px_2px_rgba(0,0,0,0.35)]',
+    'bg-accent text-white hover:bg-accent-hover shadow-[0_1px_2px_rgba(0,0,0,0.12)]',
   secondary:
     'bg-transparent text-primary border border-border hover:bg-surface-raised',
   ghost: 'bg-transparent text-secondary hover:text-primary hover:bg-surface-raised',
@@ -37,7 +37,8 @@ export const Button = forwardRef(function Button(
       disabled={disabled || loading}
       className={cn(
         'inline-flex items-center justify-center rounded-[11px] font-semibold transition-all duration-150 ease-out',
-        'disabled:opacity-50 disabled:pointer-events-none',
+        // A greyed-out button reads as "not ready yet"; a faded accent reads as broken.
+        'disabled:pointer-events-none disabled:border-transparent disabled:bg-[#eef2f7] disabled:text-[#94a3b8] disabled:shadow-none',
         'active:scale-[0.98]',
         variants[variant],
         sizes[size],

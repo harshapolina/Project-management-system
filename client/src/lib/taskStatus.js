@@ -1,37 +1,51 @@
 /** Single source of truth for task status + priority visuals */
 
+export const TASK_STATUS_ORDER = ['todo', 'in_progress', 'review', 'done']
+
 export const TASK_STATUSES = [
   {
     value: 'todo',
-    label: 'TO DO',
-    shortLabel: 'To do',
-    dot: '#d4d4d8',
-    bg: '#3f3f46',
-    text: '#f4f4f5',
+    label: 'NOT STARTED',
+    shortLabel: 'Not started',
+    hint: 'Waiting to begin',
+    nextHint: 'Start working',
+    progress: 0,
+    dot: '#94a3b8',
+    bg: '#f1f5f9',
+    text: '#475569',
   },
   {
     value: 'in_progress',
-    label: 'IN PROGRESS',
-    shortLabel: 'In progress',
-    dot: '#60a5fa',
-    bg: '#1e3a5f',
-    text: '#bfdbfe',
+    label: 'WORKING ON IT',
+    shortLabel: 'Working on it',
+    hint: 'Happening now',
+    nextHint: 'Send for check',
+    progress: 40,
+    dot: '#3b82f6',
+    bg: '#eff6ff',
+    text: '#1d4ed8',
   },
   {
     value: 'review',
-    label: 'REVIEW',
-    shortLabel: 'Review',
-    dot: '#fbbf24',
-    bg: '#422006',
-    text: '#fde68a',
+    label: 'NEEDS CHECK',
+    shortLabel: 'Needs check',
+    hint: 'Ready for review',
+    nextHint: 'Mark finished',
+    progress: 80,
+    dot: '#f59e0b',
+    bg: '#fffbeb',
+    text: '#b45309',
   },
   {
     value: 'done',
-    label: 'DONE',
-    shortLabel: 'Done',
-    dot: '#34d399',
-    bg: '#064e3b',
-    text: '#a7f3d0',
+    label: 'FINISHED',
+    shortLabel: 'Finished',
+    hint: 'Done',
+    nextHint: 'Reopen task',
+    progress: 100,
+    dot: '#10b981',
+    bg: '#ecfdf5',
+    text: '#047857',
   },
 ]
 
@@ -46,6 +60,20 @@ export function getTaskStatus(value) {
   return (
     TASK_STATUSES.find((s) => s.value === value) || TASK_STATUSES[0]
   )
+}
+
+/** Advance one step: Not started → Working on it → Needs check → Finished → Not started */
+export function nextTaskStatus(value) {
+  const i = TASK_STATUS_ORDER.indexOf(value)
+  const next =
+    i < 0
+      ? 'in_progress'
+      : TASK_STATUS_ORDER[(i + 1) % TASK_STATUS_ORDER.length]
+  return getTaskStatus(next)
+}
+
+export function taskProgressForStatus(value) {
+  return getTaskStatus(value).progress
 }
 
 export function getTaskPriority(value) {

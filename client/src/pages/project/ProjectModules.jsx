@@ -1,8 +1,19 @@
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { useParams, useOutletContext } from 'react-router-dom'
+import { useParams, useOutletContext, useSearchParams } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
-import { api } from '../../lib/api'
+import {
+  AlertTriangle,
+  ArrowRight,
+  Camera,
+  CheckSquare,
+  FileSpreadsheet,
+  Package,
+  Square,
+  X,
+} from 'lucide-react'
+import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { formatInr } from '../../lib/format'
 import {
   Avatar,
@@ -18,12 +29,18 @@ import {
   StatusChip,
   toast,
 } from '../../components/ui'
+import { cn } from '../../lib/utils'
 
 export function ProjectProcurement() {
   const { id } = useParams()
-  const { data } = useQuery({
+  const { project } = useOutletContext() || {}
+  const { data, isLoading } = useQuery({
     queryKey: ['pos', id],
     queryFn: () => api(`/purchase-orders?projectId=${id}`),
+  })
+  const { data: quoteData } = useQuery({
+    queryKey: ['quotations', id],
+    queryFn: () => api(`/quotations?projectId=${id}`),
   })
   const { data: vendorsData } = useQuery({
     queryKey: ['vendors'],
@@ -31,6 +48,7 @@ export function ProjectProcurement() {
   })
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
+  const [selected, setSelected] = useState(() => new Set())
 
   const create = useMutation({
     mutationFn: (body) =>
@@ -38,8 +56,10 @@ export function ProjectProcurement() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['pos', id] })
       setOpen(false)
-      toast('PO created', { type: 'success' })
+      setSelected(new Set())
+      toast('Purchase order created', { type: 'success' })
     },
+    onError: (e) => toast(e.message, { type: 'error' }),
   })
 
   const patch = useMutation({
@@ -52,60 +72,382 @@ export function ProjectProcurement() {
   })
 
   const pos = data?.purchaseOrders || []
+  const vendors = vendorsData?.vendors || []
+  const approvedQuote = (quoteData?.quotations || []).find(
+    (q) => q.status === 'approved',
+  )
+  const quoteItems = useMemo(() => {
+    if (!approvedQuote?.items?.length) return []
+    return approvedQuote.items
+      .map((it, i) => ({
+        ...it,
+        _key: String(it._id || `qi-${i}`),
+        amount:
+          Number(it.amount) ||
+          (Number(it.qty) || 0) * (Number(it.rate) || 0),
+      }))
+      .filter((it) => it.description?.trim() || it.amount > 0)
+  }, [approvedQuote])
+
+  // Which quote lines are already covered by a PO (matched by boqItemId or description)
+  const orderedKeys = useMemo(() => {
+    const keys = new Set()
+    for (const po of pos) {
+      for (const it of po.items || []) {
+        if (it.boqItemId) keys.add(String(it.boqItemId))
+        if (it.description) keys.add(`desc:${it.description.trim().toLowerCase()}`)
+      }
+    }
+    return keys
+  }, [pos])
+
+  const materialRows = quoteItems.map((it) => {
+    const ordered =
+      orderedKeys.has(String(it._id || it._key)) ||
+      orderedKeys.has(`desc:${(it.description || '').trim().toLowerCase()}`)
+    return { ...it, ordered }
+  })
+
+  const pendingRows = materialRows.filter((r) => !r.ordered)
+  const selectedItems = materialRows.filter((r) => selected.has(r._key))
+  const selectedValue = selectedItems.reduce(
+    (s, it) => s + (Number(it.amount) || 0),
+    0,
+  )
+
+  const totalValue = pos.reduce((s, p) => s + (Number(p.value) || 0), 0)
+  const delivered = pos.filter((p) => p.status === 'delivered').length
+
+  const toggle = (key) => {
+    setSelected((prev) => {
+      const next = new Set(prev)
+      if (next.has(key)) next.delete(key)
+      else next.add(key)
+      return next
+    })
+  }
+
+  const selectAllPending = () => {
+    setSelected(new Set(pendingRows.map((r) => r._key)))
+  }
+
+  const openPoFromSelection = () => {
+    if (!selectedItems.length) {
+      toast('Select materials from the quote first', { type: 'info' })
+      return
+    }
+    setOpen(true)
+  }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-base font-semibold">Purchase orders</h2>
-        <Button size="sm" onClick={() => setOpen(true)}>
-          Raise PO
-        </Button>
+    <div className="space-y-4 p-4 md:p-5">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h2 className="text-[18px] font-semibold text-[#0f172a]">
+            Materials & orders
+          </h2>
+          <p className="text-[13px] text-[#64748b]">
+            Items from the approved quote, then purchase orders to vendors
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {selectedItems.length > 0 && (
+            <Button onClick={openPoFromSelection}>
+              Raise PO · {selectedItems.length} item
+              {selectedItems.length === 1 ? '' : 's'} ({formatInr(selectedValue)})
+            </Button>
+          )}
+          <Button
+            variant={selectedItems.length ? 'secondary' : 'primary'}
+            onClick={() => {
+              setSelected(new Set())
+              setOpen(true)
+            }}
+          >
+            Raise blank PO
+          </Button>
+        </div>
       </div>
-      <DataTable
-        columns={[
-          { key: 'poNumber', label: 'PO #' },
-          {
-            key: 'vendor',
-            label: 'Vendor',
-            render: (_, row) => row.vendor?.name || '—',
-          },
-          {
-            key: 'value',
-            label: 'Value',
-            numeric: true,
-            align: 'right',
-            render: (v) => formatInr(v),
-          },
-          {
-            key: 'status',
-            label: 'Status',
-            render: (v, row) => (
+
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Card className="!bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-[#64748b]">Quote items to buy</p>
+          <p className="mt-1 text-[24px] font-semibold tabular-nums">
+            {pendingRows.length}
+            <span className="text-[14px] font-normal text-[#94a3b8]">
+              {' '}
+              / {materialRows.length}
+            </span>
+          </p>
+        </Card>
+        <Card className="!bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-[#64748b]">Order value</p>
+          <p className="mt-1 text-[20px] font-semibold tabular-nums text-[#2563eb]">
+            {formatInr(totalValue)}
+          </p>
+        </Card>
+        <Card className="!bg-white p-4 shadow-sm">
+          <p className="text-[12px] text-[#64748b]">Delivered</p>
+          <p className="mt-1 text-[24px] font-semibold tabular-nums text-emerald-600">
+            {delivered}
+            <span className="text-[14px] font-normal text-[#94a3b8]">
+              {' '}
+              / {pos.length} POs
+            </span>
+          </p>
+        </Card>
+      </div>
+
+      {/* From approved quote */}
+      <Card padding={false} className="overflow-hidden !bg-white shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e8eef4] px-4 py-3">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eff6ff] text-[#2563eb]">
+              <FileSpreadsheet className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-[13px] font-semibold text-[#0f172a]">
+                From approved quote
+              </p>
+              <p className="text-[11px] text-[#94a3b8]">
+                {approvedQuote
+                  ? `${approvedQuote.title || 'Quote'} · ${formatInr(approvedQuote.grandTotal)}`
+                  : 'Approve a quote first — items appear here to buy'}
+              </p>
+            </div>
+          </div>
+          {pendingRows.length > 0 && (
+            <div className="flex gap-2">
               <button
                 type="button"
-                onClick={() => {
-                  const flow = [
-                    'draft',
-                    'approved',
-                    'ordered',
-                    'in_transit',
-                    'delivered',
-                  ]
-                  const next = flow[Math.min(flow.indexOf(v) + 1, flow.length - 1)]
-                  patch.mutate({ poId: row._id, status: next })
-                }}
+                onClick={selectAllPending}
+                className="rounded-lg border border-[#e2e8f0] px-2.5 py-1.5 text-[11px] font-semibold text-[#475569] hover:bg-[#f8fafc]"
               >
-                <StatusChip status={v} />
+                Select all pending
               </button>
-            ),
-          },
-        ]}
-        data={pos}
-        emptyMessage="No purchase orders yet — raise one to track deliveries."
-      />
+              <button
+                type="button"
+                onClick={openPoFromSelection}
+                disabled={!selectedItems.length}
+                className="rounded-lg bg-[#2563eb] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40"
+              >
+                Raise PO from selected
+              </button>
+            </div>
+          )}
+        </div>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Raise purchase order">
+        {!approvedQuote && (
+          <div className="px-4 py-10 text-center">
+            <Package className="mx-auto h-8 w-8 text-[#cbd5e1]" />
+            <p className="mt-2 text-[13px] font-medium text-[#64748b]">
+              No approved quote yet
+            </p>
+            <p className="mt-1 text-[12px] text-[#94a3b8]">
+              Open BOQ / Quotes in the sidebar, build the sheet, then click
+              Approve — those lines show here for ordering.
+            </p>
+            <Link
+              to={`/boq/${id}`}
+              className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#2563eb]"
+            >
+              Open BOQ <ArrowRight className="h-3 w-3" />
+            </Link>
+          </div>
+        )}
+
+        {approvedQuote && materialRows.length === 0 && (
+          <p className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">
+            Approved quote has no line items.
+          </p>
+        )}
+
+        {materialRows.length > 0 && (
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[640px] border-collapse text-[13px]">
+              <thead>
+                <tr className="border-b border-[#e8eef4] bg-[#f8fafc] text-left text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
+                  <th className="w-10 px-3 py-2" />
+                  <th className="px-3 py-2">Room</th>
+                  <th className="px-3 py-2">Item</th>
+                  <th className="px-3 py-2">Unit</th>
+                  <th className="px-3 py-2 text-right">Qty</th>
+                  <th className="px-3 py-2 text-right">Rate</th>
+                  <th className="px-3 py-2 text-right">Amount</th>
+                  <th className="px-3 py-2">Buy status</th>
+                </tr>
+              </thead>
+              <tbody>
+                {materialRows.map((it) => {
+                  const isSelected = selected.has(it._key)
+                  return (
+                    <tr
+                      key={it._key}
+                      className={cn(
+                        'border-b border-[#eef2f7]',
+                        it.ordered
+                          ? 'bg-[#f8fafc] text-[#94a3b8]'
+                          : isSelected
+                            ? 'bg-[#eff6ff]'
+                            : 'hover:bg-[#f8fafc]',
+                      )}
+                    >
+                      <td className="px-3 py-2">
+                        {!it.ordered ? (
+                          <button
+                            type="button"
+                            onClick={() => toggle(it._key)}
+                            className="text-[#2563eb]"
+                            aria-label="Select"
+                          >
+                            {isSelected ? (
+                              <CheckSquare className="h-4 w-4" />
+                            ) : (
+                              <Square className="h-4 w-4 text-[#94a3b8]" />
+                            )}
+                          </button>
+                        ) : (
+                          <CheckSquare className="h-4 w-4 text-emerald-500" />
+                        )}
+                      </td>
+                      <td className="px-3 py-2 font-medium text-[#334155]">
+                        {it.room || 'General'}
+                      </td>
+                      <td
+                        className={cn(
+                          'px-3 py-2 text-[#0f172a]',
+                          it.ordered && 'line-through',
+                        )}
+                      >
+                        {it.description || '—'}
+                      </td>
+                      <td className="px-3 py-2 text-[#64748b]">{it.unit}</td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {it.qty}
+                      </td>
+                      <td className="px-3 py-2 text-right tabular-nums">
+                        {formatInr(it.rate)}
+                      </td>
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-[#0f172a]">
+                        {formatInr(it.amount)}
+                      </td>
+                      <td className="px-3 py-2">
+                        {it.ordered ? (
+                          <span className="rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-bold text-emerald-700">
+                            On a PO
+                          </span>
+                        ) : (
+                          <span className="rounded-md bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800">
+                            To buy
+                          </span>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </Card>
+
+      <Card padding={false} className="overflow-hidden !bg-white shadow-sm">
+        <div className="border-b border-[#e8eef4] px-4 py-3">
+          <p className="text-[13px] font-semibold text-[#0f172a]">
+            Purchase orders
+          </p>
+          <p className="text-[11px] text-[#94a3b8]">
+            Tap status to advance: Draft → Approved → Ordered → In transit →
+            Delivered
+          </p>
+        </div>
+        {isLoading ? (
+          <div className="h-32 animate-pulse bg-[#f1f5f9]" />
+        ) : (
+          <DataTable
+            columns={[
+              { key: 'poNumber', label: 'PO #' },
+              {
+                key: 'vendor',
+                label: 'Vendor',
+                render: (_, row) => row.vendor?.name || '—',
+              },
+              {
+                key: 'items',
+                label: 'Items',
+                render: (items) =>
+                  items?.length
+                    ? `${items.length} line${items.length === 1 ? '' : 's'}`
+                    : '—',
+              },
+              {
+                key: 'value',
+                label: 'Value',
+                numeric: true,
+                align: 'right',
+                render: (v) => formatInr(v),
+              },
+              {
+                key: 'status',
+                label: 'Status',
+                render: (v, row) => (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const flow = [
+                        'draft',
+                        'approved',
+                        'ordered',
+                        'in_transit',
+                        'delivered',
+                      ]
+                      const next =
+                        flow[Math.min(flow.indexOf(v) + 1, flow.length - 1)]
+                      patch.mutate({ poId: row._id, status: next })
+                    }}
+                  >
+                    <StatusChip status={v} />
+                  </button>
+                ),
+              },
+            ]}
+            data={pos}
+            emptyMessage="No purchase orders yet — select quote items above and raise a PO."
+          />
+        )}
+      </Card>
+
+      {vendors.length > 0 && (
+        <Card className="!bg-white shadow-sm">
+          <p className="mb-3 text-[13px] font-semibold text-[#0f172a]">
+            Vendors you can order from
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {vendors.slice(0, 8).map((v) => (
+              <span
+                key={v._id}
+                className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[12px] font-medium text-[#334155]"
+              >
+                {v.name}
+              </span>
+            ))}
+          </div>
+        </Card>
+      )}
+
+      <Modal
+        open={open}
+        onClose={() => setOpen(false)}
+        title={
+          selectedItems.length
+            ? `Raise PO · ${selectedItems.length} quote item${selectedItems.length === 1 ? '' : 's'}`
+            : 'Raise purchase order'
+        }
+      >
         <PoForm
-          vendors={vendorsData?.vendors || []}
+          vendors={vendors}
+          projectName={project?.name}
+          presetItems={selectedItems}
           onSubmit={(values) =>
             create.mutate({
               ...values,
@@ -114,66 +456,262 @@ export function ProjectProcurement() {
             })
           }
           loading={create.isPending}
+          onVendorAdded={(vendor) => {
+            qc.setQueryData(['vendors'], (old) => ({
+              ...(old || {}),
+              vendors: [...(old?.vendors || []), vendor],
+            }))
+            qc.invalidateQueries({ queryKey: ['vendors'] })
+          }}
         />
       </Modal>
     </div>
   )
 }
 
-function PoForm({ vendors, onSubmit, loading }) {
+function PoForm({
+  vendors,
+  onSubmit,
+  loading,
+  presetItems = [],
+  projectName,
+  onVendorAdded,
+}) {
   const [form, setForm] = useState({
     vendor: vendors[0]?._id || '',
     value: '',
     itemsDesc: '',
   })
+  const [newVendorOpen, setNewVendorOpen] = useState(!vendors.length)
+  const [newVendor, setNewVendor] = useState({ name: '', phone: '' })
+
+  const addVendor = useMutation({
+    mutationFn: (body) =>
+      api('/vendors', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: (res) => {
+      const vendor = res?.vendor
+      if (vendor?._id) {
+        onVendorAdded?.(vendor)
+        setForm((f) => ({ ...f, vendor: vendor._id }))
+      }
+      setNewVendor({ name: '', phone: '' })
+      setNewVendorOpen(false)
+      toast(`${vendor?.name || 'Vendor'} added`, { type: 'success' })
+    },
+    onError: (e) => toast(e.message || 'Could not add vendor', { type: 'error' }),
+  })
+
+  const fromQuote = presetItems.length > 0
+  const quoteValue = presetItems.reduce(
+    (s, it) => s + (Number(it.amount) || 0),
+    0,
+  )
+
+  useEffect(() => {
+    if (fromQuote) {
+      setForm((f) => ({
+        ...f,
+        value: String(quoteValue),
+        itemsDesc: presetItems
+          .map((it) => it.description || 'Item')
+          .join(', '),
+      }))
+    }
+  }, [fromQuote, quoteValue, presetItems])
+
   return (
     <form
       className="space-y-4"
       onSubmit={(e) => {
         e.preventDefault()
+        const items = fromQuote
+          ? presetItems.map((it) => ({
+              description: it.description || 'Materials',
+              qty: Number(it.qty) || 1,
+              rate: Number(it.rate) || 0,
+              amount:
+                Number(it.amount) ||
+                (Number(it.qty) || 0) * (Number(it.rate) || 0),
+              boqItemId: it._id || undefined,
+            }))
+          : [
+              {
+                description: form.itemsDesc || 'Materials',
+                qty: 1,
+                rate: Number(form.value) || 0,
+                amount: Number(form.value) || 0,
+              },
+            ]
         onSubmit({
           vendor: form.vendor,
-          value: form.value,
-          items: [
-            {
-              description: form.itemsDesc || 'Materials',
-              qty: 1,
-              rate: Number(form.value) || 0,
-              amount: Number(form.value) || 0,
-            },
-          ],
+          value: fromQuote ? quoteValue : form.value,
+          items,
           status: 'draft',
         })
       }}
     >
-      <Select
-        label="Vendor"
-        value={form.vendor}
-        onChange={(e) => setForm({ ...form, vendor: e.target.value })}
-        options={vendors.map((v) => ({ value: v._id, label: v.name }))}
-      />
-      <Input
-        label="Description"
-        value={form.itemsDesc}
-        onChange={(e) => setForm({ ...form, itemsDesc: e.target.value })}
-      />
+      {fromQuote && (
+        <div className="rounded-xl border border-[#dbeafe] bg-[#eff6ff] px-3 py-2.5 text-[12px] text-[#1e40af]">
+          <p className="font-semibold">
+            From {projectName || 'project'} approved quote
+          </p>
+          <ul className="mt-1.5 max-h-28 space-y-0.5 overflow-y-auto">
+            {presetItems.map((it) => (
+              <li key={it._key} className="flex justify-between gap-2">
+                <span className="truncate">
+                  {it.room ? `${it.room} · ` : ''}
+                  {it.description}
+                </span>
+                <span className="shrink-0 tabular-nums">
+                  {formatInr(it.amount)}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
+      <div>
+        <Select
+          label="Vendor"
+          value={form.vendor}
+          onChange={(e) => setForm({ ...form, vendor: e.target.value })}
+          options={
+            vendors.length
+              ? vendors.map((v) => ({ value: v._id, label: v.name }))
+              : [{ value: '', label: 'No vendors yet — add one below' }]
+          }
+        />
+        {!newVendorOpen && (
+          <button
+            type="button"
+            onClick={() => setNewVendorOpen(true)}
+            className="mt-1.5 text-[12px] font-semibold text-[#2563eb] hover:underline"
+          >
+            + Add a new vendor
+          </button>
+        )}
+      </div>
+
+      {newVendorOpen && (
+        <div className="space-y-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
+          <p className="text-[12px] font-semibold text-[#334155]">
+            New vendor
+          </p>
+          <Input
+            label="Name"
+            value={newVendor.name}
+            onChange={(e) =>
+              setNewVendor({ ...newVendor, name: e.target.value })
+            }
+            placeholder="e.g. Sharma Plywood"
+          />
+          <Input
+            label="Phone (optional)"
+            value={newVendor.phone}
+            onChange={(e) =>
+              setNewVendor({ ...newVendor, phone: e.target.value })
+            }
+            placeholder="98xxxxxxxx"
+          />
+          <div className="flex gap-2">
+            <Button
+              size="sm"
+              loading={addVendor.isPending}
+              disabled={!newVendor.name.trim()}
+              onClick={() =>
+                addVendor.mutate({
+                  name: newVendor.name.trim(),
+                  phone: newVendor.phone.trim(),
+                })
+              }
+            >
+              Save vendor
+            </Button>
+            {vendors.length > 0 && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => setNewVendorOpen(false)}
+              >
+                Cancel
+              </Button>
+            )}
+          </div>
+          <p className="text-[11px] text-[#94a3b8]">
+            Full details (email, payment terms, rating) can be set on the
+            Materials page in the sidebar.
+          </p>
+        </div>
+      )}
+      {!fromQuote && (
+        <Input
+          label="Description"
+          value={form.itemsDesc}
+          onChange={(e) => setForm({ ...form, itemsDesc: e.target.value })}
+        />
+      )}
       <Input
         label="Value"
         type="number"
-        value={form.value}
+        value={fromQuote ? quoteValue : form.value}
+        disabled={fromQuote}
         onChange={(e) => setForm({ ...form, value: e.target.value })}
       />
-      <Button type="submit" className="w-full" loading={loading}>
+      <Button
+        type="submit"
+        className="w-full"
+        loading={loading}
+        disabled={!form.vendor}
+      >
         Create PO
       </Button>
     </form>
   )
 }
 
+/** open → fixed → verified, then back to open when something regresses. */
+const SNAG_FLOW = {
+  open: { next: 'fixed', action: 'Mark fixed' },
+  fixed: { next: 'verified', action: 'Verify' },
+  verified: { next: 'open', action: 'Reopen' },
+}
+
+function SiteStat({ icon: Icon, label, value, hint, tone = 'blue' }) {
+  const tones = {
+    blue: 'bg-[#eff6ff] text-[#2563eb]',
+    red: 'bg-[#fef2f2] text-[#dc2626]',
+    green: 'bg-[#ecfdf5] text-[#059669]',
+  }
+  return (
+    <Card className="flex items-center gap-3 !bg-white shadow-sm">
+      <span
+        className={cn(
+          'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+          tones[tone],
+        )}
+      >
+        <Icon className="h-5 w-5" />
+      </span>
+      <div className="min-w-0">
+        <p className="text-[12px] text-[#64748b]">{label}</p>
+        <p className="text-[20px] font-semibold leading-tight text-[#0f172a]">
+          {value}
+        </p>
+        {hint && (
+          <p className="truncate text-[11px] text-[#94a3b8]">{hint}</p>
+        )}
+      </div>
+    </Card>
+  )
+}
+
 export function ProjectSite() {
   const { id } = useParams()
   const qc = useQueryClient()
-  const { data } = useQuery({
+  const [searchParams, setSearchParams] = useSearchParams()
+  const noteRef = useRef(null)
+  const { data, isLoading } = useQuery({
     queryKey: ['site', id],
     queryFn: () => api(`/site-updates?projectId=${id}`),
   })
@@ -182,127 +720,566 @@ export function ProjectSite() {
     queryFn: () => api(`/snags?projectId=${id}`),
   })
   const [note, setNote] = useState('')
+  const [photos, setPhotos] = useState([])
+  const [progress, setProgress] = useState('')
+  const [uploading, setUploading] = useState(false)
+  const [snagTitle, setSnagTitle] = useState('')
+
+  useEffect(() => {
+    if (searchParams.get('compose') === '1') {
+      window.setTimeout(() => noteRef.current?.focus(), 50)
+      const next = new URLSearchParams(searchParams)
+      next.delete('compose')
+      setSearchParams(next, { replace: true })
+    }
+  }, [searchParams, setSearchParams])
+
+  /** Site photos ride on the shared /files upload, filed under the site folder. */
+  const uploadPhotos = async (fileList) => {
+    const files = Array.from(fileList || []).filter((f) =>
+      f.type.startsWith('image/'),
+    )
+    if (!files.length) return
+    setUploading(true)
+    let failed = 0
+    for (const file of files) {
+      try {
+        const fd = new FormData()
+        fd.append('file', file)
+        fd.append('projectId', id)
+        fd.append('folder', 'site')
+        fd.append('name', file.name)
+        const res = await api('/files', { method: 'POST', body: fd })
+        const url = res?.file?.versions?.[0]?.url
+        if (url) setPhotos((p) => [...p, { url }])
+        else failed += 1
+      } catch {
+        failed += 1
+      }
+    }
+    setUploading(false)
+    if (failed) {
+      toast(`${failed} photo${failed > 1 ? 's' : ''} failed to upload`, {
+        type: 'error',
+      })
+    }
+  }
 
   const post = useMutation({
     mutationFn: (body) =>
       api('/site-updates', { method: 'POST', body: JSON.stringify(body) }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['site', id] })
+      qc.invalidateQueries({ queryKey: ['project', id] })
+      qc.invalidateQueries({ queryKey: ['files', id] })
       setNote('')
-      toast('Site update posted', { type: 'success' })
+      setPhotos([])
+      setProgress('')
+      toast('Update published — the office can see it now', { type: 'success' })
     },
+    onError: (e) => toast(e.message || 'Could not post', { type: 'error' }),
+  })
+
+  const addSnag = useMutation({
+    mutationFn: (body) =>
+      api('/snags', { method: 'POST', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['snags', id] })
+      setSnagTitle('')
+      toast('Snag added', { type: 'success' })
+    },
+    onError: (e) => toast(e.message || 'Could not add snag', { type: 'error' }),
   })
 
   const patchSnag = useMutation({
     mutationFn: ({ snagId, body }) =>
       api(`/snags/${snagId}`, { method: 'PATCH', body: JSON.stringify(body) }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['snags', id] }),
+    onSuccess: (res, vars) => {
+      qc.invalidateQueries({ queryKey: ['snags', id] })
+      qc.invalidateQueries({ queryKey: ['tasks', id] })
+      if (vars.body.convertToTask) {
+        toast('Task created on the Tasks tab', { type: 'success' })
+      } else {
+        toast(`Snag marked ${res?.snag?.status || 'updated'}`, {
+          type: 'success',
+        })
+      }
+    },
+    onError: (e) =>
+      toast(e.message || 'Could not update snag', { type: 'error' }),
+  })
+
+  const updates = data?.updates || []
+  const snags = snagsData?.snags || []
+  const openSnags = snags.filter((s) => s.status === 'open').length
+  const verifiedSnags = snags.filter((s) => s.status === 'verified').length
+  const lastUpdate = updates[0]
+  const canPost = !!note.trim() && !uploading
+
+  const submit = () => {
+    const pct = Number(progress)
+    post.mutate({
+      projectId: id,
+      note: note.trim(),
+      photos,
+      progress: Number.isFinite(pct) && progress !== '' ? pct : 0,
+    })
+  }
+
+  return (
+    <div className="space-y-4 p-4 md:p-5">
+      <div className="grid gap-3 sm:grid-cols-3">
+        <SiteStat
+          icon={Camera}
+          label="Site updates"
+          value={updates.length}
+          hint={
+            lastUpdate?.createdAt
+              ? `Last ${formatDistanceToNow(new Date(lastUpdate.createdAt), {
+                  addSuffix: true,
+                })}`
+              : 'Nothing posted yet'
+          }
+        />
+        <SiteStat
+          icon={AlertTriangle}
+          label="Open snags"
+          value={openSnags}
+          hint={
+            snags.length
+              ? `${snags.length} logged in total`
+              : 'Nothing logged yet'
+          }
+          tone={openSnags ? 'red' : 'green'}
+        />
+        <SiteStat
+          icon={CheckSquare}
+          label="Verified fixed"
+          value={verifiedSnags}
+          hint={
+            openSnags ? `${openSnags} still to close` : 'Clear for handover'
+          }
+          tone="green"
+        />
+      </div>
+
+      <div className="grid items-start gap-4 lg:grid-cols-5">
+        <div className="space-y-4 lg:col-span-3">
+          <Card className="space-y-3 !bg-white shadow-sm">
+            <div>
+              <h3 className="text-sm font-semibold text-[#0f172a]">
+                Today on site
+              </h3>
+              <p className="text-[12px] text-[#64748b]">
+                Write what was done — the office sees it right away
+              </p>
+            </div>
+            <textarea
+              ref={noteRef}
+              rows={3}
+              placeholder="e.g. Carpentry finished in master bedroom. Waiting on ply delivery."
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              className="w-full resize-none rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd] focus:bg-white"
+            />
+
+            {photos.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {photos.map((p, i) => (
+                  <div
+                    key={p.url}
+                    className="relative h-20 w-20 overflow-hidden rounded-xl border border-[#e2e8f0]"
+                  >
+                    <img
+                      src={assetUrl(p.url)}
+                      alt={`Site photo ${i + 1}`}
+                      className="h-full w-full object-cover"
+                    />
+                    <button
+                      type="button"
+                      title="Remove photo"
+                      onClick={() =>
+                        setPhotos((list) => list.filter((x) => x.url !== p.url))
+                      }
+                      className="on-dark absolute right-1 top-1 flex h-5 w-5 items-center justify-center rounded-full bg-black/55 text-white hover:bg-[#dc2626]"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            <div className="flex flex-wrap items-center gap-2 border-t border-[#eef2f7] pt-3">
+              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[11px] border border-[#e2e8f0] px-3 text-[12px] font-semibold text-[#334155] hover:border-[#cbd5e1] hover:bg-[#f8fafc]">
+                <Camera className="h-4 w-4" />
+                {uploading ? 'Uploading…' : 'Add photos'}
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  disabled={uploading}
+                  onChange={(e) => {
+                    uploadPhotos(e.target.files)
+                    e.target.value = ''
+                  }}
+                />
+              </label>
+
+              <label className="inline-flex h-9 items-center gap-2 rounded-[11px] border border-[#e2e8f0] px-3 text-[12px] text-[#64748b]">
+                Progress
+                <input
+                  type="number"
+                  min={0}
+                  max={100}
+                  placeholder="—"
+                  value={progress}
+                  onChange={(e) => setProgress(e.target.value)}
+                  className="w-14 bg-transparent text-right text-[13px] font-semibold text-[#0f172a] outline-none"
+                />
+                %
+              </label>
+
+              <Button
+                className="ml-auto"
+                disabled={!canPost}
+                loading={post.isPending}
+                onClick={submit}
+              >
+                Publish update
+              </Button>
+            </div>
+          </Card>
+
+          {isLoading && (
+            <Card className="!bg-white shadow-sm">
+              <p className="text-sm text-[#64748b]">Loading site updates…</p>
+            </Card>
+          )}
+
+          {!isLoading && updates.length === 0 && (
+            <EmptyState
+              icon={Camera}
+              title="No site updates yet"
+              description="Post the first update so the office knows what happened today. Photos and a progress % help everyone see it without a call."
+              actionLabel="Write the first update"
+              onAction={() => noteRef.current?.focus()}
+            />
+          )}
+
+          {updates.map((u) => {
+            const pics = (u.photos || []).filter((p) => p?.url)
+            return (
+              <Card
+                key={u._id}
+                padding={false}
+                className="overflow-hidden !bg-white shadow-sm"
+              >
+                <div className="flex items-center gap-2 px-4 pt-4">
+                  <Avatar
+                    src={u.author?.avatar}
+                    name={u.author?.name}
+                    size="sm"
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium text-[#0f172a]">
+                      {u.author?.name || 'Team'}
+                    </p>
+                    <p className="text-[11px] text-[#94a3b8]">
+                      {u.createdAt
+                        ? formatDistanceToNow(new Date(u.createdAt), {
+                            addSuffix: true,
+                          })
+                        : ''}
+                    </p>
+                  </div>
+                  {u.progress > 0 && (
+                    <span className="ml-auto shrink-0 rounded-full bg-[#eff6ff] px-2.5 py-1 text-[11px] font-semibold text-[#2563eb]">
+                      {u.progress}% done
+                    </span>
+                  )}
+                </div>
+
+                {u.note && (
+                  <p className="whitespace-pre-line px-4 pt-3 text-sm text-[#334155]">
+                    {u.note}
+                  </p>
+                )}
+
+                {pics.length > 0 && (
+                  <div
+                    className={cn(
+                      'mt-3 grid gap-1',
+                      pics.length === 1 ? 'grid-cols-1' : 'grid-cols-2',
+                    )}
+                  >
+                    {pics.map((p, i) => (
+                      <a
+                        key={`${u._id}-${i}`}
+                        href={assetUrl(p.url)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="block"
+                      >
+                        <img
+                          src={assetUrl(p.url)}
+                          alt={`Site photo ${i + 1}`}
+                          className={cn(
+                            'w-full object-cover transition-opacity hover:opacity-90',
+                            pics.length === 1 ? 'h-56' : 'h-32',
+                          )}
+                        />
+                      </a>
+                    ))}
+                  </div>
+                )}
+                <div className="h-4" />
+              </Card>
+            )
+          })}
+        </div>
+
+        <Card
+          padding={false}
+          className="!bg-white shadow-sm lg:sticky lg:top-0 lg:col-span-2"
+        >
+          <div className="flex items-start gap-2 border-b border-[#eef2f7] px-4 py-3">
+            <div className="min-w-0">
+              <h3 className="text-sm font-semibold text-[#0f172a]">
+                Snag list
+              </h3>
+              <p className="text-[11px] text-[#64748b]">
+                Defects to fix before handover
+              </p>
+            </div>
+            {openSnags > 0 && (
+              <span className="ml-auto shrink-0 rounded-full bg-[#fef2f2] px-2.5 py-1 text-[11px] font-semibold text-[#dc2626]">
+                {openSnags} open
+              </span>
+            )}
+          </div>
+
+          <form
+            className="flex items-center gap-2 border-b border-[#eef2f7] p-3"
+            onSubmit={(e) => {
+              e.preventDefault()
+              if (!snagTitle.trim()) return
+              addSnag.mutate({
+                projectId: id,
+                title: snagTitle.trim(),
+                status: 'open',
+              })
+            }}
+          >
+            <input
+              placeholder="e.g. Scratch on wardrobe shutter"
+              value={snagTitle}
+              onChange={(e) => setSnagTitle(e.target.value)}
+              className="h-9 min-w-0 flex-1 rounded-[11px] border border-[#e2e8f0] bg-[#f8fafc] px-3 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd] focus:bg-white"
+            />
+            <Button
+              type="submit"
+              size="sm"
+              className="shrink-0"
+              disabled={!snagTitle.trim()}
+              loading={addSnag.isPending}
+            >
+              Add
+            </Button>
+          </form>
+
+          <div className="divide-y divide-[#eef2f7]">
+            {snags.length === 0 && (
+              <p className="px-4 py-10 text-center text-sm text-[#94a3b8]">
+                No snags logged — looking good.
+              </p>
+            )}
+            {snags.map((s) => {
+              const flow = SNAG_FLOW[s.status] || SNAG_FLOW.open
+              return (
+                <div key={s._id} className="space-y-2 px-4 py-3">
+                  <p className="text-sm font-medium text-[#0f172a]">
+                    {s.title}
+                  </p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <StatusChip status={s.status} />
+                    <button
+                      type="button"
+                      disabled={patchSnag.isPending}
+                      className="rounded-md border border-[#dbeafe] bg-[#eff6ff] px-2 py-1 text-[11px] font-semibold text-[#2563eb] hover:bg-[#dbeafe] disabled:opacity-60"
+                      onClick={() =>
+                        patchSnag.mutate({
+                          snagId: s._id,
+                          body: { status: flow.next },
+                        })
+                      }
+                    >
+                      {flow.action}
+                    </button>
+                    {s.taskId ? (
+                      <Link
+                        to={`/projects/${id}/tasks?task=${s.taskId}`}
+                        className="rounded-md px-2 py-1 text-[11px] font-semibold text-[#64748b] underline hover:text-[#2563eb]"
+                      >
+                        View task
+                      </Link>
+                    ) : (
+                      s.status === 'open' && (
+                        <button
+                          type="button"
+                          disabled={patchSnag.isPending}
+                          className="rounded-md border border-[#e2e8f0] px-2 py-1 text-[11px] font-medium text-[#64748b] hover:border-[#cbd5e1] hover:text-[#0f172a] disabled:opacity-60"
+                          onClick={() =>
+                            patchSnag.mutate({
+                              snagId: s._id,
+                              body: { convertToTask: true },
+                            })
+                          }
+                        >
+                          Make task
+                        </button>
+                      )
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </Card>
+      </div>
+    </div>
+  )
+}
+
+export function ProjectTeam() {
+  const { id } = useParams()
+  const { project } = useOutletContext()
+  const user = useAuthStore((s) => s.user)
+  const qc = useQueryClient()
+  const members = project?.members || []
+  const [userId, setUserId] = useState('')
+
+  const { data: usersData } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => api('/users'),
+  })
+  const users = usersData?.users || []
+  const memberIds = new Set(
+    members.map((m) => String(m.user?._id || m.user)).filter(Boolean),
+  )
+  const available = users.filter((u) => !memberIds.has(String(u._id || u.id)))
+  const canManageTeam =
+    user?.isPlatformAdmin ||
+    ['admin', 'owner', 'project_manager'].includes(user?.role)
+
+  const add = useMutation({
+    mutationFn: (body) =>
+      api(`/projects/${id}/members`, {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project', id] })
+      setUserId('')
+      toast('Member added', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const remove = useMutation({
+    mutationFn: (uid) =>
+      api(`/projects/${id}/members/${uid}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['project', id] })
+      toast('Member removed', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
   })
 
   return (
-    <div className="grid gap-4 lg:grid-cols-3">
-      <div className="lg:col-span-2 space-y-4">
-        <Card className="space-y-3">
-          <h3 className="text-sm font-semibold">Post site update</h3>
-          <Input
-            placeholder="What happened on site today?"
-            value={note}
-            onChange={(e) => setNote(e.target.value)}
-          />
-          <Button
-            disabled={!note.trim()}
-            loading={post.isPending}
-            onClick={() =>
-              post.mutate({
-                projectId: id,
-                note,
-                photos: [
-                  {
-                    url: 'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&q=80',
-                  },
-                ],
-                progress: 50,
-              })
-            }
-          >
-            Publish
-          </Button>
-        </Card>
-
-        {(data?.updates || []).map((u) => (
-          <Card key={u._id} padding={false} className="overflow-hidden">
-            {u.photos?.[0]?.url && (
-              <img
-                src={u.photos[0].url}
-                alt=""
-                className="h-48 w-full object-cover"
-              />
-            )}
-            <div className="p-4">
-              <div className="flex items-center gap-2 mb-2">
-                <Avatar src={u.author?.avatar} name={u.author?.name} size="sm" />
-                <div>
-                  <p className="text-sm font-medium">{u.author?.name}</p>
-                  <p className="text-[11px] text-secondary">
-                    {formatDistanceToNow(new Date(u.createdAt), {
-                      addSuffix: true,
-                    })}
-                  </p>
-                </div>
-              </div>
-              <p className="text-sm text-secondary">{u.note}</p>
-            </div>
-          </Card>
-        ))}
+    <div className="space-y-4 p-4 md:p-5">
+      <div>
+        <h2 className="text-[18px] font-semibold text-[#0f172a]">Team</h2>
+        <p className="text-[13px] text-[#64748b]">
+          People on this project — assign them on tasks
+        </p>
       </div>
+      {canManageTeam && (
+        <Card className="space-y-3 !bg-white shadow-sm">
+          <div>
+            <h3 className="text-sm font-semibold">Add teammate</h3>
+            <p className="text-[12px] text-secondary">
+              They can then be assigned tasks here.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <div className="min-w-[200px] flex-1">
+              <Select
+                value={userId}
+                onChange={(e) => setUserId(e.target.value)}
+                options={[
+                  { value: '', label: 'Choose person…' },
+                  ...available.map((u) => ({
+                    value: u._id || u.id,
+                    label: `${u.name} (${(u.role || '').replace(/_/g, ' ')})`,
+                  })),
+                ]}
+              />
+            </div>
+            <Button
+              disabled={!userId}
+              loading={add.isPending}
+              onClick={() =>
+                add.mutate({
+                  userId,
+                  role:
+                    users.find((u) => String(u._id || u.id) === userId)?.role ||
+                    'designer',
+                })
+              }
+            >
+              Add
+            </Button>
+          </div>
+        </Card>
+      )}
 
-      <Card padding={false}>
-        <div className="border-b border-border px-4 py-3 font-semibold text-sm">
-          Snag list
+      <Card padding={false} className="!bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-border px-5 py-4">
+          <h3 className="font-semibold">Team on this project</h3>
+          <AvatarStack
+            users={members.map((m) => m.user).filter(Boolean)}
+            max={6}
+          />
         </div>
         <div className="divide-y divide-border">
-          {(snagsData?.snags || []).length === 0 && (
-            <p className="px-4 py-6 text-sm text-secondary text-center">
-              No snags logged.
+          {members.length === 0 && (
+            <p className="px-5 py-8 text-center text-sm text-secondary">
+              No members yet — add someone above.
             </p>
           )}
-          {(snagsData?.snags || []).map((s) => (
-            <div key={s._id} className="px-4 py-3 space-y-2">
-              <p className="text-sm font-medium">{s.title}</p>
-              <div className="flex items-center justify-between gap-2">
-                <StatusChip status={s.status} />
-                <button
-                  type="button"
-                  className="text-[11px] text-accent"
-                  onClick={() =>
-                    patchSnag.mutate({
-                      snagId: s._id,
-                      body: {
-                        status:
-                          s.status === 'open'
-                            ? 'fixed'
-                            : s.status === 'fixed'
-                              ? 'verified'
-                              : 'open',
-                      },
-                    })
-                  }
-                >
-                  Advance
-                </button>
+          {members.map((m) => (
+            <div
+              key={m.user?._id || m._id}
+              className="flex items-center gap-3 px-5 py-4"
+            >
+              <Avatar src={m.user?.avatar} name={m.user?.name} />
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium">{m.user?.name}</p>
+                <p className="text-xs text-secondary">{m.user?.email}</p>
               </div>
-              {s.status === 'open' && (
+              <StatusChip
+                status="in_progress"
+                label={(m.role || m.user?.role || '').replace(/_/g, ' ')}
+              />
+              {canManageTeam && (
                 <button
                   type="button"
-                  className="text-[11px] text-secondary hover:text-accent"
-                  onClick={() =>
-                    patchSnag.mutate({
-                      snagId: s._id,
-                      body: { convertToTask: true },
-                    })
-                  }
+                  className="text-[11px] font-medium text-secondary hover:text-status-delayed"
+                  onClick={() => remove.mutate(m.user?._id || m.user)}
                 >
-                  Convert to task
+                  Remove
                 </button>
               )}
             </div>
@@ -310,38 +1287,6 @@ export function ProjectSite() {
         </div>
       </Card>
     </div>
-  )
-}
-
-export function ProjectTeam() {
-  const { project } = useOutletContext()
-  const members = project?.members || []
-
-  return (
-    <Card padding={false}>
-      <div className="border-b border-border px-5 py-4 flex items-center justify-between">
-        <h3 className="font-semibold">Team</h3>
-        <AvatarStack
-          users={members.map((m) => m.user).filter(Boolean)}
-          max={6}
-        />
-      </div>
-      <div className="divide-y divide-border">
-        {members.map((m) => (
-          <div
-            key={m.user?._id || m._id}
-            className="flex items-center gap-3 px-5 py-4"
-          >
-            <Avatar src={m.user?.avatar} name={m.user?.name} />
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium">{m.user?.name}</p>
-              <p className="text-xs text-secondary">{m.user?.email}</p>
-            </div>
-            <StatusChip status="in_progress" label={(m.role || m.user?.role || '').replace(/_/g, ' ')} />
-          </div>
-        ))}
-      </div>
-    </Card>
   )
 }
 

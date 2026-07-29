@@ -6,18 +6,61 @@ import {
   Task,
   ActivityLog,
   Comment,
-  Notification,
   User,
 } from '../models/index.js'
 import { CustomFieldDefinition } from '../models/CustomField.js'
+import { notifyUser, actorSummary } from '../lib/notify.js'
+import { hasPermission } from '../lib/permissions.js'
+import { assertProjectAccess } from '../lib/projectScope.js'
+import { scoreTaskCompletion } from '../lib/impactEngine.js'
+
+function taskLink(task) {
+  const projectId = task.projectId?._id || task.projectId
+  if (!projectId) return '/?view=assigned'
+  return `/projects/${projectId}/tasks?task=${task._id}`
+}
+
+function taskMeta(task, req) {
+  return {
+    taskId: String(task._id),
+    taskTitle: task.title,
+    projectId: task.projectId ? String(task.projectId._id || task.projectId) : null,
+    projectName: task.projectId?.name || '',
+    priority: task.priority || 'medium',
+    status: task.status || 'todo',
+    dueDate: task.dueDate || null,
+    actor: actorSummary(req.user),
+  }
+}
 
 const router = express.Router()
 
+function isTaskWorker(task, user) {
+  const userId = String(user?._id || '')
+  return (
+    String(task?.assignee?._id || task?.assignee || '') === userId ||
+    (!!task?.isPersonal &&
+      String(task?.createdBy?._id || task?.createdBy || '') === userId)
+  )
+}
+
+function assertTaskRead(task, user) {
+  if (hasPermission(user, 'tasks.manage') || isTaskWorker(task, user)) return
+  throw new AppError('Task not found', 404)
+}
+
 const STATUS_LABELS = {
-  todo: 'TO DO',
-  in_progress: 'IN PROGRESS',
-  review: 'REVIEW',
-  done: 'DONE',
+  todo: 'Not started',
+  in_progress: 'Working on it',
+  review: 'Needs check',
+  done: 'Finished',
+}
+
+const STATUS_PROGRESS = {
+  todo: 0,
+  in_progress: 40,
+  review: 80,
+  done: 100,
 }
 
 const PRIORITY_LABELS = {
@@ -252,6 +295,12 @@ router.get(
     if (status) filter.status = status
     if (stage) filter.stage = stage
     if (assignee) filter.assignee = assignee
+    if (!hasPermission(req.user, 'tasks.manage')) {
+      filter.$or = [
+        { assignee: req.user._id },
+        { isPersonal: true, createdBy: req.user._id },
+      ]
+    }
 
     const tasks = await Task.find(filter)
       .populate('assignee', 'name avatar')
@@ -299,6 +348,7 @@ router.get(
       .populate('dependsOn', 'title status')
 
     assertTenantDoc(task, req, 'Task')
+    assertTaskRead(task, req.user)
 
     const comments = await Comment.find(tenantFilter(req, { taskId: task._id }))
       .populate('author', 'name avatar')
@@ -327,6 +377,12 @@ router.post(
     const isPersonal = !!req.body.isPersonal
     if (!isPersonal && !req.body.projectId) {
       throw new AppError('projectId is required', 400)
+    }
+    if (!isPersonal) {
+      if (!hasPermission(req.user, 'tasks.create')) {
+        throw new AppError('You do not have permission to create project tasks', 403)
+      }
+      await assertProjectAccess(req, req.body.projectId)
     }
 
     const payload = {
@@ -360,21 +416,16 @@ router.post(
       }),
     )
 
-    if (
-      !isPersonal &&
-      task.assignee &&
-      String(task.assignee._id || task.assignee) !== String(req.user._id)
-    ) {
-      await Notification.create(
-        withTenant(req, {
-          userId: task.assignee._id || task.assignee,
-          type: 'task',
-          title: 'New task assigned',
-          body: task.title,
-          projectId: task.projectId,
-          link: `/projects/${task.projectId}/tasks`,
-        }),
-      )
+    if (!isPersonal && task.assignee) {
+      await notifyUser(req, {
+        userId: task.assignee._id || task.assignee,
+        type: 'task_assigned',
+        title: `${req.user.name} assigned you a task`,
+        body: task.title,
+        projectId: task.projectId?._id || task.projectId,
+        link: taskLink(task),
+        meta: taskMeta(task, req),
+      })
     }
 
     res.status(201).json({ success: true, task })
@@ -388,6 +439,31 @@ router.patch(
     const task = await Task.findById(req.params.id)
     assertTenantDoc(task, req, 'Task')
 
+    const prevAssigneeId = task.assignee ? String(task.assignee) : null
+    const previousStatus = task.status
+    const canManage = hasPermission(req.user, 'tasks.manage')
+    if (!canManage && !isTaskWorker(task, req.user)) {
+      throw new AppError('Task not found', 404)
+    }
+
+    if (!canManage) {
+      const workerFields = new Set([
+        'status',
+        'checklist',
+        'attachments',
+        'progress',
+        'timeSpent',
+        'timeTrackingStartedAt',
+        'timeTrackingUserId',
+      ])
+      const blocked = Object.keys(req.body).filter((key) => !workerFields.has(key))
+      if (blocked.length) {
+        throw new AppError(
+          'Employees can only update status, checklist, files, and time on assigned tasks',
+          403,
+        )
+      }
+    }
     const diffs = await buildFieldDiffs(task, req.body, req.user.name)
 
     const allowed = [
@@ -474,9 +550,43 @@ router.patch(
       task.markModified('customFields')
     }
 
-    if (task.status === 'done') task.progress = 100
+    if (req.body.status !== undefined && STATUS_PROGRESS[task.status] != null) {
+      task.progress = STATUS_PROGRESS[task.status]
+    } else if (task.status === 'done') {
+      task.progress = 100
+    }
     await task.save()
     await task.populate('assignee', 'name avatar')
+    if (task.projectId) await task.populate('projectId', 'name')
+
+    try {
+      await scoreTaskCompletion({
+        tenantId: req.tenantId,
+        task,
+        previousStatus,
+      })
+    } catch {
+      // Impact scoring must never block task updates
+    }
+
+    const nextAssigneeId = task.assignee
+      ? String(task.assignee._id || task.assignee)
+      : null
+    if (
+      req.body.assignee !== undefined &&
+      nextAssigneeId &&
+      nextAssigneeId !== prevAssigneeId
+    ) {
+      await notifyUser(req, {
+        userId: nextAssigneeId,
+        type: 'task_assigned',
+        title: `${req.user.name} assigned you a task`,
+        body: task.title,
+        projectId: task.projectId?._id || task.projectId,
+        link: taskLink(task),
+        meta: taskMeta(task, req),
+      })
+    }
 
     if (diffs.length) {
       for (const d of diffs) {
@@ -529,21 +639,26 @@ router.post(
   asyncHandler(async (req, res) => {
     const task = await Task.findById(req.params.id)
     assertTenantDoc(task, req, 'Task')
+    assertTaskRead(task, req.user)
 
-    let mentions = req.body.mentions || []
+    let mentions = Array.isArray(req.body.mentions) ? [...req.body.mentions] : []
     if (!mentions.length && req.body.body) {
       const users = await User.find(
         tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
       ).select('name')
       const found = []
+      const body = String(req.body.body || '')
       for (const u of users) {
-        const first = u.name.split(' ')[0]
-        if (
-          new RegExp(`@${first}\\b`, 'i').test(req.body.body) ||
-          new RegExp(`@${u.name.replace(/\s+/g, '')}\\b`, 'i').test(req.body.body)
-        ) {
-          found.push(u._id)
-        }
+        const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+        const first = u.name.split(/\s+/)[0]
+        const full = u.name.trim()
+        const compact = full.replace(/\s+/g, '')
+        const patterns = [
+          new RegExp(`@${escape(full)}\\b`, 'i'),
+          new RegExp(`@${escape(compact)}\\b`, 'i'),
+          first ? new RegExp(`@${escape(first)}\\b`, 'i') : null,
+        ].filter(Boolean)
+        if (patterns.some((re) => re.test(body))) found.push(u._id)
       }
       mentions = found
     }
@@ -581,17 +696,26 @@ router.post(
       ),
     )
     notifyIds.delete(String(req.user._id))
+    if (notifyIds.size && task.projectId) {
+      await task.populate('projectId', 'name')
+    }
     for (const uid of notifyIds) {
-      await Notification.create(
-        withTenant(req, {
-          userId: uid,
-          type: 'mention',
-          title: `${req.user.name} mentioned you`,
-          body: req.body.body.slice(0, 140),
-          link: `/assigned-comments`,
-          projectId: task.projectId,
-        }),
-      )
+      const isDirectAssign = assignedTo && String(assignedTo) === uid
+      await notifyUser(req, {
+        userId: uid,
+        type: 'mention',
+        title: isDirectAssign
+          ? `${req.user.name} asked you to handle a comment`
+          : `${req.user.name} mentioned you`,
+        body: req.body.body.slice(0, 200),
+        link: taskLink(task),
+        projectId: task.projectId?._id || task.projectId,
+        meta: {
+          ...taskMeta(task, req),
+          commentId: String(comment._id),
+          commentBody: req.body.body.slice(0, 400),
+        },
+      })
     }
 
     res.status(201).json({ success: true, comment })
@@ -604,6 +728,9 @@ router.delete(
   asyncHandler(async (req, res) => {
     const task = await Task.findById(req.params.id)
     assertTenantDoc(task, req, 'Task')
+    if (!hasPermission(req.user, 'tasks.manage')) {
+      throw new AppError('You do not have permission to delete tasks', 403)
+    }
     await task.deleteOne()
     res.json({ success: true })
   }),

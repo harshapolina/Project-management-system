@@ -37,6 +37,7 @@ const notificationSchema = new mongoose.Schema(
     body: { type: String, default: '' },
     link: { type: String, default: '' },
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
+    meta: { type: mongoose.Schema.Types.Mixed, default: {} },
     read: { type: Boolean, default: false },
   },
   { timestamps: true },

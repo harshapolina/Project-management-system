@@ -1,7 +1,9 @@
 import express from 'express'
-import { requireAuth, requireRole } from '../middleware/auth.js'
+import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
+import { scopeProjects } from '../lib/projectScope.js'
+import { requirePermission } from '../lib/permissions.js'
 import { Project, Task, ActivityLog, User } from '../models/index.js'
 
 const router = express.Router()
@@ -39,17 +41,6 @@ const TEMPLATE_TASKS = {
   ],
 }
 
-function scopeProjects(user) {
-  if (['admin', 'owner', 'project_manager'].includes(user.role)) return {}
-  return {
-    $or: [
-      { projectManager: user._id },
-      { clientId: user._id },
-      { 'members.user': user._id },
-    ],
-  }
-}
-
 router.get(
   '/',
   requireAuth,
@@ -84,7 +75,7 @@ router.get(
 router.get(
   '/portfolio',
   requireAuth,
-  requireRole('admin', 'owner', 'project_manager'),
+  requirePermission('portfolio'),
   asyncHandler(async (req, res) => {
     const projects = await Project.find(tenantFilter(req, scopeProjects(req.user)))
       .populate('projectManager', 'name avatar')
@@ -206,6 +197,7 @@ router.get(
 router.post(
   '/',
   requireAuth,
+  requirePermission('projects.create'),
   asyncHandler(async (req, res) => {
     const {
       name,
@@ -282,7 +274,7 @@ router.post(
 router.patch(
   '/:id',
   requireAuth,
-  requireRole('admin', 'owner', 'project_manager'),
+  requirePermission('projects.manage'),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id)
     assertTenantDoc(project, req, 'Project')
@@ -307,6 +299,35 @@ router.patch(
     for (const key of allowed) {
       if (req.body[key] !== undefined) project[key] = req.body[key]
     }
+
+    // Keep stage checklist in sync when currentStage moves forward
+    if (req.body.currentStage && Array.isArray(project.stages)) {
+      const order = [
+        'design',
+        'planning',
+        'procurement',
+        'execution',
+        'handover',
+      ]
+      const idx = order.indexOf(req.body.currentStage)
+      if (idx >= 0) {
+        for (const s of project.stages) {
+          const si = order.indexOf(s.key)
+          if (si < idx) {
+            s.status = 'completed'
+            s.progress = 100
+          } else if (si === idx) {
+            s.status = 'in_progress'
+            s.progress = Math.max(Number(s.progress) || 0, 10)
+          } else if (s.status === 'completed') {
+            s.status = 'not_started'
+            s.progress = 0
+          }
+        }
+        project.markModified('stages')
+      }
+    }
+
     await project.save()
     res.json({ success: true, project })
   }),
@@ -315,7 +336,7 @@ router.patch(
 router.post(
   '/:id/members',
   requireAuth,
-  requireRole('admin', 'owner', 'project_manager'),
+  requirePermission('projects.manage'),
   asyncHandler(async (req, res) => {
     const { userId, role } = req.body
     const project = await Project.findById(req.params.id)
@@ -331,7 +352,7 @@ router.post(
 router.delete(
   '/:id/members/:userId',
   requireAuth,
-  requireRole('admin', 'owner', 'project_manager'),
+  requirePermission('projects.manage'),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id)
     assertTenantDoc(project, req, 'Project')
@@ -346,7 +367,7 @@ router.delete(
 router.delete(
   '/:id',
   requireAuth,
-  requireRole('admin', 'owner', 'project_manager'),
+  requirePermission('projects.manage'),
   asyncHandler(async (req, res) => {
     const project = await Project.findById(req.params.id)
     assertTenantDoc(project, req, 'Project')

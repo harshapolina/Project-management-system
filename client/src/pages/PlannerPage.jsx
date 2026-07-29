@@ -458,7 +458,7 @@ export function PlannerPage() {
         )}
         style={{
           height: GRID_H,
-          backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent ${slotH - 1}px, #2e2e32 ${slotH - 1}px, #2e2e32 ${slotH}px)`,
+          backgroundImage: `repeating-linear-gradient(to bottom, transparent, transparent ${slotH - 1}px, #e6ecf4 ${slotH - 1}px, #e6ecf4 ${slotH}px)`,
         }}
         onMouseDown={(e) => {
           if (isMobile) return
@@ -1329,7 +1329,7 @@ function CreateModal({ composer, setComposer, onSave, creating, linkableTasks = 
               className="flex w-full items-center gap-2 text-[13px] text-[#8b8b90] hover:text-white"
             >
               <CheckSquare className="h-3.5 w-3.5" />
-              Link Cubic tasks
+              Link EPM tasks
               {linkedTaskIds.length > 0 && (
                 <span className="rounded bg-[#252528] px-1.5 py-0.5 text-[11px] text-[#c5c5c8]">
                   {linkedTaskIds.length}

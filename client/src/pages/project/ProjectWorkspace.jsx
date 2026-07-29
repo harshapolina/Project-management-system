@@ -1,39 +1,38 @@
-import { useEffect, useState } from 'react'
-import { NavLink, Outlet, useParams, Link, useNavigate } from 'react-router-dom'
+import { useEffect, useMemo, useState } from 'react'
+import { NavLink, Outlet, useParams, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  LayoutDashboard,
   LayoutList,
-  Columns3,
-  GanttChart,
-  CalendarDays,
-  Plus,
   Share2,
-  Search,
   ChevronRight,
   FileImage,
-  FileSpreadsheet,
   Camera,
   Users,
   Trash2,
+  Truck,
 } from 'lucide-react'
-import { api } from '../../lib/api'
+import { api, useAuthStore } from '../../lib/api'
 import { Button, Modal, Skeleton, toast } from '../../components/ui'
 import { cn } from '../../lib/utils'
+import { stageLabel } from '../../lib/format'
+import { capabilitiesForUser } from '../../lib/roles'
 
-const VIEWS = [
-  { to: 'board', label: 'Board', icon: Columns3 },
-  { to: 'tasks', label: 'List', icon: LayoutList },
-  { to: 'calendar', label: 'Calendar', icon: CalendarDays },
-  { to: 'gantt', label: 'Gantt', icon: GanttChart },
-  { to: 'files', label: 'Files', icon: FileImage },
-  { to: 'boq', label: 'BOQ', icon: FileSpreadsheet },
-  { to: 'site', label: 'Site', icon: Camera },
-  { to: 'team', label: 'Team', icon: Users },
+/** Only what an interior studio needs inside a project */
+const MAIN_TABS = [
+  { to: 'overview', label: 'Home', icon: LayoutDashboard, capability: 'overview' },
+  { to: 'tasks', label: 'Tasks', icon: LayoutList, capability: 'tasks' },
+  { to: 'procurement', label: 'Materials', icon: Truck, capability: 'procurement' },
+  { to: 'site', label: 'Site', icon: Camera, capability: 'site' },
+  { to: 'files', label: 'Drawings', icon: FileImage, capability: 'files' },
+  { to: 'team', label: 'Team', icon: Users, capability: 'team' },
 ]
 
 export function ProjectWorkspace() {
   const { id } = useParams()
+  const user = useAuthStore((s) => s.user)
   const navigate = useNavigate()
+  const location = useLocation()
   const qc = useQueryClient()
   const [confirmDelete, setConfirmDelete] = useState(false)
 
@@ -74,7 +73,6 @@ export function ProjectWorkspace() {
       navigate('/projects', { replace: true })
     },
     onError: (e) => {
-      // Already gone — clean UI anyway
       if (e.status === 404) {
         bustProjectCaches(id)
         toast('Project was already deleted', { type: 'success' })
@@ -94,6 +92,22 @@ export function ProjectWorkspace() {
   }, [isError, error?.status, id])
 
   const project = data?.project
+  const caps = capabilitiesForUser(user)
+  const visibleTabs = useMemo(
+    () => MAIN_TABS.filter((tab) => caps.projectTabs[tab.capability]),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [user?.role, user?.isPlatformAdmin, user?.permissions],
+  )
+  const canManageProject = caps.manageProjects
+
+  useEffect(() => {
+    if (!project || !visibleTabs.length) return
+    const segment = location.pathname.split('/').pop()
+    const allowed = visibleTabs.some((t) => t.to === segment)
+    if (!allowed) {
+      navigate(`/projects/${id}/${visibleTabs[0].to}`, { replace: true })
+    }
+  }, [project, visibleTabs, location.pathname, id, navigate])
 
   if (isLoading || !project) {
     return (
@@ -104,106 +118,96 @@ export function ProjectWorkspace() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
-      {/* Breadcrumbs row */}
-      <div className="flex h-9 shrink-0 items-center gap-1 border-b border-[#2e2e32] px-4 text-[12px] text-[#8b8b90]">
-        <Link to="/projects" className="hover:text-white">
-          Spaces
-        </Link>
-        <button
-          type="button"
-          title="New space"
-          onClick={() => window.dispatchEvent(new CustomEvent('cubic:new-space'))}
-          className="rounded p-0.5 hover:bg-[#252528] hover:text-white"
-        >
-          <Plus className="h-3 w-3" />
-        </button>
-        <ChevronRight className="h-3 w-3 opacity-50" />
-        <Link to="/projects" className="hover:text-white">
-          Projects
-        </Link>
-        <button
-          type="button"
-          title="New project"
-          onClick={() =>
-            window.dispatchEvent(new CustomEvent('cubic:new-project'))
-          }
-          className="rounded p-0.5 hover:bg-[#252528] hover:text-white"
-        >
-          <Plus className="h-3 w-3" />
-        </button>
-        <ChevronRight className="h-3 w-3 opacity-50" />
-        <span className="font-medium text-white truncate">{project.name}</span>
-      </div>
+    <div className="flex h-full min-h-0 flex-col bg-[#F0F4F8] print:h-auto print:overflow-visible">
+      {/* One dense project chrome — no stacked empty bars */}
+      <header className="shrink-0 border-b border-[#dce4ee] bg-white print:hidden">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-4">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1 text-[11px] text-[#94a3b8]">
+              <Link to="/projects" className="hover:text-[#2563eb]">
+                All projects
+              </Link>
+              <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
+              <span className="truncate text-[#64748b]">{project.name}</span>
+            </div>
+            <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <h1 className="truncate text-[16px] font-semibold tracking-tight text-[#0f172a]">
+                {project.name}
+              </h1>
+              <p className="truncate text-[11px] text-[#64748b]">
+                {project.clientName}
+                {project.location ? ` · ${project.location}` : ''}
+                {' · '}
+                <span className="font-medium text-[#334155]">
+                  {stageLabel(project.currentStage)}
+                </span>
+              </p>
+            </div>
+          </div>
 
-      {/* View tabs + actions — ClickUp exact placement */}
-      <div className="flex h-11 shrink-0 items-center gap-1 border-b border-[#2e2e32] px-2">
-        <div className="flex min-w-0 flex-1 items-center gap-0.5 overflow-x-auto">
-          {VIEWS.map((tab) => (
+          <div className="flex shrink-0 items-center gap-1">
+            {canManageProject && (
+              <button
+                type="button"
+                title="Delete project"
+                onClick={() => setConfirmDelete(true)}
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] hover:bg-red-50 hover:text-red-600"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={async () => {
+                try {
+                  await navigator.clipboard.writeText(window.location.href)
+                  toast('Link copied', { type: 'success' })
+                } catch {
+                  toast('Could not copy link', { type: 'error' })
+                }
+              }}
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-2.5 text-[12px] font-semibold text-[#475569] hover:bg-white"
+            >
+              <Share2 className="h-3.5 w-3.5" />
+              Share
+            </button>
+          </div>
+        </div>
+
+        <nav className="flex items-center gap-0.5 overflow-x-auto px-3 pb-2 sm:px-4">
+          {visibleTabs.map((tab) => (
             <NavLink
               key={tab.to}
               to={tab.to}
               className={({ isActive }) =>
                 cn(
-                  'relative flex shrink-0 items-center gap-1.5 px-2.5 py-2 text-[13px] font-medium transition-colors',
-                  isActive ? 'text-white' : 'text-[#8b8b90] hover:text-white',
+                  'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition',
+                  isActive
+                    ? 'bg-[#2563eb] text-white shadow-sm'
+                    : 'text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]',
                 )
               }
             >
-              {({ isActive }) => (
-                <>
-                  <tab.icon className="h-3.5 w-3.5 opacity-80" strokeWidth={1.75} />
-                  {tab.label}
-                  {isActive && (
-                    <span className="absolute inset-x-1 bottom-0 h-[2px] rounded-full bg-[var(--tab-underline)]" />
-                  )}
-                </>
-              )}
+              <tab.icon className="h-3.5 w-3.5" strokeWidth={2} />
+              {tab.label}
             </NavLink>
           ))}
-        </div>
+        </nav>
+      </header>
 
-        <div className="flex items-center gap-0.5">
-          <button
-            type="button"
-            title="Delete project"
-            onClick={() => setConfirmDelete(true)}
-            className="flex h-7 items-center gap-1 rounded-md px-2 text-[12px] text-[#8b8b90] hover:bg-red-500/15 hover:text-red-400"
-          >
-            <Trash2 className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">Delete</span>
-          </button>
-          <button
-            type="button"
-            onClick={async () => {
-              try {
-                await navigator.clipboard.writeText(window.location.href)
-                toast('Project link copied', { type: 'success' })
-              } catch {
-                toast('Could not copy link', { type: 'error' })
-              }
-            }}
-            className="ml-1 flex h-7 items-center gap-1 rounded-md px-2 text-[12px] text-[#c5c5c8] hover:bg-[#1c1c1e]"
-          >
-            <Share2 className="h-3.5 w-3.5" />
-            Share
-          </button>
-        </div>
-      </div>
-
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="min-h-0 flex-1 overflow-y-auto print:overflow-visible">
         <Outlet context={{ project, stats: data?.stats }} />
       </div>
 
       <Modal
         open={confirmDelete}
         onClose={() => !remove.isPending && setConfirmDelete(false)}
-        title="Delete project?"
+        title="Delete this project?"
         size="sm"
       >
         <p className="text-sm text-secondary">
-          Delete <span className="font-medium text-white">{project.name}</span>?
-          This removes the project and its tasks. This cannot be undone.
+          Delete <span className="font-medium">{project.name}</span>? This cannot
+          be undone.
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <Button
@@ -222,33 +226,6 @@ export function ProjectWorkspace() {
           </Button>
         </div>
       </Modal>
-    </div>
-  )
-}
-
-/** Shared ClickUp-style filter bar used above list content */
-export function ClickUpListToolbar({ onAddTask, search, onSearch }) {
-  return (
-    <div className="flex h-10 shrink-0 items-center gap-1 border-b border-[#2e2e32] px-3">
-      <div className="relative ml-1">
-        <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#6b6b70]" />
-        <input
-          value={search || ''}
-          onChange={(e) => onSearch?.(e.target.value)}
-          placeholder="Search…"
-          className="h-7 w-36 rounded-md border border-transparent bg-transparent pl-7 pr-2 text-[12px] outline-none placeholder:text-[#6b6b70] hover:border-[#2e2e32] focus:border-[#2e2e32] focus:bg-[#1c1c1e]"
-        />
-      </div>
-      <div className="ml-auto">
-        <button
-          type="button"
-          onClick={onAddTask}
-          className="flex h-7 items-center gap-1 rounded-md bg-accent px-2.5 text-[12px] font-semibold text-[#0E0E10] hover:bg-accent-hover"
-        >
-          <Plus className="h-3.5 w-3.5" />
-          Task
-        </button>
-      </div>
     </div>
   )
 }
