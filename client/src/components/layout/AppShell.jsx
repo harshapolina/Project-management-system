@@ -27,6 +27,8 @@ import {
   Smartphone,
   FileSpreadsheet,
   Trophy,
+  Package,
+  History,
 } from 'lucide-react'
 import { api, useAuthStore } from '../../lib/api'
 import { useUiStore } from '../../store/uiStore'
@@ -98,6 +100,18 @@ const ALL_PRIMARY_NAV = [
     capability: 'finance',
   },
   {
+    to: '/inventory',
+    label: 'Inventory',
+    icon: Package,
+    capability: 'inventory',
+  },
+  {
+    to: '/inventory/movements',
+    label: 'Stock log',
+    icon: History,
+    capability: 'inventory',
+  },
+  {
     to: '/site-feed',
     label: 'Site updates',
     icon: Camera,
@@ -124,6 +138,12 @@ function navActive(pathname, search, to) {
   }
   if (to === '/portfolio') return pathname.startsWith('/portfolio')
   if (to === '/company-admin') return pathname.startsWith('/company-admin')
+  if (to === '/inventory') {
+    return pathname === '/inventory'
+  }
+  if (to === '/inventory/movements') {
+    return pathname.startsWith('/inventory/movements')
+  }
   return pathname === to || pathname.startsWith(`${to}/`)
 }
 

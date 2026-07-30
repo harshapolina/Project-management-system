@@ -44,6 +44,10 @@ import { AdminPeoplePage } from './pages/AdminPeoplePage'
 import { SiteFeedPage } from './pages/SiteFeedPage'
 import { ImpactPointsPage } from './pages/ImpactPointsPage'
 import { CompanyAdminDashboard } from './pages/CompanyAdminDashboard'
+import {
+  InventoryStockPage,
+  InventoryMovementsPage,
+} from './pages/InventoryPages'
 import { PagePad } from './components/layout/PagePad'
 import { ToastViewport } from './components/ui'
 import { useAuthStore } from './lib/api'
@@ -126,6 +130,26 @@ export default function App() {
                 <RoleGate roles={COMPANY_ADMIN_ROLES}>
                   <PagePad>
                     <CompanyAdminDashboard />
+                  </PagePad>
+                </RoleGate>
+              }
+            />
+            <Route
+              path="/inventory"
+              element={
+                <RoleGate roles={COMPANY_ADMIN_ROLES}>
+                  <PagePad>
+                    <InventoryStockPage />
+                  </PagePad>
+                </RoleGate>
+              }
+            />
+            <Route
+              path="/inventory/movements"
+              element={
+                <RoleGate roles={COMPANY_ADMIN_ROLES}>
+                  <PagePad>
+                    <InventoryMovementsPage />
                   </PagePad>
                 </RoleGate>
               }
