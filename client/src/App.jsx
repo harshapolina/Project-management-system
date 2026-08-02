@@ -23,6 +23,7 @@ import { PortfolioPage } from './pages/PortfolioPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectWorkspace } from './pages/project/ProjectWorkspace'
 import { ProjectOverview } from './pages/project/ProjectOverview'
+import { ProjectNotes } from './pages/project/MeetingNotes'
 import { ProjectTasks } from './pages/project/ProjectTasks'
 import { ProjectFiles } from './pages/project/ProjectFiles'
 import { BoqPage } from './pages/BoqPage'
@@ -193,6 +194,7 @@ export default function App() {
             <Route path="/projects/:id" element={<ProjectWorkspace />}>
               <Route index element={<Navigate to="overview" replace />} />
               <Route path="overview" element={<ProjectOverview />} />
+              <Route path="notes" element={<ProjectNotes />} />
               <Route path="tasks" element={<ProjectTasks />} />
               <Route path="board" element={<Navigate to="../tasks" replace />} />
               <Route path="gantt" element={<Navigate to="../tasks" replace />} />

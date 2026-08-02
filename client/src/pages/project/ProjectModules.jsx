@@ -15,6 +15,8 @@ import {
 } from 'lucide-react'
 import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { formatInr } from '../../lib/format'
+import { COUNTRY_CODES, buildPhone } from '../../lib/phone'
+import { SendPoButton } from '../../components/VendorBits'
 import {
   Avatar,
   AvatarStack,
@@ -410,6 +412,11 @@ export function ProjectProcurement() {
                   </button>
                 ),
               },
+              {
+                key: 'send',
+                label: '',
+                render: (_, row) => <SendPoButton po={row} />,
+              },
             ]}
             data={pos}
             emptyMessage="No purchase orders yet — select quote items above and raise a PO."
@@ -483,7 +490,16 @@ function PoForm({
     itemsDesc: '',
   })
   const [newVendorOpen, setNewVendorOpen] = useState(!vendors.length)
-  const [newVendor, setNewVendor] = useState({ name: '', phone: '' })
+  const emptyVendor = {
+    name: '',
+    contact: '',
+    phoneCode: '+91',
+    phone: '',
+    email: '',
+    gst: '',
+    rating: '4',
+  }
+  const [newVendor, setNewVendor] = useState(emptyVendor)
 
   const addVendor = useMutation({
     mutationFn: (body) =>
@@ -494,7 +510,7 @@ function PoForm({
         onVendorAdded?.(vendor)
         setForm((f) => ({ ...f, vendor: vendor._id }))
       }
-      setNewVendor({ name: '', phone: '' })
+      setNewVendor(emptyVendor)
       setNewVendorOpen(false)
       toast(`${vendor?.name || 'Vendor'} added`, { type: 'success' })
     },
@@ -594,25 +610,91 @@ function PoForm({
       </div>
 
       {newVendorOpen && (
-        <div className="space-y-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
+        <div className="space-y-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
           <p className="text-[12px] font-semibold text-[#334155]">
             New vendor
           </p>
-          <Input
-            label="Name"
-            value={newVendor.name}
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <Input
+              label="Name"
+              value={newVendor.name}
+              onChange={(e) =>
+                setNewVendor({ ...newVendor, name: e.target.value })
+              }
+              placeholder="e.g. Sharma Plywood"
+            />
+            <Input
+              label="Contact person"
+              value={newVendor.contact}
+              onChange={(e) =>
+                setNewVendor({ ...newVendor, contact: e.target.value })
+              }
+              placeholder="e.g. Ramesh"
+            />
+          </div>
+          <div className="flex gap-2">
+            <div className="w-[92px] shrink-0">
+              <Select
+                label="Code"
+                value={newVendor.phoneCode}
+                onChange={(e) =>
+                  setNewVendor({ ...newVendor, phoneCode: e.target.value })
+                }
+                options={COUNTRY_CODES.map((c) => ({
+                  value: c.code,
+                  label: c.code,
+                }))}
+              />
+            </div>
+            <div className="flex-1">
+              <Input
+                label="Phone (WhatsApp)"
+                type="tel"
+                inputMode="numeric"
+                value={newVendor.phone}
+                onChange={(e) =>
+                  setNewVendor({
+                    ...newVendor,
+                    phone: e.target.value.replace(/[^\d\s-]/g, ''),
+                  })
+                }
+                placeholder="98765 43210"
+              />
+            </div>
+          </div>
+          <div className="grid gap-2.5 sm:grid-cols-2">
+            <Input
+              label="Email (optional)"
+              type="email"
+              value={newVendor.email}
+              onChange={(e) =>
+                setNewVendor({ ...newVendor, email: e.target.value })
+              }
+              placeholder="sales@vendor.com"
+            />
+            <Input
+              label="GST no (optional)"
+              value={newVendor.gst}
+              onChange={(e) =>
+                setNewVendor({ ...newVendor, gst: e.target.value.toUpperCase() })
+              }
+              placeholder="22AAAAA0000A1Z5"
+              maxLength={15}
+            />
+          </div>
+          <Select
+            label="Rating (review)"
+            value={newVendor.rating}
             onChange={(e) =>
-              setNewVendor({ ...newVendor, name: e.target.value })
+              setNewVendor({ ...newVendor, rating: e.target.value })
             }
-            placeholder="e.g. Sharma Plywood"
-          />
-          <Input
-            label="Phone (optional)"
-            value={newVendor.phone}
-            onChange={(e) =>
-              setNewVendor({ ...newVendor, phone: e.target.value })
-            }
-            placeholder="98xxxxxxxx"
+            options={[
+              { value: '5', label: '★ 5 — excellent' },
+              { value: '4', label: '★ 4 — good' },
+              { value: '3', label: '★ 3 — average' },
+              { value: '2', label: '★ 2 — poor' },
+              { value: '1', label: '★ 1 — avoid' },
+            ]}
           />
           <div className="flex gap-2">
             <Button
@@ -622,7 +704,11 @@ function PoForm({
               onClick={() =>
                 addVendor.mutate({
                   name: newVendor.name.trim(),
-                  phone: newVendor.phone.trim(),
+                  contact: newVendor.contact.trim(),
+                  phone: buildPhone(newVendor.phoneCode, newVendor.phone),
+                  email: newVendor.email.trim(),
+                  gst: newVendor.gst.trim().toUpperCase(),
+                  rating: Number(newVendor.rating) || 4,
                 })
               }
             >
@@ -639,8 +725,8 @@ function PoForm({
             )}
           </div>
           <p className="text-[11px] text-[#94a3b8]">
-            Full details (email, payment terms, rating) can be set on the
-            Materials page in the sidebar.
+            Payment terms and supplies can be set on the Materials page in the
+            sidebar.
           </p>
         </div>
       )}

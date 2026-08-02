@@ -110,8 +110,56 @@ function tenantHeaders() {
   return { 'X-Tenant-Slug': getTenantSlug() }
 }
 
+/**
+ * Single-flight token refresh. When the access token expires, many queries
+ * fail with 401 at the same time — they must all share ONE refresh call,
+ * otherwise the second call sends an already-rotated token and the server
+ * rejects it, which used to log the user out.
+ */
+let refreshInFlight = null
+
+function refreshAccessToken() {
+  if (refreshInFlight) return refreshInFlight
+
+  refreshInFlight = (async () => {
+    const { refreshToken, setAuth, logout } = useAuthStore.getState()
+    if (!refreshToken) return null
+    try {
+      const res = await fetch(`${API_URL}/auth/refresh`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...tenantHeaders(),
+        },
+        body: JSON.stringify({ refreshToken }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        setAuth({
+          user: useAuthStore.getState().user,
+          accessToken: data.accessToken,
+          refreshToken: data.refreshToken,
+          tenant: useAuthStore.getState().tenant,
+        })
+        return data.accessToken
+      }
+      // Only end the session when the server explicitly rejects the token.
+      // Transient failures (5xx, server restarting) should not log out.
+      if (res.status === 401 || res.status === 403) logout()
+      return null
+    } catch {
+      // Network hiccup — keep the session, the next request will retry.
+      return null
+    } finally {
+      refreshInFlight = null
+    }
+  })()
+
+  return refreshInFlight
+}
+
 export async function api(path, options = {}) {
-  const { accessToken, refreshToken, setAuth, logout } = useAuthStore.getState()
+  const { accessToken, refreshToken } = useAuthStore.getState()
   const isFormData =
     typeof FormData !== 'undefined' && options.body instanceof FormData
 
@@ -128,26 +176,10 @@ export async function api(path, options = {}) {
   let res = await fetch(`${API_URL}${path}`, { ...options, headers })
 
   if (res.status === 401 && refreshToken) {
-    const refreshed = await fetch(`${API_URL}/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...tenantHeaders(),
-      },
-      body: JSON.stringify({ refreshToken }),
-    })
-    if (refreshed.ok) {
-      const data = await refreshed.json()
-      setAuth({
-        user: useAuthStore.getState().user,
-        accessToken: data.accessToken,
-        refreshToken: data.refreshToken,
-        tenant: useAuthStore.getState().tenant,
-      })
-      headers.Authorization = `Bearer ${data.accessToken}`
+    const newToken = await refreshAccessToken()
+    if (newToken) {
+      headers.Authorization = `Bearer ${newToken}`
       res = await fetch(`${API_URL}${path}`, { ...options, headers })
-    } else {
-      logout()
     }
   }
 

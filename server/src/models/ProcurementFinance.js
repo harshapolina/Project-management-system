@@ -11,6 +11,7 @@ const vendorSchema = new mongoose.Schema(
     contact: { type: String, default: '' },
     email: { type: String, default: '' },
     phone: { type: String, default: '' },
+    gst: { type: String, default: '', trim: true, uppercase: true },
     categories: [{ type: String }],
     rating: { type: Number, default: 4, min: 1, max: 5 },
     paymentTerms: { type: String, default: 'Net 30' },

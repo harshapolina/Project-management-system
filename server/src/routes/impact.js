@@ -357,15 +357,31 @@ router.get(
   asyncHandler(async (req, res) => {
     await ensureDefaultImpactRules(req.tenantId)
 
-    const [me, leaderboardRes, rules] = await Promise.all([
-      ImpactScore.findOne(tenantFilter(req, { userId: req.user._id })),
-      ImpactScore.find(tenantFilter(req, {}))
-        .sort({ totalPoints: -1 })
-        .limit(10)
-        .populate('userId', 'name avatar role title isActive')
-        .lean(),
-      ImpactRule.find(tenantFilter(req, { enabled: true })).sort({ points: -1 }),
-    ])
+    const manage = canManageImpact(req.user)
+    const companyScope = manage || hasPermission(req.user, 'people')
+    const scopeUserId = companyScope ? null : req.user._id
+
+    const [me, leaderboardRes, rules, companyBreakdown, companyTrend, companyTimeline] =
+      await Promise.all([
+        ImpactScore.findOne(tenantFilter(req, { userId: req.user._id })),
+        ImpactScore.find(tenantFilter(req, {}))
+          .sort({ totalPoints: -1 })
+          .limit(10)
+          .populate('userId', 'name avatar role title isActive')
+          .lean(),
+        ImpactRule.find(tenantFilter(req, { enabled: true })).sort({ points: -1 }),
+        categoryBreakdown(req.tenantId, scopeUserId),
+        trendSeries(req.tenantId, scopeUserId, 30),
+        ImpactLedger.find(
+          tenantFilter(req, scopeUserId ? { userId: scopeUserId } : {}),
+        )
+          .sort({ createdAt: -1 })
+          .limit(40)
+          .populate('userId', 'name avatar role title')
+          .populate('awardedBy', 'name avatar')
+          .populate('projectId', 'name')
+          .lean(),
+      ])
 
     const score =
       me || (await recomputeImpactScore(req.tenantId, req.user._id))
@@ -397,10 +413,20 @@ router.get(
           monthlyPoints: row.monthlyPoints || 0,
           badges: row.badges || [],
         })),
+      company: {
+        scope: companyScope ? 'company' : 'self',
+        breakdown: companyBreakdown.map((row) => ({
+          category: row._id,
+          points: row.points,
+          count: row.count,
+        })),
+        trend: companyTrend,
+        timeline: companyTimeline,
+      },
       rules,
       people,
       achievements: ACHIEVEMENT_LEVELS,
-      canManage: canManageImpact(req.user),
+      canManage: manage,
     })
   }),
 )

@@ -202,6 +202,7 @@ router.post(
     const {
       name,
       clientName,
+      clientPhone,
       type = 'residential',
       location,
       startDate,
@@ -224,6 +225,7 @@ router.post(
       withTenant(req, {
         name,
         clientName,
+        clientPhone: clientPhone || '',
         type,
         location,
         startDate,
@@ -282,6 +284,7 @@ router.patch(
     const allowed = [
       'name',
       'clientName',
+      'clientPhone',
       'status',
       'currentStage',
       'stages',
@@ -330,6 +333,75 @@ router.patch(
 
     await project.save()
     res.json({ success: true, project })
+  }),
+)
+
+/* ── Meeting notes ── */
+
+router.post(
+  '/:id/notes',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const text = String(req.body.text || '').trim()
+    if (!text) throw new AppError('Note text is required')
+
+    const project = await Project.findById(req.params.id)
+    assertTenantDoc(project, req, 'Project')
+
+    project.meetingNotes.push({
+      text,
+      createdBy: req.user._id,
+      createdByName: req.user.name || '',
+    })
+    await project.save()
+    res.status(201).json({ success: true, meetingNotes: project.meetingNotes })
+  }),
+)
+
+router.patch(
+  '/:id/notes/:noteId',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const text = String(req.body.text || '').trim()
+    if (!text) throw new AppError('Note text is required')
+
+    const project = await Project.findById(req.params.id)
+    assertTenantDoc(project, req, 'Project')
+
+    const note = project.meetingNotes.id(req.params.noteId)
+    if (!note) throw new AppError('Note not found', 404)
+    if (String(note.createdBy) !== String(req.user._id)) {
+      throw new AppError('Only the author can edit this note', 403)
+    }
+
+    note.text = text
+    note.editedAt = new Date()
+    await project.save()
+    res.json({ success: true, meetingNotes: project.meetingNotes })
+  }),
+)
+
+router.delete(
+  '/:id/notes/:noteId',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const project = await Project.findById(req.params.id)
+    assertTenantDoc(project, req, 'Project')
+
+    const note = project.meetingNotes.id(req.params.noteId)
+    if (!note) throw new AppError('Note not found', 404)
+
+    const isAuthor = String(note.createdBy) === String(req.user._id)
+    const canManage = ['owner', 'admin', 'project_manager'].includes(
+      req.user.role,
+    )
+    if (!isAuthor && !canManage) {
+      throw new AppError('Not allowed to delete this note', 403)
+    }
+
+    note.deleteOne()
+    await project.save()
+    res.json({ success: true, meetingNotes: project.meetingNotes })
   }),
 )
 

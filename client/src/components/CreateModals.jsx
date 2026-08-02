@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import { X } from 'lucide-react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { api } from '../lib/api'
+import { COUNTRY_CODES, buildPhone } from '../lib/phone'
 import { toast } from './ui'
 
 export function CreateSpaceModal({ open, onClose }) {
@@ -54,6 +55,8 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
   const navigate = useNavigate()
   const [name, setName] = useState('')
   const [clientName, setClientName] = useState('')
+  const [phoneCode, setPhoneCode] = useState('+91')
+  const [phone, setPhone] = useState('')
   const [spaceId, setSpaceId] = useState(defaultSpaceId || '')
 
   const { data: spacesData } = useQuery({
@@ -72,6 +75,7 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
       toast('Project created', { type: 'success' })
       setName('')
       setClientName('')
+      setPhone('')
       onClose?.()
       if (res?.project?._id) navigate(`/projects/${res.project._id}/tasks`)
     },
@@ -99,6 +103,29 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
             className="h-10 w-full rounded-lg border border-[#2e2e32] bg-[#121214] px-3 text-[13px] text-white outline-none"
           />
         </Field>
+        <Field label="Client phone (WhatsApp)">
+          <div className="flex gap-2">
+            <select
+              value={phoneCode}
+              onChange={(e) => setPhoneCode(e.target.value)}
+              className="h-10 w-[92px] shrink-0 rounded-lg border border-[#2e2e32] bg-[#121214] px-2 text-[13px] text-white outline-none"
+            >
+              {COUNTRY_CODES.map((c) => (
+                <option key={c.code} value={c.code}>
+                  {c.code}
+                </option>
+              ))}
+            </select>
+            <input
+              type="tel"
+              inputMode="numeric"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value.replace(/[^\d\s-]/g, ''))}
+              placeholder="98765 43210"
+              className="h-10 w-full rounded-lg border border-[#2e2e32] bg-[#121214] px-3 text-[13px] text-white outline-none"
+            />
+          </div>
+        </Field>
         <Field label="Space (optional)">
           <select
             value={spaceId}
@@ -121,6 +148,7 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
           create.mutate({
             name: name.trim(),
             clientName: clientName.trim(),
+            clientPhone: buildPhone(phoneCode, phone),
             spaceId: spaceId || undefined,
             type: 'residential',
           })

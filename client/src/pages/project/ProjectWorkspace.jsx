@@ -8,6 +8,8 @@ import {
   ChevronRight,
   FileImage,
   Camera,
+  Send,
+  StickyNote,
   Users,
   Trash2,
   Truck,
@@ -16,6 +18,7 @@ import { api, useAuthStore } from '../../lib/api'
 import { Button, Modal, Skeleton, toast } from '../../components/ui'
 import { cn } from '../../lib/utils'
 import { stageLabel } from '../../lib/format'
+import { whatsappLink } from '../../lib/phone'
 import { capabilitiesForUser } from '../../lib/roles'
 
 /** Only what an interior studio needs inside a project */
@@ -24,6 +27,7 @@ const MAIN_TABS = [
   { to: 'tasks', label: 'Tasks', icon: LayoutList, capability: 'tasks' },
   { to: 'procurement', label: 'Materials', icon: Truck, capability: 'procurement' },
   { to: 'site', label: 'Site', icon: Camera, capability: 'site' },
+  { to: 'notes', label: 'Notes', icon: StickyNote, capability: 'overview' },
   { to: 'files', label: 'Drawings', icon: FileImage, capability: 'files' },
   { to: 'team', label: 'Team', icon: Users, capability: 'team' },
 ]
@@ -136,6 +140,7 @@ export function ProjectWorkspace() {
               </h1>
               <p className="truncate text-[11px] text-[#64748b]">
                 {project.clientName}
+                {project.clientPhone ? ` · ${project.clientPhone}` : ''}
                 {project.location ? ` · ${project.location}` : ''}
                 {' · '}
                 <span className="font-medium text-[#334155]">
@@ -170,6 +175,36 @@ export function ProjectWorkspace() {
             >
               <Share2 className="h-3.5 w-3.5" />
               Share
+            </button>
+            <button
+              type="button"
+              title={
+                project.clientPhone
+                  ? `WhatsApp ${project.clientName} · ${project.clientPhone}`
+                  : 'Add the client phone number to enable WhatsApp'
+              }
+              onClick={() => {
+                const url = whatsappLink(
+                  project.clientPhone,
+                  `Hi ${project.clientName}, regarding your project "${project.name}" —`,
+                )
+                if (!url) {
+                  toast('No client phone number saved for this project', {
+                    type: 'error',
+                  })
+                  return
+                }
+                window.open(url, '_blank', 'noopener')
+              }}
+              className={cn(
+                'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-semibold text-white shadow-sm transition',
+                project.clientPhone
+                  ? 'bg-[#25D366] hover:bg-[#1fb958]'
+                  : 'bg-[#9fd9b4] hover:bg-[#8ecfa6]',
+              )}
+            >
+              <Send className="h-3.5 w-3.5" />
+              Send
             </button>
           </div>
         </div>

@@ -1,4 +1,4 @@
-﻿import express from 'express'
+import express from 'express'
 import cors from 'cors'
 import cookieParser from 'cookie-parser'
 import http from 'http'
@@ -52,6 +52,11 @@ function corsOrigin(origin, callback) {
   try {
     if (origin) {
       const host = new URL(origin).hostname
+      // Local development: allow any localhost port (Vite may shift 5173 -> 5174 …)
+      if (host === 'localhost' || host === '127.0.0.1') {
+        callback(null, true)
+        return
+      }
       if (
         host.endsWith('.editcomedia.com') ||
         host === 'editcomedia.com' ||
@@ -72,7 +77,7 @@ const server = http.createServer(app)
 
 const io = new SocketServer(server, {
   cors: {
-    origin: allowedOrigins,
+    origin: corsOrigin,
     credentials: true,
   },
 })

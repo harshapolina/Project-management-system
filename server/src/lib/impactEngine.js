@@ -345,7 +345,8 @@ export async function scoreTaskCompletion({ tenantId, task, previousStatus }) {
 }
 
 export async function categoryBreakdown(tenantId, userId, { from, to } = {}) {
-  const match = { tenantId, userId }
+  const match = { tenantId }
+  if (userId) match.userId = userId
   if (from || to) {
     match.createdAt = {}
     if (from) match.createdAt.$gte = from
@@ -369,8 +370,11 @@ export async function trendSeries(tenantId, userId, days = 30) {
   from.setHours(0, 0, 0, 0)
   from.setDate(from.getDate() - (days - 1))
 
+  const match = { tenantId, createdAt: { $gte: from } }
+  if (userId) match.userId = userId
+
   const rows = await ImpactLedger.aggregate([
-    { $match: { tenantId, userId, createdAt: { $gte: from } } },
+    { $match: match },
     {
       $group: {
         _id: {

@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom'
 import { LayoutGrid, List, Plus, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatInr, stageLabel, COVER_FALLBACK } from '../lib/format'
+import { COUNTRY_CODES, buildPhone } from '../lib/phone'
 import {
   Button,
   Card,
@@ -315,6 +316,8 @@ function NewProjectModal({ open, onClose, onSubmit, loading }) {
   const [form, setForm] = useState({
     name: '',
     clientName: '',
+    phoneCode: '+91',
+    phone: '',
     type: 'residential',
     location: '',
     budget: '',
@@ -326,8 +329,10 @@ function NewProjectModal({ open, onClose, onSubmit, loading }) {
         className="space-y-4"
         onSubmit={(e) => {
           e.preventDefault()
+          const { phoneCode, phone, ...rest } = form
           onSubmit({
-            ...form,
+            ...rest,
+            clientPhone: buildPhone(phoneCode, phone),
             budget: Number(form.budget) || 0,
           })
         }}
@@ -344,6 +349,34 @@ function NewProjectModal({ open, onClose, onSubmit, loading }) {
           onChange={(e) => setForm({ ...form, clientName: e.target.value })}
           required
         />
+        <div className="flex gap-2">
+          <div className="w-[110px] shrink-0">
+            <Select
+              label="Code"
+              value={form.phoneCode}
+              onChange={(e) => setForm({ ...form, phoneCode: e.target.value })}
+              options={COUNTRY_CODES.map((c) => ({
+                value: c.code,
+                label: c.code,
+              }))}
+            />
+          </div>
+          <div className="flex-1">
+            <Input
+              label="Client phone (WhatsApp)"
+              type="tel"
+              inputMode="numeric"
+              placeholder="98765 43210"
+              value={form.phone}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  phone: e.target.value.replace(/[^\d\s-]/g, ''),
+                })
+              }
+            />
+          </div>
+        </div>
         <Select
           label="Template"
           value={form.type}

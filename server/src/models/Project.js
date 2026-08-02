@@ -32,6 +32,16 @@ const stageSchema = new mongoose.Schema(
   { _id: false },
 )
 
+const meetingNoteSchema = new mongoose.Schema(
+  {
+    text: { type: String, required: true, trim: true },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    createdByName: { type: String, default: '' },
+    editedAt: Date,
+  },
+  { timestamps: true },
+)
+
 const projectSchema = new mongoose.Schema(
   {
     tenantId: {
@@ -47,6 +57,7 @@ const projectSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     code: { type: String, trim: true },
     clientName: { type: String, required: true },
+    clientPhone: { type: String, default: '', trim: true },
     clientId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     type: { type: String, enum: PROJECT_TYPES, default: 'residential' },
     status: { type: String, enum: PROJECT_STATUSES, default: 'not_started' },
@@ -69,6 +80,7 @@ const projectSchema = new mongoose.Schema(
     ],
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
     isDelayed: { type: Boolean, default: false },
+    meetingNotes: { type: [meetingNoteSchema], default: [] },
   },
   { timestamps: true },
 )

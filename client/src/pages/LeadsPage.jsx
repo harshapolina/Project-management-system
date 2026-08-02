@@ -104,24 +104,43 @@ export function LeadsPage() {
                         {formatInr(lead.estimatedValue)}
                       </p>
                       <div className="mt-2 flex flex-wrap gap-1">
-                        {PIPELINE.filter((s) => s !== stage)
-                          .slice(0, 3)
-                          .map((s) => (
+                        {(() => {
+                          const idx = PIPELINE.indexOf(stage)
+                          const next =
+                            idx >= 0 && idx < PIPELINE.length - 2
+                              ? PIPELINE[idx + 1]
+                              : null
+                          const actions = []
+                          if (next && next !== 'lost') {
+                            actions.push({ key: next, label: `Next · ${stageLabel(next)}`, tone: 'next' })
+                          }
+                          if (stage !== 'won' && stage !== 'lost') {
+                            actions.push({ key: 'won', label: 'Won', tone: 'won' })
+                            actions.push({ key: 'lost', label: 'Lost', tone: 'lost' })
+                          }
+                          return actions.map((a) => (
                             <button
-                              key={s}
+                              key={a.key}
                               type="button"
-                              className="text-[10px] text-secondary hover:text-accent"
+                              className={
+                                a.tone === 'won'
+                                  ? 'rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 hover:bg-emerald-100'
+                                  : a.tone === 'lost'
+                                    ? 'rounded-md bg-red-50 px-1.5 py-0.5 text-[10px] font-semibold text-red-600 hover:bg-red-100'
+                                    : 'rounded-md bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb] hover:bg-[#dbeafe]'
+                              }
                               onClick={(e) => {
                                 e.stopPropagation()
                                 patch.mutate({
                                   id: lead._id,
-                                  body: { stage: s },
+                                  body: { stage: a.key },
                                 })
                               }}
                             >
-                              → {stageLabel(s).split(' ')[0]}
+                              {a.tone === 'next' ? `→ ${stageLabel(a.key).split(' ')[0]}` : a.label}
                             </button>
-                          ))}
+                          ))
+                        })()}
                       </div>
                     </button>
                   ))}
@@ -159,6 +178,37 @@ export function LeadsPage() {
                 <StatusChip status={selected.stage} label={stageLabel(selected.stage)} />
               </div>
             </div>
+            <div>
+              <p className="mb-2 text-xs text-secondary">Move to stage</p>
+              <div className="flex flex-wrap gap-1.5">
+                {PIPELINE.filter((s) => s !== selected.stage).map((s) => (
+                  <button
+                    key={s}
+                    type="button"
+                    className={
+                      s === 'won'
+                        ? 'rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100'
+                        : s === 'lost'
+                          ? 'rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100'
+                          : 'rounded-lg border border-border bg-surface-raised px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:border-accent/40'
+                    }
+                    onClick={() => {
+                      patch.mutate(
+                        { id: selected._id, body: { stage: s } },
+                        {
+                          onSuccess: () =>
+                            setSelected((prev) =>
+                              prev ? { ...prev, stage: s } : prev,
+                            ),
+                        },
+                      )
+                    }}
+                  >
+                    {stageLabel(s)}
+                  </button>
+                ))}
+              </div>
+            </div>
             {selected.stage !== 'won' && selected.stage !== 'lost' && (
               <Button
                 className="w-full"
@@ -166,6 +216,15 @@ export function LeadsPage() {
                 onClick={() => convert.mutate(selected._id)}
               >
                 Convert to project
+              </Button>
+            )}
+            {selected.stage === 'won' && (
+              <Button
+                className="w-full"
+                loading={convert.isPending}
+                onClick={() => convert.mutate(selected._id)}
+              >
+                Convert won lead to project
               </Button>
             )}
           </div>

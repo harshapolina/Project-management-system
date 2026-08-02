@@ -5,7 +5,6 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
-  ChevronRight,
   Copy,
   FileSpreadsheet,
   Image as ImageIcon,
@@ -26,7 +25,33 @@ import { formatInr } from '../lib/format'
 import { toast } from '../components/ui'
 import { cn } from '../lib/utils'
 
-const UNITS = ['nos', 'sft', 'rft', 'sqm', 'rmt', 'set', 'kg', 'ls']
+const UNITS = [
+  { value: 'sft', label: 'Sq.ft' },
+  { value: 'rft', label: 'Rft' },
+  { value: 'nos', label: "No's" },
+  { value: 'ls', label: 'LS' },
+  { value: 'sqm', label: 'Sq.mtr' },
+  { value: 'rmt', label: 'Rmtr' },
+]
+const UNIT_VALUES = UNITS.map((u) => u.value)
+
+function unitLabel(unit) {
+  return UNITS.find((u) => u.value === unit)?.label || unit
+}
+
+/** Match Excel unit cells like "sq.ft", "SQFT", "no's", "rmt" to a known unit. */
+function matchUnit(raw) {
+  const key = String(raw || '')
+    .toLowerCase()
+    .replace(/[^a-z]/g, '')
+  if (!key) return null
+  return (
+    UNITS.find(
+      (u) =>
+        u.value === key || u.label.toLowerCase().replace(/[^a-z]/g, '') === key,
+    )?.value || null
+  )
+}
 const ROOM_SUGGESTIONS = [
   'General',
   'Living',
@@ -224,15 +249,11 @@ function rowsToBoqLines(grid) {
     }
     if (roomCell) lastRoom = roomCell
 
-    const unitCell = String(row[columnMap.unit] ?? '')
-      .trim()
-      .toLowerCase()
-
     lines.push({
       _key: uid(),
       room: lastRoom || 'General',
       description: description || 'Imported line',
-      unit: UNITS.includes(unitCell) ? unitCell : 'nos',
+      unit: matchUnit(row[columnMap.unit]) || 'nos',
       qty: qty || (amount && rate ? amount / rate : 0),
       rate: rate || (amount && qty ? amount / qty : 0),
       amount: amount || qty * rate,
@@ -641,26 +662,20 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col print:block print:h-auto">
-      <header className="shrink-0 border-b border-[#e1e8f1] bg-white px-4 pt-3.5 print:hidden sm:px-6">
-        <div className="flex flex-wrap items-start gap-3">
-          <button
-            type="button"
-            onClick={onBack}
-            title="Back to all projects"
-            className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl border border-[#e4eaf3] bg-white text-[#64748b] transition hover:border-[#c7dbfb] hover:bg-[#f7f9fc] hover:text-[#0b1220]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </button>
+      <header className="shrink-0 border-b border-[#e1e8f1] bg-white px-4 pt-4 print:hidden sm:px-6">
+        <button
+          type="button"
+          onClick={onBack}
+          title="Back to all projects"
+          className="group inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#9aa7ba] transition hover:text-[#1d4ed8]"
+        >
+          <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-150 group-hover:-translate-x-0.5" />
+          BOQ &amp; Quotes
+        </button>
 
+        <div className="mt-1.5 flex flex-wrap items-center gap-3">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1 text-[11px] font-medium text-[#9aa7ba]">
-              <span>BOQ &amp; Quotes</span>
-              <ChevronRight className="h-3 w-3" />
-              <span className="truncate text-[#64748b]">
-                {project?.name || 'Project'}
-              </span>
-            </div>
-            <h2 className="mt-0.5 truncate text-[18px] font-semibold tracking-[-0.022em] text-[#0b1220]">
+            <h2 className="truncate text-[20px] font-semibold leading-tight tracking-[-0.022em] text-[#0b1220]">
               {project?.name || 'Project'}
             </h2>
             <p className="mt-0.5 truncate text-[12px] text-[#8a98ac]">
@@ -700,7 +715,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
                     setActiveId(String(q._id))
                   }}
                   className={cn(
-                    'flex shrink-0 items-center gap-2.5 rounded-xl border px-3 py-2 text-left transition-all duration-150',
+                    'flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-left transition-all duration-150',
                     active
                       ? 'border-[#c7dbfb] bg-[#eef4ff] shadow-[0_1px_2px_rgba(37,99,235,0.10)]'
                       : 'border-[#e9eef6] bg-white hover:border-[#d7e0ec] hover:bg-[#f9fbfd]',
@@ -1113,7 +1128,7 @@ function BoqSheet({
   return (
     <>
       <div
-        className="relative flex h-full min-h-0 flex-col bg-[#f4f7fb] print:hidden lg:flex-row"
+        className="relative flex h-full min-h-0 flex-col gap-3.5 overflow-y-auto bg-[#f4f7fb] p-3.5 print:hidden lg:flex-row lg:overflow-visible"
         onDragOver={(e) => {
           e.preventDefault()
           if (!locked) setDragOver(true)
@@ -1139,56 +1154,52 @@ function BoqSheet({
         )}
 
         {/* Sheet */}
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col bg-white lg:border-r lg:border-[#e1e8f1]">
+        <div className="flex min-h-[480px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2eaf5] bg-white shadow-[0_2px_4px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.25)] lg:min-h-0">
           {/* Action bar */}
-          <div className="flex shrink-0 flex-wrap items-center gap-3 border-b border-[#edf1f7] px-4 py-2.5 sm:px-5">
-            <div className="min-w-0 flex-1">
-              <div className="flex flex-wrap items-center gap-1.5">
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1.5 rounded-md px-2 py-[2px] text-[10.5px] font-bold uppercase tracking-[0.06em] ring-1 ring-inset',
-                    statusMeta.pill,
-                  )}
-                >
-                  <span className={cn('h-1.5 w-1.5 rounded-full', statusMeta.dot)} />
-                  {statusMeta.label}
+          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#edf1f7] px-4 py-3 sm:px-5">
+            <div className="flex flex-1 items-center gap-2">
+              <input
+                value={title}
+                disabled={locked}
+                onChange={(e) => {
+                  markDirty()
+                  setTitle(e.target.value)
+                }}
+                className="h-[34px] min-w-[140px] flex-1 rounded-lg border border-transparent bg-transparent px-2 text-[16px] font-semibold tracking-[-0.02em] text-[#0b1220] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-white placeholder:text-[#b4c0d0] disabled:opacity-70"
+                placeholder="Sheet title"
+              />
+              <span
+                className={cn(
+                  'inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-[10.5px] font-bold uppercase tracking-[0.06em] ring-1 ring-inset',
+                  statusMeta.pill,
+                )}
+              >
+                <span className={cn('h-1.5 w-1.5 rounded-full', statusMeta.dot)} />
+                {statusMeta.label}
+              </span>
+              {dirty && !locked && (
+                <span className="inline-flex h-6 shrink-0 items-center rounded-md bg-amber-50 px-2 text-[10.5px] font-bold uppercase tracking-[0.06em] text-amber-700 ring-1 ring-inset ring-amber-200">
+                  Unsaved
                 </span>
-                {dirty && !locked && (
-                  <span className="rounded-md bg-amber-50 px-2 py-[2px] text-[10.5px] font-bold uppercase tracking-[0.06em] text-amber-700 ring-1 ring-inset ring-amber-200">
-                    Unsaved
-                  </span>
-                )}
-                {locked && (
-                  <span className="rounded-md bg-emerald-50 px-2 py-[2px] text-[10.5px] font-bold uppercase tracking-[0.06em] text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                    Locked
-                  </span>
-                )}
-              </div>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <input
-                  value={title}
-                  disabled={locked}
-                  onChange={(e) => {
-                    markDirty()
-                    setTitle(e.target.value)
-                  }}
-                  className="min-w-0 flex-1 rounded-lg border border-transparent bg-transparent px-1.5 py-0.5 text-[16px] font-semibold tracking-[-0.02em] text-[#0b1220] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-white placeholder:text-[#b4c0d0] disabled:opacity-70"
-                  placeholder="Sheet title"
-                />
-                <input
-                  value={versionLabel}
-                  disabled={locked}
-                  onChange={(e) => {
-                    markDirty()
-                    setVersionLabel(e.target.value)
-                  }}
-                  className="h-7 w-28 rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-[11.5px] font-medium text-[#475569] outline-none transition focus:border-[#b6cef7] focus:bg-white disabled:opacity-70"
-                  placeholder="Version"
-                />
-              </div>
+              )}
+              {locked && (
+                <span className="inline-flex h-6 shrink-0 items-center rounded-md bg-emerald-50 px-2 text-[10.5px] font-bold uppercase tracking-[0.06em] text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                  Locked
+                </span>
+              )}
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
+            <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1.5">
+              <input
+                value={versionLabel}
+                disabled={locked}
+                onChange={(e) => {
+                  markDirty()
+                  setVersionLabel(e.target.value)
+                }}
+                className="h-[34px] w-28 rounded-xl border border-[#e4eaf3] bg-[#f7f9fc] px-2.5 text-[12px] font-medium text-[#475569] outline-none transition focus:border-[#b6cef7] focus:bg-white disabled:opacity-70"
+                placeholder="Version"
+              />
               <input
                 ref={excelInputRef}
                 type="file"
@@ -1203,12 +1214,12 @@ function BoqSheet({
                 type="button"
                 disabled={locked || importing}
                 onClick={() => excelInputRef.current?.click()}
-                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 py-[7px] text-[12px] font-semibold text-[#1d4ed8] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
+                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 text-[12px] font-semibold text-[#1d4ed8] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
               >
                 <Upload className="h-3.5 w-3.5" />
                 {importing ? 'Reading…' : 'Import Excel'}
               </button>
-              <div className="flex items-center rounded-xl border border-[#e4eaf3] bg-white p-0.5">
+              <div className="flex h-[34px] items-center rounded-xl border border-[#e4eaf3] bg-white px-0.5">
                 <ToolButton
                   label="Add line"
                   disabled={locked}
@@ -1224,7 +1235,7 @@ function BoqSheet({
                 <button
                   type="button"
                   onClick={onCancelDraft}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-white px-3 py-[7px] text-[12px] font-semibold text-[#64748b] transition hover:bg-[#f4f7fb] hover:text-[#0b1220]"
+                  className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-white px-3 text-[12px] font-semibold text-[#64748b] transition hover:bg-[#f4f7fb] hover:text-[#0b1220]"
                 >
                   <X className="h-3.5 w-3.5" />
                   Discard
@@ -1251,9 +1262,9 @@ function BoqSheet({
             />
             <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13px]">
               <thead className="sticky top-0 z-10">
-                <tr className="[&>th]:border-b [&>th]:border-[#e4eaf3] [&>th]:bg-[#fafcfe] [&>th]:px-2 [&>th]:py-2.5 [&>th]:text-[10px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.1em] [&>th]:text-[#8a98ac]">
-                  <th className="w-10 text-left">#</th>
-                  <th className="w-14 text-left">Ref</th>
+                <tr className="[&>th]:h-9 [&>th]:border-b [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:px-2 [&>th]:backdrop-blur-md [&>th]:text-[10px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.1em] [&>th]:text-[#8a98ac]">
+                  <th className="w-12 text-left">S.no</th>
+                  <th className="w-[76px] text-left">Location</th>
                   <th className="text-left">Description</th>
                   <th className="w-[84px] text-left">Unit</th>
                   <th className="w-[88px] text-right">Qty</th>
@@ -1268,10 +1279,10 @@ function BoqSheet({
                     <tr>
                       <td
                         colSpan={8}
-                        className="border-b border-[#edf1f7] bg-[#f7f9fc] px-3 py-1.5"
+                        className="sticky top-[35px] z-[5] border-b border-[#edf1f7] bg-[#f7f9fc] px-3 py-1.5"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="h-3 w-[3px] rounded-full bg-[#2563eb]/60" />
+                          <span className="h-3.5 w-[3px] rounded-full bg-[#2563eb]" />
                           <input
                             list="boq-rooms"
                             disabled={locked}
@@ -1288,13 +1299,13 @@ function BoqSheet({
                                 ),
                               )
                             }}
-                            className="w-40 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#475569] outline-none transition hover:bg-white focus:border-[#b6cef7] focus:bg-white disabled:opacity-70"
+                            className="w-40 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-white focus:border-[#b6cef7] focus:bg-white disabled:opacity-70"
                           />
-                          <span className="text-[10.5px] text-[#9aa7ba]">
+                          <span className="rounded-full bg-white px-2 py-[2px] text-[10px] font-semibold tabular-nums text-[#8a98ac] ring-1 ring-inset ring-[#e4eaf3]">
                             {g.endIdx - g.startIdx + 1}{' '}
                             {g.endIdx - g.startIdx === 0 ? 'line' : 'lines'}
                           </span>
-                          <span className="ml-auto text-[11.5px] font-semibold tabular-nums text-[#475569]">
+                          <span className="ml-auto text-[12px] font-bold tabular-nums text-[#334155]">
                             {formatInr(g.total)}
                           </span>
                           {!locked && (
@@ -1319,10 +1330,10 @@ function BoqSheet({
                           data-row={idx}
                           className="group/row transition-colors [&>td]:border-b [&>td]:border-[#f1f5f9] hover:[&>td]:bg-[#fbfcfe]"
                         >
-                          <td className="px-2 py-1 text-[11px] tabular-nums text-[#b4c0d0]">
+                          <td className="px-2 py-1.5 text-[11px] tabular-nums text-[#b4c0d0]">
                             {idx + 1}
                           </td>
-                          <td className="px-1.5 py-1">
+                          <td className="px-1.5 py-1.5">
                             {it.image ? (
                               <div className="relative h-9 w-9">
                                 <img
@@ -1357,7 +1368,7 @@ function BoqSheet({
                               </button>
                             )}
                           </td>
-                          <td className="px-1.5 py-1">
+                          <td className="px-1.5 py-1.5">
                             <input
                               data-field="description"
                               disabled={locked}
@@ -1378,23 +1389,23 @@ function BoqSheet({
                               )}
                             />
                           </td>
-                          <td className="px-1.5 py-1">
+                          <td className="px-1.5 py-1.5">
                             <select
                               disabled={locked}
-                              value={UNITS.includes(it.unit) ? it.unit : 'nos'}
+                              value={UNIT_VALUES.includes(it.unit) ? it.unit : 'nos'}
                               onChange={(e) =>
                                 updateItem(idx, 'unit', e.target.value)
                               }
                               className={cn(cell, 'text-[#64748b]')}
                             >
                               {UNITS.map((u) => (
-                                <option key={u} value={u}>
-                                  {u}
+                                <option key={u.value} value={u.value}>
+                                  {u.label}
                                 </option>
                               ))}
                             </select>
                           </td>
-                          <td className="px-1.5 py-1">
+                          <td className="px-1.5 py-1.5">
                             <input
                               type="number"
                               min="0"
@@ -1407,7 +1418,7 @@ function BoqSheet({
                               className={cn(cell, 'text-right tabular-nums text-[#334155]')}
                             />
                           </td>
-                          <td className="px-1.5 py-1">
+                          <td className="px-1.5 py-1.5">
                             <input
                               type="number"
                               min="0"
@@ -1420,10 +1431,10 @@ function BoqSheet({
                               className={cn(cell, 'text-right tabular-nums text-[#334155]')}
                             />
                           </td>
-                          <td className="px-3 py-1 text-right text-[12.5px] font-semibold tabular-nums text-[#0b1220]">
+                          <td className="px-3 py-1.5 text-right text-[12.5px] font-semibold tabular-nums text-[#0b1220]">
                             {formatInr(lineAmount(it))}
                           </td>
-                          <td className="px-1.5 py-1">
+                          <td className="px-1.5 py-1.5">
                             <div className="flex justify-end gap-0.5 opacity-0 transition group-hover/row:opacity-100">
                               <button
                                 type="button"
@@ -1500,7 +1511,7 @@ function BoqSheet({
         </div>
 
         {/* Right panel */}
-        <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto bg-[#f4f7fb] p-3.5 lg:w-[324px]">
+        <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto lg:w-[324px] [&>section]:shrink-0">
           {/* Totals */}
           <section
             className={cn(CARD, 'overflow-hidden p-4')}
@@ -1948,8 +1959,8 @@ function BoqPrintView({
       <table className="w-full border-collapse text-[11px]">
         <thead>
           <tr className="border-b border-[#cbd5e1] text-left text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
-            <th className="w-8 py-2 pr-2">#</th>
-            <th className="w-14 py-2 pr-2">Image</th>
+            <th className="w-10 py-2 pr-2">S.no</th>
+            <th className="w-14 py-2 pr-2">Location</th>
             <th className="w-24 py-2 pr-2">Room</th>
             <th className="py-2 pr-2">Description</th>
             <th className="w-14 py-2 pr-2">Unit</th>
@@ -1979,7 +1990,7 @@ function BoqPrintView({
               <td className="py-1.5 pr-2 text-[#0b1220]">
                 {it.description || '—'}
               </td>
-              <td className="py-1.5 pr-2 text-[#64748b]">{it.unit}</td>
+              <td className="py-1.5 pr-2 text-[#64748b]">{unitLabel(it.unit)}</td>
               <td className="py-1.5 pr-2 text-right tabular-nums">{it.qty}</td>
               <td className="py-1.5 pr-2 text-right tabular-nums">
                 {formatInr(it.rate)}

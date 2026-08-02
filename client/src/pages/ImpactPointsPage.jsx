@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { differenceInCalendarDays, endOfMonth } from 'date-fns'
 import {
   Award,
+  Check,
+  Crown,
   Flame,
+  Gift,
+  Lock,
   Minus,
   Plus,
   RefreshCw,
@@ -45,10 +50,30 @@ const CATEGORY_LABELS = {
 }
 
 const BADGE_META = {
-  rising_star: { icon: Sparkles, tone: 'from-sky-400 to-blue-600' },
-  consistent: { icon: Shield, tone: 'from-emerald-400 to-teal-600' },
-  high_impact: { icon: Flame, tone: 'from-amber-400 to-orange-600' },
-  champion: { icon: Trophy, tone: 'from-violet-400 to-fuchsia-600' },
+  rising_star: {
+    icon: Sparkles,
+    tone: 'from-sky-400 to-blue-600',
+    glow: 'shadow-[0_10px_24px_-10px_rgba(37,99,235,0.55)]',
+    label: 'Rising Star',
+  },
+  consistent: {
+    icon: Shield,
+    tone: 'from-emerald-400 to-teal-600',
+    glow: 'shadow-[0_10px_24px_-10px_rgba(13,148,136,0.55)]',
+    label: 'Consistent',
+  },
+  high_impact: {
+    icon: Flame,
+    tone: 'from-amber-400 to-orange-600',
+    glow: 'shadow-[0_10px_24px_-10px_rgba(234,88,12,0.55)]',
+    label: 'High Impact',
+  },
+  champion: {
+    icon: Trophy,
+    tone: 'from-violet-400 to-fuchsia-600',
+    glow: 'shadow-[0_10px_24px_-10px_rgba(168,85,247,0.55)]',
+    label: 'Champion',
+  },
 }
 
 function roleLabel(role) {
@@ -98,19 +123,37 @@ export function ImpactPointsPage() {
     },
   })
 
-  const profileId = selectedUserId || String(user?.id || user?._id || '')
+  const profileId = selectedUserId
   const { data: profileData } = useQuery({
     queryKey: ['impact-user', profileId],
     queryFn: () => api(`/impact/users/${profileId}`),
     enabled: !!profileId,
   })
 
+  // Always know this month's #1 for the Company Champion reward card,
+  // regardless of the leaderboard filters currently selected.
+  const { data: championData } = useQuery({
+    queryKey: ['impact-leaderboard', 'monthly', 'all', ''],
+    queryFn: () => api('/impact/leaderboard?period=monthly'),
+  })
+  const champion = championData?.leaderboard?.[0]
+
   const canManage = !!data?.canManage
   const me = meData?.score || data?.me || { totalPoints: 0, weeklyPoints: 0, monthlyPoints: 0 }
   const badges = meData?.badges || data?.badges || []
-  const breakdown = meData?.breakdown || []
-  const trend = meData?.trend || []
-  const timeline = profileData?.timeline || meData?.timeline || []
+  const company = data?.company || {}
+  const viewingPerson = !!selectedUserId
+  // Default = company overall (so panels are never empty when the firm has activity).
+  // Clicking a leaderboard row/badge drills into that person's stats.
+  const breakdown = viewingPerson
+    ? profileData?.breakdown || []
+    : company.breakdown || []
+  const trend = viewingPerson ? profileData?.trend || [] : company.trend || []
+  const timeline = viewingPerson
+    ? profileData?.timeline || []
+    : company.timeline || []
+  const viewedName = viewingPerson ? profileData?.user?.name || '' : ''
+  const companyScope = company.scope === 'company'
   const leaderboard = boardData?.leaderboard || []
   const people = data?.people || []
   const rules = data?.rules || []
@@ -246,6 +289,106 @@ export function ImpactPointsPage() {
             />
           </section>
 
+          {/* Champion reward + achievement badges */}
+          <section className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
+            <ChampionRewardCard
+              champion={champion}
+              isMe={
+                champion &&
+                String(champion.user?._id) === String(user?.id || user?._id)
+              }
+            />
+            <Panel
+              title="Achievement levels"
+              subtitle="Earn a badge at every level as your impact grows"
+            >
+              <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
+                {badges.map((badge) => {
+                  const meta = BADGE_META[badge.key] || BADGE_META.rising_star
+                  const Icon = meta.icon
+                  const total = Number(me.totalPoints) || 0
+                  const pct = badge.minPoints
+                    ? Math.min(100, Math.round((total / badge.minPoints) * 100))
+                    : 100
+                  const toGo = Math.max(0, (badge.minPoints || 0) - total)
+                  return (
+                    <div
+                      key={badge.key}
+                      className={cn(
+                        'relative overflow-hidden rounded-2xl border p-3 text-center transition',
+                        badge.earned
+                          ? 'border-amber-200/80 bg-gradient-to-b from-amber-50/80 via-white to-white shadow-[0_10px_24px_-16px_rgba(245,158,11,0.5)]'
+                          : 'border-[#e8eef5] bg-[#fafcfe]',
+                      )}
+                    >
+                      {badge.earned && (
+                        <span className="pointer-events-none absolute -right-8 top-3 rotate-45 bg-gradient-to-r from-amber-400 to-orange-400 px-8 py-0.5 text-[8.5px] font-bold uppercase tracking-[0.12em] text-white shadow-sm">
+                          Earned
+                        </span>
+                      )}
+
+                      <div className="relative mx-auto h-14 w-14">
+                        <span
+                          className={cn(
+                            'flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br text-white ring-4 ring-white',
+                            meta.tone,
+                            badge.earned ? meta.glow : 'opacity-45 grayscale',
+                          )}
+                        >
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span
+                          className={cn(
+                            'absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white',
+                            badge.earned
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-[#e2e8f0] text-[#94a3b8]',
+                          )}
+                        >
+                          {badge.earned ? (
+                            <Check className="h-3 w-3" strokeWidth={3} />
+                          ) : (
+                            <Lock className="h-2.5 w-2.5" />
+                          )}
+                        </span>
+                      </div>
+
+                      <p className="mt-2 text-[12px] font-bold text-[#0f172a]">
+                        {badge.label}
+                      </p>
+                      <p className="mt-0.5 text-[9.5px] leading-snug text-[#94a3b8]">
+                        {badge.description}
+                      </p>
+
+                      {badge.earned ? (
+                        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-amber-700">
+                          <Award className="h-2.5 w-2.5" />
+                          Badge unlocked
+                        </p>
+                      ) : (
+                        <div className="mt-2">
+                          <div className="h-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                            <div
+                              className={cn(
+                                'h-full rounded-full bg-gradient-to-r',
+                                meta.tone,
+                              )}
+                              style={{ width: `${pct}%` }}
+                            />
+                          </div>
+                          <p className="mt-1 text-[9.5px] font-semibold tabular-nums text-[#94a3b8]">
+                            {toGo.toLocaleString('en-IN')} pts to go ·{' '}
+                            {badge.minPoints}+
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+            </Panel>
+          </section>
+
           <div className="grid gap-5 xl:grid-cols-[minmax(0,1.35fr)_minmax(360px,0.85fr)]">
             <div className="space-y-5">
               {/* Trend + breakdown */}
@@ -253,7 +396,24 @@ export function ImpactPointsPage() {
                 <Panel
                   className="lg:col-span-3"
                   title="30-day trend"
-                  subtitle="Daily impact points earned or deducted"
+                  subtitle={
+                    viewedName
+                      ? `Daily impact points — ${viewedName}`
+                      : companyScope
+                        ? 'Company-wide daily impact points'
+                        : 'Daily impact points earned or deducted'
+                  }
+                  action={
+                    viewingPerson ? (
+                      <button
+                        type="button"
+                        onClick={() => setSelectedUserId('')}
+                        className="rounded-lg border border-[#dce4ee] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475569] shadow-sm hover:bg-[#f8fafc]"
+                      >
+                        Back to company
+                      </button>
+                    ) : null
+                  }
                 >
                   <div className="h-56">
                     <ResponsiveContainer width="100%" height="100%">
@@ -294,7 +454,13 @@ export function ImpactPointsPage() {
                 <Panel
                   className="lg:col-span-2"
                   title="Point sources"
-                  subtitle="Where your score comes from"
+                  subtitle={
+                    viewedName
+                      ? `Where ${viewedName}'s score comes from`
+                      : companyScope
+                        ? 'Where company points come from'
+                        : 'Where your score comes from'
+                  }
                 >
                   <div className="space-y-3">
                     {breakdown.length === 0 && (
@@ -451,21 +617,23 @@ export function ImpactPointsPage() {
                               </td>
                               <td className="px-5 py-3">
                                 <div className="flex gap-1">
-                                  {(row.badges || []).slice(0, 4).map((key) => (
-                                    <span
-                                      key={key}
-                                      title={key}
-                                      className="flex h-6 w-6 items-center justify-center rounded-full bg-[#f1f5f9] text-[10px]"
-                                    >
-                                      {key === 'champion'
-                                        ? '🏆'
-                                        : key === 'high_impact'
-                                          ? '🔥'
-                                          : key === 'consistent'
-                                            ? '🛡️'
-                                            : '✨'}
-                                    </span>
-                                  ))}
+                                  {(row.badges || []).slice(0, 4).map((key) => {
+                                    const meta =
+                                      BADGE_META[key] || BADGE_META.rising_star
+                                    const BadgeIcon = meta.icon
+                                    return (
+                                      <span
+                                        key={key}
+                                        title={meta.label}
+                                        className={cn(
+                                          'flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-sm ring-1 ring-white',
+                                          meta.tone,
+                                        )}
+                                      >
+                                        <BadgeIcon className="h-3 w-3" />
+                                      </span>
+                                    )
+                                  })}
                                   {!row.badges?.length && (
                                     <span className="text-[11px] text-[#cbd5e1]">—</span>
                                   )}
@@ -488,52 +656,6 @@ export function ImpactPointsPage() {
             </div>
 
             <div className="space-y-5">
-              {/* Achievements */}
-              <Panel title="Achievement levels" subtitle="Unlock badges as your impact grows">
-                <div className="space-y-2.5">
-                  {badges.map((badge) => {
-                    const meta = BADGE_META[badge.key] || BADGE_META.rising_star
-                    const Icon = meta.icon
-                    return (
-                      <div
-                        key={badge.key}
-                        className={cn(
-                          'flex items-center gap-3 rounded-2xl border px-3 py-3',
-                          badge.earned
-                            ? 'border-amber-200 bg-gradient-to-r from-amber-50 to-white'
-                            : 'border-[#e8eef5] bg-[#fafcfe] opacity-70',
-                        )}
-                      >
-                        <span
-                          className={cn(
-                            'flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-white shadow-sm',
-                            meta.tone,
-                            !badge.earned && 'grayscale',
-                          )}
-                        >
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[12.5px] font-semibold text-[#0f172a]">
-                            {badge.label}
-                          </p>
-                          <p className="text-[10.5px] text-[#94a3b8]">
-                            {badge.description} · {badge.minPoints}+ pts
-                          </p>
-                        </div>
-                        {badge.earned ? (
-                          <Award className="h-4 w-4 text-amber-500" />
-                        ) : (
-                          <span className="text-[10px] font-semibold uppercase tracking-wide text-[#cbd5e1]">
-                            Locked
-                          </span>
-                        )}
-                      </div>
-                    )
-                  })}
-                </div>
-              </Panel>
-
               {/* Manual adjust */}
               {canManage && (
                 <Panel
@@ -621,9 +743,22 @@ export function ImpactPointsPage() {
               <Panel
                 title="Activity timeline"
                 subtitle={
-                  profileData?.user
-                    ? `${profileData.user.name}'s recent impact events`
-                    : 'Recent impact events'
+                  viewingPerson && viewedName
+                    ? `${viewedName}'s recent impact events`
+                    : companyScope
+                      ? 'Recent impact events across the company'
+                      : 'Your recent impact events'
+                }
+                action={
+                  viewingPerson ? (
+                    <button
+                      type="button"
+                      onClick={() => setSelectedUserId('')}
+                      className="rounded-lg border border-[#dce4ee] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475569] shadow-sm hover:bg-[#f8fafc]"
+                    >
+                      Company feed
+                    </button>
+                  ) : null
                 }
                 noPadding
               >
@@ -633,7 +768,12 @@ export function ImpactPointsPage() {
                       No transactions yet.
                     </p>
                   )}
-                  {timeline.map((entry) => (
+                  {timeline.map((entry) => {
+                    const entryUser =
+                      entry.userId && typeof entry.userId === 'object'
+                        ? entry.userId
+                        : null
+                    return (
                     <div
                       key={entry._id}
                       className="flex gap-3 border-b border-[#edf1f6] px-5 py-3 last:border-0"
@@ -654,9 +794,16 @@ export function ImpactPointsPage() {
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
-                          <p className="text-[12.5px] font-semibold text-[#0f172a]">
-                            {entry.label}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="text-[12.5px] font-semibold text-[#0f172a]">
+                              {entry.label}
+                            </p>
+                            {!viewingPerson && entryUser?.name && (
+                              <p className="mt-0.5 text-[11px] font-medium text-[#475569]">
+                                {entryUser.name}
+                              </p>
+                            )}
+                          </div>
                           <span
                             className={cn(
                               'shrink-0 text-[12.5px] font-bold tabular-nums',
@@ -689,7 +836,8 @@ export function ImpactPointsPage() {
                         )}
                       </div>
                     </div>
-                  ))}
+                    )
+                  })}
                 </div>
               </Panel>
             </div>
@@ -697,6 +845,102 @@ export function ImpactPointsPage() {
         </>
       )}
     </div>
+  )
+}
+
+function ChampionRewardCard({ champion, isMe }) {
+  const now = new Date()
+  const daysLeft = Math.max(0, differenceInCalendarDays(endOfMonth(now), now))
+  const monthLabel = now.toLocaleString('en-IN', { month: 'long' })
+
+  return (
+    <section
+      className="relative overflow-hidden rounded-2xl border border-[#f0e2c4] bg-[#fffdf7] p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+      style={{
+        backgroundImage:
+          'radial-gradient(480px 170px at 100% 0%, rgba(245,158,11,0.10), transparent 60%)',
+      }}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+          <Crown className="h-3 w-3" />
+          Company Champion
+        </span>
+        <span className="rounded-full border border-[#eadfc8] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#8a7a55]">
+          {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left in {monthLabel}
+        </span>
+      </div>
+
+      <h3 className="mt-3 text-[16px] font-bold leading-snug tracking-[-0.02em] text-[#0f172a]">
+        Finish #1 this month &amp; win the champion&apos;s reward
+      </h3>
+      <p className="mt-1 text-[11.5px] leading-relaxed text-[#8a8264]">
+        Every month the company rewards the top performer on the impact
+        leaderboard.
+      </p>
+
+      {/* Voucher ticket */}
+      <div className="relative mt-4 overflow-hidden rounded-xl border border-dashed border-amber-300 bg-white p-3.5 shadow-[0_6px_16px_-12px_rgba(245,158,11,0.6)]">
+        {/* perforation notches */}
+        <span className="absolute -left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-dashed border-amber-300 bg-[#fffdf7]" />
+        <span className="absolute -right-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-dashed border-amber-300 bg-[#fffdf7]" />
+        <div className="flex items-center gap-3 px-2">
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgba(234,88,12,0.6)]">
+            <Gift className="h-5 w-5" />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-[13.5px] font-bold text-[#92400e]">
+              Amazon Gift Voucher
+            </p>
+            <p className="text-[10.5px] text-[#a49a7c]">
+              Sponsored by the company · awarded at month end
+            </p>
+          </div>
+          <Trophy className="h-5 w-5 shrink-0 text-amber-400" />
+        </div>
+      </div>
+
+      {/* Current leader */}
+      <div className="mt-3 flex items-center gap-3 rounded-xl border border-[#f1ecdd] bg-white/80 p-3">
+        {champion ? (
+          <>
+            <div className="relative shrink-0">
+              <Avatar
+                src={champion.user?.avatar}
+                name={champion.user?.name}
+                size="sm"
+              />
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white ring-2 ring-white">
+                <Crown className="h-2.5 w-2.5" />
+              </span>
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#b3a67f]">
+                Currently leading
+              </p>
+              <p className="truncate text-[12.5px] font-semibold text-[#0f172a]">
+                {champion.user?.name}
+              </p>
+            </div>
+            {isMe && (
+              <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">
+                You
+              </span>
+            )}
+            <div className="shrink-0 text-right">
+              <p className="text-[15px] font-bold tabular-nums text-amber-600">
+                {(champion.monthlyPoints || 0).toLocaleString('en-IN')}
+              </p>
+              <p className="text-[9.5px] text-[#b3a67f]">pts this month</p>
+            </div>
+          </>
+        ) : (
+          <p className="w-full py-1 text-center text-[11.5px] text-[#a49a7c]">
+            No points scored this month yet — the crown is up for grabs.
+          </p>
+        )}
+      </div>
+    </section>
   )
 }
 
@@ -771,8 +1015,8 @@ function Panel({ title, subtitle, action, children, className, noPadding }) {
 function RankBadge({ rank }) {
   if (rank === 1) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-100 text-[12px] font-bold text-amber-700">
-        1
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-[0_4px_10px_-3px_rgba(245,158,11,0.7)] ring-2 ring-amber-100">
+        <Crown className="h-3.5 w-3.5" />
       </span>
     )
   }

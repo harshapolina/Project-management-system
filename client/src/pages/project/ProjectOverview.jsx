@@ -18,6 +18,7 @@ import { api, useAuthStore } from '../../lib/api'
 import { formatInr, stageLabel } from '../../lib/format'
 import { Avatar, toast } from '../../components/ui'
 import { cn } from '../../lib/utils'
+import { MeetingNotes } from './MeetingNotes'
 
 const STAGE_HELP = {
   design: {
@@ -498,6 +499,9 @@ export function ProjectOverview() {
           })}
         </div>
       </section>
+
+      {/* Client meeting notes */}
+      <MeetingNotes projectId={id} project={project} user={user} />
 
       {/* Live lists — fill the page */}
       <div className="grid gap-4 lg:grid-cols-2">

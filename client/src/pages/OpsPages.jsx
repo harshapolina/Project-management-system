@@ -1,19 +1,33 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
+import { format } from 'date-fns'
 import {
+  ArrowLeftRight,
   ArrowUpRight,
+  BadgeCheck,
   CheckCircle2,
   CircleDollarSign,
   Clock3,
+  Mail,
+  MessageCircle,
+  Package,
+  Pencil,
+  Phone as PhoneIcon,
   Plus,
   ReceiptIndianRupee,
+  Store,
   TriangleAlert,
+  Truck,
+  User2,
   WalletCards,
   XCircle,
 } from 'lucide-react'
 import { api, assetUrl, useAuthStore } from '../lib/api'
 import { formatInr } from '../lib/format'
+import { COUNTRY_CODES, buildPhone, splitPhone, whatsappLink } from '../lib/phone'
+import { Stars, SendPoButton } from '../components/VendorBits'
+import { cn } from '../lib/utils'
 import {
   Button,
   Card,
@@ -130,6 +144,8 @@ export function QuotationsPage() {
 export function ProcurementPage() {
   const qc = useQueryClient()
   const [addVendorOpen, setAddVendorOpen] = useState(false)
+  const [editVendor, setEditVendor] = useState(null)
+  const [compareOpen, setCompareOpen] = useState(false)
   const { data: pos } = useQuery({
     queryKey: ['all-pos'],
     queryFn: () => api('/purchase-orders'),
@@ -152,15 +168,40 @@ export function ProcurementPage() {
     onError: (e) => toast(e.message || 'Could not add vendor', { type: 'error' }),
   })
 
+  const updateVendor = useMutation({
+    mutationFn: ({ id, body }) =>
+      api(`/vendors/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['vendors'] })
+      qc.invalidateQueries({ queryKey: ['all-pos'] })
+      setEditVendor(null)
+      toast('Vendor updated', { type: 'success' })
+    },
+    onError: (e) =>
+      toast(e.message || 'Could not update vendor', { type: 'error' }),
+  })
+
+  const totalPoValue = purchaseOrders.reduce(
+    (s, po) => s + (Number(po.value) || 0),
+    0,
+  )
+  const deliveredCount = purchaseOrders.filter(
+    (po) => po.status === 'delivered',
+  ).length
+  const openCount = purchaseOrders.length - deliveredCount
+
   return (
     <div className="min-w-0 space-y-5 sm:space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <p className="mb-1 text-sm text-secondary">Supply chain</p>
+          <p className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#1d4ed8]">
+            <Truck className="h-3 w-3" />
+            Supply chain
+          </p>
           <h1 className="text-[24px] font-semibold leading-none tracking-tight sm:text-[32px]">
             Materials & vendors
           </h1>
-          <p className="mt-1 text-sm text-secondary">
+          <p className="mt-1.5 text-sm text-secondary">
             Purchase orders and suppliers for all projects
           </p>
         </div>
@@ -170,24 +211,74 @@ export function ProcurementPage() {
         </Button>
       </div>
 
+      {/* KPI strip */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatCard
+          icon={WalletCards}
+          tint="blue"
+          label="Total PO value"
+          value={formatInr(totalPoValue)}
+          sub={`across ${purchaseOrders.length} order${purchaseOrders.length === 1 ? '' : 's'}`}
+        />
+        <StatCard
+          icon={Truck}
+          tint="amber"
+          label="In pipeline"
+          value={openCount}
+          sub="draft → in transit"
+        />
+        <StatCard
+          icon={CheckCircle2}
+          tint="emerald"
+          label="Delivered"
+          value={deliveredCount}
+          sub="orders completed"
+        />
+        <StatCard
+          icon={Store}
+          tint="violet"
+          label="Vendors"
+          value={vendorList.length}
+          sub="in your directory"
+        />
+      </div>
+
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">
-        <Card className="min-w-0 overflow-hidden lg:col-span-2" padding={false}>
-          <div className="border-b border-border px-4 py-3 text-sm font-semibold sm:px-5 sm:py-4">
-            All purchase orders
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e4eaf3] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-24px_rgba(16,24,40,0.18)] lg:col-span-2">
+          <div className="flex items-center justify-between gap-2 border-b border-[#eef2f7] bg-gradient-to-r from-[#f8fafc] to-white px-4 py-3.5 sm:px-5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb] ring-1 ring-inset ring-[#dbeafe]">
+                <Package className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13.5px] font-bold text-[#0b1220]">
+                  Purchase orders
+                </p>
+                <p className="truncate text-[11px] text-[#94a3b8]">
+                  Tap Send to WhatsApp the list to the vendor
+                </p>
+              </div>
+            </div>
+            <span className="shrink-0 rounded-full bg-[#f1f5f9] px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#475569]">
+              {purchaseOrders.length}
+            </span>
           </div>
 
           {/* Mobile: stacked rows */}
-          <div className="divide-y divide-border md:hidden">
+          <div className="divide-y divide-[#eef2f7] md:hidden">
             {purchaseOrders.length === 0 ? (
               <p className="px-4 py-8 text-center text-sm text-secondary">
                 No purchase orders yet.
               </p>
             ) : (
               purchaseOrders.map((po) => (
-                <div key={po._id} className="space-y-2 px-4 py-3">
+                <div
+                  key={po._id}
+                  className="space-y-2 px-4 py-3 transition hover:bg-[#fbfcfe]"
+                >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-semibold">
+                      <p className="truncate text-sm font-bold text-[#0b1220]">
                         {po.poNumber}
                       </p>
                       <p className="mt-0.5 truncate text-xs text-secondary">
@@ -196,9 +287,12 @@ export function ProcurementPage() {
                     </div>
                     <StatusChip status={po.status} />
                   </div>
-                  <p className="text-right text-sm font-medium tabular-nums">
-                    {formatInr(po.value)}
-                  </p>
+                  <div className="flex items-center justify-between gap-2">
+                    <SendPoButton po={po} />
+                    <p className="text-right text-sm font-bold tabular-nums text-[#0b1220]">
+                      {formatInr(po.value)}
+                    </p>
+                  </div>
                 </div>
               ))
             )}
@@ -209,48 +303,106 @@ export function ProcurementPage() {
             <DataTable
               className="rounded-none border-0"
               columns={[
-                { key: 'poNumber', label: 'PO #' },
+                {
+                  key: 'poNumber',
+                  label: 'PO #',
+                  render: (v, row) => (
+                    <div>
+                      <p className="font-bold text-[#0b1220]">{v}</p>
+                      <p className="mt-0.5 text-[11px] text-[#94a3b8]">
+                        {row.items?.length
+                          ? `${row.items.length} line${row.items.length === 1 ? '' : 's'}`
+                          : '—'}
+                      </p>
+                    </div>
+                  ),
+                },
                 {
                   key: 'project',
                   label: 'Project',
-                  render: (_, row) => row.projectId?.name || '—',
+                  render: (_, row) => (
+                    <span className="text-[#475569]">
+                      {row.projectId?.name || '—'}
+                    </span>
+                  ),
                 },
                 {
                   key: 'vendor',
                   label: 'Vendor',
-                  render: (_, row) => row.vendor?.name || '—',
+                  render: (_, row) =>
+                    row.vendor?.name ? (
+                      <span className="flex items-center gap-2">
+                        <VendorAvatar name={row.vendor.name} size="sm" />
+                        <span className="font-medium">{row.vendor.name}</span>
+                      </span>
+                    ) : (
+                      '—'
+                    ),
                 },
                 {
                   key: 'value',
                   label: 'Value',
                   numeric: true,
                   align: 'right',
-                  render: (v) => formatInr(v),
+                  render: (v) => (
+                    <span className="font-bold text-[#0b1220]">
+                      {formatInr(v)}
+                    </span>
+                  ),
                 },
                 {
                   key: 'status',
                   label: 'Status',
                   render: (v) => <StatusChip status={v} />,
                 },
+                {
+                  key: 'send',
+                  label: '',
+                  render: (_, row) => <SendPoButton po={row} />,
+                },
               ]}
               data={purchaseOrders}
             />
           </div>
-        </Card>
+        </section>
 
-        <Card padding={false} className="min-w-0 overflow-hidden">
-          <div className="flex items-center justify-between gap-2 border-b border-border px-4 py-3 sm:px-5 sm:py-4">
-            <span className="text-sm font-semibold">Vendor directory</span>
-            <button
-              type="button"
-              onClick={() => setAddVendorOpen(true)}
-              className="inline-flex items-center gap-1 rounded-lg border border-[#e2e8f0] px-2 py-1 text-[11px] font-semibold text-[#475569] hover:bg-[#f8fafc]"
-            >
-              <Plus className="h-3 w-3" />
-              New
-            </button>
+        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e4eaf3] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-24px_rgba(16,24,40,0.18)]">
+          <div className="flex items-center justify-between gap-2 border-b border-[#eef2f7] bg-gradient-to-r from-[#f8fafc] to-white px-4 py-3.5 sm:px-5">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#f5f3ff] text-[#7c3aed] ring-1 ring-inset ring-[#ede9fe]">
+                <Store className="h-4 w-4" />
+              </span>
+              <div className="min-w-0">
+                <p className="text-[13.5px] font-bold text-[#0b1220]">
+                  Vendor directory
+                </p>
+                <p className="truncate text-[11px] text-[#94a3b8]">
+                  {vendorList.length} supplier{vendorList.length === 1 ? '' : 's'}
+                </p>
+              </div>
+            </div>
+            <div className="flex shrink-0 items-center gap-1.5">
+              {vendorList.length >= 2 && (
+                <button
+                  type="button"
+                  onClick={() => setCompareOpen(true)}
+                  className="inline-flex items-center gap-1 rounded-lg border border-[#d7e5fc] bg-[#eef4ff] px-2 py-1 text-[11px] font-semibold text-[#1d4ed8] transition hover:bg-[#e0ebff]"
+                >
+                  <ArrowLeftRight className="h-3 w-3" />
+                  Compare
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setAddVendorOpen(true)}
+                className="inline-flex items-center gap-1 rounded-lg border border-[#e2e8f0] px-2 py-1 text-[11px] font-semibold text-[#475569] transition hover:bg-[#f8fafc]"
+              >
+                <Plus className="h-3 w-3" />
+                New
+              </button>
+            </div>
           </div>
-          <div className="divide-y divide-border">
+          <div className="divide-y divide-[#eef2f7]">
             {vendorList.length === 0 ? (
               <div className="px-4 py-8 text-center">
                 <p className="text-sm text-secondary">No vendors yet.</p>
@@ -264,21 +416,119 @@ export function ProcurementPage() {
               </div>
             ) : (
               vendorList.map((v) => (
-                <div key={v._id} className="px-4 py-3 sm:px-5 sm:py-4">
-                  <p className="text-sm font-semibold">{v.name}</p>
-                  <p className="mt-0.5 text-xs text-secondary">
-                    {(v.categories || []).join(', ') || 'General'} · ★{' '}
-                    {v.rating}
-                  </p>
-                  <p className="mt-1 text-xs text-secondary">
-                    {v.paymentTerms}
-                    {v.phone ? ` · ${v.phone}` : ''}
-                  </p>
+                <div
+                  key={v._id}
+                  className="group px-4 py-3 transition hover:bg-[#fbfcfe] sm:px-5 sm:py-4"
+                >
+                  <div className="flex items-start gap-3">
+                    <VendorAvatar name={v.name} />
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p className="truncate text-sm font-bold text-[#0b1220]">
+                          {v.name}
+                        </p>
+                        <span className="flex shrink-0 items-center gap-1 pt-0.5">
+                          <Stars value={v.rating} />
+                          <span className="text-[11px] font-semibold text-[#94a3b8]">
+                            {v.rating}
+                          </span>
+                        </span>
+                      </div>
+                      <div className="mt-1 flex flex-wrap items-center gap-1">
+                        {((v.categories || []).length
+                          ? v.categories
+                          : ['General']
+                        ).map((c) => (
+                          <span
+                            key={c}
+                            className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[10.5px] font-semibold text-[#475569]"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                        <span className="rounded-full bg-[#fefce8] px-2 py-0.5 text-[10.5px] font-semibold text-[#a16207] ring-1 ring-inset ring-[#fef08a]">
+                          {v.paymentTerms}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-2.5 grid gap-x-4 gap-y-1 text-xs text-secondary sm:grid-cols-2">
+                    {v.contact && (
+                      <p className="flex items-center gap-1.5 truncate">
+                        <User2 className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        {v.contact}
+                      </p>
+                    )}
+                    {v.phone && (
+                      <p className="flex items-center gap-1.5 truncate tabular-nums">
+                        <PhoneIcon className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        {v.phone}
+                      </p>
+                    )}
+                    {v.email && (
+                      <p className="flex items-center gap-1.5 truncate">
+                        <Mail className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        {v.email}
+                      </p>
+                    )}
+                    {v.gst && (
+                      <p className="flex items-center gap-1.5 truncate">
+                        <BadgeCheck className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        GST:{' '}
+                        <span className="font-medium tabular-nums text-[#475569]">
+                          {v.gst}
+                        </span>
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="mt-3 flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      title={
+                        v.phone
+                          ? `Chat with ${v.contact || v.name} on WhatsApp`
+                          : 'Add a phone number to chat on WhatsApp'
+                      }
+                      onClick={() => {
+                        const url = whatsappLink(
+                          v.phone,
+                          `Hello ${v.contact || v.name},`,
+                        )
+                        if (!url) {
+                          toast('No phone number saved for this vendor', {
+                            type: 'error',
+                          })
+                          return
+                        }
+                        window.open(url, '_blank', 'noopener')
+                      }}
+                      className={cn(
+                        'inline-flex h-7 items-center gap-1 rounded-lg px-2 text-[11.5px] font-semibold text-white shadow-sm transition',
+                        v.phone
+                          ? 'bg-[#25D366] hover:bg-[#1fb958]'
+                          : 'bg-[#a7dcbb] hover:bg-[#98d2ad]',
+                      )}
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                      WhatsApp
+                    </button>
+                    <button
+                      type="button"
+                      title="Edit vendor details"
+                      onClick={() => setEditVendor(v)}
+                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#e2e8f0] px-2 text-[11.5px] font-semibold text-[#475569] transition hover:bg-white"
+                    >
+                      <Pencil className="h-3 w-3" />
+                      Edit
+                    </button>
+                  </div>
                 </div>
               ))
             )}
           </div>
-        </Card>
+        </section>
       </div>
 
       <Modal
@@ -291,19 +541,111 @@ export function ProcurementPage() {
           onSubmit={(body) => createVendor.mutate(body)}
         />
       </Modal>
+
+      <Modal
+        open={!!editVendor}
+        onClose={() => !updateVendor.isPending && setEditVendor(null)}
+        title={`Edit ${editVendor?.name || 'vendor'}`}
+      >
+        {editVendor && (
+          <VendorForm
+            initial={editVendor}
+            submitLabel="Save changes"
+            loading={updateVendor.isPending}
+            onSubmit={(body) =>
+              updateVendor.mutate({ id: editVendor._id, body })
+            }
+          />
+        )}
+      </Modal>
+
+      <VendorCompareModal
+        open={compareOpen}
+        onClose={() => setCompareOpen(false)}
+        vendors={vendorList}
+        purchaseOrders={purchaseOrders}
+      />
     </div>
   )
 }
 
-function VendorForm({ onSubmit, loading }) {
-  const [form, setForm] = useState({
-    name: '',
-    contact: '',
-    phone: '',
-    email: '',
-    categories: '',
-    paymentTerms: 'Net 30',
-    rating: '4',
+
+const STAT_TINTS = {
+  blue: 'bg-[#eff6ff] text-[#2563eb] ring-[#dbeafe]',
+  amber: 'bg-[#fffbeb] text-[#d97706] ring-[#fde68a]',
+  emerald: 'bg-[#ecfdf5] text-[#059669] ring-[#a7f3d0]',
+  violet: 'bg-[#f5f3ff] text-[#7c3aed] ring-[#ede9fe]',
+}
+
+function StatCard({ icon: Icon, label, value, sub, tint = 'blue' }) {
+  return (
+    <div className="rounded-2xl border border-[#e4eaf3] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(16,24,40,0.22)]">
+      <div className="flex items-center justify-between gap-2">
+        <p className="truncate text-[10.5px] font-bold uppercase tracking-[0.1em] text-[#8a98ac]">
+          {label}
+        </p>
+        <span
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl ring-1 ring-inset',
+            STAT_TINTS[tint],
+          )}
+        >
+          <Icon className="h-4 w-4" />
+        </span>
+      </div>
+      <p className="mt-1.5 truncate text-[20px] font-bold tabular-nums tracking-tight text-[#0b1220] sm:text-[22px]">
+        {value}
+      </p>
+      <p className="mt-0.5 truncate text-[11.5px] text-[#94a3b8]">{sub}</p>
+    </div>
+  )
+}
+
+const AVATAR_TINTS = [
+  'from-blue-500 to-indigo-500',
+  'from-violet-500 to-fuchsia-500',
+  'from-emerald-500 to-teal-500',
+  'from-amber-500 to-orange-500',
+  'from-rose-500 to-pink-500',
+]
+
+function VendorAvatar({ name = '', size = 'md', className }) {
+  const initials =
+    name
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((w) => w[0])
+      .join('')
+      .toUpperCase() || '?'
+  const tint = AVATAR_TINTS[(name.charCodeAt(0) || 0) % AVATAR_TINTS.length]
+  return (
+    <span
+      className={cn(
+        'flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br font-bold text-white shadow-sm',
+        size === 'sm' ? 'h-6 w-6 text-[9px]' : 'h-9 w-9 text-[12px]',
+        tint,
+        className,
+      )}
+    >
+      {initials}
+    </span>
+  )
+}
+
+function VendorForm({ onSubmit, loading, initial = null, submitLabel = 'Add vendor' }) {
+  const [form, setForm] = useState(() => {
+    const { code, number } = splitPhone(initial?.phone)
+    return {
+      name: initial?.name || '',
+      contact: initial?.contact || '',
+      phoneCode: code,
+      phone: number,
+      email: initial?.email || '',
+      gst: initial?.gst || '',
+      categories: (initial?.categories || []).join(', '),
+      paymentTerms: initial?.paymentTerms || 'Net 30',
+      rating: String(initial?.rating || 4),
+    }
   })
 
   const set = (key) => (e) => setForm({ ...form, [key]: e.target.value })
@@ -320,8 +662,9 @@ function VendorForm({ onSubmit, loading }) {
         onSubmit({
           name: form.name.trim(),
           contact: form.contact.trim(),
-          phone: form.phone.trim(),
+          phone: buildPhone(form.phoneCode, form.phone),
           email: form.email.trim(),
+          gst: form.gst.trim().toUpperCase(),
           categories: form.categories
             .split(',')
             .map((c) => c.trim())
@@ -331,33 +674,66 @@ function VendorForm({ onSubmit, loading }) {
         })
       }}
     >
-      <Input
-        label="Vendor name"
-        value={form.name}
-        onChange={set('name')}
-        placeholder="e.g. BlueRock Materials"
-      />
       <div className="grid gap-4 sm:grid-cols-2">
+        <Input
+          label="Vendor name"
+          value={form.name}
+          onChange={set('name')}
+          placeholder="e.g. BlueRock Materials"
+        />
         <Input
           label="Contact person"
           value={form.contact}
           onChange={set('contact')}
           placeholder="e.g. Ramesh"
         />
+      </div>
+      <div className="flex gap-2">
+        <div className="w-[104px] shrink-0">
+          <Select
+            label="Code"
+            value={form.phoneCode}
+            onChange={set('phoneCode')}
+            options={COUNTRY_CODES.map((c) => ({
+              value: c.code,
+              label: c.code,
+            }))}
+          />
+        </div>
+        <div className="flex-1">
+          <Input
+            label="Phone (WhatsApp)"
+            type="tel"
+            inputMode="numeric"
+            value={form.phone}
+            onChange={(e) =>
+              setForm({
+                ...form,
+                phone: e.target.value.replace(/[^\d\s-]/g, ''),
+              })
+            }
+            placeholder="98765 43210"
+          />
+        </div>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
         <Input
-          label="Phone"
-          value={form.phone}
-          onChange={set('phone')}
-          placeholder="98xxxxxxxx"
+          label="Email"
+          type="email"
+          value={form.email}
+          onChange={set('email')}
+          placeholder="sales@vendor.com"
+        />
+        <Input
+          label="GST number"
+          value={form.gst}
+          onChange={(e) =>
+            setForm({ ...form, gst: e.target.value.toUpperCase() })
+          }
+          placeholder="22AAAAA0000A1Z5"
+          maxLength={15}
         />
       </div>
-      <Input
-        label="Email"
-        type="email"
-        value={form.email}
-        onChange={set('email')}
-        placeholder="sales@vendor.com"
-      />
       <Input
         label="Supplies (comma separated)"
         value={form.categories}
@@ -378,7 +754,7 @@ function VendorForm({ onSubmit, loading }) {
           ]}
         />
         <Select
-          label="Rating"
+          label="Rating (review)"
           value={form.rating}
           onChange={set('rating')}
           options={[
@@ -396,9 +772,283 @@ function VendorForm({ onSubmit, loading }) {
         loading={loading}
         disabled={!form.name.trim()}
       >
-        Add vendor
+        {submitLabel}
       </Button>
     </form>
+  )
+}
+
+/**
+ * Side-by-side vendor comparison — pick up to 4 vendors and compare their
+ * profile plus real order history computed from purchase orders.
+ */
+function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
+  const [selected, setSelected] = useState([])
+
+  useEffect(() => {
+    if (open) setSelected(vendors.slice(0, 3).map((v) => v._id))
+  }, [open]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stats = useMemo(() => {
+    const map = {}
+    for (const po of purchaseOrders) {
+      const vid = po.vendor?._id || po.vendor
+      if (!vid) continue
+      const s = (map[vid] ||= { orders: 0, total: 0, delivered: 0, last: null })
+      s.orders += 1
+      s.total += Number(po.value) || 0
+      if (po.status === 'delivered') s.delivered += 1
+      const d = po.createdAt ? new Date(po.createdAt) : null
+      if (d && (!s.last || d > s.last)) s.last = d
+    }
+    return map
+  }, [purchaseOrders])
+
+  const chosen = vendors.filter((v) => selected.includes(v._id))
+  const bestRating = Math.max(0, ...chosen.map((v) => Number(v.rating) || 0))
+  const bestTotal = Math.max(0, ...chosen.map((v) => stats[v._id]?.total || 0))
+
+  const toggle = (id) => {
+    setSelected((prev) => {
+      if (prev.includes(id)) return prev.filter((x) => x !== id)
+      if (prev.length >= 4) {
+        toast('Compare up to 4 vendors at a time', { type: 'info' })
+        return prev
+      }
+      return [...prev, id]
+    })
+  }
+
+  const rowLabel =
+    'sticky left-0 z-[1] bg-white py-2.5 pr-3 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-[#8a98ac]'
+  const cell = 'min-w-[160px] py-2.5 pr-4 align-top text-[13px] text-[#334155]'
+
+  return (
+    <Modal open={open} onClose={onClose} title="Compare vendors" size="xl">
+      <p className="text-[12px] text-secondary">
+        Pick up to 4 vendors to see them side by side. Order history is
+        calculated from your purchase orders.
+      </p>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {vendors.map((v) => {
+          const on = selected.includes(v._id)
+          return (
+            <button
+              key={v._id}
+              type="button"
+              onClick={() => toggle(v._id)}
+              className={cn(
+                'rounded-full px-3 py-1 text-[12px] font-semibold transition',
+                on
+                  ? 'bg-[#2563eb] text-white shadow-sm'
+                  : 'bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]',
+              )}
+            >
+              {v.name}
+            </button>
+          )
+        })}
+      </div>
+
+      {chosen.length < 2 ? (
+        <p className="py-10 text-center text-sm text-secondary">
+          Select at least two vendors to compare.
+        </p>
+      ) : (
+        <div className="mt-4 overflow-x-auto rounded-xl border border-[#e8eef4]">
+          <table className="w-full border-separate border-spacing-0 px-1 text-left">
+            <thead>
+              <tr>
+                <th className={cn(rowLabel, 'pl-3')} />
+                {chosen.map((v) => {
+                  const topRated =
+                    Number(v.rating) === bestRating && chosen.length > 1
+                  const mostBusiness =
+                    bestTotal > 0 && (stats[v._id]?.total || 0) === bestTotal
+                  return (
+                    <th
+                      key={v._id}
+                      className="min-w-[160px] border-b border-[#e8eef4] py-3 pr-4 align-top"
+                    >
+                      <p className="text-[14px] font-bold text-[#0f172a]">
+                        {v.name}
+                      </p>
+                      <div className="mt-1 flex flex-wrap gap-1">
+                        {topRated && (
+                          <span className="rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-700 ring-1 ring-inset ring-amber-200">
+                            Top rated
+                          </span>
+                        )}
+                        {mostBusiness && (
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-emerald-700 ring-1 ring-inset ring-emerald-200">
+                            Most business
+                          </span>
+                        )}
+                      </div>
+                    </th>
+                  )
+                })}
+              </tr>
+            </thead>
+            <tbody className="[&>tr>td]:border-b [&>tr>td]:border-[#f1f5f9] [&>tr:last-child>td]:border-0">
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Rating</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cell}>
+                    <span className="flex items-center gap-1.5">
+                      <Stars value={v.rating} />
+                      <span className="text-[12px] font-semibold text-[#64748b]">
+                        {v.rating}/5
+                      </span>
+                    </span>
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Contact person</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cell}>
+                    {v.contact || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Phone</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cn(cell, 'tabular-nums')}>
+                    {v.phone || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Email</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cn(cell, 'break-all')}>
+                    {v.email || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>GST no</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cn(cell, 'tabular-nums')}>
+                    {v.gst || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Supplies</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cell}>
+                    {(v.categories || []).length ? (
+                      <span className="flex flex-wrap gap-1">
+                        {v.categories.map((c) => (
+                          <span
+                            key={c}
+                            className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[11px] font-medium text-[#475569]"
+                          >
+                            {c}
+                          </span>
+                        ))}
+                      </span>
+                    ) : (
+                      '—'
+                    )}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Payment terms</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cell}>
+                    {v.paymentTerms || '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Orders placed</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cn(cell, 'tabular-nums')}>
+                    {stats[v._id]?.orders || 0}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Total business</td>
+                {chosen.map((v) => {
+                  const total = stats[v._id]?.total || 0
+                  return (
+                    <td
+                      key={v._id}
+                      className={cn(
+                        cell,
+                        'font-semibold tabular-nums',
+                        bestTotal > 0 && total === bestTotal
+                          ? 'text-emerald-700'
+                          : 'text-[#0f172a]',
+                      )}
+                    >
+                      {formatInr(total)}
+                    </td>
+                  )
+                })}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Delivered orders</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cn(cell, 'tabular-nums')}>
+                    {stats[v._id]?.delivered || 0}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')}>Last order</td>
+                {chosen.map((v) => (
+                  <td key={v._id} className={cell}>
+                    {stats[v._id]?.last
+                      ? format(stats[v._id].last, 'd MMM yyyy')
+                      : '—'}
+                  </td>
+                ))}
+              </tr>
+              <tr>
+                <td className={cn(rowLabel, 'pl-3')} />
+                {chosen.map((v) => (
+                  <td key={v._id} className={cell}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const url = whatsappLink(
+                          v.phone,
+                          `Hello ${v.contact || v.name},`,
+                        )
+                        if (!url) {
+                          toast('No phone number saved for this vendor', {
+                            type: 'error',
+                          })
+                          return
+                        }
+                        window.open(url, '_blank', 'noopener')
+                      }}
+                      className={cn(
+                        'inline-flex h-7 items-center gap-1 rounded-lg px-2.5 text-[11.5px] font-semibold text-white shadow-sm transition',
+                        v.phone
+                          ? 'bg-[#25D366] hover:bg-[#1fb958]'
+                          : 'bg-[#a7dcbb] hover:bg-[#98d2ad]',
+                      )}
+                    >
+                      <MessageCircle className="h-3 w-3" />
+                      WhatsApp
+                    </button>
+                  </td>
+                ))}
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      )}
+    </Modal>
   )
 }
 

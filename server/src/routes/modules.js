@@ -452,6 +452,43 @@ router.post(
   }),
 )
 
+router.patch(
+  '/vendors/:id',
+  requireAuth,
+  requirePermission('procurement'),
+  asyncHandler(async (req, res) => {
+    const vendor = await Vendor.findById(req.params.id)
+    assertTenantDoc(vendor, req, 'Vendor')
+    const allowed = [
+      'name',
+      'contact',
+      'email',
+      'phone',
+      'gst',
+      'categories',
+      'rating',
+      'paymentTerms',
+    ]
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) vendor[key] = req.body[key]
+    }
+    await vendor.save()
+    res.json({ success: true, vendor })
+  }),
+)
+
+router.delete(
+  '/vendors/:id',
+  requireAuth,
+  requirePermission('procurement'),
+  asyncHandler(async (req, res) => {
+    const vendor = await Vendor.findById(req.params.id)
+    assertTenantDoc(vendor, req, 'Vendor')
+    await vendor.deleteOne()
+    res.json({ success: true })
+  }),
+)
+
 router.get(
   '/purchase-orders',
   requireAuth,
@@ -463,7 +500,7 @@ router.get(
       filter.projectId = req.query.projectId
     }
     const pos = await PurchaseOrder.find(filter)
-      .populate('vendor', 'name contact categories rating')
+      .populate('vendor', 'name contact phone email gst categories rating paymentTerms')
       .populate('projectId', 'name')
       .populate('createdBy', 'name')
       .sort({ createdAt: -1 })
@@ -485,7 +522,7 @@ router.post(
           req.body.poNumber || `PO-${Math.floor(1000 + Math.random() * 9000)}`,
       }),
     )
-    await po.populate('vendor', 'name')
+    await po.populate('vendor', 'name contact phone gst')
     res.status(201).json({ success: true, purchaseOrder: po })
   }),
 )
@@ -499,7 +536,7 @@ router.patch(
     assertTenantDoc(po, req, 'PO')
     Object.assign(po, req.body)
     await po.save()
-    await po.populate('vendor', 'name')
+    await po.populate('vendor', 'name contact phone gst')
     res.json({ success: true, purchaseOrder: po })
   }),
 )

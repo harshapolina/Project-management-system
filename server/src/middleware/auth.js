@@ -22,7 +22,7 @@ export function signRefreshToken(user) {
       tenantId: user.tenantId ? String(user.tenantId) : null,
     },
     process.env.JWT_REFRESH_SECRET,
-    { expiresIn: process.env.JWT_REFRESH_EXPIRES || '7d' },
+    { expiresIn: process.env.JWT_REFRESH_EXPIRES || '30d' },
   )
 }
 

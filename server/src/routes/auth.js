@@ -141,9 +141,10 @@ router.post(
 
     const accessToken = signAccessToken(user)
     const newRefresh = signRefreshToken(user)
-    user.refreshTokens = user.refreshTokens
-      .filter((t) => t !== refreshToken)
-      .concat(newRefresh)
+    // Keep the presented token valid too (grace for a second tab / a request
+    // that raced this one), instead of instantly revoking it — revoking used
+    // to log users out mid-session. Cap the list so it can't grow unbounded.
+    user.refreshTokens = [...user.refreshTokens, newRefresh].slice(-10)
     await user.save()
 
     res.json({ success: true, accessToken, refreshToken: newRefresh })
