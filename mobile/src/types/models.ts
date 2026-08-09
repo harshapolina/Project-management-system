@@ -120,6 +120,7 @@ export interface Project {
   stages?: ProjectStage[]
   projectManager?: { _id: string; name: string; avatar?: string }
   members?: ProjectMember[]
+  meetingNotes?: import('./ops').MeetingNote[]
   createdAt: string
   updatedAt: string
 }

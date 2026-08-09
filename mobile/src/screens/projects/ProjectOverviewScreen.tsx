@@ -53,9 +53,14 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   }
 
   const { project, stats } = data
-  const tabs: { key: 'ProjectTasks' | 'ProjectFiles' | 'ProjectTeam'; label: string; icon: 'checkbox-outline' | 'folder-outline' | 'people-outline' }[] = [
+  type TabKey = 'ProjectTasks' | 'ProjectFiles' | 'ProjectNotes' | 'SiteFeed' | 'PurchaseOrders' | 'ProjectTeam'
+  type TabIcon = 'checkbox-outline' | 'folder-outline' | 'chatbubble-ellipses-outline' | 'camera-outline' | 'cart-outline' | 'people-outline'
+  const tabs: { key: TabKey; label: string; icon: TabIcon }[] = [
     { key: 'ProjectTasks', label: 'Tasks', icon: 'checkbox-outline' },
     { key: 'ProjectFiles', label: 'Files', icon: 'folder-outline' },
+    { key: 'ProjectNotes', label: 'Notes', icon: 'chatbubble-ellipses-outline' },
+    ...(caps.siteFeed ? [{ key: 'SiteFeed' as const, label: 'Site', icon: 'camera-outline' as const }] : []),
+    ...(caps.procurement ? [{ key: 'PurchaseOrders' as const, label: 'Orders', icon: 'cart-outline' as const }] : []),
     ...(caps.manageProjects ? [{ key: 'ProjectTeam' as const, label: 'Team', icon: 'people-outline' as const }] : []),
   ]
 
@@ -79,7 +84,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
           {project.description ? <Text style={styles.description}>{project.description}</Text> : null}
         </View>
 
-        <View style={styles.tabRow}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
           {tabs.map((t) => (
             <Pressable
               key={t.key}
@@ -91,7 +96,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
               <Text style={styles.tabLabel}>{t.label}</Text>
             </Pressable>
           ))}
-        </View>
+        </ScrollView>
 
         <View style={styles.statsGrid}>
           <Card style={styles.statCard}>
@@ -168,9 +173,9 @@ const styles = StyleSheet.create({
   name: { ...typography.h2, color: colors.textPrimary, flex: 1 },
   client: { ...typography.body, color: colors.textSecondary },
   description: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-  tabRow: { flexDirection: 'row', gap: spacing.sm },
+  tabRow: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.lg },
   tabButton: {
-    flex: 1,
+    width: 84,
     alignItems: 'center',
     gap: 4,
     backgroundColor: colors.surface,

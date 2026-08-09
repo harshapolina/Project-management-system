@@ -90,3 +90,29 @@ export const PRIORITY_LABELS: Record<string, string> = {
   medium: 'Normal',
   low: 'Low',
 }
+
+/** Ported from client/src/lib/format.js `stageLabel` — covers both project
+ * stages and lead pipeline stages, which share this one lookup on web. */
+export const STAGE_LABELS: Record<string, string> = {
+  design: 'Design',
+  planning: 'Planning / BOQ',
+  procurement: 'Procurement',
+  execution: 'Execution',
+  handover: 'QC / Handover',
+  new_enquiry: 'New Enquiry',
+  site_visit: 'Site Visit',
+  quotation_sent: 'Quotation Sent',
+  negotiation: 'Negotiation',
+  won: 'Won',
+  lost: 'Lost',
+}
+
+export function stageLabel(key?: string): string {
+  if (!key) return ''
+  return STAGE_LABELS[key] || key.replace(/_/g, ' ')
+}
+
+export function formatInr(n?: number): string {
+  const value = Number(n) || 0
+  return `₹${value.toLocaleString('en-IN')}`
+}

@@ -4,6 +4,7 @@ import { HomeNavigator } from './HomeNavigator'
 import { ProjectNavigator } from './ProjectNavigator'
 import { InboxNavigator } from './InboxNavigator'
 import { ImpactScreen } from '../screens/impact/ImpactScreen'
+import { MoreNavigator } from './MoreNavigator'
 import { ProfileNavigator } from './ProfileNavigator'
 import { colors } from '../constants/theme'
 import { useAuthStore } from '../store/authStore'
@@ -17,12 +18,15 @@ const ICONS: Record<keyof RootTabParamList, keyof typeof Ionicons.glyphMap> = {
   Projects: 'briefcase',
   Impact: 'trophy',
   Inbox: 'mail',
+  More: 'grid',
   Profile: 'person',
 }
 
 export function AppNavigator() {
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
+  const hasMore =
+    caps.leads || caps.boq || caps.procurement || caps.finance || caps.siteFeed || caps.portfolio || caps.companyAdmin || caps.platform
 
   return (
     <Tab.Navigator
@@ -40,6 +44,7 @@ export function AppNavigator() {
       {caps.projects ? <Tab.Screen name="Projects" component={ProjectNavigator} /> : null}
       {caps.impact ? <Tab.Screen name="Impact" component={ImpactScreen} options={{ title: 'Impact' }} /> : null}
       <Tab.Screen name="Inbox" component={InboxNavigator} />
+      {hasMore ? <Tab.Screen name="More" component={MoreNavigator} /> : null}
       <Tab.Screen name="Profile" component={ProfileNavigator} />
     </Tab.Navigator>
   )
