@@ -44,6 +44,79 @@ const STAGE_DEFS = [
   { key: 'handover', label: 'QC / Handover' },
 ]
 
+/** Create a personal follow-up task + task_assigned popup when an enquiry is owned. */
+async function createEnquiryFollowUpTask(req, lead, assigneeId) {
+  if (!assigneeId) return null
+
+  const title = `Enquiry follow-up · ${lead.clientName}`
+  const details = [
+    lead.contactName ? `Contact: ${lead.contactName}` : null,
+    lead.phone ? `Phone: ${lead.phone}` : null,
+    lead.email ? `Email: ${lead.email}` : null,
+    lead.source ? `Source: ${lead.source}` : null,
+    lead.estimatedValue
+      ? `Est. value: ₹${Number(lead.estimatedValue).toLocaleString('en-IN')}`
+      : null,
+    lead.notes ? `\n${lead.notes}` : null,
+  ]
+    .filter(Boolean)
+    .join('\n')
+
+  const task = await Task.create(
+    withTenant(req, {
+      isPersonal: true,
+      title,
+      description: details || 'Follow up on this new enquiry.',
+      status: 'todo',
+      priority: 'high',
+      assignee: assigneeId,
+      createdBy: req.user._id,
+      dueDate: lead.nextFollowUp || undefined,
+      tags: ['enquiry'],
+      customFields: {
+        leadId: String(lead._id),
+        source: 'enquiry_assignment',
+      },
+    }),
+  )
+
+  await ActivityLog.create(
+    withTenant(req, {
+      actor: req.user._id,
+      type: 'task_created',
+      message: `${req.user.name} created this task: ${task.title}`,
+      meta: {
+        taskId: task._id,
+        isPersonal: true,
+        title: task.title,
+        field: 'created',
+        leadId: String(lead._id),
+      },
+    }),
+  )
+
+  await notifyUser(req, {
+    userId: assigneeId,
+    type: 'task_assigned',
+    title: `${req.user.name} assigned you a task`,
+    body: title,
+    link: '/?view=assigned',
+    meta: {
+      taskId: String(task._id),
+      taskTitle: title,
+      projectId: null,
+      projectName: 'New enquiry',
+      priority: 'high',
+      status: 'todo',
+      dueDate: task.dueDate || null,
+      actor: actorSummary(req.user),
+      leadId: String(lead._id),
+    },
+  })
+
+  return task
+}
+
 /* ─── Leads ─── */
 router.get(
   '/leads',
@@ -51,7 +124,7 @@ router.get(
   requirePermission('leads'),
   asyncHandler(async (req, res) => {
     const leads = await Lead.find(tenantFilter(req, {}))
-      .populate('owner', 'name avatar')
+      .populate('owner', 'name avatar role title')
       .sort({ updatedAt: -1 })
     res.json({ success: true, leads })
   }),
@@ -62,7 +135,25 @@ router.post(
   requireAuth,
   requirePermission('leads'),
   asyncHandler(async (req, res) => {
-    const lead = await Lead.create(withTenant(req, { ...req.body, owner: req.user._id }))
+    const ownerId = req.body.owner || req.user._id
+    const lead = await Lead.create(
+      withTenant(req, {
+        clientName: req.body.clientName,
+        contactName: req.body.contactName || '',
+        email: req.body.email || '',
+        phone: req.body.phone || '',
+        source: req.body.source || 'Website',
+        estimatedValue: Number(req.body.estimatedValue) || 0,
+        stage: req.body.stage || 'new_enquiry',
+        notes: req.body.notes || '',
+        nextFollowUp: req.body.nextFollowUp || undefined,
+        owner: ownerId,
+      }),
+    )
+    await lead.populate('owner', 'name avatar role title')
+
+    await createEnquiryFollowUpTask(req, lead, ownerId)
+
     res.status(201).json({ success: true, lead })
   }),
 )
@@ -74,9 +165,37 @@ router.patch(
   asyncHandler(async (req, res) => {
     const lead = await Lead.findById(req.params.id)
     assertTenantDoc(lead, req, 'Lead')
-    Object.assign(lead, req.body)
+
+    const prevOwner = lead.owner ? String(lead.owner) : ''
+    const allowed = [
+      'clientName',
+      'contactName',
+      'email',
+      'phone',
+      'source',
+      'estimatedValue',
+      'stage',
+      'notes',
+      'nextFollowUp',
+      'owner',
+    ]
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) {
+        lead[key] = req.body[key] === '' && key === 'owner' ? null : req.body[key]
+      }
+    }
     await lead.save()
-    await lead.populate('owner', 'name avatar')
+    await lead.populate('owner', 'name avatar role title')
+
+    const nextOwner = lead.owner?._id
+      ? String(lead.owner._id)
+      : lead.owner
+        ? String(lead.owner)
+        : ''
+    if (nextOwner && nextOwner !== prevOwner) {
+      await createEnquiryFollowUpTask(req, lead, nextOwner)
+    }
+
     res.json({ success: true, lead })
   }),
 )

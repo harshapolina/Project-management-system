@@ -71,6 +71,12 @@ const ALL_PRIMARY_NAV = [
     capability: 'projects',
   },
   {
+    to: '/leads',
+    label: 'New enquiries',
+    icon: Building2,
+    capability: 'leads',
+  },
+  {
     to: '/?view=assigned',
     label: 'My work',
     icon: CheckSquare,
@@ -81,12 +87,6 @@ const ALL_PRIMARY_NAV = [
     label: 'BOQ / Quotes',
     icon: FileSpreadsheet,
     capability: 'boq',
-  },
-  {
-    to: '/leads',
-    label: 'New enquiries',
-    icon: Building2,
-    capability: 'leads',
   },
   {
     to: '/procurement',

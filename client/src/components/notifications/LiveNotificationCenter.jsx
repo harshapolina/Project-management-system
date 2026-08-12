@@ -33,6 +33,14 @@ const TYPES = {
     card: 'border-[#bfdbfe] bg-[#eff6ff]',
     cta: 'Review task',
   },
+  lead_assigned: {
+    icon: ClipboardCheck,
+    label: 'TASK ASSIGNED',
+    labelColor: 'text-[#1d4ed8]',
+    iconColor: 'text-[#2563eb]',
+    card: 'border-[#bfdbfe] bg-[#eff6ff]',
+    cta: 'Review task',
+  },
   mention: {
     icon: AtSign,
     label: 'MENTION',
@@ -66,7 +74,7 @@ const PRIORITY_LABEL = {
   low: 'Low',
 }
 
-const POPUP_TYPES = new Set(['task_assigned', 'task', 'mention', 'mail'])
+const POPUP_TYPES = new Set(['task_assigned', 'task', 'lead_assigned', 'mention', 'mail'])
 const SEEN_KEY = 'cubic-live-notif-seen'
 const RECENT_MS = 10 * 60 * 1000
 
