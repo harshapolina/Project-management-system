@@ -15,6 +15,7 @@ export {
   SiteUpdate,
   Snag,
 } from './ProcurementFinance.js'
+export { VendorInvoice } from './VendorInvoice.js'
 export { Message } from './Message.js'
 export { WorkspaceSettings } from './WorkspaceSettings.js'
 export { CustomFieldDefinition } from './CustomField.js'

@@ -29,6 +29,7 @@ import {
   Trophy,
   Package,
   History,
+  Receipt,
 } from 'lucide-react'
 import { api, useAuthStore } from '../../lib/api'
 import { useUiStore } from '../../store/uiStore'
@@ -97,6 +98,12 @@ const ALL_PRIMARY_NAV = [
     to: '/finance',
     label: 'Money',
     icon: Wallet,
+    capability: 'finance',
+  },
+  {
+    to: '/billing',
+    label: 'Billing',
+    icon: Receipt,
     capability: 'finance',
   },
   {

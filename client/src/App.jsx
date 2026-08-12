@@ -34,6 +34,7 @@ import {
 } from './pages/project/ProjectModules'
 import { LeadsPage } from './pages/LeadsPage'
 import { ProcurementPage, FinancePage } from './pages/OpsPages'
+import { BillingPage } from './pages/BillingPage'
 import {
   ReportsPage,
   SettingsPage,
@@ -273,6 +274,16 @@ export default function App() {
                 <CapabilityGate capability="finance">
                   <PagePad>
                     <FinancePage />
+                  </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/billing"
+              element={
+                <CapabilityGate capability="finance">
+                  <PagePad>
+                    <BillingPage />
                   </PagePad>
                 </CapabilityGate>
               }
