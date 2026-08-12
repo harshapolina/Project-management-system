@@ -46,15 +46,15 @@ Password for all: `demo1234`
 | Site Supervisor | vikram@cubic.studio |
 | Client | priya@client.com |
 
-## Deploy (Vercel + Render)
+## Deploy (Vercel)
 
 Full checklist: **[DEPLOY.md](DEPLOY.md)**
 
-- Frontend → **Vercel** (`client/`, set `VITE_API_URL`)
-- API → **Render** (`server/`, set `MONGODB_URI`, `CLIENT_URL`, JWT secrets)
+- Frontend → **Vercel** (`client/`, `VITE_API_URL=/api`)
+- API → **Vercel** (`server/`, set `MONGODB_URI`, `CLIENT_URL`, JWT secrets)
 - Database → **MongoDB Atlas**
 
-After Vercel gives you a URL, set Render `CLIENT_URL` to that URL and redeploy the API once (CORS).
+API production URL: `https://project-management-system-msmw.vercel.app`
 
 ## Current progress
 
@@ -63,4 +63,4 @@ After Vercel gives you a URL, set Render `CLIENT_URL` to that URL and redeploy t
 - [x] Auth (login / register / forgot password / onboarding)
 - [x] Home / My Work (real API + optimistic task toggle)
 - [x] Spaces, Projects, Board/List, BOQ, Files, Channels, Inbox
-- [x] Deploy configs (Vercel + Render)
+- [x] Deploy configs (Vercel frontend + API)

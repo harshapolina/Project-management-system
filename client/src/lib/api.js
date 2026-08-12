@@ -50,7 +50,7 @@ export function setTenantSlug(slug) {
   else localStorage.removeItem('cubic-tenant-slug')
 }
 
-/** Origin of the API host (no trailing slash), e.g. https://cubic-api.onrender.com */
+/** Origin of the API host (no trailing slash), e.g. https://project-management-system-msmw.vercel.app */
 export function apiOrigin() {
   const raw = (import.meta.env.VITE_API_URL || '').trim()
   if (!raw || raw.startsWith('/')) {
@@ -67,7 +67,7 @@ export function apiOrigin() {
 
 /**
  * Resolve asset URLs stored as /uploads/... so they hit the API host
- * (Render) when the SPA is on Vercel.
+ * when the SPA is on a different Vercel project.
  */
 export function assetUrl(url) {
   if (!url) return ''
