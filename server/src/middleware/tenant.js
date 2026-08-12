@@ -92,7 +92,7 @@ async function backfillTenantId(Model, tenantId) {
   )
 }
 
-export async function ensureDefaultTenant() {
+export async function ensureDefaultTenant({ skipBackfill = false } = {}) {
   const slug = process.env.DEFAULT_TENANT_SLUG || 'cubic'
   let tenant = await Tenant.findOne({ slug })
   if (!tenant) {
@@ -103,6 +103,8 @@ export async function ensureDefaultTenant() {
       seatLimit: Number(process.env.DEFAULT_TENANT_SEATS) || 100,
     })
   }
+
+  if (skipBackfill) return tenant
 
   const id = tenant._id
   await Promise.all([
