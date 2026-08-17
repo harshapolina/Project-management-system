@@ -1,3 +1,5 @@
+import { applyTenantFeatureLimitsToCapabilities } from './tenantFeatures.js'
+
 /** Roles that can open the People / Admin portal */
 export const ADMIN_PORTAL_ROLES = ['admin', 'owner', 'hr']
 
@@ -95,10 +97,8 @@ export function canCreateProjects(user) {
   return !!permissionsForUser(user)['projects.create']
 }
 
-/**
- * Capability map used by nav, route gates, and project tabs.
- */
-export function capabilitiesForUser(user) {
+/** Capability map used by nav, route gates, and project tabs. */
+export function capabilitiesForUser(user, tenant = null) {
   if (!user) {
     return {
       companyAdmin: false,
@@ -135,7 +135,7 @@ export function capabilitiesForUser(user) {
   const employee = EMPLOYEE_ROLES.includes(role)
   const isClientOrVendor = role === 'client' || role === 'vendor'
 
-  return {
+  const base = {
     companyAdmin: companyAdmin || !!user.isPlatformAdmin,
     people: !!permissions.people,
     managePeople:
@@ -170,6 +170,10 @@ export function capabilitiesForUser(user) {
     },
     employee,
   }
+
+  if (user.isPlatformAdmin) return base
+
+  return applyTenantFeatureLimitsToCapabilities(base, tenant)
 }
 
 /**

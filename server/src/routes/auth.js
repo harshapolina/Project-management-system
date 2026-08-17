@@ -13,8 +13,23 @@ import {
   assertSeatAvailable,
   withTenant,
 } from '../middleware/tenant.js'
+import { normalizeTenantFeatures } from '../lib/tenantFeatures.js'
 
 const router = express.Router()
+
+function serializeTenant(tenant) {
+  if (!tenant) return null
+  return {
+    id: tenant._id,
+    name: tenant.name,
+    slug: tenant.slug,
+    status: tenant.status,
+    seatLimit: tenant.seatLimit,
+    subscriptionPlan: tenant.subscriptionPlan || 'pro',
+    cancelledAt: tenant.cancelledAt || null,
+    features: normalizeTenantFeatures(tenant.features),
+  }
+}
 
 const registerSchema = z.object({
   name: z.string().min(2),
@@ -110,12 +125,7 @@ router.post(
       user: user.toSafeJSON(),
       accessToken,
       refreshToken,
-      tenant: {
-        id: req.tenant._id,
-        name: req.tenant.name,
-        slug: req.tenant.slug,
-        seatLimit: req.tenant.seatLimit,
-      },
+      tenant: serializeTenant(req.tenant),
     })
   }),
 )
@@ -172,28 +182,16 @@ router.get(
     let tenant = null
     if (req.user.tenantId) {
       tenant = await Tenant.findById(req.user.tenantId).select(
-        'name slug status seatLimit',
+        'name slug status seatLimit subscriptionPlan cancelledAt features',
       )
     }
     res.json({
       success: true,
       user: req.user.toSafeJSON(),
       tenant: tenant
-        ? {
-            id: tenant._id,
-            name: tenant.name,
-            slug: tenant.slug,
-            status: tenant.status,
-            seatLimit: tenant.seatLimit,
-          }
+        ? serializeTenant(tenant)
         : req.tenant
-          ? {
-              id: req.tenant._id,
-              name: req.tenant.name,
-              slug: req.tenant.slug,
-              status: req.tenant.status,
-              seatLimit: req.tenant.seatLimit,
-            }
+          ? serializeTenant(req.tenant)
           : null,
     })
   }),
