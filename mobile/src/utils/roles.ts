@@ -7,21 +7,23 @@ export const ADMIN_PORTAL_ROLES: Role[] = ['admin', 'owner', 'hr']
 export const COMPANY_ADMIN_ROLES: Role[] = ['admin', 'owner']
 export const OPS_PORTAL_ROLES: Role[] = ['admin', 'owner', 'hr']
 
-const ACCESS_TOGGLE_KEYS = [
-  'projects.create',
-  'projects.manage',
-  'tasks.create',
-  'tasks.manage',
-  'boq',
-  'procurement',
-  'site',
-  'files.manage',
-  'finance',
-  'leads',
-  'portfolio',
-  'impact',
-  'people',
-] as const
+export const ACCESS_TOGGLES: { key: string; label: string; group: string }[] = [
+  { key: 'projects.create', label: 'Create projects', group: 'Projects' },
+  { key: 'projects.manage', label: 'Manage projects & team', group: 'Projects' },
+  { key: 'tasks.create', label: 'Create tasks', group: 'Tasks' },
+  { key: 'tasks.manage', label: 'Manage all task fields', group: 'Tasks' },
+  { key: 'boq', label: 'BOQ / Quotes', group: 'Modules' },
+  { key: 'procurement', label: 'Materials', group: 'Modules' },
+  { key: 'site', label: 'Site updates', group: 'Modules' },
+  { key: 'files.manage', label: 'Upload drawings & files', group: 'Modules' },
+  { key: 'finance', label: 'Money / billing', group: 'Modules' },
+  { key: 'leads', label: 'New enquiries', group: 'Modules' },
+  { key: 'portfolio', label: 'Dashboard + Reports', group: 'Modules' },
+  { key: 'impact', label: 'Impact Points', group: 'Modules' },
+  { key: 'people', label: 'People directory', group: 'Company' },
+]
+
+const ACCESS_TOGGLE_KEYS = ACCESS_TOGGLES.map((item) => item.key)
 
 export function defaultPermissionsForRole(role: Role): Record<string, boolean> {
   if (role === 'admin' || role === 'owner') {
@@ -80,6 +82,8 @@ export interface Capabilities {
   manageTasks: boolean
   manageFiles: boolean
   boq: boolean
+  reports: boolean
+  inventory: boolean
 }
 
 export function capabilitiesForUser(user: User | null): Capabilities {
@@ -105,6 +109,8 @@ export function capabilitiesForUser(user: User | null): Capabilities {
       manageTasks: false,
       manageFiles: false,
       boq: false,
+      reports: false,
+      inventory: false,
     }
   }
 
@@ -134,6 +140,8 @@ export function capabilitiesForUser(user: User | null): Capabilities {
     manageTasks: !!permissions['tasks.manage'],
     manageFiles: !!permissions['files.manage'],
     boq: !!permissions.boq,
+    reports: !!permissions.portfolio,
+    inventory: companyAdmin || !!user.isPlatformAdmin,
   }
 }
 

@@ -1,3 +1,5 @@
+import type { NavigatorScreenParams } from '@react-navigation/native'
+
 export type AuthStackParamList = {
   Login: undefined
   ForgotPassword: undefined
@@ -49,6 +51,7 @@ export type ProfileStackParamList = {
   EditProfile: undefined
   ChangePassword: undefined
   People: undefined
+  PersonAccess: { userId: string }
   InvitePerson: undefined
 }
 
@@ -72,13 +75,16 @@ export type MoreStackParamList = SharedOpsParamList & {
   CompanyAdminDashboard: undefined
   PlatformAdmin: undefined
   CreateTenant: undefined
+  Impact: undefined
+  ProfileHub: NavigatorScreenParams<ProfileStackParamList> | undefined
+  Billing: undefined
+  CreateInvoice: undefined
+  Notifications: undefined
 }
 
 export type RootTabParamList = {
-  Home: undefined
+  Home: NavigatorScreenParams<HomeStackParamList> | undefined
   Projects: undefined
-  Impact: undefined
   Inbox: undefined
-  More: undefined
-  Profile: undefined
+  More: NavigatorScreenParams<MoreStackParamList> | undefined
 }

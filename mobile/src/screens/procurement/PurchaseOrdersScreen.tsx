@@ -1,5 +1,5 @@
 import { useLayoutEffect } from 'react'
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
@@ -8,6 +8,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { colors, formatInr, radius, spacing, typography } from '../../constants/theme'
 import { purchaseOrdersApi } from '../../api/procurement'
 import { isApiError } from '../../api/client'
+import { poWhatsappLink } from '../../utils/phone'
 import type { POStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { SharedOpsParamList } from '../../navigation/types'
@@ -61,6 +62,12 @@ export function PurchaseOrdersScreen({ route, navigation }: Props) {
                   {[vendorName, pName].filter(Boolean).join(' · ') || 'No vendor set'}
                 </Text>
                 <Text style={styles.value}>{formatInr(item.value)}</Text>
+                {poWhatsappLink(item) ? (
+                  <Pressable style={styles.waBtn} onPress={() => Linking.openURL(poWhatsappLink(item))}>
+                    <Ionicons name="logo-whatsapp" size={14} color={colors.success} />
+                    <Text style={styles.waText}>Send on WhatsApp</Text>
+                  </Pressable>
+                ) : null}
               </View>
             )
           }}
@@ -85,6 +92,18 @@ const styles = StyleSheet.create({
   poNumber: { ...typography.bodyStrong, color: colors.textPrimary },
   meta: { ...typography.caption, color: colors.textSecondary },
   value: { ...typography.h3, color: colors.accent },
+  waBtn: {
+    alignSelf: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 6,
+    backgroundColor: colors.successSoft,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+  },
+  waText: { ...typography.micro, color: colors.success },
   fab: {
     position: 'absolute',
     right: spacing.lg,

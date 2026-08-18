@@ -1,51 +1,50 @@
-/** Ported from client/src/index.css design tokens so the mobile app reads as
- * the same product, not a reskin. */
+/** Production design tokens — calm, high-contrast, studio-grade. */
 export const colors = {
-  canvas: '#f0f4f8',
+  canvas: '#F6F7F9',
   surface: '#ffffff',
-  surfaceRaised: '#e8eef4',
-  muted: '#e8eef4',
-  active: '#e2e8f0',
-  rail: '#0b1b2b',
-  railHover: '#132840',
+  surfaceRaised: '#F1F3F6',
+  muted: '#EEF1F5',
+  active: '#E8ECF1',
+  rail: '#0B1220',
+  railHover: '#151D2E',
 
-  textPrimary: '#0f172a',
-  textSecondary: '#64748b',
-  textMuted: '#94a3b8',
+  textPrimary: '#0F172A',
+  textSecondary: '#5B6577',
+  textMuted: '#8B95A7',
   textSoft: '#334155',
-  textOnRail: '#e8edf3',
-  textOnRailMuted: '#8fa1b8',
+  textOnRail: '#E8EDF3',
+  textOnRailMuted: '#8FA1B8',
 
-  accent: '#2563eb',
-  accentHover: '#1d4ed8',
-  accentSoft: '#dbeafe',
+  accent: '#2563EB',
+  accentHover: '#1D4ED8',
+  accentSoft: '#EFF4FF',
 
-  border: '#dce4ee',
-  borderLight: '#cbd5e1',
+  border: '#E6EAF0',
+  borderLight: '#D7DEE8',
 
-  danger: '#ef4444',
-  dangerSoft: '#fee2e2',
-  success: '#10b981',
-  successSoft: '#d1fae5',
-  warning: '#f59e0b',
-  warningSoft: '#fef3c7',
+  danger: '#E11D48',
+  dangerSoft: '#FFF1F2',
+  success: '#059669',
+  successSoft: '#ECFDF5',
+  warning: '#D97706',
+  warningSoft: '#FFFBEB',
 
   status: {
-    not_started: '#94a3b8',
-    todo: '#94a3b8',
-    in_progress: '#3b82f6',
-    review: '#f59e0b',
-    on_hold: '#f59e0b',
-    completed: '#10b981',
-    done: '#10b981',
-    delayed: '#ef4444',
+    not_started: '#94A3B8',
+    todo: '#94A3B8',
+    in_progress: '#2563EB',
+    review: '#D97706',
+    on_hold: '#D97706',
+    completed: '#059669',
+    done: '#059669',
+    delayed: '#E11D48',
   } as Record<string, string>,
 
   priority: {
-    urgent: '#ef4444',
-    high: '#f59e0b',
-    medium: '#3b82f6',
-    low: '#94a3b8',
+    urgent: '#E11D48',
+    high: '#D97706',
+    medium: '#2563EB',
+    low: '#94A3B8',
   } as Record<string, string>,
 }
 
@@ -59,29 +58,46 @@ export const spacing = {
 }
 
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 20,
+  sm: 10,
+  md: 14,
+  lg: 18,
+  xl: 24,
   full: 999,
 }
 
 export const typography = {
-  h1: { fontSize: 28, fontWeight: '700' as const, letterSpacing: -0.3 },
-  h2: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.2 },
-  h3: { fontSize: 18, fontWeight: '600' as const },
-  body: { fontSize: 15, fontWeight: '400' as const },
-  bodyStrong: { fontSize: 15, fontWeight: '600' as const },
+  h1: { fontSize: 30, fontWeight: '700' as const, letterSpacing: -0.6 },
+  h2: { fontSize: 22, fontWeight: '700' as const, letterSpacing: -0.4 },
+  h3: { fontSize: 17, fontWeight: '600' as const, letterSpacing: -0.2 },
+  body: { fontSize: 15, fontWeight: '400' as const, letterSpacing: -0.1 },
+  bodyStrong: { fontSize: 15, fontWeight: '600' as const, letterSpacing: -0.1 },
   caption: { fontSize: 13, fontWeight: '400' as const },
   captionStrong: { fontSize: 13, fontWeight: '600' as const },
-  micro: { fontSize: 11, fontWeight: '600' as const },
+  micro: { fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.2 },
+}
+
+export const shadows = {
+  card: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  floating: {
+    shadowColor: '#0F172A',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 8,
+  },
 }
 
 export const STATUS_LABELS: Record<string, string> = {
   todo: 'Not started',
-  in_progress: 'Working on it',
+  in_progress: 'In progress',
   review: 'Needs check',
-  done: 'Finished',
+  done: 'Done',
 }
 
 export const PRIORITY_LABELS: Record<string, string> = {
@@ -91,8 +107,6 @@ export const PRIORITY_LABELS: Record<string, string> = {
   low: 'Low',
 }
 
-/** Ported from client/src/lib/format.js `stageLabel` — covers both project
- * stages and lead pipeline stages, which share this one lookup on web. */
 export const STAGE_LABELS: Record<string, string> = {
   design: 'Design',
   planning: 'Planning / BOQ',

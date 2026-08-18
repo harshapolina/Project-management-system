@@ -1,5 +1,5 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { colors, radius, shadows, spacing, typography } from '../constants/theme'
 
 export function StatCard({
   label,
@@ -28,9 +28,6 @@ const toneColor = {
   warning: colors.warning,
 }
 
-/** Wrap in a row with `flexWrap: 'wrap', gap` — each card takes ~47% so two
- * fit per row down to an iPhone SE, three-plus on wider/tablet viewports
- * since the wrapping container, not this card, owns the breakpoint. */
 const styles = StyleSheet.create({
   card: {
     flexGrow: 1,
@@ -41,6 +38,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.lg,
     padding: spacing.md,
     gap: 4,
+    ...shadows.card,
   },
   value: { ...typography.h2, color: colors.textPrimary },
   label: { ...typography.caption, color: colors.textSecondary },

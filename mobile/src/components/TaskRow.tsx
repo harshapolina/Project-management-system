@@ -55,9 +55,11 @@ export function TaskRow({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
         >
-          {done ? <Ionicons name="checkmark" size={14} color="#fff" /> : null}
+          {done ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
         </Pressable>
-      ) : null}
+      ) : (
+        <View style={[styles.checkbox, done && styles.checkboxDone]} />
+      )}
 
       <View style={styles.content}>
         <Text style={[styles.title, done && styles.titleDone]} numberOfLines={2}>
@@ -71,16 +73,14 @@ export function TaskRow({
           ) : null}
           {due ? (
             <Text style={[styles.meta, due.overdue && !done && styles.metaOverdue]} numberOfLines={1}>
-              {pName ? ' · ' : ''}
+              {pName ? '  ·  ' : ''}
               {due.label}
             </Text>
           ) : null}
         </View>
       </View>
 
-      <View style={styles.trailing}>
-        <PriorityBadge priority={task.priority} />
-      </View>
+      <PriorityBadge priority={task.priority} />
     </Pressable>
   )
 }
@@ -90,15 +90,14 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    paddingVertical: spacing.md,
+    paddingVertical: 13,
     paddingHorizontal: spacing.md,
-    borderRadius: radius.md,
   },
   checkbox: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 7,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: colors.borderLight,
     alignItems: 'center',
     justifyContent: 'center',
@@ -110,5 +109,4 @@ const styles = StyleSheet.create({
   metaRow: { flexDirection: 'row', flexWrap: 'wrap' },
   meta: { ...typography.caption, color: colors.textSecondary },
   metaOverdue: { color: colors.danger, fontWeight: '600' },
-  trailing: { flexShrink: 0 },
 })

@@ -12,20 +12,14 @@ import { PurchaseOrdersScreen } from '../screens/procurement/PurchaseOrdersScree
 import { CreatePurchaseOrderScreen } from '../screens/procurement/CreatePurchaseOrderScreen'
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen'
 import { CreateTaskScreen } from '../screens/tasks/CreateTaskScreen'
-import { colors } from '../constants/theme'
+import { stackScreenOptions } from './options'
 import type { ProjectStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<ProjectStackParamList>()
 
 export function ProjectNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTintColor: colors.accent,
-        headerStyle: { backgroundColor: colors.surface },
-        headerShadowVisible: false,
-      }}
-    >
+    <Stack.Navigator screenOptions={stackScreenOptions}>
       <Stack.Screen name="ProjectsList" component={ProjectsListScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="CreateProject"

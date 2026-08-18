@@ -1,10 +1,12 @@
 import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
 import { Avatar } from '../../components/Avatar'
+import { PageHeader } from '../../components/PageHeader'
+import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
+import { colors, radius, shadows, spacing, typography } from '../../constants/theme'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -30,18 +32,17 @@ export function ThreadsScreen({ navigation }: Props) {
 
   return (
     <Screen padded={false} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <Text style={styles.heading}>Inbox</Text>
-        <Pressable
-          onPress={() => navigation.navigate('NewMessage')}
-          style={styles.addButton}
-          accessibilityRole="button"
-          accessibilityLabel="New message"
-          hitSlop={8}
-        >
-          <Ionicons name="create-outline" size={20} color="#fff" />
-        </Pressable>
-      </View>
+      <PageHeader
+        title="Inbox"
+        subtitle="Messages with your team"
+        right={
+          <IconButton
+            icon="create-outline"
+            label="New message"
+            onPress={() => navigation.navigate('NewMessage')}
+          />
+        }
+      />
 
       {isLoading ? (
         <LoadingState label="Loading messages…" />
@@ -55,12 +56,12 @@ export function ThreadsScreen({ navigation }: Props) {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
           renderItem={({ item }) => (
             <Pressable
-              style={styles.row}
+              style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfaceRaised }]}
               onPress={() => navigation.navigate('Conversation', { userId: item.user._id, userName: item.user.name })}
               accessibilityRole="button"
             >
-              <Avatar name={item.user.name} uri={item.user.avatar} size={44} />
-              <View style={{ flex: 1, minWidth: 0 }}>
+              <Avatar name={item.user.name} uri={item.user.avatar} size={46} />
+              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
                 <View style={styles.rowTop}>
                   <Text style={styles.name} numberOfLines={1}>
                     {item.user.name}
@@ -78,7 +79,13 @@ export function ThreadsScreen({ navigation }: Props) {
               ) : null}
             </Pressable>
           )}
-          ListEmptyComponent={<EmptyState title="No messages yet" body="Start a conversation with a teammate." />}
+          ListEmptyComponent={
+            <EmptyState
+              icon="chatbubble-ellipses-outline"
+              title="No messages yet"
+              body="Start a conversation with a teammate."
+            />
+          }
         />
       )}
     </Screen>
@@ -86,24 +93,19 @@ export function ThreadsScreen({ navigation }: Props) {
 }
 
 const styles = StyleSheet.create({
-  header: {
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
+  row: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
+    gap: spacing.md,
+    padding: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    marginBottom: 10,
+    ...shadows.card,
   },
-  heading: { ...typography.h2, color: colors.textPrimary },
-  addButton: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.md,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl },
-  row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, paddingVertical: spacing.md },
   rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
   name: { ...typography.bodyStrong, color: colors.textPrimary, flexShrink: 1 },
   time: { ...typography.caption, color: colors.textMuted },

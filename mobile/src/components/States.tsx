@@ -1,5 +1,6 @@
 import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
-import { colors, spacing, typography } from '../constants/theme'
+import { Ionicons } from '@expo/vector-icons'
+import { colors, radius, spacing, typography } from '../constants/theme'
 import { Button } from './Button'
 
 export function LoadingState({ label = 'Loading…' }: { label?: string }) {
@@ -16,14 +17,19 @@ export function EmptyState({
   body,
   action,
   onAction,
+  icon = 'file-tray-outline',
 }: {
   title: string
   body?: string
   action?: string
   onAction?: () => void
+  icon?: keyof typeof Ionicons.glyphMap
 }) {
   return (
     <View style={styles.center}>
+      <View style={styles.iconWell}>
+        <Ionicons name={icon} size={26} color={colors.accent} />
+      </View>
       <Text style={styles.title} numberOfLines={2}>
         {title}
       </Text>
@@ -50,13 +56,16 @@ export function ErrorState({
 }) {
   return (
     <View style={styles.center}>
-      <Text style={styles.errorTitle}>Couldn&apos;t load this</Text>
+      <View style={[styles.iconWell, { backgroundColor: colors.dangerSoft }]}>
+        <Ionicons name="alert-circle-outline" size={26} color={colors.danger} />
+      </View>
+      <Text style={styles.title}>Couldn’t load this</Text>
       <Text style={styles.muted} numberOfLines={4}>
         {message}
       </Text>
       {onRetry ? (
         <View style={{ marginTop: spacing.md }}>
-          <Button title="Retry" onPress={onRetry} size="sm" />
+          <Button title="Try again" onPress={onRetry} size="sm" />
         </View>
       ) : null}
     </View>
@@ -70,9 +79,17 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xxl,
-    gap: 6,
+    gap: 8,
+  },
+  iconWell: {
+    width: 56,
+    height: 56,
+    borderRadius: radius.lg,
+    backgroundColor: colors.accentSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
   },
   title: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' },
-  errorTitle: { ...typography.h3, color: colors.danger, textAlign: 'center' },
-  muted: { ...typography.body, color: colors.textSecondary, textAlign: 'center' },
+  muted: { ...typography.body, color: colors.textSecondary, textAlign: 'center', lineHeight: 21 },
 })

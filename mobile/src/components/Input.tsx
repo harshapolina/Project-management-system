@@ -6,9 +6,6 @@ interface InputProps extends TextInputProps {
   label?: string
   error?: string
   hint?: string
-  /** Style for the outer wrapper (label + input + error). Use this — not
-   * `style` — to size the field within a row layout (e.g. `{ flex: 1 }`
-   * next to a Send button); `style` only reaches the inner TextInput. */
   containerStyle?: StyleProp<ViewStyle>
 }
 
@@ -19,7 +16,7 @@ export const Input = forwardRef<TextInput, InputProps>(
     return (
       <View style={[styles.wrap, containerStyle]}>
         {label ? (
-          <Text style={styles.label} numberOfLines={2}>
+          <Text style={styles.label} numberOfLines={1}>
             {label}
           </Text>
         ) : null}
@@ -59,11 +56,6 @@ export const Input = forwardRef<TextInput, InputProps>(
 Input.displayName = 'Input'
 
 const styles = StyleSheet.create({
-  // alignSelf: 'stretch', not width: '100%' — in a column layout (every
-  // form on this app) they're equivalent, but width:'100%' also overflows
-  // a row layout (e.g. the comment composer next to its Send button)
-  // because it's resolved against the parent's full width regardless of
-  // siblings. `containerStyle={{ flex: 1 }}` is how callers opt into a row.
   wrap: { gap: 6, alignSelf: 'stretch' },
   label: { ...typography.captionStrong, color: colors.textSecondary },
   input: {
@@ -71,14 +63,14 @@ const styles = StyleSheet.create({
     borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
-    paddingVertical: spacing.md,
-    fontSize: 15,
+    paddingVertical: 13,
+    fontSize: 16,
     color: colors.textPrimary,
     backgroundColor: colors.surface,
-    minHeight: 48,
+    minHeight: 50,
   },
-  inputFocused: { borderColor: colors.accent, borderWidth: 1.5 },
-  inputError: { borderColor: colors.danger },
+  inputFocused: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
+  inputError: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
   error: { ...typography.caption, color: colors.danger },
   hint: { ...typography.caption, color: colors.textMuted },
 })

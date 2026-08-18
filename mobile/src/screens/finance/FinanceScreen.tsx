@@ -25,6 +25,7 @@ export function FinanceScreen({ navigation }: Props) {
 
   const summary = useQuery({ queryKey: ['finance-summary'], queryFn: financeApi.summary })
   const expenses = useQuery({ queryKey: ['expenses'], queryFn: () => financeApi.expenses() })
+  const payments = useQuery({ queryKey: ['payments'], queryFn: () => financeApi.payments() })
 
   const reviewMutation = useMutation({
     mutationFn: ({ id, status }: { id: string; status: 'approved' | 'rejected' }) => financeApi.reviewExpense(id, status),
@@ -57,10 +58,11 @@ export function FinanceScreen({ navigation }: Props) {
         contentContainerStyle={styles.scroll}
         refreshControl={
           <RefreshControl
-            refreshing={summary.isRefetching || expenses.isRefetching}
+            refreshing={summary.isRefetching || expenses.isRefetching || payments.isRefetching}
             onRefresh={() => {
               summary.refetch()
               expenses.refetch()
+              payments.refetch()
             }}
             tintColor={colors.accent}
           />
@@ -134,6 +136,29 @@ export function FinanceScreen({ navigation }: Props) {
             )
           })}
           {!expenses.data?.length ? <Text style={styles.muted}>No expenses recorded yet.</Text> : null}
+        </View>
+
+        <View>
+          <Text style={styles.sectionTitle}>Payments</Text>
+          {(payments.data || []).map((p) => {
+            const name = typeof p.projectId === 'object' ? p.projectId?.name : 'Payment'
+            const vendor = typeof p.vendorId === 'object' ? p.vendorId?.name : null
+            return (
+              <Card key={p._id} style={{ gap: 4, marginBottom: spacing.sm }}>
+                <View style={styles.pnlRow}>
+                  <Text style={styles.pnlName} numberOfLines={1}>
+                    {vendor || name} — {formatInr(p.amount)}
+                  </Text>
+                  <Pill
+                    label={p.status}
+                    color={p.status === 'paid' ? colors.success : p.status === 'due' ? colors.danger : colors.warning}
+                  />
+                </View>
+                <Text style={styles.pnlMeta}>{p.note || name}</Text>
+              </Card>
+            )
+          })}
+          {!payments.data?.length ? <Text style={styles.muted}>No vendor payments logged yet.</Text> : null}
         </View>
       </ScrollView>
     </Screen>

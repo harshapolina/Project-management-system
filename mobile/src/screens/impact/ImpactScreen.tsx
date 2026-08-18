@@ -2,7 +2,9 @@ import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
 import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
+import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
 import { colors, radius, spacing, typography } from '../../constants/theme'
 import { impactApi } from '../../api/impact'
 import { isApiError } from '../../api/client'
@@ -22,7 +24,7 @@ export function ImpactScreen() {
   if (!caps.impact) {
     return (
       <Screen>
-        <EmptyState title="Impact Points" body="This feature isn't enabled for your role yet." />
+        <EmptyState title="Impact Points" body="This isn’t enabled for your role yet." />
       </Screen>
     )
   }
@@ -44,13 +46,13 @@ export function ImpactScreen() {
 
   return (
     <Screen padded={false} edges={['top', 'left', 'right']}>
+      <PageHeader title="Impact" subtitle="Points earned for finishing work well." />
       <ScrollView
         contentContainerStyle={styles.scroll}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
       >
-        <Text style={styles.heading}>Impact Points</Text>
-
         <Card style={styles.scoreCard}>
+          <Text style={styles.scoreEyebrow}>Your score</Text>
           <Text style={styles.scoreValue}>{data.score?.totalPoints ?? 0}</Text>
           <Text style={styles.scoreLabel}>total points</Text>
         </Card>
@@ -85,7 +87,7 @@ export function ImpactScreen() {
         </View>
 
         <View>
-          <Text style={styles.sectionTitle}>Recent activity</Text>
+          <Text style={styles.sectionTitle}>Recent</Text>
           {data.timeline.length === 0 ? (
             <Text style={styles.muted}>Nothing scored recently.</Text>
           ) : (
@@ -105,29 +107,31 @@ export function ImpactScreen() {
 }
 
 const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
-  heading: { ...typography.h2, color: colors.textPrimary },
-  scoreCard: { alignItems: 'center', gap: 2, backgroundColor: colors.rail, borderColor: colors.rail },
-  scoreValue: { ...typography.h1, fontSize: 40, color: '#fff' },
-  scoreLabel: { ...typography.caption, color: colors.textOnRailMuted },
-  sectionTitle: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase', marginBottom: spacing.sm },
+  scroll: { paddingHorizontal: spacing.lg, gap: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
+  scoreCard: { alignItems: 'center', gap: 4, paddingVertical: 28, backgroundColor: colors.accentSoft, borderColor: '#DBEAFE' },
+  scoreEyebrow: { ...typography.micro, color: colors.accent, textTransform: 'uppercase', letterSpacing: 0.8 },
+  scoreValue: { ...typography.h1, fontSize: 48, color: colors.textPrimary },
+  scoreLabel: { ...typography.caption, color: colors.textSecondary },
+  sectionTitle: { ...typography.captionStrong, color: colors.textMuted, marginBottom: spacing.sm },
   badgeGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   badge: {
-    backgroundColor: colors.accentSoft,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
     borderRadius: radius.md,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm,
     maxWidth: '48%',
   },
-  badgeLocked: { backgroundColor: colors.surfaceRaised },
-  badgeLabel: { ...typography.caption, color: colors.accent, fontWeight: '700' },
+  badgeLocked: { opacity: 0.45 },
+  badgeLabel: { ...typography.caption, color: colors.textPrimary, fontWeight: '600' },
   badgeLabelLocked: { color: colors.textMuted },
   muted: { ...typography.caption, color: colors.textMuted },
   breakdownRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   breakdownLabel: { ...typography.body, color: colors.textPrimary, textTransform: 'capitalize', flex: 1 },
@@ -136,8 +140,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     gap: spacing.sm,
-    paddingVertical: spacing.sm,
-    borderBottomWidth: 1,
+    paddingVertical: 12,
+    borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border,
   },
   timelineReason: { ...typography.caption, color: colors.textSecondary, flex: 1 },

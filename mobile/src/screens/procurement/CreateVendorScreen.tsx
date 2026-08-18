@@ -18,6 +18,7 @@ export function CreateVendorScreen({ navigation }: Props) {
   const [contact, setContact] = useState('')
   const [phone, setPhone] = useState('')
   const [email, setEmail] = useState('')
+  const [gst, setGst] = useState('')
   const [error, setError] = useState('')
 
   const mutation = useMutation({
@@ -27,6 +28,7 @@ export function CreateVendorScreen({ navigation }: Props) {
         contact: contact.trim() || undefined,
         phone: phone.trim() || undefined,
         email: email.trim() || undefined,
+        gst: gst.trim() || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['vendors'] })
@@ -42,6 +44,7 @@ export function CreateVendorScreen({ navigation }: Props) {
         <Input label="Contact person (optional)" value={contact} onChangeText={setContact} />
         <Input label="Phone (optional)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
         <Input label="Email (optional)" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
+        <Input label="GSTIN (optional)" autoCapitalize="characters" value={gst} onChangeText={setGst} />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
           title="Add vendor"

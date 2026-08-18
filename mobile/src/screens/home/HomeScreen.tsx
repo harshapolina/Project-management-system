@@ -1,24 +1,36 @@
 import { useMemo, useState } from 'react'
-import { RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native'
-import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import { Pressable, RefreshControl, SectionList, StyleSheet, Text, View } from 'react-native'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { CompositeNavigationProp } from '@react-navigation/native'
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
 import { TaskRow } from '../../components/TaskRow'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { Avatar } from '../../components/Avatar'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { PageHeader } from '../../components/PageHeader'
+import { IconButton } from '../../components/IconButton'
+import { SegmentedControl } from '../../components/SegmentedControl'
+import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
+import { colors, radius, shadows, spacing, typography } from '../../constants/theme'
 import { homeApi } from '../../api/home'
+import { notificationsApi } from '../../api/notifications'
 import { useAuthStore } from '../../store/authStore'
 import { isApiError } from '../../api/client'
-import type { HomeStackParamList } from '../../navigation/types'
+import type { HomeStackParamList, RootTabParamList } from '../../navigation/types'
 import type { Task } from '../../types/models'
 
-type Props = NativeStackScreenProps<HomeStackParamList, 'HomeMain'>
+type Props = {
+  navigation: CompositeNavigationProp<
+    NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
+    BottomTabNavigationProp<RootTabParamList>
+  >
+}
 
 type FilterKey = 'assigned' | 'today' | 'personal' | 'done'
 
 const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: 'assigned', label: 'Assigned' },
+  { key: 'assigned', label: 'My work' },
   { key: 'today', label: 'Today' },
   { key: 'personal', label: 'Personal' },
   { key: 'done', label: 'Done' },
@@ -31,6 +43,12 @@ const STAGE_TITLES: Record<string, string> = {
   review: 'Needs check',
 }
 
+function firstName(name?: string, greeting?: string) {
+  if (name) return name.split(' ')[0]
+  if (greeting) return greeting.replace(/^hi[, ]*/i, '').split(' ')[0] || 'there'
+  return 'there'
+}
+
 export function HomeScreen({ navigation }: Props) {
   const [filter, setFilter] = useState<FilterKey>('assigned')
   const user = useAuthStore((s) => s.user)
@@ -40,11 +58,27 @@ export function HomeScreen({ navigation }: Props) {
     queryKey: ['home'],
     queryFn: homeApi.get,
   })
+  const alerts = useQuery({
+    queryKey: ['notifications'],
+    queryFn: notificationsApi.list,
+    refetchInterval: 20_000,
+  })
+  const unread = (alerts.data || []).filter((n) => !n.read).length
+
+  const counts = useMemo(() => {
+    const assigned = data?.tasks.assigned || []
+    const open = assigned.filter((t) => t.status !== 'done').length
+    return {
+      open,
+      today: data?.tasks.today.length || 0,
+      done: data?.tasks.done.length || 0,
+    }
+  }, [data])
 
   const sections = useMemo(() => {
     if (!data) return []
     if (filter === 'today') {
-      return data.tasks.today.length ? [{ title: 'Today', data: data.tasks.today }] : []
+      return data.tasks.today.length ? [{ title: 'Due today', data: data.tasks.today }] : []
     }
     if (filter === 'personal') {
       return data.tasks.personal.length ? [{ title: 'Personal', data: data.tasks.personal }] : []
@@ -52,7 +86,6 @@ export function HomeScreen({ navigation }: Props) {
     if (filter === 'done') {
       return data.tasks.done.length ? [{ title: 'Finished', data: data.tasks.done }] : []
     }
-    // assigned — group open tasks by stage, like the web board
     const buckets: Record<string, Task[]> = {}
     for (const t of data.tasks.assigned) {
       const key = STAGE_ORDER.includes(t.status) ? t.status : 'todo'
@@ -94,34 +127,50 @@ export function HomeScreen({ navigation }: Props) {
     )
   }
 
+  const dateLabel = new Date().toLocaleDateString('en-IN', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'short',
+  })
+
   return (
     <Screen padded={false} edges={['top', 'left', 'right']}>
-      <View style={styles.header}>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.greeting} numberOfLines={1}>
-            {data?.greeting || 'Hi'}
-          </Text>
-          <Text style={styles.subGreeting}>Cubic · your day, aligned</Text>
-        </View>
-        <Avatar name={user?.name} uri={user?.avatar} size={40} />
+      <PageHeader
+        eyebrow={dateLabel}
+        title={`Hi, ${firstName(user?.name, data?.greeting)}`}
+        subtitle="Here’s what needs you today."
+        right={
+          <View style={styles.headerRight}>
+            <IconButton
+              icon="notifications-outline"
+              label="Alerts"
+              tone="muted"
+              badge={unread}
+              onPress={() => navigation.navigate('More', { screen: 'Notifications' })}
+            />
+            <IconButton
+              icon="add"
+              label="New task"
+              onPress={() => navigation.navigate('CreateTask', { isPersonal: filter === 'personal' })}
+            />
+            <Pressable
+              onPress={() => navigation.navigate('More', { screen: 'ProfileHub' })}
+              accessibilityRole="button"
+              accessibilityLabel="Open profile"
+            >
+              <Avatar name={user?.name} uri={user?.avatar} size={40} />
+            </Pressable>
+          </View>
+        }
+      />
+
+      <View style={styles.stats}>
+        <Stat value={counts.open} label="Open" />
+        <Stat value={counts.today} label="Today" />
+        <Stat value={counts.done} label="Done" />
       </View>
 
-      <View style={styles.filters}>
-        {FILTERS.map((f) => {
-          const active = filter === f.key
-          return (
-            <Text
-              key={f.key}
-              onPress={() => setFilter(f.key)}
-              style={[styles.filterChip, active && styles.filterChipActive]}
-              accessibilityRole="button"
-              accessibilityState={{ selected: active }}
-            >
-              {f.label}
-            </Text>
-          )
-        })}
-      </View>
+      <SegmentedControl options={FILTERS} value={filter} onChange={setFilter} />
 
       <SectionList
         sections={sections}
@@ -130,28 +179,34 @@ export function HomeScreen({ navigation }: Props) {
         stickySectionHeadersEnabled={false}
         renderSectionHeader={({ section }) => (
           <Text style={styles.sectionTitle}>
-            {section.title} · {section.data.length}
+            {section.title}
+            <Text style={styles.sectionCount}>  {section.data.length}</Text>
           </Text>
         )}
-        renderItem={({ item }) => (
-          <TaskRow
-            task={item}
-            onPress={() => navigation.navigate('TaskDetail', { taskId: item._id })}
-            onToggle={filter !== 'done' ? () => toggleTask(item._id) : undefined}
-          />
+        renderItem={({ item, index, section }) => (
+          <View
+            style={[
+              styles.rowWrap,
+              index === 0 && styles.rowFirst,
+              index === section.data.length - 1 && styles.rowLast,
+            ]}
+          >
+            <TaskRow
+              task={item}
+              onPress={() => navigation.navigate('TaskDetail', { taskId: item._id })}
+              onToggle={filter !== 'done' ? () => toggleTask(item._id) : undefined}
+            />
+          </View>
         )}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
         ListEmptyComponent={
           <EmptyState
-            title="Nothing here"
+            icon="checkmark-done-outline"
+            title={filter === 'today' ? 'Nothing due today' : filter === 'personal' ? 'No personal tasks' : filter === 'done' ? 'Nothing finished yet' : 'You’re all caught up'}
             body={
-              filter === 'today'
-                ? "No tasks due today. Enjoy the breathing room."
-                : filter === 'personal'
-                  ? 'No personal tasks yet.'
-                  : filter === 'done'
-                    ? 'Nothing finished yet.'
-                    : "You're all caught up."
+              filter === 'assigned'
+                ? 'New assignments will show up here.'
+                : 'Switch filters or add a task to get started.'
             }
           />
         }
@@ -160,42 +215,56 @@ export function HomeScreen({ navigation }: Props) {
   )
 }
 
+function Stat({ value, label }: { value: number; label: string }) {
+  return (
+    <View style={styles.stat}>
+      <Text style={styles.statValue}>{value}</Text>
+      <Text style={styles.statLabel}>{label}</Text>
+    </View>
+  )
+}
+
 const styles = StyleSheet.create({
-  header: {
+  headerRight: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  stats: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
+    marginHorizontal: spacing.lg,
+    marginBottom: spacing.md,
+    backgroundColor: colors.surface,
+    borderRadius: radius.lg,
+    borderWidth: 1,
+    borderColor: colors.border,
+    ...shadows.card,
   },
-  greeting: { ...typography.h2, color: colors.textPrimary },
-  subGreeting: { ...typography.caption, color: colors.textSecondary },
-  filters: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.sm,
-  },
-  filterChip: {
-    ...typography.captionStrong,
-    color: colors.textSecondary,
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  filterChipActive: { backgroundColor: colors.rail, color: '#fff' },
-  listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xxl },
+  stat: { flex: 1, alignItems: 'center', paddingVertical: 14, gap: 2 },
+  statValue: { ...typography.h2, color: colors.textPrimary },
+  statLabel: { ...typography.caption, color: colors.textMuted },
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
   sectionTitle: {
     ...typography.captionStrong,
-    color: colors.textMuted,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
-    paddingHorizontal: spacing.sm,
+    color: colors.textSecondary,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xs,
+    paddingBottom: 8,
+    paddingHorizontal: 4,
+  },
+  sectionCount: { color: colors.textMuted, fontWeight: '500' },
+  rowWrap: {
+    backgroundColor: colors.surface,
+    borderLeftWidth: 1,
+    borderRightWidth: 1,
+    borderColor: colors.border,
+  },
+  rowFirst: {
+    borderTopWidth: 1,
+    borderTopLeftRadius: radius.lg,
+    borderTopRightRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  rowLast: {
+    borderBottomWidth: 1,
+    borderBottomLeftRadius: radius.lg,
+    borderBottomRightRadius: radius.lg,
+    overflow: 'hidden',
+    marginBottom: 4,
   },
 })

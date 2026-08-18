@@ -5,7 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { colors, radius, shadows, spacing, typography } from '../../constants/theme'
 import { authApi } from '../../api/auth'
 import { isApiError } from '../../api/client'
 import type { AuthStackParamList } from '../../navigation/types'
@@ -36,10 +36,8 @@ export function ForgotPasswordScreen({ navigation }: Props) {
     <Screen keyboardAvoiding padded={false} background={colors.canvas}>
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.card}>
-          <Text style={styles.heading}>Reset your password</Text>
-          <Text style={styles.subheading}>
-            Enter your account email and we&apos;ll send reset instructions.
-          </Text>
+          <Text style={styles.heading}>Reset password</Text>
+          <Text style={styles.subheading}>We’ll email instructions to this address.</Text>
 
           {sent ? (
             <View style={styles.success}>
@@ -49,7 +47,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
             <>
               <Input
                 label="Email"
-                placeholder="you@example.com"
+                placeholder="you@company.com"
                 autoCapitalize="none"
                 keyboardType="email-address"
                 value={email}
@@ -58,7 +56,7 @@ export function ForgotPasswordScreen({ navigation }: Props) {
                 returnKeyType="go"
                 onSubmitEditing={onSubmit}
               />
-              <Button title="Send reset link" onPress={onSubmit} loading={mutation.isPending} fullWidth />
+              <Button title="Send link" onPress={onSubmit} loading={mutation.isPending} fullWidth />
             </>
           )}
 
@@ -79,6 +77,7 @@ const styles = StyleSheet.create({
     padding: spacing.xl,
     gap: spacing.lg,
     width: '100%',
+    ...shadows.card,
   },
   heading: { ...typography.h2, color: colors.textPrimary },
   subheading: { ...typography.body, color: colors.textSecondary, marginTop: -8 },

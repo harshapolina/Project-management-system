@@ -22,24 +22,23 @@ import { InventoryMovementsScreen } from '../screens/inventory/InventoryMovement
 import { CompanyAdminDashboardScreen } from '../screens/admin/CompanyAdminDashboardScreen'
 import { PlatformAdminScreen } from '../screens/admin/PlatformAdminScreen'
 import { CreateTenantScreen } from '../screens/admin/CreateTenantScreen'
-import { colors } from '../constants/theme'
+import { ImpactScreen } from '../screens/impact/ImpactScreen'
+import { ProfileNavigator } from './ProfileNavigator'
+import { BillingScreen } from '../screens/billing/BillingScreen'
+import { CreateInvoiceScreen } from '../screens/billing/CreateInvoiceScreen'
+import { NotificationsScreen } from '../screens/inbox/NotificationsScreen'
+import { stackScreenOptions } from './options'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
 
 export function MoreNavigator() {
   return (
-    <Stack.Navigator
-      screenOptions={{
-        headerTintColor: colors.accent,
-        headerStyle: { backgroundColor: colors.surface },
-        headerShadowVisible: false,
-      }}
-    >
-      <Stack.Screen name="MoreMain" component={MoreMainScreen} options={{ title: 'More' }} />
+    <Stack.Navigator screenOptions={stackScreenOptions}>
+      <Stack.Screen name="MoreMain" component={MoreMainScreen} options={{ headerShown: false }} />
 
-      <Stack.Screen name="Leads" component={LeadsScreen} options={{ title: 'Leads' }} />
-      <Stack.Screen name="CreateLead" component={CreateLeadScreen} options={{ presentation: 'modal', title: 'New lead' }} />
+      <Stack.Screen name="Leads" component={LeadsScreen} options={{ title: 'New enquiries' }} />
+      <Stack.Screen name="CreateLead" component={CreateLeadScreen} options={{ presentation: 'modal', title: 'New enquiry' }} />
 
       <Stack.Screen name="BoqList" component={BoqListScreen} options={{ title: 'BOQ / Quotes' }} />
       <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ title: 'Quotation' }} />
@@ -79,6 +78,11 @@ export function MoreNavigator() {
       />
       <Stack.Screen name="PlatformAdmin" component={PlatformAdminScreen} options={{ title: 'Workspaces' }} />
       <Stack.Screen name="CreateTenant" component={CreateTenantScreen} options={{ presentation: 'modal', title: 'New workspace' }} />
+      <Stack.Screen name="Impact" component={ImpactScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="ProfileHub" component={ProfileNavigator} options={{ headerShown: false }} />
+      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
+      <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} options={{ presentation: 'modal', title: 'Add invoice' }} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Alerts' }} />
     </Stack.Navigator>
   )
 }

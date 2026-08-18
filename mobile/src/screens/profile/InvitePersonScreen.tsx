@@ -26,6 +26,7 @@ export function InvitePersonScreen({ navigation }: Props) {
     mutationFn: () => adminApi.invite({ name: name.trim(), email: email.trim().toLowerCase(), role }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['admin-users'] })
+      queryClient.invalidateQueries({ queryKey: ['admin-team-summary'] })
       setResult({ tempPassword: data.tempPassword })
     },
     onError: (err) => setErrors({ form: isApiError(err) ? err.message : 'Could not send invite' }),

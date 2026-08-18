@@ -23,8 +23,11 @@ export const tasksApi = {
   create: (payload: CreateTaskPayload) =>
     http.post<{ success: true; task: Task }>('/tasks', payload).then((r) => r.data.task),
 
-  update: (id: string, payload: Partial<Task>) =>
+  update: (id: string, payload: Partial<Task> & { timeTrackingUserId?: string | null }) =>
     http.patch<{ success: true; task: Task }>(`/tasks/${id}`, payload).then((r) => r.data.task),
+
+  activeTimer: () =>
+    http.get<{ success: true; task: Task | null }>('/tasks/active-timer').then((r) => r.data.task),
 
   remove: (id: string) => http.delete<{ success: true }>(`/tasks/${id}`).then((r) => r.data),
 

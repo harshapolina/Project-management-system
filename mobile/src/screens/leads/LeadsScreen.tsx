@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
@@ -7,7 +7,9 @@ import { Pill } from '../../components/Badge'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { colors, formatInr, radius, spacing, stageLabel, typography } from '../../constants/theme'
 import { leadsApi } from '../../api/leads'
+import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
+import { telLink, whatsappLink } from '../../utils/phone'
 import type { LeadStage } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { MoreStackParamList } from '../../navigation/types'
@@ -33,6 +35,7 @@ export function LeadsScreen({ navigation }: Props) {
     queryKey: ['leads'],
     queryFn: leadsApi.list,
   })
+  const users = useQuery({ queryKey: ['users'], queryFn: adminApi.users })
 
   const stageMutation = useMutation({
     mutationFn: ({ id, stage }: { id: string; stage: LeadStage }) => leadsApi.update(id, { stage }),
@@ -40,6 +43,12 @@ export function LeadsScreen({ navigation }: Props) {
       setBusyId(null)
       queryClient.invalidateQueries({ queryKey: ['leads'] })
     },
+  })
+
+  const assignMutation = useMutation({
+    mutationFn: ({ id, owner }: { id: string; owner: string | null }) => leadsApi.update(id, { owner }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: ['leads'] }),
   })
 
   const convertMutation = useMutation({
@@ -55,14 +64,14 @@ export function LeadsScreen({ navigation }: Props) {
 
   const nextStage = (stage: LeadStage): LeadStage | null => {
     const idx = STAGE_ORDER.indexOf(stage)
-    if (idx < 0 || idx >= STAGE_ORDER.length - 3) return null // won/lost are terminal
+    if (idx < 0 || idx >= STAGE_ORDER.length - 3) return null
     return STAGE_ORDER[idx + 1]
   }
 
   return (
     <Screen padded={false}>
       {isLoading ? (
-        <LoadingState label="Loading leads…" />
+        <LoadingState label="Loading enquiries…" />
       ) : isError ? (
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       ) : (
@@ -73,6 +82,7 @@ export function LeadsScreen({ navigation }: Props) {
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
           renderItem={({ item }) => {
             const next = nextStage(item.stage)
+            const ownerId = item.owner?._id
             return (
               <View style={styles.card}>
                 <View style={styles.cardTop}>
@@ -86,7 +96,44 @@ export function LeadsScreen({ navigation }: Props) {
                     {[item.phone, item.email].filter(Boolean).join(' · ')}
                   </Text>
                 ) : null}
+                {item.phone ? (
+                  <View style={styles.contactRow}>
+                    <Pressable style={styles.contactBtn} onPress={() => Linking.openURL(telLink(item.phone))}>
+                      <Ionicons name="call-outline" size={14} color={colors.accent} />
+                      <Text style={styles.contactText}>Call</Text>
+                    </Pressable>
+                    <Pressable
+                      style={styles.contactBtn}
+                      onPress={() =>
+                        Linking.openURL(
+                          whatsappLink(item.phone, `Hi ${item.clientName}, following up on your enquiry.`),
+                        )
+                      }
+                    >
+                      <Ionicons name="logo-whatsapp" size={14} color={colors.success} />
+                      <Text style={styles.contactText}>WhatsApp</Text>
+                    </Pressable>
+                  </View>
+                ) : null}
                 <Text style={styles.value}>{formatInr(item.estimatedValue)} estimated</Text>
+
+                <Text style={styles.assignLabel}>Assign employee</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+                  {(users.data || []).map((u) => {
+                    const active = ownerId === u._id
+                    return (
+                      <Pressable
+                        key={u._id}
+                        onPress={() => assignMutation.mutate({ id: item._id, owner: active ? null : u._id })}
+                        style={[styles.chip, active && styles.chipActive]}
+                      >
+                        <Text style={[styles.chipText, active && styles.chipTextActive]} numberOfLines={1}>
+                          {u.name}
+                        </Text>
+                      </Pressable>
+                    )
+                  })}
+                </ScrollView>
 
                 <View style={styles.actions}>
                   {next ? (
@@ -118,11 +165,11 @@ export function LeadsScreen({ navigation }: Props) {
               </View>
             )
           }}
-          ListEmptyComponent={<EmptyState title="No leads yet" body="New enquiries will show up here." />}
+          ListEmptyComponent={<EmptyState title="No enquiries yet" body="New client enquiries will show up here." />}
         />
       )}
 
-      <Pressable style={styles.fab} onPress={() => navigation.navigate('CreateLead')} accessibilityLabel="Add lead">
+      <Pressable style={styles.fab} onPress={() => navigation.navigate('CreateLead')} accessibilityLabel="Add enquiry">
         <Ionicons name="add" size={26} color="#fff" />
       </Pressable>
     </Screen>
@@ -143,6 +190,28 @@ const styles = StyleSheet.create({
   name: { ...typography.bodyStrong, color: colors.textPrimary, flexShrink: 1 },
   meta: { ...typography.caption, color: colors.textSecondary },
   value: { ...typography.captionStrong, color: colors.accent },
+  contactRow: { flexDirection: 'row', gap: 8, marginTop: 4 },
+  contactBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+  },
+  contactText: { ...typography.micro, color: colors.textSecondary },
+  assignLabel: { ...typography.micro, color: colors.textMuted, marginTop: 8 },
+  chips: { gap: 8, paddingVertical: 4 },
+  chip: {
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+  },
+  chipActive: { backgroundColor: colors.textPrimary },
+  chipText: { ...typography.micro, color: colors.textSecondary, maxWidth: 120 },
+  chipTextActive: { color: '#fff' },
   actions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.xs },
   actionBtn: {
     flexDirection: 'row',

@@ -10,6 +10,7 @@ export interface CreateLeadPayload {
   source?: string
   estimatedValue?: number
   notes?: string
+  owner?: string
 }
 
 export const leadsApi = {
@@ -18,7 +19,7 @@ export const leadsApi = {
   create: (payload: CreateLeadPayload) =>
     http.post<{ success: true; lead: Lead }>('/leads', payload).then((r) => r.data.lead),
 
-  update: (id: string, payload: Partial<Lead>) =>
+  update: (id: string, payload: Omit<Partial<Lead>, 'owner' | 'stage'> & { owner?: string | null; stage?: Lead['stage'] }) =>
     http.patch<{ success: true; lead: Lead }>(`/leads/${id}`, payload).then((r) => r.data.lead),
 
   convert: (id: string) =>

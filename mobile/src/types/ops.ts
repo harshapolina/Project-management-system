@@ -274,3 +274,42 @@ export interface Tenant {
   notes?: string
   createdAt: string
 }
+
+export type InvoiceStatus = 'unpaid' | 'paid' | 'overdue' | 'cancelled'
+
+export interface VendorInvoice {
+  _id: string
+  invoiceNumber: string
+  vendor?: { _id: string; name: string } | string
+  purchaseOrder?: { _id: string; poNumber: string; value?: number } | string
+  projectId?: { _id: string; name: string } | string
+  amount: number
+  invoiceDate?: string
+  dueDate?: string
+  status: InvoiceStatus
+  fileUrl?: string
+  fileName?: string
+  mimeType?: string
+  notes?: string
+  paidAt?: string
+  createdAt: string
+}
+
+export interface BillingSummary {
+  total: number
+  unpaidAmount: number
+  paidAmount?: number
+  paidThisMonth: number
+  overdueCount: number
+}
+
+export interface AppNotification {
+  _id: string
+  type: string
+  title: string
+  body?: string
+  link?: string
+  read?: boolean
+  createdAt: string
+  meta?: Record<string, unknown>
+}

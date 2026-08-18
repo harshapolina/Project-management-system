@@ -36,8 +36,8 @@ export function Button({
         size === 'sm' ? styles.sm : styles.md,
         variantStyles[variant],
         fullWidth && { alignSelf: 'stretch' },
-        pressed && !isDisabled && { opacity: 0.8 },
-        isDisabled && { opacity: 0.5 },
+        pressed && !isDisabled && { transform: [{ scale: 0.98 }], opacity: 0.92 },
+        isDisabled && { opacity: 0.45 },
       ]}
       disabled={isDisabled}
       {...pressableProps}
@@ -50,8 +50,6 @@ export function Button({
           <Text
             style={[styles.label, size === 'sm' && { fontSize: 13 }, labelColor[variant]]}
             numberOfLines={1}
-            adjustsFontSizeToFit
-            minimumFontScale={0.85}
           >
             {title}
           </Text>
@@ -66,10 +64,10 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 50,
   },
-  md: { paddingVertical: spacing.md, paddingHorizontal: spacing.lg },
-  sm: { paddingVertical: spacing.sm, paddingHorizontal: spacing.md, minHeight: 38 },
+  md: { paddingVertical: 14, paddingHorizontal: spacing.lg },
+  sm: { paddingVertical: 9, paddingHorizontal: spacing.md, minHeight: 38 },
   content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   label: { ...typography.bodyStrong },
 })

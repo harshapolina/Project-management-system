@@ -6,15 +6,17 @@ import { vendorsApi } from '../api/procurement'
 export function VendorPicker({
   value,
   onChange,
+  label = 'Vendor (optional)',
 }: {
   value?: string
   onChange: (vendorId: string) => void
+  label?: string
 }) {
   const { data, isLoading } = useQuery({ queryKey: ['vendors'], queryFn: vendorsApi.list })
 
   return (
     <View style={styles.wrap}>
-      <Text style={styles.label}>Vendor (optional)</Text>
+      <Text style={styles.label}>{label}</Text>
       {isLoading ? (
         <Text style={styles.hint}>Loading vendors…</Text>
       ) : !data?.length ? (

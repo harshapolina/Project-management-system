@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
@@ -11,6 +11,7 @@ import { LoadingState, ErrorState } from '../../components/States'
 import { colors, radius, spacing, STATUS_LABELS, typography } from '../../constants/theme'
 import { tasksApi } from '../../api/tasks'
 import { isApiError } from '../../api/client'
+import { formatTrackedSeconds, liveTrackedSeconds } from '../../utils/time'
 import type { TaskStatus } from '../../types/models'
 import type { RouteProp } from '@react-navigation/native'
 import type { HomeStackParamList } from '../../navigation/types'
@@ -36,6 +37,7 @@ export function TaskDetailScreen({ route }: Props) {
     queryClient.invalidateQueries({ queryKey: ['task', taskId] })
     queryClient.invalidateQueries({ queryKey: ['home'] })
     queryClient.invalidateQueries({ queryKey: ['tasks'] })
+    queryClient.invalidateQueries({ queryKey: ['active-timer'] })
   }
 
   const statusMutation = useMutation({
@@ -50,6 +52,29 @@ export function TaskDetailScreen({ route }: Props) {
       invalidate()
     },
   })
+
+  const timerMutation = useMutation({
+    mutationFn: async () => {
+      const task = data?.task
+      if (!task) return
+      if (task.timeTrackingStartedAt) {
+        return tasksApi.update(taskId, {
+          timeSpent: liveTrackedSeconds(task.timeSpent, task.timeTrackingStartedAt),
+          timeTrackingStartedAt: null,
+          timeTrackingUserId: null,
+        })
+      }
+      return tasksApi.update(taskId, { timeTrackingStartedAt: new Date().toISOString() })
+    },
+    onSuccess: invalidate,
+  })
+
+  const [now, setNow] = useState(Date.now())
+  useEffect(() => {
+    if (!data?.task.timeTrackingStartedAt) return
+    const id = setInterval(() => setNow(Date.now()), 1000)
+    return () => clearInterval(id)
+  }, [data?.task.timeTrackingStartedAt])
 
   const assigneeName = useMemo(() => {
     const a = data?.task.assignee
@@ -105,6 +130,21 @@ export function TaskDetailScreen({ route }: Props) {
                     <Text style={styles.assigneeName}>{new Date(task.dueDate).toDateString()}</Text>
                   </>
                 ) : null}
+                <Text style={styles.cardLabel}>Time tracked</Text>
+                <View style={styles.timerRow}>
+                  <Text style={styles.assigneeName}>
+                    {formatTrackedSeconds(liveTrackedSeconds(task.timeSpent, task.timeTrackingStartedAt, now))}
+                  </Text>
+                  <Pressable
+                    onPress={() => timerMutation.mutate()}
+                    disabled={timerMutation.isPending}
+                    style={[styles.timerBtn, task.timeTrackingStartedAt && styles.timerBtnStop]}
+                  >
+                    <Text style={[styles.timerBtnText, task.timeTrackingStartedAt && styles.timerBtnTextStop]}>
+                      {task.timeTrackingStartedAt ? 'Stop timer' : 'Start timer'}
+                    </Text>
+                  </Pressable>
+                </View>
               </Card>
 
               <View>
@@ -187,6 +227,16 @@ const styles = StyleSheet.create({
   cardLabel: { ...typography.micro, color: colors.textMuted, textTransform: 'uppercase' },
   assigneeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
   assigneeName: { ...typography.bodyStrong, color: colors.textPrimary },
+  timerRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  timerBtn: {
+    backgroundColor: colors.accentSoft,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: radius.full,
+  },
+  timerBtnStop: { backgroundColor: colors.dangerSoft },
+  timerBtnText: { ...typography.micro, color: colors.accent, fontWeight: '700' },
+  timerBtnTextStop: { color: colors.danger },
   sectionTitle: { ...typography.captionStrong, color: colors.textMuted, marginBottom: spacing.sm, textTransform: 'uppercase' },
   statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
   statusOption: {

@@ -1,11 +1,12 @@
 import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, spacing, typography } from '../../constants/theme'
+import { colors, radius, spacing, typography } from '../../constants/theme'
 import { leadsApi } from '../../api/leads'
+import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { MoreStackParamList } from '../../navigation/types'
@@ -19,7 +20,9 @@ export function CreateLeadScreen({ navigation }: Props) {
   const [email, setEmail] = useState('')
   const [estimatedValue, setEstimatedValue] = useState('')
   const [notes, setNotes] = useState('')
+  const [owner, setOwner] = useState('')
   const [error, setError] = useState('')
+  const users = useQuery({ queryKey: ['users'], queryFn: adminApi.users })
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -29,9 +32,11 @@ export function CreateLeadScreen({ navigation }: Props) {
         email: email.trim() || undefined,
         estimatedValue: estimatedValue ? Number(estimatedValue) : undefined,
         notes: notes.trim() || undefined,
+        owner: owner || undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
+      queryClient.invalidateQueries({ queryKey: ['tasks'] })
       navigation.goBack()
     },
     onError: (err) => setError(isApiError(err) ? err.message : 'Could not create lead'),
@@ -51,9 +56,20 @@ export function CreateLeadScreen({ navigation }: Props) {
           onChangeText={setEstimatedValue}
         />
         <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline numberOfLines={3} style={{ minHeight: 80, textAlignVertical: 'top' }} />
+        <Text style={styles.label}>Assign employee (optional)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {(users.data || []).map((u) => {
+            const active = owner === u._id
+            return (
+              <Pressable key={u._id} onPress={() => setOwner(active ? '' : u._id)} style={[styles.chip, active && styles.chipActive]}>
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{u.name}</Text>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button
-          title="Add lead"
+          title="Add enquiry"
           onPress={() => {
             if (!clientName.trim()) {
               setError('Client name is required')
@@ -73,4 +89,15 @@ export function CreateLeadScreen({ navigation }: Props) {
 const styles = StyleSheet.create({
   scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
   error: { ...typography.caption, color: colors.danger },
+  label: { ...typography.captionStrong, color: colors.textSecondary },
+  chips: { gap: 8, paddingVertical: 2 },
+  chip: {
+    backgroundColor: colors.surfaceRaised,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: radius.full,
+  },
+  chipActive: { backgroundColor: colors.textPrimary },
+  chipText: { ...typography.caption, color: colors.textSecondary },
+  chipTextActive: { color: '#fff' },
 })
