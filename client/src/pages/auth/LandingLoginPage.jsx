@@ -966,6 +966,15 @@ export function LoginPage() {
             >
               Sign in
             </Button>
+            <p className="pt-1 text-center text-[11px] text-[#6b6b70]">
+              Editco platform admin?{' '}
+              <Link
+                to="/platform/login"
+                className="font-medium text-[#8b8b90] underline-offset-2 hover:text-white hover:underline"
+              >
+                Sign in here
+              </Link>
+            </p>
           </form>
         </div>
       </section>

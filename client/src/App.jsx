@@ -9,6 +9,8 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   RequireAuth,
   GuestOnly,
+  PlatformGuestOnly,
+  RequirePlatformAuth,
   RoleGate,
   CapabilityGate,
 } from './components/auth/RequireAuth'
@@ -17,6 +19,7 @@ import {
   RegisterPage,
   ForgotPasswordPage,
 } from './pages/auth/AuthPages'
+import { PlatformLoginPage } from './pages/auth/PlatformLoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { HomePage } from './pages/HomePage'
 import { PortfolioPage } from './pages/PortfolioPage'
@@ -40,7 +43,12 @@ import {
   SettingsPage,
   MobileSupervisorPage,
 } from './pages/MorePages'
-import { PlatformAdminPage } from './pages/PlatformAdminPage'
+import { PlatformOverviewPage } from './pages/platform/PlatformOverviewPage'
+import { PlatformCompaniesPage } from './pages/platform/PlatformCompaniesPage'
+import { PlatformSubscriptionsPage } from './pages/platform/PlatformSubscriptionsPage'
+import { PlatformUsersPage } from './pages/platform/PlatformUsersPage'
+import { PlatformFeaturesPage } from './pages/platform/PlatformFeaturesPage'
+import { PlatformSettingsPage } from './pages/platform/PlatformSettingsPage'
 import { InboxPage } from './pages/InboxPage'
 import { AdminPeoplePage } from './pages/AdminPeoplePage'
 import { SiteFeedPage } from './pages/SiteFeedPage'
@@ -100,6 +108,19 @@ export default function App() {
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
             <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          </Route>
+
+          <Route element={<PlatformGuestOnly />}>
+            <Route path="/platform/login" element={<PlatformLoginPage />} />
+          </Route>
+
+          <Route element={<RequirePlatformAuth />}>
+            <Route path="/platform" element={<PlatformOverviewPage />} />
+            <Route path="/platform/companies" element={<PlatformCompaniesPage />} />
+            <Route path="/platform/subscriptions" element={<PlatformSubscriptionsPage />} />
+            <Route path="/platform/users" element={<PlatformUsersPage />} />
+            <Route path="/platform/features" element={<PlatformFeaturesPage />} />
+            <Route path="/platform/settings" element={<PlatformSettingsPage />} />
           </Route>
 
           <Route path="/onboarding" element={<OnboardingRoute />} />
@@ -317,16 +338,6 @@ export default function App() {
               }
             />
             <Route
-              path="/platform"
-              element={
-                <CapabilityGate capability="platform">
-                  <PagePad>
-                    <PlatformAdminPage />
-                  </PagePad>
-                </CapabilityGate>
-              }
-            />
-            <Route
               path="/mobile"
               element={
                 <CapabilityGate capability="mobile">
@@ -350,6 +361,10 @@ export default function App() {
             />
             <Route path="/quotations" element={<Navigate to="/boq" replace />} />
             <Route path="/ui-kit" element={<Navigate to="/projects" replace />} />
+            <Route
+              path="/platform/*"
+              element={<Navigate to="/platform" replace />}
+            />
           </Route>
 
           <Route path="*" element={<HomeRedirect />} />

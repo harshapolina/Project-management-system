@@ -17,6 +17,10 @@ import {
 } from '../models/ProcurementFinance.js'
 import { WorkspaceSettings } from '../models/WorkspaceSettings.js'
 import { AppError } from './errorHandler.js'
+import {
+  tenantBlockMessage,
+  tenantIsAccessible,
+} from '../lib/tenantFeatures.js'
 
 const RESERVED = new Set([
   'www',
@@ -73,8 +77,8 @@ export async function resolveTenant(req, _res, next) {
     if (!tenant) {
       return next(new AppError(`Workspace "${slug}" not found`, 404))
     }
-    if (tenant.status === 'suspended') {
-      return next(new AppError('This workspace is suspended', 403))
+    if (!tenantIsAccessible(tenant)) {
+      return next(new AppError(tenantBlockMessage(tenant), 403))
     }
 
     req.tenant = tenant

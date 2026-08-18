@@ -2,6 +2,7 @@ import { Navigate, Outlet, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../lib/api'
 import { capabilitiesForUser, homePathForUser } from '../../lib/roles'
 import { AppShell } from '../layout/AppShell'
+import { PlatformShell } from '../layout/PlatformShell'
 
 export function RequireAuth({ roles }) {
   const user = useAuthStore((s) => s.user)
@@ -57,4 +58,35 @@ export function GuestOnly() {
   }
 
   return <Outlet />
+}
+
+export function PlatformGuestOnly() {
+  const user = useAuthStore((s) => s.user)
+  const accessToken = useAuthStore((s) => s.accessToken)
+
+  if (user && accessToken && user.isPlatformAdmin) {
+    return <Navigate to="/platform" replace />
+  }
+
+  return <Outlet />
+}
+
+export function RequirePlatformAuth() {
+  const user = useAuthStore((s) => s.user)
+  const accessToken = useAuthStore((s) => s.accessToken)
+  const location = useLocation()
+
+  if (!user || !accessToken) {
+    return <Navigate to="/platform/login" replace state={{ from: location }} />
+  }
+
+  if (!user.isPlatformAdmin) {
+    return <Navigate to={homePathForUser(user) || '/projects'} replace />
+  }
+
+  return (
+    <PlatformShell>
+      <Outlet />
+    </PlatformShell>
+  )
 }

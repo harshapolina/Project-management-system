@@ -1,4 +1,5 @@
 import mongoose from 'mongoose'
+import { defaultTenantFeatures } from '../lib/tenantFeatures.js'
 
 const tenantSchema = new mongoose.Schema(
   {
@@ -13,11 +14,24 @@ const tenantSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['trial', 'active', 'suspended'],
+      enum: ['trial', 'active', 'suspended', 'cancelled'],
       default: 'active',
     },
     seatLimit: { type: Number, default: 30, min: 1 },
     trialEndsAt: { type: Date, default: null },
+    /** Subscription plan label (Editco billing tier). */
+    subscriptionPlan: {
+      type: String,
+      enum: ['starter', 'pro', 'enterprise'],
+      default: 'pro',
+    },
+    /** When set, workspace access is blocked (subscription ended). */
+    cancelledAt: { type: Date, default: null },
+    /** Module gates — platform admin can disable features per company. */
+    features: {
+      type: mongoose.Schema.Types.Mixed,
+      default: defaultTenantFeatures,
+    },
     notes: { type: String, default: '' },
   },
   { timestamps: true },

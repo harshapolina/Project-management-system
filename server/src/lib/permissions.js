@@ -1,4 +1,7 @@
 import { AppError } from '../middleware/errorHandler.js'
+import {
+  applyTenantFeatureLimits,
+} from './tenantFeatures.js'
 
 export const PERMISSION_KEYS = [
   'projects.create',
@@ -47,17 +50,22 @@ export function defaultPermissionsForRole(role) {
   return { ...(ROLE_DEFAULTS[role] || {}) }
 }
 
-export function resolvePermissions(user) {
+export function resolvePermissions(user, tenant = null) {
   if (!user) return {}
-  if (user.isPlatformAdmin) return { ...ALL_ENABLED }
-  return {
-    ...defaultPermissionsForRole(user.role),
-    ...overridesFor(user),
+  let perms
+  if (user.isPlatformAdmin) {
+    perms = { ...ALL_ENABLED }
+  } else {
+    perms = {
+      ...defaultPermissionsForRole(user.role),
+      ...overridesFor(user),
+    }
   }
+  return applyTenantFeatureLimits(perms, tenant)
 }
 
-export function hasPermission(user, key) {
-  return !!resolvePermissions(user)[key]
+export function hasPermission(user, key, tenant = null) {
+  return !!resolvePermissions(user, tenant)[key]
 }
 
 export function canManageEmployeeAccess(user) {
@@ -69,7 +77,7 @@ export function canManageEmployeeAccess(user) {
 export function requirePermission(key) {
   return (req, _res, next) => {
     if (!req.user) return next(new AppError('Authentication required', 401))
-    if (!hasPermission(req.user, key)) {
+    if (!hasPermission(req.user, key, req.tenant)) {
       return next(new AppError('Insufficient permissions', 403))
     }
     next()

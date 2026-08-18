@@ -1,0 +1,243 @@
+export type Role =
+  | 'admin'
+  | 'owner'
+  | 'hr'
+  | 'project_manager'
+  | 'designer'
+  | 'site_supervisor'
+  | 'vendor'
+  | 'client'
+
+export interface User {
+  id: string
+  name: string
+  email: string
+  role: Role
+  avatar?: string
+  phone?: string
+  title?: string
+  company?: string
+  tenantId?: string
+  isPlatformAdmin: boolean
+  permissions: Record<string, boolean>
+  mustChangePassword: boolean
+  onboardingCompleted: boolean
+  googleCalendarConnected?: boolean
+  createdAt?: string
+}
+
+export interface Tenant {
+  id: string
+  name: string
+  slug: string
+  status?: string
+  seatLimit?: number
+}
+
+export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done'
+export type TaskPriority = 'urgent' | 'high' | 'medium' | 'low'
+
+export interface ChecklistItem {
+  _id?: string
+  text: string
+  done: boolean
+}
+
+export interface Task {
+  _id: string
+  title: string
+  description?: string
+  status: TaskStatus
+  priority: TaskPriority
+  progress?: number
+  isPersonal?: boolean
+  isMilestone?: boolean
+  requiresApproval?: boolean
+  approvalStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  dueDate?: string | null
+  startDate?: string | null
+  stage?: string
+  tags?: string[]
+  checklist?: ChecklistItem[]
+  timeEstimate?: number | null
+  timeSpent?: number
+  timeTrackingStartedAt?: string | null
+  projectId?: { _id: string; name: string; coverImage?: string } | string | null
+  assignee?: { _id: string; name: string; avatar?: string } | string | null
+  createdBy?: { _id: string; name: string; avatar?: string } | string
+  createdAt: string
+  updatedAt: string
+}
+
+export interface Comment {
+  _id: string
+  body: string
+  author: { _id: string; name: string; avatar?: string }
+  assignedTo?: { _id: string; name: string; avatar?: string }
+  resolved?: boolean
+  createdAt: string
+}
+
+export interface ActivityLogItem {
+  _id: string
+  type: string
+  message: string
+  actor?: { _id: string; name: string; avatar?: string }
+  projectId?: { _id: string; name: string } | string
+  createdAt: string
+}
+
+export interface ProjectStage {
+  key: string
+  label: string
+  status: 'not_started' | 'in_progress' | 'completed'
+  progress: number
+}
+
+export interface ProjectMember {
+  user: { _id: string; name: string; avatar?: string; role?: string; email?: string; title?: string }
+  role?: string
+}
+
+export interface Project {
+  _id: string
+  code?: string
+  name: string
+  clientName: string
+  clientPhone?: string
+  type: 'residential' | 'commercial' | 'blank' | string
+  location?: string
+  startDate?: string
+  endDate?: string
+  budget?: number
+  spent?: number
+  progress?: number
+  coverImage?: string
+  description?: string
+  status: 'in_progress' | 'completed' | 'on_hold' | 'delayed' | string
+  currentStage?: string
+  isDelayed?: boolean
+  stages?: ProjectStage[]
+  projectManager?: { _id: string; name: string; avatar?: string }
+  members?: ProjectMember[]
+  meetingNotes?: import('./ops').MeetingNote[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface ProjectStats {
+  openTasks: number
+  pendingApprovals: number
+  budgetVsSpent: { budget: number; spent: number; pct: number }
+  latestActivity: ActivityLogItem | null
+}
+
+export interface ProjectFile {
+  _id: string
+  projectId: string
+  folder: string
+  name: string
+  mime?: string
+  status: 'draft' | 'sent' | 'approved' | string
+  clientVisible?: boolean
+  currentVersion: number
+  versions: { version: number; url: string; note?: string; uploadedBy?: string; createdAt?: string }[]
+  updatedAt: string
+}
+
+export interface Notification {
+  _id: string
+  type: string
+  title: string
+  body?: string
+  link?: string
+  read: boolean
+  createdAt: string
+}
+
+export interface MailUser {
+  _id: string
+  name: string
+  email: string
+  avatar?: string
+  role?: string
+  title?: string
+  company?: string
+}
+
+export interface Message {
+  _id: string
+  from: MailUser
+  to: MailUser
+  subject?: string
+  body: string
+  readAt?: string | null
+  createdAt: string
+}
+
+export interface MailThread {
+  user: MailUser
+  lastMessage: Message
+  unread: number
+}
+
+export interface HomeTasksBucket {
+  today: Task[]
+  upcoming: Task[]
+  overdue: Task[]
+  next: Task[]
+  unscheduled: Task[]
+  assigned: Task[]
+  done: Task[]
+  delegated: Task[]
+  personal: Task[]
+  priorities: Task[]
+}
+
+export interface HomeData {
+  greeting: string
+  tasks: HomeTasksBucket
+  agenda: Task[]
+  assignedComments: Comment[]
+  recents: Task[]
+  approvals: Task[]
+  activity: ActivityLogItem[]
+  mentions: ActivityLogItem[]
+  notifications: Notification[]
+}
+
+export interface ImpactBadge {
+  key: string
+  label: string
+  earned: boolean
+  [k: string]: unknown
+}
+
+export interface ImpactScore {
+  totalPoints: number
+  level?: string
+  badges?: string[]
+  [k: string]: unknown
+}
+
+export interface ImpactData {
+  score: ImpactScore
+  badges: ImpactBadge[]
+  breakdown: { category: string; points: number; count: number }[]
+  trend: { date: string; points: number }[]
+  timeline: {
+    _id: string
+    points: number
+    reason: string
+    category?: string
+    createdAt: string
+    projectId?: { _id: string; name: string }
+  }[]
+  canManage: boolean
+}
+
+export interface ApiError {
+  status?: number
+  message: string
+  data?: unknown
+}

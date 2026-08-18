@@ -15,7 +15,6 @@ import {
   LogOut,
   Truck,
   Wallet,
-  Network,
   Inbox,
   UserPlus,
   Square,
@@ -157,7 +156,7 @@ function navActive(pathname, search, to) {
 export function AppShell({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout, setUser } = useAuthStore()
+  const { user, tenant, logout, setUser } = useAuthStore()
   const {
     searchOpen,
     setSearchOpen,
@@ -171,7 +170,7 @@ export function AppShell({ children }) {
   const [projectModalOpen, setProjectModalOpen] = useState(false)
   const [timerTick, setTimerTick] = useState(() => Date.now())
   const qc = useQueryClient()
-  const caps = capabilitiesForUser(user)
+  const caps = capabilitiesForUser(user, tenant)
   const primaryNav = ALL_PRIMARY_NAV.filter((item) => caps[item.capability])
   const showPeople = caps.people
   const isSupervisor = caps.mobile
@@ -430,23 +429,6 @@ export function AppShell({ children }) {
             <Settings className="h-4 w-4" />
             Settings
           </NavLink>
-          {caps.platform && (
-            <NavLink
-              to="/platform"
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium',
-                  isActive
-                    ? 'bg-[#1e4a7a] text-white'
-                    : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
-                )
-              }
-            >
-              <Network className="h-4 w-4" />
-              Platform
-            </NavLink>
-          )}
           <button
             type="button"
             onClick={() => {

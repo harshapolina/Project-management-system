@@ -83,6 +83,7 @@ userSchema.methods.toSafeJSON = function toSafeJSON() {
         ? { ...this.permissions }
         : {},
     mustChangePassword: !!this.mustChangePassword,
+    isActive: this.isActive !== false,
     onboardingCompleted: this.onboardingCompleted,
     googleCalendarConnected: !!this.googleCalendar?.connected,
     googleCalendarEmail: this.googleCalendar?.email || '',

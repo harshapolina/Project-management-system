@@ -1,0 +1,38 @@
+{
+  "expo": {
+    "name": "Cubic",
+    "slug": "editco-media",
+    "scheme": "cubic",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "studio.cubic.mobile"
+    },
+    "android": {
+      "package": "studio.cubic.mobile",
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-secure-store",
+      "expo-status-bar"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "96edd0dd-a1c2-4b9c-9573-f49c882d19ad"
+      }
+    },
+    "owner": "editcomedias-team"
+  }
+}

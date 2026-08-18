@@ -327,11 +327,17 @@ function ResultRow({ icon: Icon, title, subtitle, active, onClick, onMouseEnter 
 export function InviteDetailsModal({ open, onClose, details }) {
   if (!details) return null
 
+  const portalLabel =
+    details.portal === 'admin' ? 'Admin / Owner portal' : 'Staff portal'
+
   const text = [
+    details.companyName && `Company: ${details.companyName}`,
     details.workspace && `Workspace: ${details.workspace}`,
+    details.role && `Role: ${details.role}`,
     details.email && `Email: ${details.email}`,
-    details.tempPassword && `Temp password: ${details.tempPassword}`,
+    details.tempPassword && `Password: ${details.tempPassword}`,
     details.loginUrl && `Login: ${details.loginUrl}`,
+    details.portal && `Sign in via: ${portalLabel}`,
   ]
     .filter(Boolean)
     .join('\n')
@@ -349,14 +355,25 @@ export function InviteDetailsModal({ open, onClose, details }) {
     <Modal open={open} onClose={onClose} title="Share these login details" size="sm">
       <div className="space-y-3 text-sm">
         <p className="text-xs text-secondary">
-          Send this to the person (WhatsApp / email). There is no magic link yet —
-          they sign in with workspace + email + password.
+          Send this to the company (WhatsApp / email). They use the company login
+          page — not the Editco platform portal.
         </p>
         <div className="space-y-2 rounded-xl border border-border bg-surface-raised px-3 py-3 font-mono text-[12px]">
+          {details.companyName && (
+            <p>
+              Company:{' '}
+              <span className="text-primary">{details.companyName}</span>
+            </p>
+          )}
           {details.workspace && (
             <p>
               Workspace:{' '}
               <span className="text-primary">{details.workspace}</span>
+            </p>
+          )}
+          {details.role && (
+            <p>
+              Role: <span className="text-primary">{details.role}</span>
             </p>
           )}
           {details.email && (
@@ -366,8 +383,13 @@ export function InviteDetailsModal({ open, onClose, details }) {
           )}
           {details.tempPassword && (
             <p>
-              Temp password:{' '}
+              Password:{' '}
               <span className="text-accent">{details.tempPassword}</span>
+            </p>
+          )}
+          {details.loginUrl && (
+            <p className="break-all text-[11px] text-secondary">
+              {details.loginUrl}
             </p>
           )}
         </div>
