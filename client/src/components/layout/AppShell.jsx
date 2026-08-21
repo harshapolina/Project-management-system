@@ -15,7 +15,6 @@ import {
   LogOut,
   Truck,
   Wallet,
-  Inbox,
   UserPlus,
   Square,
   Clock,
@@ -23,7 +22,6 @@ import {
   X,
   Building2,
   Gauge,
-  Smartphone,
   FileSpreadsheet,
   Trophy,
   Package,
@@ -180,7 +178,6 @@ export function AppShell({ children }) {
   const caps = capabilitiesForUser(user, tenant)
   const primaryNav = ALL_PRIMARY_NAV.filter((item) => caps[item.capability])
   const showPeople = caps.people
-  const isSupervisor = caps.mobile
   const canCreate = caps.createProject
 
   const { data: activeTimerData } = useQuery({
@@ -644,32 +641,6 @@ export function AppShell({ children }) {
                       {user?.email || ''}
                     </p>
                   </div>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
-                    onClick={() => {
-                      setProfileMenuOpen(false)
-                      navigate('/inbox?tab=primary')
-                    }}
-                  >
-                    <Inbox className="h-4 w-4" />
-                    Notifications
-                  </button>
-                  {isSupervisor && (
-                    <button
-                      type="button"
-                      role="menuitem"
-                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
-                      onClick={() => {
-                        setProfileMenuOpen(false)
-                        navigate('/mobile')
-                      }}
-                    >
-                      <Smartphone className="h-4 w-4" />
-                      Phone site mode
-                    </button>
-                  )}
                   <button
                     type="button"
                     role="menuitem"
