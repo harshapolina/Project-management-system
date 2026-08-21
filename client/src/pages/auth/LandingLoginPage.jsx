@@ -239,7 +239,7 @@ function LogoMark({ size = 'md' }) {
   const box = size === 'sm' ? 'h-7 w-7 text-[11px]' : 'h-8 w-8 text-[12px]'
   return (
     <span
-      className={`flex ${box} items-center justify-center rounded-xl bg-[#2563eb] font-bold text-white shadow-[0_4px_12px_rgba(37,99,235,0.32)]`}
+      className={`flex ${box} items-center justify-center rounded-[6px] bg-[#3ecf8e] font-bold text-[#171717] shadow-[0_1px_3px_rgba(0,0,0,0.06)]`}
     >
       E
     </span>
@@ -533,24 +533,24 @@ export function LoginPage() {
   return (
     <div
       ref={root}
-      className="lp-root min-h-screen overflow-x-hidden bg-[#0F0F10] text-white"
+      className="lp-root min-h-screen overflow-x-hidden bg-white text-[#171717]"
       style={{ fontFamily: 'var(--font-landing)' }}
     >
       {/* ── FLOATING GLASSY NAV ── */}
       <header className="lp-nav pointer-events-none fixed inset-x-0 top-0 z-50 px-3 pt-3 sm:px-4 sm:pt-4 md:px-6">
-        <div className="pointer-events-auto mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-[#e2e8f0] bg-[rgba(255,255,255,0.82)] px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-2xl sm:gap-4 sm:px-5 sm:py-3">
+        <div className="pointer-events-auto mx-auto flex max-w-6xl items-center justify-between gap-3 rounded-2xl border border-[#dfdfdf] bg-[rgba(255,255,255,0.82)] px-3 py-2.5 shadow-[0_10px_30px_rgba(15,23,42,0.08)] backdrop-blur-2xl sm:gap-4 sm:px-5 sm:py-3">
           <a href="#top" className="flex items-center gap-2.5">
             <LogoMark />
-            <span className="text-[16px] font-bold tracking-tight text-[#0f172a]">
+            <span className="text-[16px] font-bold tracking-tight text-[#171717]">
               EPM
             </span>
           </a>
-          <nav className="hidden items-center gap-5 text-[13px] font-medium text-[#475569] md:flex lg:gap-7">
+          <nav className="hidden items-center gap-5 text-[13px] font-medium text-[#707070] md:flex lg:gap-7">
             {NAV.map((item) => (
               <a
                 key={item.href}
                 href={item.href}
-                className="transition-colors hover:text-[#2563eb]"
+                className="transition-colors hover:text-[#3ecf8e]"
               >
                 {item.label}
               </a>
@@ -558,7 +558,7 @@ export function LoginPage() {
           </nav>
           <a
             href="#enter"
-            className="rounded-full bg-[#2563eb] px-4 py-2 text-[12px] font-semibold text-white shadow-[0_6px_16px_rgba(37,99,235,0.28)] transition hover:bg-[#1d4ed8] sm:px-5 sm:text-[13px]"
+            className="rounded-full bg-[#3ecf8e] px-4 py-2 text-[12px] font-semibold text-[#171717] shadow-[0_6px_16px_rgba(37,99,235,0.28)] transition hover:bg-[#24b47e] sm:px-5 sm:text-[13px]"
           >
             Contact Us
           </a>
@@ -568,23 +568,23 @@ export function LoginPage() {
       {/* ── HERO ── */}
       <section
         id="top"
-        className="lp-hero relative overflow-hidden bg-[#0F0F10] pb-16 pt-28 text-white md:pb-24 md:pt-32"
+        className="lp-hero relative overflow-hidden bg-white pb-16 pt-28 text-[#171717] md:pb-24 md:pt-32"
       >
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_50%_0%,_rgba(37,99,235,0.10)_0%,_transparent_58%)]" />
         <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_at_80%_35%,_rgba(14,165,233,0.08)_0%,_transparent_45%)]" />
 
         <div className="relative z-10 mx-auto max-w-5xl px-4 text-center md:px-6">
           <div className="lp-hero-copy mx-auto max-w-3xl">
-            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#dbeafe] bg-[#eff6ff] px-3.5 py-1.5 text-[12px] font-semibold text-[#1d4ed8]">
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-[#d1fae5] bg-[#ecfdf5] px-3.5 py-1.5 text-[12px] font-semibold text-[#24b47e]">
               <Sparkles className="h-3.5 w-3.5" />
               EPM · Editco Project Management
             </span>
-            <h1 className="mt-5 text-[clamp(2.35rem,6vw,3.85rem)] font-bold leading-[1.08] tracking-[-0.035em] text-[#0f172a]">
+            <h1 className="mt-5 text-[clamp(2.35rem,6vw,3.85rem)] font-bold leading-[1.08] tracking-[-0.035em] text-[#171717]">
               Simplify Task Management
               <br />
-              <span className="text-[#2563eb]">Boost Productivity.</span>
+              <span className="text-[#3ecf8e]">Boost Productivity.</span>
             </h1>
-            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[#64748b] md:text-[16px]">
+            <p className="mx-auto mt-5 max-w-xl text-[15px] leading-relaxed text-[#707070] md:text-[16px]">
               EPM is the interior project OS — tasks, boards, Gantt, BOQ, site,
               and channels in one private workspace built for studios that ship
               spaces.
@@ -592,14 +592,14 @@ export function LoginPage() {
             <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
               <a
                 href="#enter"
-                className="inline-flex items-center gap-2 rounded-full bg-[#2563eb] px-7 py-3.5 text-[14px] font-semibold text-white shadow-[0_12px_28px_rgba(37,99,235,0.3)] transition hover:bg-[#1d4ed8]"
+                className="inline-flex items-center gap-2 rounded-full bg-[#3ecf8e] px-7 py-3.5 text-[14px] font-semibold text-[#171717] shadow-[0_12px_28px_rgba(37,99,235,0.3)] transition hover:bg-[#24b47e]"
               >
                 Get Started Free
                 <ArrowRight className="h-4 w-4" />
               </a>
               <a
                 href="#features"
-                className="rounded-full border border-[#cbd5e1] bg-[rgba(255,255,255,0.9)] px-7 py-3.5 text-[14px] font-semibold text-[#0f172a] shadow-[0_6px_18px_rgba(15,23,42,0.06)] backdrop-blur transition hover:border-[#93c5fd] hover:text-[#1d4ed8]"
+                className="rounded-full border border-[#c7c7c7] bg-[rgba(255,255,255,0.9)] px-7 py-3.5 text-[14px] font-semibold text-[#171717] shadow-[0_6px_18px_rgba(15,23,42,0.06)] backdrop-blur transition hover:border-[#4ade80] hover:text-[#24b47e]"
               >
                 Book a Demo
               </a>
@@ -610,7 +610,7 @@ export function LoginPage() {
             {FLOAT_TAGS.map((tag) => (
               <span
                 key={tag.label}
-                className={`absolute z-20 hidden rounded-full border border-[#e2e8f0] bg-[rgba(255,255,255,0.95)] px-3.5 py-1.5 text-[11px] font-semibold text-[#334155] shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur sm:inline-flex ${tag.className}`}
+                className={`absolute z-20 hidden rounded-full border border-[#dfdfdf] bg-[rgba(255,255,255,0.95)] px-3.5 py-1.5 text-[11px] font-semibold text-[#334155] shadow-[0_8px_20px_rgba(15,23,42,0.12)] backdrop-blur sm:inline-flex ${tag.className}`}
               >
                 {tag.label}
               </span>
@@ -631,9 +631,9 @@ export function LoginPage() {
       </section>
 
       {/* ── TRUST ── */}
-      <section className="lp-trust border-y border-[#2e2e32] bg-[#0F0F10] px-4 py-10 md:px-6">
+      <section className="lp-trust border-y border-[#2e2e32] bg-white px-4 py-10 md:px-6">
         <div className="mx-auto max-w-6xl">
-          <p className="lp-trust-head max-w-xs text-[13px] font-semibold leading-snug text-white md:text-[14px]">
+          <p className="lp-trust-head max-w-xs text-[13px] font-semibold leading-snug text-[#171717] md:text-[14px]">
             Endorsed by the globe&apos;s leading innovative enterprises.
           </p>
           <div className="mt-6 overflow-hidden">
@@ -658,7 +658,7 @@ export function LoginPage() {
       >
         <div className="mx-auto max-w-6xl">
           <div className="lp-feat-head mx-auto max-w-2xl text-center">
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-white">
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-[#171717]">
               Unlock Premium Benefits That Elevate Your Efficiency.
             </h2>
             <p className="mt-3 text-[15px] text-[#8b8b90]">
@@ -678,7 +678,7 @@ export function LoginPage() {
                 <div className="lp-glow-frame lp-glow-frame--card flex h-full flex-col">
                   <div className="lp-glow-inner flex h-full flex-col">
                     <div className="px-5 pt-5">
-                      <h3 className="text-[16px] font-bold tracking-tight text-white">
+                      <h3 className="text-[16px] font-bold tracking-tight text-[#171717]">
                         {f.title}
                       </h3>
                       <p className="mt-1.5 text-[13px] leading-relaxed text-[#8b8b90]">
@@ -690,13 +690,13 @@ export function LoginPage() {
                         f.tall ? 'min-h-[320px]' : 'min-h-[140px]'
                       }`}
                     >
-                      <div className="h-full overflow-hidden rounded-2xl border border-[#2e2e32] bg-[#0F0F10]">
+                      <div className="h-full overflow-hidden rounded-2xl border border-[#2e2e32] bg-white">
                         <ImageSlot
                           src={f.image}
                           label={f.slot}
                           imgClassName={
                             f.key === 'messages'
-                              ? 'object-contain object-top bg-[#0F0F10]'
+                              ? 'object-contain object-top bg-white'
                               : 'object-cover'
                           }
                         />
@@ -711,10 +711,10 @@ export function LoginPage() {
       </section>
 
       {/* ── WHY / STATS ── */}
-      <section id="why" className="lp-why bg-[#0F0F10] px-4 py-16 md:px-6 md:py-24">
+      <section id="why" className="lp-why bg-white px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="lp-why-head mx-auto max-w-2xl text-center">
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-white">
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-[#171717]">
               Why Teams Choose EPM
             </h2>
             <p className="mt-3 text-[15px] text-[#8b8b90]">
@@ -733,7 +733,7 @@ export function LoginPage() {
                 >
                   <div className="flex items-start justify-between gap-3">
                     <p
-                      className="lp-stat-value text-[clamp(2rem,4vw,2.75rem)] font-bold tracking-tight text-white"
+                      className="lp-stat-value text-[clamp(2rem,4vw,2.75rem)] font-bold tracking-tight text-[#171717]"
                       data-value={s.value}
                       data-suffix={s.suffix}
                     >
@@ -757,7 +757,7 @@ export function LoginPage() {
       <section className="lp-how bg-[#121214] px-4 py-16 md:px-6 md:py-24">
         <div className="mx-auto max-w-6xl">
           <div className="lp-how-head mx-auto max-w-2xl text-center">
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-white">
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-[#171717]">
               Get Started In Just 3 Easy Steps
             </h2>
             <p className="mt-3 text-[15px] text-[#8b8b90]">
@@ -790,7 +790,7 @@ export function LoginPage() {
                           {step.n}
                         </span>
                         <div className="min-w-0 flex-1">
-                          <h3 className="text-[16px] font-bold text-white">
+                          <h3 className="text-[16px] font-bold text-[#171717]">
                             {step.title}
                           </h3>
                           <p className="mt-1.5 text-[13px] leading-relaxed text-[#8b8b90]">
@@ -798,7 +798,7 @@ export function LoginPage() {
                           </p>
                         </div>
                       </div>
-                      <div className="relative z-10 mt-4 h-16 overflow-hidden rounded-xl border border-[#2e2e32] bg-[#0F0F10] sm:h-20">
+                      <div className="relative z-10 mt-4 h-16 overflow-hidden rounded-xl border border-[#2e2e32] bg-white sm:h-20">
                         <ImageSlot
                           src={step.image}
                           label={step.slot}
@@ -821,7 +821,7 @@ export function LoginPage() {
       >
         <div className="mx-auto max-w-6xl">
           <div className="lp-price-head mx-auto max-w-2xl text-center">
-            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-white">
+            <h2 className="text-[clamp(1.75rem,3.5vw,2.65rem)] font-bold tracking-tight text-[#171717]">
               Simple Plans For Growing Studios
             </h2>
             <p className="mt-3 text-[15px] text-[#8b8b90]">
@@ -833,37 +833,37 @@ export function LoginPage() {
             {PLANS.map((plan) => (
               <article
                 key={plan.name}
-                className={`lp-price-card flex flex-col rounded-[22px] border p-6 md:p-7 ${
+                className={`lp-price-card flex flex-col rounded-[12px] border p-6 md:p-8 ${
                   plan.featured
-                    ? 'border-accent/40 bg-[#1c1c1e] text-white shadow-xl shadow-[rgba(37,99,235,0.16)] ring-1 ring-accent/25'
-                    : 'border-[#2e2e32] bg-[#0F0F10]'
+                    ? 'on-dark border-transparent bg-[#1c1c1c] text-white shadow-[0_8px_24px_rgba(0,0,0,0.08)]'
+                    : 'border-[#dfdfdf] bg-white'
                 }`}
               >
                 <p
-                  className={`text-[13px] font-semibold ${
-                    plan.featured ? 'text-accent' : 'text-[#8b8b90]'
+                  className={`text-[13px] font-medium ${
+                    plan.featured ? 'text-[#4ade80]' : 'text-[#707070]'
                   }`}
                 >
                   {plan.name}
                 </p>
-                <p className="mt-2 text-[2rem] font-bold tracking-tight text-white">
+                <p className={`mt-2 text-[2rem] font-medium tracking-tight ${plan.featured ? 'text-white' : 'text-[#171717]'}`}>
                   {plan.price}
                 </p>
-                <p className="mt-1 text-[13px] text-[#8b8b90]">{plan.hint}</p>
+                <p className={`mt-1 text-[13px] ${plan.featured ? 'text-[#9a9a9a]' : 'text-[#707070]'}`}>{plan.hint}</p>
                 <ul className="mt-6 flex-1 space-y-2.5">
                   {plan.features.map((f) => (
                     <li key={f} className="flex items-start gap-2 text-[13px]">
-                      <Check className="mt-0.5 h-4 w-4 shrink-0 text-accent" />
-                      <span className="text-[#c5c5c8]">{f}</span>
+                      <Check className={`mt-0.5 h-4 w-4 shrink-0 ${plan.featured ? 'text-[#3ecf8e]' : 'text-accent'}`} />
+                      <span className={plan.featured ? 'text-[#dfdfdf]' : 'text-[#212121]'}>{f}</span>
                     </li>
                   ))}
                 </ul>
                 <a
                   href="#enter"
-                  className={`mt-7 inline-flex items-center justify-center rounded-full px-5 py-3 text-[13px] font-semibold transition ${
+                  className={`mt-7 inline-flex items-center justify-center rounded-[6px] px-5 py-3 text-[14px] font-medium transition ${
                     plan.featured
-                      ? 'bg-accent text-[#0E0E10] hover:bg-accent-hover'
-                      : 'bg-white text-[#0E0E10] hover:bg-[#e8e8ea]'
+                      ? 'bg-accent text-[#171717] hover:bg-accent-hover'
+                      : 'border border-[#c7c7c7] bg-white text-[#171717] hover:bg-[#fafafa]'
                   }`}
                 >
                   {plan.cta}
@@ -875,26 +875,26 @@ export function LoginPage() {
       </section>
 
       {/* ── SIGN IN ── */}
-      <section id="enter" className="bg-[#0F0F10] px-4 py-16 md:px-6 md:py-20">
-        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[28px] border border-[#2e2e32] bg-[#1c1c1e] shadow-[0_24px_60px_rgba(15,23,42,0.12)] md:grid-cols-2">
-          <div className="lp-enter-left relative overflow-hidden bg-[#121214] px-7 py-10 text-white md:px-10 md:py-12">
+      <section id="enter" className="bg-white px-4 py-16 md:px-6 md:py-20">
+        <div className="mx-auto grid max-w-6xl overflow-hidden rounded-[12px] border border-[#dfdfdf] bg-white shadow-[0_8px_24px_rgba(0,0,0,0.08)] md:grid-cols-2">
+          <div className="lp-enter-left on-dark relative overflow-hidden bg-[#1c1c1c] px-7 py-10 text-white md:px-10 md:py-12">
             <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-accent/15" />
             <div className="pointer-events-none absolute -bottom-16 -left-8 h-48 w-48 rounded-full bg-white/5" />
             <div className="relative z-10">
-              <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">
+              <p className="text-[11px] font-medium uppercase tracking-[0.18em] text-[#3ecf8e]">
                 Enter
               </p>
-              <h2 className="mt-3 text-[clamp(1.5rem,3vw,2.1rem)] font-bold leading-tight">
+              <h2 className="mt-3 text-[clamp(1.5rem,3vw,2.1rem)] font-medium leading-tight tracking-tight">
                 {portal === 'admin'
                   ? 'Company owner sign-in'
                   : 'Staff sign-in'}
               </h2>
-              <p className="mt-4 text-[14px] leading-relaxed text-[#8b8b90]">
+              <p className="mt-4 text-[14px] leading-relaxed text-[#9a9a9a]">
                 {portal === 'admin'
                   ? 'People, company operations, permissions, and workspace administration.'
                   : 'Projects, tasks, and site work — for your studio team.'}
               </p>
-              <p className="mt-8 text-[11px] text-[#6b6b70]">
+              <p className="mt-8 text-[11px] text-[#707070]">
                 {portal === 'admin'
                   ? 'Demo owner · cubic · owner@cubic.demo · Company@Owner123'
                   : 'Demo employee · cubic · employee@cubic.demo · Employee@Demo123'}
@@ -905,14 +905,14 @@ export function LoginPage() {
             onSubmit={handleSubmit(onSubmit)}
             className="lp-enter-right space-y-3.5 px-7 py-10 md:px-10 md:py-12"
           >
-            <div className="flex rounded-full border border-[#2e2e32] bg-[#121214] p-1">
+            <div className="flex rounded-[6px] border border-[#dfdfdf] bg-[#fafafa] p-1">
               <button
                 type="button"
                 onClick={() => setPortal('staff')}
-                className={`flex-1 rounded-full py-2 text-[12px] font-semibold transition ${
+                className={`flex-1 rounded-[6px] py-2 text-[12px] font-medium transition ${
                   portal === 'staff'
-                    ? 'bg-accent text-[#0E0E10]'
-                    : 'text-[#8b8b90] hover:text-white'
+                    ? 'bg-accent text-[#171717]'
+                    : 'text-[#707070] hover:text-[#171717]'
                 }`}
               >
                 Staff
@@ -920,10 +920,10 @@ export function LoginPage() {
               <button
                 type="button"
                 onClick={() => setPortal('admin')}
-                className={`flex-1 rounded-full py-2 text-[12px] font-semibold transition ${
+                className={`flex-1 rounded-[6px] py-2 text-[12px] font-medium transition ${
                   portal === 'admin'
-                    ? 'bg-accent text-[#0E0E10]'
-                    : 'text-[#8b8b90] hover:text-white'
+                    ? 'bg-accent text-[#171717]'
+                    : 'text-[#707070] hover:text-[#171717]'
                 }`}
               >
                 Admin / Owner
@@ -962,7 +962,7 @@ export function LoginPage() {
               type="submit"
               loading={loading}
               size="lg"
-              className="w-full !rounded-full !bg-accent !text-[#0E0E10] hover:!bg-accent-hover"
+              className="w-full !rounded-[6px] !bg-accent !text-[#171717] hover:!bg-accent-hover"
             >
               Sign in
             </Button>
@@ -970,7 +970,7 @@ export function LoginPage() {
               Editco platform admin?{' '}
               <Link
                 to="/platform/login"
-                className="font-medium text-[#8b8b90] underline-offset-2 hover:text-white hover:underline"
+                className="font-medium text-[#8b8b90] underline-offset-2 hover:text-[#171717] hover:underline"
               >
                 Sign in here
               </Link>
@@ -979,11 +979,11 @@ export function LoginPage() {
         </div>
       </section>
 
-      <footer className="border-t border-[#2e2e32] bg-[#0F0F10] px-4 py-6 md:px-6">
+      <footer className="border-t border-[#2e2e32] bg-white px-4 py-6 md:px-6">
         <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-3">
           <div className="flex items-center gap-2.5">
             <LogoMark size="sm" />
-            <span className="text-[13px] font-bold text-white">EPM</span>
+            <span className="text-[13px] font-bold text-[#171717]">EPM</span>
           </div>
           <p className="text-[12px] text-[#6b6b70]">by Editco</p>
         </div>

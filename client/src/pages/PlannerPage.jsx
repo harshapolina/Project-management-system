@@ -573,7 +573,7 @@ export function PlannerPage() {
               target="_blank"
               rel="noreferrer"
               className={cn(
-                'absolute inset-x-1 z-[4] overflow-hidden rounded-md border border-[#2563eb]/50 bg-[#3b82f6]/80 px-1.5 py-1 text-[11px] font-medium text-white',
+                'absolute inset-x-1 z-[4] overflow-hidden rounded-md border border-[#3ecf8e]/50 bg-[#3b82f6]/80 px-1.5 py-1 text-[11px] font-medium text-white',
                 fullWidth && 'inset-x-2 px-2.5 py-1.5 text-[12px]',
               )}
               style={{ top, height }}
@@ -1113,7 +1113,7 @@ function CreateModal({ composer, setComposer, onSave, creating, linkableTasks = 
             >
               {t.label}
               {tab === t.id && (
-                <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-white" />
+                <span className="absolute inset-x-2 bottom-0 h-0.5 rounded-full bg-surface" />
               )}
             </button>
           ))}
@@ -1178,7 +1178,7 @@ function CreateModal({ composer, setComposer, onSave, creating, linkableTasks = 
                 href={videoLink}
                 target="_blank"
                 rel="noreferrer"
-                className="min-w-0 flex-1 truncate text-[12px] text-[#93c5fd] hover:underline"
+                className="min-w-0 flex-1 truncate text-[12px] text-[#4ade80] hover:underline"
               >
                 {videoLink}
               </a>

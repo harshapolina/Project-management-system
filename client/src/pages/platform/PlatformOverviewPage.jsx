@@ -6,9 +6,9 @@ import { usePlatformOverview, usePlatformTenants } from '../../lib/platformApi'
 function StatCard({ label, value, hint }) {
   return (
     <Card variant="light" className="p-4!">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">{label}</p>
-      <p className="mt-1 text-2xl font-bold text-[#0f172a]">{value}</p>
-      {hint && <p className="mt-1 text-xs text-[#64748b]">{hint}</p>}
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">{label}</p>
+      <p className="mt-1 text-2xl font-bold text-primary">{value}</p>
+      {hint && <p className="mt-1 text-xs text-secondary">{hint}</p>}
     </Card>
   )
 }
@@ -29,16 +29,16 @@ export function PlatformOverviewPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <p className="mb-1 text-sm font-medium text-[#64748b]">Editco · Platform</p>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#0f172a]">Overview</h1>
-        <p className="mt-1 text-sm text-[#64748b]">
+        <p className="mb-1 text-sm font-medium text-secondary">Editco · Platform</p>
+        <h1 className="text-[28px] font-semibold tracking-tight text-primary">Overview</h1>
+        <p className="mt-1 text-sm text-secondary">
           One platform admin controls all companies on EPM. Monitor health, subscriptions, and usage
           from here.
         </p>
       </div>
 
       {overviewLoading ? (
-        <p className="text-sm text-[#64748b]">Loading overview…</p>
+        <p className="text-sm text-secondary">Loading overview…</p>
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <StatCard label="Companies" value={overview?.companies ?? 0} />
@@ -54,7 +54,7 @@ export function PlatformOverviewPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         <Card variant="light" className="space-y-3">
-          <p className="font-semibold text-[#0f172a]">Subscription breakdown</p>
+          <p className="font-semibold text-primary">Subscription breakdown</p>
           <ul className="space-y-2 text-sm">
             {[
               ['Active', overview?.byStatus?.active],
@@ -62,32 +62,32 @@ export function PlatformOverviewPage() {
               ['Suspended', overview?.byStatus?.suspended],
               ['Cancelled', overview?.byStatus?.cancelled],
             ].map(([label, count]) => (
-              <li key={label} className="flex justify-between text-[#64748b]">
+              <li key={label} className="flex justify-between text-secondary">
                 <span>{label}</span>
-                <span className="font-semibold text-[#0f172a]">{count ?? 0}</span>
+                <span className="font-semibold text-primary">{count ?? 0}</span>
               </li>
             ))}
           </ul>
-          <Link to="/platform/subscriptions" className="text-sm font-medium text-[#2563eb] hover:underline">
+          <Link to="/platform/subscriptions" className="text-sm font-medium text-[#3ecf8e] hover:underline">
             Manage subscriptions →
           </Link>
         </Card>
 
         <Card variant="light" className="space-y-3">
-          <p className="font-semibold text-[#0f172a]">Plans in use</p>
+          <p className="font-semibold text-primary">Plans in use</p>
           <ul className="space-y-2 text-sm">
             {[
               ['Starter', overview?.byPlan?.starter],
               ['Pro', overview?.byPlan?.pro],
               ['Enterprise', overview?.byPlan?.enterprise],
             ].map(([label, count]) => (
-              <li key={label} className="flex justify-between text-[#64748b]">
+              <li key={label} className="flex justify-between text-secondary">
                 <span>{label}</span>
-                <span className="font-semibold text-[#0f172a]">{count ?? 0}</span>
+                <span className="font-semibold text-primary">{count ?? 0}</span>
               </li>
             ))}
           </ul>
-          <Link to="/platform/features" className="text-sm font-medium text-[#2563eb] hover:underline">
+          <Link to="/platform/features" className="text-sm font-medium text-[#3ecf8e] hover:underline">
             Feature plans →
           </Link>
         </Card>
@@ -102,12 +102,12 @@ export function PlatformOverviewPage() {
           <ul className="divide-y divide-[#fecaca]">
             {needsAttention.map((t) => (
               <li key={t._id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-                <span className="font-medium text-[#0f172a]">{t.name}</span>
+                <span className="font-medium text-primary">{t.name}</span>
                 <div className="flex items-center gap-2">
                   <StatusChip status={t.status} />
                   <Link
                     to="/platform/companies"
-                    className="text-[#2563eb] hover:underline"
+                    className="text-[#3ecf8e] hover:underline"
                   >
                     Open
                   </Link>
@@ -119,28 +119,28 @@ export function PlatformOverviewPage() {
       )}
 
       <Card variant="light" className="space-y-3">
-        <p className="font-semibold text-[#0f172a]">Quick actions</p>
+        <p className="font-semibold text-primary">Quick actions</p>
         <div className="grid gap-3 sm:grid-cols-3">
           <Link
             to="/platform/companies"
-            className="flex items-center gap-3 rounded-xl border border-[#dce4ee] bg-[#f8fafc] p-4 hover:border-[#2563eb]/30 hover:bg-[#eff6ff]"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-4 hover:border-[#3ecf8e]/30 hover:bg-[#ecfdf5]"
           >
-            <Building2 className="h-5 w-5 text-[#2563eb]" />
-            <span className="text-sm font-medium text-[#0f172a]">Manage companies</span>
+            <Building2 className="h-5 w-5 text-[#3ecf8e]" />
+            <span className="text-sm font-medium text-primary">Manage companies</span>
           </Link>
           <Link
             to="/platform/users"
-            className="flex items-center gap-3 rounded-xl border border-[#dce4ee] bg-[#f8fafc] p-4 hover:border-[#2563eb]/30 hover:bg-[#eff6ff]"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-4 hover:border-[#3ecf8e]/30 hover:bg-[#ecfdf5]"
           >
-            <Users className="h-5 w-5 text-[#2563eb]" />
-            <span className="text-sm font-medium text-[#0f172a]">Browse all users</span>
+            <Users className="h-5 w-5 text-[#3ecf8e]" />
+            <span className="text-sm font-medium text-primary">Browse all users</span>
           </Link>
           <Link
             to="/platform/features"
-            className="flex items-center gap-3 rounded-xl border border-[#dce4ee] bg-[#f8fafc] p-4 hover:border-[#2563eb]/30 hover:bg-[#eff6ff]"
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface-raised p-4 hover:border-[#3ecf8e]/30 hover:bg-[#ecfdf5]"
           >
-            <FolderKanban className="h-5 w-5 text-[#2563eb]" />
-            <span className="text-sm font-medium text-[#0f172a]">Configure feature plans</span>
+            <FolderKanban className="h-5 w-5 text-[#3ecf8e]" />
+            <span className="text-sm font-medium text-primary">Configure feature plans</span>
           </Link>
         </div>
       </Card>

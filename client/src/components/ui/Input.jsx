@@ -6,25 +6,16 @@ export const Input = forwardRef(function Input(
   ref,
 ) {
   return (
-    <label className="flex flex-col gap-1.5 w-full">
+    <label className="flex w-full flex-col gap-1.5">
       {label && (
-        <span
-          className={cn(
-            'text-xs font-medium',
-            light ? 'text-zinc-500' : 'text-secondary',
-          )}
-        >
-          {label}
-        </span>
+        <span className="text-xs font-semibold text-primary">{label}</span>
       )}
       <input
         ref={ref}
         className={cn(
-          'h-10 w-full rounded-[11px] px-3 text-sm outline-none transition-all duration-150',
-          'placeholder:text-secondary/70',
-          light
-            ? 'bg-white border border-border-light text-on-light focus:border-zinc-400 focus:ring-2 focus:ring-zinc-200'
-            : 'bg-surface-raised border border-border text-primary focus:border-accent/50 focus:ring-2 focus:ring-accent/15',
+          'h-9 w-full rounded-[6px] px-3 text-sm outline-none transition-all duration-150',
+          'border border-border bg-surface text-primary placeholder:text-muted',
+          'focus:border-accent/50 focus:ring-2 focus:ring-accent/15',
           error && 'border-status-delayed focus:border-status-delayed focus:ring-status-delayed/20',
           className,
         )}
@@ -32,9 +23,7 @@ export const Input = forwardRef(function Input(
       />
       {error && <span className="text-xs text-status-delayed">{error}</span>}
       {hint && !error && (
-        <span className={cn('text-xs', light ? 'text-zinc-400' : 'text-secondary')}>
-          {hint}
-        </span>
+        <span className="text-xs text-secondary">{hint}</span>
       )}
     </label>
   )

@@ -11,7 +11,7 @@ export function DataTable({
     return (
       <div
         className={cn(
-          'rounded-[18px] border border-[#e8eef4] bg-white px-6 py-10 text-center text-sm text-[#94a3b8]',
+          'rounded-[12px] border border-border bg-surface px-6 py-10 text-center text-sm text-secondary',
           className,
         )}
       >
@@ -23,14 +23,14 @@ export function DataTable({
   return (
     <div
       className={cn(
-        'min-w-0 w-full max-w-full overflow-hidden rounded-[18px] border border-[#e8eef4] bg-white',
+        'min-w-0 w-full max-w-full overflow-hidden rounded-[12px] border border-border bg-surface',
         className,
       )}
     >
       <div className="min-w-0 w-full overflow-x-auto overscroll-x-contain">
         <table className="w-full min-w-[560px] text-left text-sm">
           <thead>
-            <tr className="border-b border-[#e8eef4] bg-[#f8fafc] text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
+            <tr className="border-b border-border bg-surface-raised text-[11px] font-semibold uppercase tracking-wide text-secondary">
               {columns.map((col) => (
                 <th
                   key={col.key}
@@ -51,7 +51,7 @@ export function DataTable({
                 key={row.id || row._id || i}
                 onClick={() => onRowClick?.(row)}
                 className={cn(
-                  'border-b border-[#eef2f7] transition-colors duration-150 last:border-0 hover:bg-[#f8fafc]',
+                  'border-b border-border transition-colors duration-150 last:border-0 hover:bg-surface-raised',
                   onRowClick && 'cursor-pointer',
                 )}
               >
@@ -59,7 +59,7 @@ export function DataTable({
                   <td
                     key={col.key}
                     className={cn(
-                      'px-3 py-3 text-[#0f172a] sm:px-4',
+                      'px-3 py-3 text-primary sm:px-4',
                       col.numeric && 'tabular-nums',
                       col.align === 'right' && 'text-right',
                       col.className,

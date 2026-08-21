@@ -145,10 +145,10 @@ export function ProjectProcurement() {
     <div className="space-y-4 p-4 md:p-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[18px] font-semibold text-[#0f172a]">
+          <h2 className="text-[18px] font-semibold text-primary">
             Materials & orders
           </h2>
-          <p className="text-[13px] text-[#64748b]">
+          <p className="text-[13px] text-secondary">
             Items from the approved quote, then purchase orders to vendors
           </p>
         </div>
@@ -172,27 +172,27 @@ export function ProjectProcurement() {
       </div>
 
       <div className="grid gap-3 sm:grid-cols-3">
-        <Card className="!bg-white p-4 shadow-sm">
-          <p className="text-[12px] text-[#64748b]">Quote items to buy</p>
+        <Card className="!bg-surface p-4 shadow-sm">
+          <p className="text-[12px] text-secondary">Quote items to buy</p>
           <p className="mt-1 text-[24px] font-semibold tabular-nums">
             {pendingRows.length}
-            <span className="text-[14px] font-normal text-[#94a3b8]">
+            <span className="text-[14px] font-normal text-secondary">
               {' '}
               / {materialRows.length}
             </span>
           </p>
         </Card>
-        <Card className="!bg-white p-4 shadow-sm">
-          <p className="text-[12px] text-[#64748b]">Order value</p>
-          <p className="mt-1 text-[20px] font-semibold tabular-nums text-[#2563eb]">
+        <Card className="!bg-surface p-4 shadow-sm">
+          <p className="text-[12px] text-secondary">Order value</p>
+          <p className="mt-1 text-[20px] font-semibold tabular-nums text-[#3ecf8e]">
             {formatInr(totalValue)}
           </p>
         </Card>
-        <Card className="!bg-white p-4 shadow-sm">
-          <p className="text-[12px] text-[#64748b]">Delivered</p>
+        <Card className="!bg-surface p-4 shadow-sm">
+          <p className="text-[12px] text-secondary">Delivered</p>
           <p className="mt-1 text-[24px] font-semibold tabular-nums text-emerald-600">
             {delivered}
-            <span className="text-[14px] font-normal text-[#94a3b8]">
+            <span className="text-[14px] font-normal text-secondary">
               {' '}
               / {pos.length} POs
             </span>
@@ -201,17 +201,17 @@ export function ProjectProcurement() {
       </div>
 
       {/* From approved quote */}
-      <Card padding={false} className="overflow-hidden !bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#e8eef4] px-4 py-3">
+      <Card padding={false} className="overflow-hidden !bg-surface shadow-sm">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-4 py-3">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#eff6ff] text-[#2563eb]">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#ecfdf5] text-[#3ecf8e]">
               <FileSpreadsheet className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-[13px] font-semibold text-[#0f172a]">
+              <p className="text-[13px] font-semibold text-primary">
                 From approved quote
               </p>
-              <p className="text-[11px] text-[#94a3b8]">
+              <p className="text-[11px] text-secondary">
                 {approvedQuote
                   ? `${approvedQuote.title || 'Quote'} · ${formatInr(approvedQuote.grandTotal)}`
                   : 'Approve a quote first — items appear here to buy'}
@@ -223,7 +223,7 @@ export function ProjectProcurement() {
               <button
                 type="button"
                 onClick={selectAllPending}
-                className="rounded-lg border border-[#e2e8f0] px-2.5 py-1.5 text-[11px] font-semibold text-[#475569] hover:bg-[#f8fafc]"
+                className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-semibold text-secondary hover:bg-surface-raised"
               >
                 Select all pending
               </button>
@@ -231,7 +231,7 @@ export function ProjectProcurement() {
                 type="button"
                 onClick={openPoFromSelection}
                 disabled={!selectedItems.length}
-                className="rounded-lg bg-[#2563eb] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40"
+                className="rounded-lg bg-[#3ecf8e] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-40"
               >
                 Raise PO from selected
               </button>
@@ -241,17 +241,17 @@ export function ProjectProcurement() {
 
         {!approvedQuote && (
           <div className="px-4 py-10 text-center">
-            <Package className="mx-auto h-8 w-8 text-[#cbd5e1]" />
-            <p className="mt-2 text-[13px] font-medium text-[#64748b]">
+            <Package className="mx-auto h-8 w-8 text-[#c7c7c7]" />
+            <p className="mt-2 text-[13px] font-medium text-secondary">
               No approved quote yet
             </p>
-            <p className="mt-1 text-[12px] text-[#94a3b8]">
+            <p className="mt-1 text-[12px] text-secondary">
               Open BOQ / Quotes in the sidebar, build the sheet, then click
               Approve — those lines show here for ordering.
             </p>
             <Link
               to={`/boq/${id}`}
-              className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#2563eb]"
+              className="mt-3 inline-flex items-center gap-1 text-[12px] font-semibold text-[#3ecf8e]"
             >
               Open BOQ <ArrowRight className="h-3 w-3" />
             </Link>
@@ -259,7 +259,7 @@ export function ProjectProcurement() {
         )}
 
         {approvedQuote && materialRows.length === 0 && (
-          <p className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">
+          <p className="px-4 py-8 text-center text-[13px] text-secondary">
             Approved quote has no line items.
           </p>
         )}
@@ -268,7 +268,7 @@ export function ProjectProcurement() {
           <div className="overflow-x-auto">
             <table className="w-full min-w-[640px] border-collapse text-[13px]">
               <thead>
-                <tr className="border-b border-[#e8eef4] bg-[#f8fafc] text-left text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
+                <tr className="border-b border-border bg-surface-raised text-left text-[10px] font-bold uppercase tracking-wide text-secondary">
                   <th className="w-10 px-3 py-2" />
                   <th className="px-3 py-2">Room</th>
                   <th className="px-3 py-2">Item</th>
@@ -286,12 +286,12 @@ export function ProjectProcurement() {
                     <tr
                       key={it._key}
                       className={cn(
-                        'border-b border-[#eef2f7]',
+                        'border-b border-border',
                         it.ordered
-                          ? 'bg-[#f8fafc] text-[#94a3b8]'
+                          ? 'bg-surface-raised text-secondary'
                           : isSelected
-                            ? 'bg-[#eff6ff]'
-                            : 'hover:bg-[#f8fafc]',
+                            ? 'bg-[#ecfdf5]'
+                            : 'hover:bg-surface-raised',
                       )}
                     >
                       <td className="px-3 py-2">
@@ -299,38 +299,38 @@ export function ProjectProcurement() {
                           <button
                             type="button"
                             onClick={() => toggle(it._key)}
-                            className="text-[#2563eb]"
+                            className="text-[#3ecf8e]"
                             aria-label="Select"
                           >
                             {isSelected ? (
                               <CheckSquare className="h-4 w-4" />
                             ) : (
-                              <Square className="h-4 w-4 text-[#94a3b8]" />
+                              <Square className="h-4 w-4 text-secondary" />
                             )}
                           </button>
                         ) : (
                           <CheckSquare className="h-4 w-4 text-emerald-500" />
                         )}
                       </td>
-                      <td className="px-3 py-2 font-medium text-[#334155]">
+                      <td className="px-3 py-2 font-medium text-primary">
                         {it.room || 'General'}
                       </td>
                       <td
                         className={cn(
-                          'px-3 py-2 text-[#0f172a]',
+                          'px-3 py-2 text-primary',
                           it.ordered && 'line-through',
                         )}
                       >
                         {it.description || '—'}
                       </td>
-                      <td className="px-3 py-2 text-[#64748b]">{it.unit}</td>
+                      <td className="px-3 py-2 text-secondary">{it.unit}</td>
                       <td className="px-3 py-2 text-right tabular-nums">
                         {it.qty}
                       </td>
                       <td className="px-3 py-2 text-right tabular-nums">
                         {formatInr(it.rate)}
                       </td>
-                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-[#0f172a]">
+                      <td className="px-3 py-2 text-right font-semibold tabular-nums text-primary">
                         {formatInr(it.amount)}
                       </td>
                       <td className="px-3 py-2">
@@ -353,18 +353,18 @@ export function ProjectProcurement() {
         )}
       </Card>
 
-      <Card padding={false} className="overflow-hidden !bg-white shadow-sm">
-        <div className="border-b border-[#e8eef4] px-4 py-3">
-          <p className="text-[13px] font-semibold text-[#0f172a]">
+      <Card padding={false} className="overflow-hidden !bg-surface shadow-sm">
+        <div className="border-b border-border px-4 py-3">
+          <p className="text-[13px] font-semibold text-primary">
             Purchase orders
           </p>
-          <p className="text-[11px] text-[#94a3b8]">
+          <p className="text-[11px] text-secondary">
             Tap status to advance: Draft → Approved → Ordered → In transit →
             Delivered
           </p>
         </div>
         {isLoading ? (
-          <div className="h-32 animate-pulse bg-[#f1f5f9]" />
+          <div className="h-32 animate-pulse bg-surface-raised" />
         ) : (
           <DataTable
             columns={[
@@ -425,15 +425,15 @@ export function ProjectProcurement() {
       </Card>
 
       {vendors.length > 0 && (
-        <Card className="!bg-white shadow-sm">
-          <p className="mb-3 text-[13px] font-semibold text-[#0f172a]">
+        <Card className="!bg-surface shadow-sm">
+          <p className="mb-3 text-[13px] font-semibold text-primary">
             Vendors you can order from
           </p>
           <div className="flex flex-wrap gap-2">
             {vendors.slice(0, 8).map((v) => (
               <span
                 key={v._id}
-                className="rounded-full bg-[#f1f5f9] px-3 py-1 text-[12px] font-medium text-[#334155]"
+                className="rounded-full bg-surface-raised px-3 py-1 text-[12px] font-medium text-primary"
               >
                 {v.name}
               </span>
@@ -567,7 +567,7 @@ function PoForm({
       }}
     >
       {fromQuote && (
-        <div className="rounded-xl border border-[#dbeafe] bg-[#eff6ff] px-3 py-2.5 text-[12px] text-[#1e40af]">
+        <div className="rounded-xl border border-[#d1fae5] bg-[#ecfdf5] px-3 py-2.5 text-[12px] text-[#24b47e]">
           <p className="font-semibold">
             From {projectName || 'project'} approved quote
           </p>
@@ -602,7 +602,7 @@ function PoForm({
           <button
             type="button"
             onClick={() => setNewVendorOpen(true)}
-            className="mt-1.5 text-[12px] font-semibold text-[#2563eb] hover:underline"
+            className="mt-1.5 text-[12px] font-semibold text-[#3ecf8e] hover:underline"
           >
             + Add a new vendor
           </button>
@@ -610,8 +610,8 @@ function PoForm({
       </div>
 
       {newVendorOpen && (
-        <div className="space-y-2.5 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
-          <p className="text-[12px] font-semibold text-[#334155]">
+        <div className="space-y-2.5 rounded-xl border border-border bg-surface-raised p-3">
+          <p className="text-[12px] font-semibold text-primary">
             New vendor
           </p>
           <div className="grid gap-2.5 sm:grid-cols-2">
@@ -724,7 +724,7 @@ function PoForm({
               </Button>
             )}
           </div>
-          <p className="text-[11px] text-[#94a3b8]">
+          <p className="text-[11px] text-secondary">
             Payment terms and supplies can be set on the Materials page in the
             sidebar.
           </p>
@@ -765,12 +765,12 @@ const SNAG_FLOW = {
 
 function SiteStat({ icon: Icon, label, value, hint, tone = 'blue' }) {
   const tones = {
-    blue: 'bg-[#eff6ff] text-[#2563eb]',
+    blue: 'bg-[#ecfdf5] text-[#3ecf8e]',
     red: 'bg-[#fef2f2] text-[#dc2626]',
     green: 'bg-[#ecfdf5] text-[#059669]',
   }
   return (
-    <Card className="flex items-center gap-3 !bg-white shadow-sm">
+    <Card className="flex items-center gap-3 !bg-surface shadow-sm">
       <span
         className={cn(
           'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
@@ -780,12 +780,12 @@ function SiteStat({ icon: Icon, label, value, hint, tone = 'blue' }) {
         <Icon className="h-5 w-5" />
       </span>
       <div className="min-w-0">
-        <p className="text-[12px] text-[#64748b]">{label}</p>
-        <p className="text-[20px] font-semibold leading-tight text-[#0f172a]">
+        <p className="text-[12px] text-secondary">{label}</p>
+        <p className="text-[20px] font-semibold leading-tight text-primary">
           {value}
         </p>
         {hint && (
-          <p className="truncate text-[11px] text-[#94a3b8]">{hint}</p>
+          <p className="truncate text-[11px] text-secondary">{hint}</p>
         )}
       </div>
     </Card>
@@ -951,12 +951,12 @@ export function ProjectSite() {
 
       <div className="grid items-start gap-4 lg:grid-cols-5">
         <div className="space-y-4 lg:col-span-3">
-          <Card className="space-y-3 !bg-white shadow-sm">
+          <Card className="space-y-3 !bg-surface shadow-sm">
             <div>
-              <h3 className="text-sm font-semibold text-[#0f172a]">
+              <h3 className="text-sm font-semibold text-primary">
                 Today on site
               </h3>
-              <p className="text-[12px] text-[#64748b]">
+              <p className="text-[12px] text-secondary">
                 Write what was done — the office sees it right away
               </p>
             </div>
@@ -966,7 +966,7 @@ export function ProjectSite() {
               placeholder="e.g. Carpentry finished in master bedroom. Waiting on ply delivery."
               value={note}
               onChange={(e) => setNote(e.target.value)}
-              className="w-full resize-none rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd] focus:bg-white"
+              className="w-full resize-none rounded-xl border border-border bg-surface-raised px-3 py-2.5 text-[13px] text-primary outline-none placeholder:text-secondary focus:border-[#4ade80] focus:bg-surface"
             />
 
             {photos.length > 0 && (
@@ -974,7 +974,7 @@ export function ProjectSite() {
                 {photos.map((p, i) => (
                   <div
                     key={p.url}
-                    className="relative h-20 w-20 overflow-hidden rounded-xl border border-[#e2e8f0]"
+                    className="relative h-20 w-20 overflow-hidden rounded-xl border border-border"
                   >
                     <img
                       src={assetUrl(p.url)}
@@ -996,8 +996,8 @@ export function ProjectSite() {
               </div>
             )}
 
-            <div className="flex flex-wrap items-center gap-2 border-t border-[#eef2f7] pt-3">
-              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[11px] border border-[#e2e8f0] px-3 text-[12px] font-semibold text-[#334155] hover:border-[#cbd5e1] hover:bg-[#f8fafc]">
+            <div className="flex flex-wrap items-center gap-2 border-t border-border pt-3">
+              <label className="inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-[11px] border border-border px-3 text-[12px] font-semibold text-primary hover:border-[#c7c7c7] hover:bg-surface-raised">
                 <Camera className="h-4 w-4" />
                 {uploading ? 'Uploading…' : 'Add photos'}
                 <input
@@ -1013,7 +1013,7 @@ export function ProjectSite() {
                 />
               </label>
 
-              <label className="inline-flex h-9 items-center gap-2 rounded-[11px] border border-[#e2e8f0] px-3 text-[12px] text-[#64748b]">
+              <label className="inline-flex h-9 items-center gap-2 rounded-[11px] border border-border px-3 text-[12px] text-secondary">
                 Progress
                 <input
                   type="number"
@@ -1022,7 +1022,7 @@ export function ProjectSite() {
                   placeholder="—"
                   value={progress}
                   onChange={(e) => setProgress(e.target.value)}
-                  className="w-14 bg-transparent text-right text-[13px] font-semibold text-[#0f172a] outline-none"
+                  className="w-14 bg-transparent text-right text-[13px] font-semibold text-primary outline-none"
                 />
                 %
               </label>
@@ -1039,8 +1039,8 @@ export function ProjectSite() {
           </Card>
 
           {isLoading && (
-            <Card className="!bg-white shadow-sm">
-              <p className="text-sm text-[#64748b]">Loading site updates…</p>
+            <Card className="!bg-surface shadow-sm">
+              <p className="text-sm text-secondary">Loading site updates…</p>
             </Card>
           )}
 
@@ -1060,7 +1060,7 @@ export function ProjectSite() {
               <Card
                 key={u._id}
                 padding={false}
-                className="overflow-hidden !bg-white shadow-sm"
+                className="overflow-hidden !bg-surface shadow-sm"
               >
                 <div className="flex items-center gap-2 px-4 pt-4">
                   <Avatar
@@ -1069,10 +1069,10 @@ export function ProjectSite() {
                     size="sm"
                   />
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-medium text-[#0f172a]">
+                    <p className="truncate text-sm font-medium text-primary">
                       {u.author?.name || 'Team'}
                     </p>
-                    <p className="text-[11px] text-[#94a3b8]">
+                    <p className="text-[11px] text-secondary">
                       {u.createdAt
                         ? formatDistanceToNow(new Date(u.createdAt), {
                             addSuffix: true,
@@ -1081,14 +1081,14 @@ export function ProjectSite() {
                     </p>
                   </div>
                   {u.progress > 0 && (
-                    <span className="ml-auto shrink-0 rounded-full bg-[#eff6ff] px-2.5 py-1 text-[11px] font-semibold text-[#2563eb]">
+                    <span className="ml-auto shrink-0 rounded-full bg-[#ecfdf5] px-2.5 py-1 text-[11px] font-semibold text-[#3ecf8e]">
                       {u.progress}% done
                     </span>
                   )}
                 </div>
 
                 {u.note && (
-                  <p className="whitespace-pre-line px-4 pt-3 text-sm text-[#334155]">
+                  <p className="whitespace-pre-line px-4 pt-3 text-sm text-primary">
                     {u.note}
                   </p>
                 )}
@@ -1128,14 +1128,14 @@ export function ProjectSite() {
 
         <Card
           padding={false}
-          className="!bg-white shadow-sm lg:sticky lg:top-0 lg:col-span-2"
+          className="!bg-surface shadow-sm lg:sticky lg:top-0 lg:col-span-2"
         >
-          <div className="flex items-start gap-2 border-b border-[#eef2f7] px-4 py-3">
+          <div className="flex items-start gap-2 border-b border-border px-4 py-3">
             <div className="min-w-0">
-              <h3 className="text-sm font-semibold text-[#0f172a]">
+              <h3 className="text-sm font-semibold text-primary">
                 Snag list
               </h3>
-              <p className="text-[11px] text-[#64748b]">
+              <p className="text-[11px] text-secondary">
                 Defects to fix before handover
               </p>
             </div>
@@ -1147,7 +1147,7 @@ export function ProjectSite() {
           </div>
 
           <form
-            className="flex items-center gap-2 border-b border-[#eef2f7] p-3"
+            className="flex items-center gap-2 border-b border-border p-3"
             onSubmit={(e) => {
               e.preventDefault()
               if (!snagTitle.trim()) return
@@ -1162,7 +1162,7 @@ export function ProjectSite() {
               placeholder="e.g. Scratch on wardrobe shutter"
               value={snagTitle}
               onChange={(e) => setSnagTitle(e.target.value)}
-              className="h-9 min-w-0 flex-1 rounded-[11px] border border-[#e2e8f0] bg-[#f8fafc] px-3 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd] focus:bg-white"
+              className="h-9 min-w-0 flex-1 rounded-[11px] border border-border bg-surface-raised px-3 text-[13px] text-primary outline-none placeholder:text-secondary focus:border-[#4ade80] focus:bg-surface"
             />
             <Button
               type="submit"
@@ -1175,9 +1175,9 @@ export function ProjectSite() {
             </Button>
           </form>
 
-          <div className="divide-y divide-[#eef2f7]">
+          <div className="divide-y divide-border">
             {snags.length === 0 && (
-              <p className="px-4 py-10 text-center text-sm text-[#94a3b8]">
+              <p className="px-4 py-10 text-center text-sm text-secondary">
                 No snags logged — looking good.
               </p>
             )}
@@ -1185,7 +1185,7 @@ export function ProjectSite() {
               const flow = SNAG_FLOW[s.status] || SNAG_FLOW.open
               return (
                 <div key={s._id} className="space-y-2 px-4 py-3">
-                  <p className="text-sm font-medium text-[#0f172a]">
+                  <p className="text-sm font-medium text-primary">
                     {s.title}
                   </p>
                   <div className="flex flex-wrap items-center gap-2">
@@ -1193,7 +1193,7 @@ export function ProjectSite() {
                     <button
                       type="button"
                       disabled={patchSnag.isPending}
-                      className="rounded-md border border-[#dbeafe] bg-[#eff6ff] px-2 py-1 text-[11px] font-semibold text-[#2563eb] hover:bg-[#dbeafe] disabled:opacity-60"
+                      className="rounded-md border border-[#d1fae5] bg-[#ecfdf5] px-2 py-1 text-[11px] font-semibold text-[#3ecf8e] hover:bg-[#d1fae5] disabled:opacity-60"
                       onClick={() =>
                         patchSnag.mutate({
                           snagId: s._id,
@@ -1206,7 +1206,7 @@ export function ProjectSite() {
                     {s.taskId ? (
                       <Link
                         to={`/projects/${id}/tasks?task=${s.taskId}`}
-                        className="rounded-md px-2 py-1 text-[11px] font-semibold text-[#64748b] underline hover:text-[#2563eb]"
+                        className="rounded-md px-2 py-1 text-[11px] font-semibold text-secondary underline hover:text-[#3ecf8e]"
                       >
                         View task
                       </Link>
@@ -1215,7 +1215,7 @@ export function ProjectSite() {
                         <button
                           type="button"
                           disabled={patchSnag.isPending}
-                          className="rounded-md border border-[#e2e8f0] px-2 py-1 text-[11px] font-medium text-[#64748b] hover:border-[#cbd5e1] hover:text-[#0f172a] disabled:opacity-60"
+                          className="rounded-md border border-border px-2 py-1 text-[11px] font-medium text-secondary hover:border-[#c7c7c7] hover:text-primary disabled:opacity-60"
                           onClick={() =>
                             patchSnag.mutate({
                               snagId: s._id,
@@ -1286,13 +1286,13 @@ export function ProjectTeam() {
   return (
     <div className="space-y-4 p-4 md:p-5">
       <div>
-        <h2 className="text-[18px] font-semibold text-[#0f172a]">Team</h2>
-        <p className="text-[13px] text-[#64748b]">
+        <h2 className="text-[18px] font-semibold text-primary">Team</h2>
+        <p className="text-[13px] text-secondary">
           People on this project — assign them on tasks
         </p>
       </div>
       {canManageTeam && (
-        <Card className="space-y-3 !bg-white shadow-sm">
+        <Card className="space-y-3 !bg-surface shadow-sm">
           <div>
             <h3 className="text-sm font-semibold">Add teammate</h3>
             <p className="text-[12px] text-secondary">
@@ -1331,7 +1331,7 @@ export function ProjectTeam() {
         </Card>
       )}
 
-      <Card padding={false} className="!bg-white shadow-sm">
+      <Card padding={false} className="!bg-surface shadow-sm">
         <div className="flex items-center justify-between border-b border-border px-5 py-4">
           <h3 className="font-semibold">Team on this project</h3>
           <AvatarStack

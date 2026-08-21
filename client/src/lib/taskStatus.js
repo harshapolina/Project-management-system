@@ -10,9 +10,9 @@ export const TASK_STATUSES = [
     hint: 'Waiting to begin',
     nextHint: 'Start working',
     progress: 0,
-    dot: '#94a3b8',
+    dot: '#9a9a9a',
     bg: '#f1f5f9',
-    text: '#475569',
+    text: '#707070',
   },
   {
     value: 'in_progress',
@@ -22,8 +22,8 @@ export const TASK_STATUSES = [
     nextHint: 'Send for check',
     progress: 40,
     dot: '#3b82f6',
-    bg: '#eff6ff',
-    text: '#1d4ed8',
+    bg: '#ecfdf5',
+    text: '#24b47e',
   },
   {
     value: 'review',

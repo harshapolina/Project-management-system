@@ -11,9 +11,19 @@ import {
   Menu,
   X,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { useAuthStore } from '../../lib/api'
+import { useUiStore } from '../../store/uiStore'
 import { cn } from '../../lib/utils'
+import {
+  CollapsedFlyoutCard,
+  FlyoutAnchor,
+  useCollapsedFlyout,
+} from './CollapsedFlyout'
 
 const NAV = [
   { to: '/platform', label: 'Overview', icon: LayoutDashboard, end: true },
@@ -28,6 +38,10 @@ export function PlatformShell({ children }) {
   const user = useAuthStore((s) => s.user)
   const logout = useAuthStore((s) => s.logout)
   const navigate = useNavigate()
+  const sidebarCollapsed = useUiStore((s) => s.sidebarCollapsed)
+  const toggleSidebar = useUiStore((s) => s.toggleSidebar)
+  const theme = useUiStore((s) => s.theme)
+  const toggleTheme = useUiStore((s) => s.toggleTheme)
   const [mobileOpen, setMobileOpen] = useState(false)
 
   const initials = user?.name
@@ -39,85 +53,176 @@ export function PlatformShell({ children }) {
         .toUpperCase()
     : 'EP'
 
-  const Sidebar = ({ onNavigate }) => (
-    <>
-      <div className="mb-6 px-3 pt-1">
-        <div className="flex items-center gap-3">
-          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#2563eb] text-[13px] font-bold text-white">
-            E
-          </span>
-          <div>
-            <p className="text-[14px] font-semibold leading-tight text-white">Editco Platform</p>
-            <p className="text-[11px] text-[#94a3b8]">EPM administration</p>
-          </div>
-        </div>
-      </div>
+  const navItemClass = (isActive, collapsed) =>
+    cn(
+      'flex items-center rounded-xl py-2.5 text-[13px] font-medium transition-colors',
+      collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
+      isActive
+        ? 'bg-[#202020] text-white'
+        : 'text-secondary hover:bg-white/5 hover:text-white',
+    )
 
-      <nav className="flex flex-1 flex-col gap-0.5 px-2">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
-          <NavLink
-            key={to}
-            to={to}
-            end={end}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition-colors',
-                isActive
-                  ? 'bg-[#1e4a7a] text-white'
-                  : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
-              )
-            }
+  const Sidebar = ({ onNavigate, collapsed = false }) => {
+    const flyout = useCollapsedFlyout(collapsed)
+
+    return (
+      <>
+        <div className={cn('mb-6 pt-1', collapsed ? 'px-2' : 'px-3')}>
+          <FlyoutAnchor
+            collapsed={collapsed}
+            flyout={flyout}
+            id="brand"
+            label="Editco Platform"
           >
-            <Icon className="h-4 w-4 shrink-0" />
-            {label}
-          </NavLink>
-        ))}
-      </nav>
-
-      <div className="mt-auto space-y-1 border-t border-white/10 px-2 pt-4">
-        <a
-          href="/login"
-          target="_blank"
-          rel="noreferrer"
-          className="flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-[#a8bdd4] hover:bg-white/5 hover:text-white"
-        >
-          <ExternalLink className="h-4 w-4" />
-          Company login
-        </a>
-        <button
-          type="button"
-          onClick={() => {
-            logout()
-            navigate('/platform/login')
-          }}
-          className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-[#a8bdd4] hover:bg-white/5 hover:text-white"
-        >
-          <LogOut className="h-4 w-4" />
-          Log out
-        </button>
-        {user?.name && (
-          <div className="flex items-center gap-2 px-3 py-2">
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#2563eb] text-[11px] font-bold text-white">
-              {initials}
-            </span>
-            <div className="min-w-0">
-              <p className="truncate text-[12px] font-medium text-white">{user.name}</p>
-              <p className="truncate text-[10px] text-[#64748b]">Platform admin</p>
+            <div className={cn('flex items-center gap-3', collapsed && 'justify-center')}>
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[6px] bg-[#3ecf8e] text-[13px] font-bold text-[#171717]">
+                E
+              </span>
+              <div className={cn(collapsed && 'sr-only')}>
+                <p className="text-[14px] font-semibold leading-tight text-white">Editco Platform</p>
+                <p className="text-[11px] text-secondary">EPM administration</p>
+              </div>
             </div>
-          </div>
-        )}
-      </div>
-    </>
-  )
+          </FlyoutAnchor>
+        </div>
+
+        <nav className={cn('flex flex-1 flex-col gap-0.5', collapsed ? 'px-1.5' : 'px-2')}>
+          {NAV.map(({ to, label, icon: Icon, end }) => (
+            <FlyoutAnchor
+              key={to}
+              collapsed={collapsed}
+              flyout={flyout}
+              id={to}
+              label={label}
+              to={to}
+              icon={Icon}
+              onNavigate={onNavigate}
+            >
+              <NavLink
+                to={to}
+                end={end}
+                aria-label={label}
+                onClick={onNavigate}
+                className={({ isActive }) => navItemClass(isActive, collapsed)}
+              >
+                <Icon className="h-4 w-4 shrink-0" />
+                <span className={cn(collapsed && 'sr-only')}>{label}</span>
+              </NavLink>
+            </FlyoutAnchor>
+          ))}
+        </nav>
+
+        <div
+          className={cn(
+            'mt-auto space-y-1 border-t border-white/10 pt-4',
+            collapsed ? 'px-1.5' : 'px-2',
+          )}
+        >
+          <FlyoutAnchor
+            collapsed={collapsed}
+            flyout={flyout}
+            id="company-login"
+            label="Company login"
+            href="/login"
+            icon={ExternalLink}
+          >
+            <a
+              href="/login"
+              target="_blank"
+              rel="noreferrer"
+              aria-label="Company login"
+              className={cn(
+                'flex items-center rounded-xl py-2 text-[13px] font-medium text-secondary hover:bg-white/5 hover:text-white',
+                collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
+              )}
+            >
+              <ExternalLink className="h-4 w-4 shrink-0" />
+              <span className={cn(collapsed && 'sr-only')}>Company login</span>
+            </a>
+          </FlyoutAnchor>
+          <FlyoutAnchor
+            collapsed={collapsed}
+            flyout={flyout}
+            id="logout"
+            label="Log out"
+            icon={LogOut}
+            onSelect={() => {
+              logout()
+              navigate('/platform/login')
+            }}
+          >
+            <button
+              type="button"
+              aria-label="Log out"
+              onClick={() => {
+                logout()
+                navigate('/platform/login')
+              }}
+              className={cn(
+                'flex w-full items-center rounded-xl py-2 text-[13px] font-medium text-secondary hover:bg-white/5 hover:text-white',
+                collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
+              )}
+            >
+              <LogOut className="h-4 w-4 shrink-0" />
+              <span className={cn(collapsed && 'sr-only')}>Log out</span>
+            </button>
+          </FlyoutAnchor>
+          {user?.name && (
+            <FlyoutAnchor
+              collapsed={collapsed}
+              flyout={flyout}
+              id="user"
+              label={user.name}
+            >
+              <div
+                className={cn(
+                  'flex items-center gap-2 py-2',
+                  collapsed ? 'justify-center px-0' : 'px-3',
+                )}
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#3ecf8e] text-[11px] font-bold text-[#171717]">
+                  {initials}
+                </span>
+                <div className={cn('min-w-0', collapsed && 'sr-only')}>
+                  <p className="truncate text-[12px] font-medium text-white">{user.name}</p>
+                  <p className="truncate text-[10px] text-secondary">Platform admin</p>
+                </div>
+              </div>
+            </FlyoutAnchor>
+          )}
+        </div>
+        <CollapsedFlyoutCard tip={flyout.tip} flyout={flyout} />
+      </>
+    )
+  }
 
   return (
-    <div className="flex h-dvh overflow-hidden bg-[#F0F4F8] text-[#0f172a]">
-      <aside className="hidden w-[240px] shrink-0 flex-col bg-[#0B1B2B] lg:flex">
-        <div className="flex h-full flex-col py-4">
-          <Sidebar />
-        </div>
-      </aside>
+    <div className="flex h-dvh overflow-hidden bg-canvas text-primary">
+      <div
+        className={cn(
+          'relative hidden h-full shrink-0 lg:block',
+          'transition-[width] duration-200 ease-out',
+          sidebarCollapsed ? 'w-[68px]' : 'w-[240px]',
+        )}
+      >
+        <aside className="flex h-full w-full flex-col overflow-hidden bg-[#1c1c1c]">
+          <div className="flex h-full flex-col py-4">
+            <Sidebar collapsed={sidebarCollapsed} />
+          </div>
+        </aside>
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute -right-3 top-[26px] z-50 flex h-6 w-6 items-center justify-center rounded-full border border-white/15 bg-[#1c1c1c] text-[#9a9a9a] shadow-[0_2px_8px_rgba(0,0,0,0.25)] hover:bg-[#202020] hover:text-white"
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.25} />
+          )}
+        </button>
+      </div>
 
       {mobileOpen && (
         <div className="fixed inset-0 z-[80] lg:hidden">
@@ -127,10 +232,10 @@ export function PlatformShell({ children }) {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(88vw,280px)] flex-col bg-[#0B1B2B] py-4 shadow-2xl">
+          <aside className="absolute inset-y-0 left-0 flex w-[min(88vw,280px)] flex-col bg-[#1c1c1c] py-4 shadow-2xl">
             <button
               type="button"
-              className="absolute right-3 top-4 rounded-lg p-1.5 text-[#a8bdd4] hover:bg-white/10"
+              className="absolute right-3 top-4 rounded-lg p-1.5 text-secondary hover:bg-white/10"
               onClick={() => setMobileOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -141,16 +246,31 @@ export function PlatformShell({ children }) {
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-[#dce4ee] bg-white px-4 sm:px-6">
+        <header className="flex h-14 shrink-0 items-center gap-3 border-b border-border bg-surface px-4 sm:px-6">
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] hover:bg-[#f0f4f8] lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-[6px] text-secondary hover:bg-surface-raised lg:hidden"
             onClick={() => setMobileOpen(true)}
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
-          <p className="text-[13px] font-medium text-[#64748b] lg:hidden">Editco Platform</p>
+          <p className="text-[13px] font-medium text-secondary lg:hidden">Editco Platform</p>
+          <div className="ml-auto">
+            <button
+              type="button"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              onClick={toggleTheme}
+              className="flex h-9 w-9 items-center justify-center rounded-[6px] text-secondary transition-colors hover:bg-surface-raised hover:text-primary"
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" strokeWidth={1.75} />
+              ) : (
+                <Moon className="h-4 w-4" strokeWidth={1.75} />
+              )}
+            </button>
+          </div>
         </header>
 
         <main className="flex-1 overflow-y-auto px-4 py-6 sm:px-6 sm:py-8">

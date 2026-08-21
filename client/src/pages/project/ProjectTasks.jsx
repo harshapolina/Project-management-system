@@ -64,12 +64,12 @@ const PRIORITY = {
 }
 
 function dueLabel(dueDate) {
-  if (!dueDate) return { text: 'No date', className: 'text-[#94a3b8]' }
+  if (!dueDate) return { text: 'No date', className: 'text-secondary' }
   const d = new Date(dueDate)
   const text = format(d, 'dd MMM')
   if (isToday(d)) return { text: `Today`, className: 'text-blue-700 font-bold' }
   if (isPast(d)) return { text: `Late · ${text}`, className: 'text-red-600 font-bold' }
-  return { text, className: 'text-[#475569]' }
+  return { text, className: 'text-secondary' }
 }
 
 export function ProjectTasks() {
@@ -156,7 +156,7 @@ export function ProjectTasks() {
   }
 
   if (isLoading) {
-    return <div className="m-3 h-40 animate-pulse rounded-xl bg-[#e2e8f0]" />
+    return <div className="m-3 h-40 animate-pulse rounded-xl bg-[#dfdfdf]" />
   }
 
   const visibleGroups =
@@ -176,13 +176,13 @@ export function ProjectTasks() {
   return (
     <div className="flex h-full min-h-0 flex-col bg-[#E8EEF5]">
       {/* Single packed toolbar — filters sit with actions, no empty stretch */}
-      <div className="shrink-0 border-b border-[#d0dbe8] bg-white px-3 py-2 sm:px-4">
+      <div className="shrink-0 border-b border-[#d0dbe8] bg-surface px-3 py-2 sm:px-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h2 className="shrink-0 text-[13px] font-semibold text-[#0f172a]">
+          <h2 className="shrink-0 text-[13px] font-semibold text-primary">
             Who does what
           </h2>
 
-          <div className="inline-flex rounded-lg bg-[#f1f5f9] p-0.5">
+          <div className="inline-flex rounded-lg bg-surface-raised p-0.5">
             {[
               { id: 'open', label: 'Active', count: counts.open },
               { id: 'done', label: 'Finished', count: counts.done },
@@ -195,15 +195,15 @@ export function ProjectTasks() {
                 className={cn(
                   'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition',
                   filter === f.id
-                    ? 'bg-white text-[#0f172a] shadow-sm'
-                    : 'text-[#64748b] hover:text-[#334155]',
+                    ? 'bg-surface text-primary shadow-sm'
+                    : 'text-secondary hover:text-primary',
                 )}
               >
                 {f.label}
                 <span
                   className={cn(
                     'tabular-nums',
-                    filter === f.id ? 'text-[#2563eb]' : 'text-[#94a3b8]',
+                    filter === f.id ? 'text-[#3ecf8e]' : 'text-secondary',
                   )}
                 >
                   {f.count}
@@ -220,12 +220,12 @@ export function ProjectTasks() {
 
           <div className="flex flex-1 items-center justify-end gap-1.5 min-w-[140px]">
             <div className="relative min-w-0 flex-1 max-w-[200px]">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-secondary" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Find…"
-                className="h-8 w-full rounded-lg border border-[#e2e8f0] bg-[#f8fafc] pl-7 pr-2 text-[12px] outline-none focus:border-[#93c5fd] focus:bg-white"
+                className="h-8 w-full rounded-lg border border-border bg-surface-raised pl-7 pr-2 text-[12px] outline-none focus:border-[#4ade80] focus:bg-surface"
               />
             </div>
             {caps.createTask && (
@@ -235,7 +235,7 @@ export function ProjectTasks() {
                   setCreateStatus('todo')
                   setCreateOpen(true)
                 }}
-                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-[#2563eb] px-2.5 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-[#3ecf8e] px-2.5 text-[12px] font-semibold text-white hover:bg-[#24b47e]"
               >
                 <Plus className="h-3.5 w-3.5" />
                 New
@@ -254,7 +254,7 @@ export function ProjectTasks() {
               <section
                 key={g.key}
                 className={cn(
-                  'flex min-h-0 flex-col overflow-hidden rounded-xl border border-[#cfdceb] bg-white shadow-sm ring-1',
+                  'flex min-h-0 flex-col overflow-hidden rounded-xl border border-[#cfdceb] bg-surface shadow-sm ring-1',
                   g.ring,
                   filter === 'all' && 'min-h-[180px]',
                 )}
@@ -271,26 +271,26 @@ export function ProjectTasks() {
                 >
                   <ChevronDown
                     className={cn(
-                      'h-3.5 w-3.5 shrink-0 text-[#64748b] transition',
+                      'h-3.5 w-3.5 shrink-0 text-secondary transition',
                       closed && '-rotate-90',
                     )}
                   />
                   <span className={cn('h-2 w-2 shrink-0 rounded-full', g.dot)} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-bold text-[#0f172a]">
+                    <p className="text-[12px] font-bold text-primary">
                       {g.label}
                     </p>
-                    <p className="text-[10px] text-[#94a3b8]">{g.hint}</p>
+                    <p className="text-[10px] text-secondary">{g.hint}</p>
                   </div>
-                  <span className="rounded-md bg-white px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-[#334155] ring-1 ring-[#e2e8f0]">
+                  <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-primary ring-1 ring-[#dfdfdf]">
                     {list.length}
                   </span>
                 </button>
 
                 {!closed && (
-                  <div className="flex flex-1 flex-col divide-y divide-[#eef2f7]">
+                  <div className="flex flex-1 flex-col divide-y divide-border">
                     {list.length === 0 && (
-                      <p className="px-3 py-6 text-center text-[11px] text-[#94a3b8]">
+                      <p className="px-3 py-6 text-center text-[11px] text-secondary">
                         Nothing here yet
                       </p>
                     )}
@@ -313,7 +313,7 @@ export function ProjectTasks() {
                           setCreateStatus(g.key === 'done' ? 'todo' : g.key)
                           setCreateOpen(true)
                         }}
-                        className="mt-auto flex w-full items-center justify-center gap-1 py-2 text-[11px] font-semibold text-[#2563eb] hover:bg-[#f8fafc]"
+                        className="mt-auto flex w-full items-center justify-center gap-1 py-2 text-[11px] font-semibold text-[#3ecf8e] hover:bg-surface-raised"
                       >
                         <Plus className="h-3 w-3" />
                         Add task
@@ -363,7 +363,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
   const pri = PRIORITY[task.priority] || PRIORITY.medium
 
   return (
-    <div className="px-2.5 py-2 hover:bg-[#f8fafc]">
+    <div className="px-2.5 py-2 hover:bg-surface-raised">
       <div className="flex items-start gap-2">
         <button
           type="button"
@@ -385,7 +385,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
               strokeWidth={2.5}
             />
           ) : (
-            <Circle className="h-4 w-4 text-[#94a3b8]" />
+            <Circle className="h-4 w-4 text-secondary" />
           )}
         </button>
 
@@ -394,23 +394,23 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
             type="button"
             onClick={onOpen}
             className={cn(
-              'block w-full text-left text-[13px] font-semibold leading-snug text-[#0f172a] hover:text-[#2563eb]',
-              done && 'font-medium text-[#94a3b8] line-through',
+              'block w-full text-left text-[13px] font-semibold leading-snug text-primary hover:text-[#3ecf8e]',
+              done && 'font-medium text-secondary line-through',
             )}
           >
             {task.title}
           </button>
 
           <div className="mt-1.5 flex flex-nowrap items-center gap-1 overflow-x-auto">
-            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#f1f5f9] px-1.5 py-0.5">
-              <User className="h-3 w-3 shrink-0 text-[#94a3b8]" />
+            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-surface-raised px-1.5 py-0.5">
+              <User className="h-3 w-3 shrink-0 text-secondary" />
               <select
                 value={assigneeId}
                 disabled={!canManage}
                 onChange={(e) =>
                   onPatch({ assignee: e.target.value || null })
                 }
-                className="max-w-[72px] truncate bg-transparent text-[10px] font-semibold text-[#334155] outline-none"
+                className="max-w-[72px] truncate bg-transparent text-[10px] font-semibold text-primary outline-none"
               >
                 <option value="">Anyone</option>
                 {users.map((u) => (
@@ -421,8 +421,8 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
               </select>
             </label>
 
-            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-[#f1f5f9] px-1.5 py-0.5">
-              <Calendar className="h-3 w-3 shrink-0 text-[#94a3b8]" />
+            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-surface-raised px-1.5 py-0.5">
+              <Calendar className="h-3 w-3 shrink-0 text-secondary" />
               <input
                 type="date"
                 disabled={!canManage}
@@ -465,7 +465,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
             <select
               value={task.status || 'todo'}
               onChange={(e) => onPatch({ status: e.target.value })}
-              className="shrink-0 rounded-md bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-bold text-[#1d4ed8] outline-none"
+              className="shrink-0 rounded-md bg-[#ecfdf5] px-1.5 py-0.5 text-[10px] font-bold text-[#24b47e] outline-none"
             >
               {GROUPS.map((g) => (
                 <option key={g.key} value={g.key}>

@@ -73,37 +73,37 @@ export function SiteFeedPage() {
       : projectGroups.filter((group) => group.id === selectedProject)
 
   return (
-    <div className="min-h-full bg-[#eef3f8]">
+    <div className="min-h-full bg-[var(--bg-canvas)]">
       <div className="mx-auto max-w-[1320px] space-y-5 p-4 md:p-6 lg:p-8">
-        <section className="overflow-hidden rounded-[26px] bg-gradient-to-br from-[#12385b] via-[#174d78] to-[#1d648f] px-6 py-6 text-white shadow-[0_18px_50px_rgba(18,56,91,0.18)] md:px-8">
+        <section className="on-dark overflow-hidden rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] px-6 py-6 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.4)] md:px-8">
           <div className="flex flex-col justify-between gap-5 md:flex-row md:items-end">
             <div>
-              <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1 text-[10px] font-bold uppercase tracking-[0.16em] text-cyan-100">
+              <div className="mb-3 inline-flex items-center gap-2 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--create-fg)]">
                 <Radio className="h-3 w-3" />
                 Live field activity
               </div>
-              <h1 className="text-[28px] font-semibold tracking-[-0.03em] md:text-[34px]">
+              <h1 className="text-[28px] font-semibold tracking-[-0.03em] text-white md:text-[34px]">
                 Site updates by project
               </h1>
-              <p className="mt-1.5 max-w-xl text-[13px] text-blue-100/80">
+              <p className="mt-1.5 max-w-xl text-[13px] text-white/55">
                 Follow progress, notes, and recent activity without mixing
                 updates from different sites.
               </p>
             </div>
             <div className="flex gap-2">
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-2xl font-semibold leading-none">
+              <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                <p className="text-2xl font-semibold leading-none text-[var(--text-primary)]">
                   {projectGroups.length}
                 </p>
-                <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-blue-100/70">
+                <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   Active sites
                 </p>
               </div>
-              <div className="rounded-2xl border border-white/10 bg-white/10 px-4 py-3 backdrop-blur">
-                <p className="text-2xl font-semibold leading-none">
+              <div className="rounded-2xl bg-white px-4 py-3 shadow-sm">
+                <p className="text-2xl font-semibold leading-none text-[var(--text-primary)]">
                   {updates.length}
                 </p>
-                <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-blue-100/70">
+                <p className="mt-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                   Updates
                 </p>
               </div>
@@ -118,34 +118,41 @@ export function SiteFeedPage() {
             ))}
           </div>
         ) : updates.length === 0 ? (
-          <div className="flex flex-col items-center rounded-[24px] border border-[#dce5ef] bg-white py-16 text-center shadow-sm">
-            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-blue-50">
-              <Camera className="h-7 w-7 text-blue-600" />
+          <div className="on-dark flex flex-col items-center rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] py-16 text-center shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
+            <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/[0.06] text-white/40">
+              <Camera className="h-7 w-7" />
             </span>
-            <p className="mt-4 text-sm font-semibold text-[#12324f]">
+            <p className="mt-4 text-sm font-semibold text-white">
               No site updates yet
             </p>
-            <p className="mt-1 text-xs text-[#7c8fa2]">
+            <p className="mt-1 text-xs text-white/45">
               Post updates from a project&apos;s Site tab or Site mode.
             </p>
           </div>
         ) : (
           <>
-            <section className="rounded-[22px] border border-[#dce5ef] bg-white p-3 shadow-[0_8px_28px_rgba(15,42,67,0.05)]">
-              <div className="flex gap-2 overflow-x-auto pb-1">
+            <section className="on-dark rounded-full border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-1.5 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
+              <div className="flex gap-1.5 overflow-x-auto">
                 <button
                   type="button"
                   onClick={() => setSelectedProject('all')}
                   className={cn(
-                    'flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-semibold transition',
+                    'flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold transition',
                     selectedProject === 'all'
-                      ? 'bg-[#174d78] text-white shadow-sm'
-                      : 'bg-[#f3f6f9] text-[#5d7185] hover:bg-[#e9eff5]',
+                      ? 'bg-accent text-[#171717] shadow-sm'
+                      : 'text-secondary hover:text-primary',
                   )}
                 >
                   <Building2 className="h-3.5 w-3.5" />
                   All projects
-                  <span className="rounded-md bg-white/15 px-1.5 py-0.5 text-[9px]">
+                  <span
+                    className={cn(
+                      'rounded-md px-1.5 py-0.5 text-[9px]',
+                      selectedProject === 'all'
+                        ? 'bg-black/10 text-[#171717]'
+                        : 'bg-surface-raised text-secondary',
+                    )}
+                  >
                     {updates.length}
                   </span>
                 </button>
@@ -155,14 +162,21 @@ export function SiteFeedPage() {
                     type="button"
                     onClick={() => setSelectedProject(group.id)}
                     className={cn(
-                      'flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-[12px] font-semibold transition',
+                      'flex shrink-0 items-center gap-2 rounded-full px-4 py-2 text-[12px] font-semibold transition',
                       selectedProject === group.id
-                        ? 'bg-[#174d78] text-white shadow-sm'
-                        : 'bg-[#f3f6f9] text-[#5d7185] hover:bg-[#e9eff5]',
+                        ? 'bg-accent text-[#171717] shadow-sm'
+                        : 'text-secondary hover:text-primary',
                     )}
                   >
                     {group.name}
-                    <span className="rounded-md bg-white/20 px-1.5 py-0.5 text-[9px]">
+                    <span
+                      className={cn(
+                        'rounded-md px-1.5 py-0.5 text-[9px]',
+                        selectedProject === group.id
+                          ? 'bg-black/10 text-[#171717]'
+                          : 'bg-surface-raised text-secondary',
+                      )}
+                    >
                       {group.updates.length}
                     </span>
                   </button>
@@ -174,20 +188,19 @@ export function SiteFeedPage() {
               {visibleGroups.map((group) => (
                 <section
                   key={group.id}
-                  className="overflow-hidden rounded-[24px] border border-[#dce5ef] bg-white shadow-[0_12px_38px_rgba(15,42,67,0.07)]"
+                  className="on-dark overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]"
                 >
-                  <div className="relative overflow-hidden border-b border-[#e5ecf3] bg-gradient-to-r from-[#f5f9fd] to-white px-5 py-4">
-                    <div className="absolute right-4 top-0 h-24 w-24 rounded-full bg-blue-100/50 blur-2xl" />
+                  <div className="relative border-b border-white/[0.06] bg-[var(--panel-dark-raised)] px-5 py-4">
                     <div className="relative flex items-center justify-between gap-3">
                       <div className="flex min-w-0 items-center gap-3">
-                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#174d78] text-white shadow-sm">
+                        <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)]/20">
                           <Building2 className="h-5 w-5" />
                         </span>
                         <div className="min-w-0">
-                          <h2 className="truncate text-[15px] font-semibold text-[#12324f]">
+                          <h2 className="truncate text-[15px] font-semibold text-white">
                             {group.name}
                           </h2>
-                          <div className="mt-1 flex items-center gap-2 text-[10px] text-[#7b8fa2]">
+                          <div className="mt-1 flex items-center gap-2 text-[10px] text-white/45">
                             {group.location && (
                               <span className="inline-flex items-center gap-1">
                                 <MapPin className="h-3 w-3" />
@@ -204,7 +217,7 @@ export function SiteFeedPage() {
                       {group.id !== 'unassigned' && (
                         <Link
                           to={`/projects/${group.id}/site`}
-                          className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-white px-3 py-2 text-[10px] font-semibold text-[#175f9d] ring-1 ring-[#d7e5f2] transition hover:bg-blue-50"
+                          className="inline-flex shrink-0 items-center gap-1 rounded-xl bg-white/[0.08] px-3 py-2 text-[10px] font-semibold text-white/80 ring-1 ring-white/[0.08] transition hover:bg-[var(--accent)]/15 hover:text-[var(--accent)]"
                         >
                           Open site
                           <ChevronRight className="h-3 w-3" />
@@ -213,17 +226,14 @@ export function SiteFeedPage() {
                     </div>
                   </div>
 
-                  <div className="max-h-[420px] divide-y divide-[#edf1f5] overflow-y-auto px-5">
+                  <div className="max-h-[420px] divide-y divide-white/[0.06] overflow-y-auto px-5">
                     {group.updates.map((update) => {
                       const author =
                         typeof update.author === 'object'
                           ? update.author
                           : update.createdBy
                       return (
-                        <article
-                          key={update._id}
-                          className="flex gap-3 py-4"
-                        >
+                        <article key={update._id} className="flex gap-3 py-4">
                           <Avatar
                             src={author?.avatar}
                             name={author?.name || 'Site'}
@@ -231,10 +241,10 @@ export function SiteFeedPage() {
                           />
                           <div className="min-w-0 flex-1">
                             <div className="flex flex-wrap items-center justify-between gap-2">
-                              <p className="text-[11px] font-semibold text-[#36516b]">
+                              <p className="text-[11px] font-semibold text-white/80">
                                 {author?.name || 'Site team'}
                               </p>
-                              <span className="inline-flex items-center gap-1 text-[9px] text-[#91a0af]">
+                              <span className="inline-flex items-center gap-1 text-[9px] text-white/40">
                                 <Clock3 className="h-3 w-3" />
                                 {update.createdAt
                                   ? format(
@@ -244,7 +254,7 @@ export function SiteFeedPage() {
                                   : ''}
                               </span>
                             </div>
-                            <p className="mt-1 text-[13px] leading-relaxed text-[#334e68]">
+                            <p className="mt-1 text-[13px] leading-relaxed text-white/65">
                               {update.note ||
                                 update.message ||
                                 update.title ||

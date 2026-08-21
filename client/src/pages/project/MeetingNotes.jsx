@@ -67,29 +67,29 @@ export function MeetingNotes({ projectId, project, user }) {
   }
 
   return (
-    <section className="rounded-2xl border border-[#d6e4f5] bg-white shadow-sm">
-      <div className="flex items-center justify-between gap-3 border-b border-[#e8eef4] px-4 py-3">
+    <section className="rounded-2xl border border-[#d6e4f5] bg-surface shadow-sm">
+      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fef3c7] text-[#b45309]">
             <StickyNote className="h-4 w-4" />
           </span>
           <div className="min-w-0">
-            <p className="text-[13px] font-semibold text-[#0f172a]">
+            <p className="text-[13px] font-semibold text-primary">
               Meeting notes
             </p>
-            <p className="truncate text-[11px] text-[#94a3b8]">
+            <p className="truncate text-[11px] text-secondary">
               Client calls, site visits &amp; decisions — newest first
             </p>
           </div>
         </div>
-        <span className="shrink-0 rounded-full bg-[#f1f5f9] px-2.5 py-1 text-[11px] font-bold text-[#475569]">
+        <span className="shrink-0 rounded-full bg-surface-raised px-2.5 py-1 text-[11px] font-bold text-secondary">
           {notes.length} {notes.length === 1 ? 'note' : 'notes'}
         </span>
       </div>
 
       <div className="px-4 py-3.5">
         {/* Composer */}
-        <div className="rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-2.5 transition focus-within:border-[#93c5fd] focus-within:bg-white focus-within:shadow-sm">
+        <div className="rounded-xl border border-border bg-surface-raised p-2.5 transition focus-within:border-[#4ade80] focus-within:bg-surface focus-within:shadow-sm">
           <textarea
             rows={2}
             value={text}
@@ -98,17 +98,17 @@ export function MeetingNotes({ projectId, project, user }) {
               if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') submit()
             }}
             placeholder={`Summarize the meeting with ${project.clientName || 'the client'} — decisions taken, pending items, next steps…`}
-            className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[#0f172a] outline-none placeholder:text-[#9aa7ba]"
+            className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-primary outline-none placeholder:text-[#9aa7ba]"
           />
           <div className="mt-1.5 flex items-center justify-between">
-            <span className="text-[10.5px] font-medium text-[#94a3b8]">
+            <span className="text-[10.5px] font-medium text-secondary">
               Ctrl + Enter to save
             </span>
             <button
               type="button"
               disabled={!text.trim() || add.isPending}
               onClick={submit}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#2563eb] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1d4ed8] disabled:opacity-40"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#3ecf8e] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#24b47e] disabled:opacity-40"
             >
               <StickyNote className="h-3.5 w-3.5" />
               {add.isPending ? 'Saving…' : 'Add note'}
@@ -118,7 +118,7 @@ export function MeetingNotes({ projectId, project, user }) {
 
         {/* Timeline */}
         {notes.length === 0 ? (
-          <p className="py-6 text-center text-[13px] text-[#94a3b8]">
+          <p className="py-6 text-center text-[13px] text-secondary">
             No meeting notes yet. After every client meeting, drop a quick
             summary here so the whole team stays in the loop.
           </p>
@@ -134,18 +134,18 @@ export function MeetingNotes({ projectId, project, user }) {
                   <div className="flex shrink-0 flex-col items-center">
                     <Avatar name={note.createdByName || 'Team'} size="sm" />
                     {i < notes.length - 1 && (
-                      <span className="mt-1.5 w-px flex-1 bg-[#e2e8f0]" />
+                      <span className="mt-1.5 w-px flex-1 bg-[#dfdfdf]" />
                     )}
                   </div>
 
                   <div className="min-w-0 flex-1 pt-0.5">
                     <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5">
-                      <span className="text-[12px] font-semibold text-[#0f172a]">
+                      <span className="text-[12px] font-semibold text-primary">
                         {note.createdByName || 'Team member'}
                       </span>
                       {when && (
                         <span
-                          className="text-[11px] text-[#94a3b8]"
+                          className="text-[11px] text-secondary"
                           title={format(when, 'd MMM yyyy, h:mm a')}
                         >
                           {format(when, 'd MMM yyyy')} ·{' '}
@@ -167,7 +167,7 @@ export function MeetingNotes({ projectId, project, user }) {
                                 setEditingId(note._id)
                                 setEditText(note.text)
                               }}
-                              className="flex h-6 w-6 items-center justify-center rounded-md text-[#94a3b8] hover:bg-[#eff6ff] hover:text-[#2563eb]"
+                              className="flex h-6 w-6 items-center justify-center rounded-md text-secondary hover:bg-[#ecfdf5] hover:text-[#3ecf8e]"
                             >
                               <Pencil className="h-3 w-3" />
                             </button>
@@ -176,7 +176,7 @@ export function MeetingNotes({ projectId, project, user }) {
                             type="button"
                             title="Delete note"
                             onClick={() => removeNote.mutate(note._id)}
-                            className="flex h-6 w-6 items-center justify-center rounded-md text-[#94a3b8] hover:bg-red-50 hover:text-red-600"
+                            className="flex h-6 w-6 items-center justify-center rounded-md text-secondary hover:bg-red-50 hover:text-red-600"
                           >
                             <Trash2 className="h-3 w-3" />
                           </button>
@@ -185,19 +185,19 @@ export function MeetingNotes({ projectId, project, user }) {
                     </div>
 
                     {isEditing ? (
-                      <div className="mt-1.5 rounded-xl border border-[#93c5fd] bg-white p-2 shadow-sm">
+                      <div className="mt-1.5 rounded-xl border border-[#4ade80] bg-surface p-2 shadow-sm">
                         <textarea
                           rows={3}
                           autoFocus
                           value={editText}
                           onChange={(e) => setEditText(e.target.value)}
-                          className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-[#0f172a] outline-none"
+                          className="w-full resize-none bg-transparent text-[13px] leading-relaxed text-primary outline-none"
                         />
                         <div className="mt-1 flex justify-end gap-1.5">
                           <button
                             type="button"
                             onClick={() => setEditingId(null)}
-                            className="h-7 rounded-lg px-2.5 text-[11.5px] font-semibold text-[#64748b] hover:bg-[#f1f5f9]"
+                            className="h-7 rounded-lg px-2.5 text-[11.5px] font-semibold text-secondary hover:bg-surface-raised"
                           >
                             Cancel
                           </button>
@@ -207,14 +207,14 @@ export function MeetingNotes({ projectId, project, user }) {
                             onClick={() =>
                               update.mutate({ noteId: note._id, value: editText })
                             }
-                            className="h-7 rounded-lg bg-[#2563eb] px-2.5 text-[11.5px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40"
+                            className="h-7 rounded-lg bg-[#3ecf8e] px-2.5 text-[11.5px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-40"
                           >
                             {update.isPending ? 'Saving…' : 'Save'}
                           </button>
                         </div>
                       </div>
                     ) : (
-                      <p className="mt-1 whitespace-pre-wrap rounded-xl bg-[#f8fafc] px-3 py-2 text-[13px] leading-relaxed text-[#334155] ring-1 ring-inset ring-[#eef2f7]">
+                      <p className="mt-1 whitespace-pre-wrap rounded-xl bg-surface-raised px-3 py-2 text-[13px] leading-relaxed text-primary ring-1 ring-inset ring-[#eef2f7]">
                         {note.text}
                       </p>
                     )}

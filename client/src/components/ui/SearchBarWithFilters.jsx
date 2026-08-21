@@ -20,7 +20,7 @@ export function SearchBarWithFilters({
       className={cn(
         'flex flex-wrap items-center gap-2 rounded-[16px] border p-2',
         light
-          ? 'border-border-light bg-white'
+          ? 'border-border-light bg-surface'
           : 'border-border bg-surface',
         className,
       )}
@@ -29,7 +29,7 @@ export function SearchBarWithFilters({
         <Search
           className={cn(
             'pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2',
-            light ? 'text-zinc-400' : 'text-secondary',
+            light ? 'text-secondary' : 'text-secondary',
           )}
         />
         <input
@@ -37,10 +37,8 @@ export function SearchBarWithFilters({
           onChange={(e) => onChange?.(e.target.value)}
           placeholder={placeholder}
           className={cn(
-            'h-10 w-full rounded-[11px] border-0 bg-transparent pl-9 pr-3 text-sm outline-none',
-            light
-              ? 'text-on-light placeholder:text-zinc-400'
-              : 'text-primary placeholder:text-secondary',
+            'h-10 w-full rounded-[8px] border-0 bg-transparent pl-9 pr-3 text-sm outline-none',
+            'text-primary placeholder:text-secondary',
           )}
         />
       </div>
@@ -83,10 +81,8 @@ export function SearchBarWithFilters({
       <button
         type="button"
         className={cn(
-          'inline-flex h-10 items-center gap-2 rounded-[11px] px-3 text-sm transition-colors duration-150',
-          light
-            ? 'text-zinc-500 hover:bg-zinc-100'
-            : 'text-secondary hover:bg-surface-raised hover:text-primary',
+          'inline-flex h-10 items-center gap-2 rounded-[8px] px-3 text-sm transition-colors duration-150',
+          'text-secondary hover:bg-surface-raised hover:text-primary',
         )}
       >
         <SlidersHorizontal className="h-4 w-4" />

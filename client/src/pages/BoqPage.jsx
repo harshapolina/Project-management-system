@@ -94,7 +94,7 @@ const STATUS_META = {
 }
 
 const CARD =
-  'rounded-2xl border border-[#e6ecf4] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_1px_3px_rgba(16,24,40,0.05)]'
+  'on-dark rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]'
 
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
@@ -322,7 +322,7 @@ export function BoqPage() {
     .reduce((s, q) => s + (Number(q.grandTotal) || 0), 0)
 
   return (
-    <div className="h-full min-h-0 bg-[#f4f7fb] print:block print:h-auto print:bg-white">
+    <div className="h-full min-h-0 bg-[#f4f7fb] print:block print:h-auto print:bg-surface">
       <div className="h-full min-h-0 print:h-auto print:overflow-visible">
         {!projectId ? (
           <PortfolioView
@@ -390,26 +390,20 @@ function PortfolioView({
     : 0
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto bg-[var(--bg-canvas)]">
       <div className="mx-auto w-full max-w-[1220px] px-5 py-6 sm:px-8 sm:py-8">
-        {/* Hero */}
-        <section
-          className="relative overflow-hidden rounded-3xl border border-[#e2eaf5] bg-white px-6 py-7 shadow-[0_2px_4px_rgba(16,24,40,0.03),0_12px_32px_-20px_rgba(16,24,40,0.22)] sm:px-8"
-          style={{
-            backgroundImage:
-              'radial-gradient(880px 300px at 92% -20%, rgba(37,99,235,0.10), transparent 60%), radial-gradient(520px 240px at 2% 120%, rgba(16,185,129,0.09), transparent 58%)',
-          }}
-        >
+        {/* Hero — dark elevated panel on light canvas */}
+        <section className="on-dark relative overflow-hidden rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] px-6 py-7 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.4)] sm:px-8">
           <div className="flex flex-wrap items-end justify-between gap-8">
             <div className="min-w-0 max-w-xl">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#1d4ed8] ring-1 ring-inset ring-[#d7e5fc]">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--create-fg)]">
                 <Sparkles className="h-3 w-3" />
                 Estimation
               </span>
-              <h1 className="mt-3 text-[28px] font-semibold leading-[1.1] tracking-[-0.025em] text-[#0b1220] sm:text-[32px]">
+              <h1 className="mt-3 text-[28px] font-semibold leading-[1.1] tracking-[-0.025em] text-white sm:text-[32px]">
                 Bill of Quantities
               </h1>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-[#64748b]">
+              <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">
                 Every project&apos;s quote in one workspace. Import an Excel BOQ
                 and we&apos;ll lay it out into rows, attach reference images to
                 any line, then approve to set the project budget.
@@ -424,19 +418,19 @@ function PortfolioView({
           </div>
 
           {portfolioTotal > 0 && (
-            <div className="mt-7 border-t border-[#eef2f7] pt-4">
-              <div className="flex items-center justify-between text-[11.5px] font-medium text-[#8a98ac]">
+            <div className="mt-7 border-t border-white/[0.08] pt-4">
+              <div className="flex items-center justify-between text-[11.5px] font-medium text-white/45">
                 <span>
                   Approved value{' '}
-                  <span className="font-semibold tabular-nums text-[#0b1220]">
+                  <span className="font-semibold tabular-nums text-white">
                     {formatInr(approvedTotal)}
                   </span>
                 </span>
                 <span className="tabular-nums">{approvedShare}% of quoted</span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[#eef2f7]">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all duration-700"
+                  className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
                   style={{ width: `${approvedShare}%` }}
                 />
               </div>
@@ -444,19 +438,19 @@ function PortfolioView({
           )}
         </section>
 
-        {/* Toolbar */}
+        {/* Toolbar — dark filter pills */}
         <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="inline-flex rounded-xl border border-[#e4eaf3] bg-[#eef2f7] p-1">
+          <div className="on-dark inline-flex rounded-full border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-1">
             {FILTERS.map((f) => (
               <button
                 key={f.key}
                 type="button"
                 onClick={() => setFilter(f.key)}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-[12.5px] font-semibold transition',
+                  'rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition',
                   filter === f.key
-                    ? 'bg-white text-[#0b1220] shadow-[0_1px_2px_rgba(16,24,40,0.10)]'
-                    : 'text-[#64748b] hover:text-[#0b1220]',
+                    ? 'bg-accent text-[#171717] shadow-sm'
+                    : 'text-secondary hover:text-primary',
                 )}
               >
                 {f.label}
@@ -465,19 +459,19 @@ function PortfolioView({
           </div>
 
           <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-[#9aa7ba]" />
+            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-secondary" />
             <input
               value={search}
               onChange={(e) => onSearch(e.target.value)}
               placeholder="Search projects or clients"
-              className="h-[38px] w-full rounded-xl border border-[#e4eaf3] bg-white pl-9 pr-8 text-[12.5px] text-[#0b1220] shadow-[0_1px_2px_rgba(16,24,40,0.04)] outline-none transition placeholder:text-[#9aa7ba] focus:border-[#b6cef7] focus:ring-4 focus:ring-[#2563eb]/10"
+              className="h-[40px] w-full rounded-full border border-border bg-surface pl-10 pr-9 text-[12.5px] text-primary outline-none transition placeholder:text-secondary focus:border-accent/40 focus:ring-4 focus:ring-accent/10"
             />
             {search && (
               <button
                 type="button"
                 onClick={() => onSearch('')}
                 title="Clear search"
-                className="absolute right-2.5 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-[#9aa7ba] transition hover:bg-[#f1f5f9] hover:text-[#475569]"
+                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-white/40 transition hover:bg-white/10 hover:text-white"
               >
                 <X className="h-3.5 w-3.5" />
               </button>
@@ -492,19 +486,19 @@ function PortfolioView({
               {[0, 1, 2, 3, 4, 5].map((i) => (
                 <div
                   key={i}
-                  className="h-[168px] animate-pulse rounded-2xl bg-white"
+                  className="h-[168px] animate-pulse rounded-[20px] bg-[var(--panel-dark)]"
                 />
               ))}
             </div>
           ) : visible.length === 0 ? (
             <div className={cn(CARD, 'px-8 py-16 text-center')}>
-              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-[#f4f7fb] text-[#b4c0d0]">
+              <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-white/[0.06] text-white/35">
                 <Layers className="h-5 w-5" />
               </div>
-              <p className="mt-3 text-[15px] font-semibold tracking-[-0.01em] text-[#0b1220]">
+              <p className="mt-3 text-[15px] font-semibold tracking-[-0.01em] text-white">
                 Nothing here yet
               </p>
-              <p className="mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed text-[#8a98ac]">
+              <p className="mx-auto mt-1 max-w-sm text-[12.5px] leading-relaxed text-white/45">
                 No projects match this filter. Try “All”, or create a project
                 first — its BOQ sheets will appear here.
               </p>
@@ -530,21 +524,14 @@ function PortfolioView({
 
 function HeroStat({ label, value, accent }) {
   return (
-    <div
-      className={cn(
-        'rounded-2xl px-3.5 py-3 ring-1 ring-inset',
-        accent
-          ? 'bg-[#eef4ff] ring-[#d7e5fc]'
-          : 'bg-[#f7f9fc] ring-[#e9eef6]',
-      )}
-    >
-      <p className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9aa7ba]">
+    <div className="rounded-2xl bg-white px-3.5 py-3 shadow-sm">
+      <p className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
         {label}
       </p>
       <p
         className={cn(
           'mt-1 whitespace-nowrap text-[17px] font-semibold tabular-nums tracking-[-0.02em]',
-          accent ? 'text-[#1d4ed8]' : 'text-[#0b1220]',
+          accent ? 'text-[var(--accent)]' : 'text-[var(--text-primary)]',
         )}
       >
         {value}
@@ -564,20 +551,18 @@ function ProjectCard({ project, stats, maxTotal, onOpen }) {
       className={cn(
         CARD,
         'group relative overflow-hidden p-5 text-left transition-all duration-200',
-        'hover:-translate-y-[3px] hover:border-[#c7dbfb] hover:shadow-[0_16px_36px_-18px_rgba(16,24,40,0.28)]',
+        'hover:-translate-y-[2px] hover:bg-[var(--panel-dark-raised)] hover:shadow-[0_16px_36px_-16px_rgba(0,0,0,0.45)]',
       )}
     >
-      <span className="absolute inset-x-0 top-0 h-[3px] scale-x-0 bg-gradient-to-r from-[#2563eb] to-[#60a5fa] transition-transform duration-300 group-hover:scale-x-100" />
-
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f4f7fb] text-[12px] font-bold tracking-tight text-[#64748b] ring-1 ring-inset ring-[#e9eef6] transition group-hover:bg-[#eef4ff] group-hover:text-[#2563eb] group-hover:ring-[#d7e5fc]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[12px] font-bold tracking-tight text-white/80 ring-1 ring-inset ring-white/[0.08] transition group-hover:bg-[var(--accent)]/15 group-hover:text-[var(--accent)]">
           {initialsOf(project.name)}
         </div>
         <div className="min-w-0 flex-1">
-          <h3 className="truncate text-[14.5px] font-semibold tracking-[-0.012em] text-[#0b1220]">
+          <h3 className="truncate text-[14.5px] font-semibold tracking-[-0.012em] text-white">
             {project.name}
           </h3>
-          <p className="mt-0.5 truncate text-[12px] text-[#8a98ac]">
+          <p className="mt-0.5 truncate text-[12px] text-white/45">
             {project.clientName || 'No client'}
             {project.location ? ` · ${project.location}` : ''}
           </p>
@@ -585,15 +570,15 @@ function ProjectCard({ project, stats, maxTotal, onOpen }) {
       </div>
 
       <div className="mt-5">
-        <p className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-[#9aa7ba]">
+        <p className="text-[9.5px] font-semibold uppercase tracking-[0.14em] text-white/40">
           Quoted value
         </p>
-        <p className="mt-0.5 text-[22px] font-semibold tabular-nums leading-none tracking-[-0.03em] text-[#0b1220]">
+        <p className="mt-0.5 text-[22px] font-semibold tabular-nums leading-none tracking-[-0.03em] text-[var(--accent)]">
           {formatInr(s.total)}
         </p>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-[#eef2f7]">
+        <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/[0.08]">
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#2563eb] to-[#7daafb] transition-all duration-500"
+            className="h-full rounded-full bg-[var(--accent)]/70 transition-all duration-500"
             style={{ width: `${s.total ? Math.max(share, 4) : 0}%` }}
           />
         </div>
@@ -607,7 +592,7 @@ function ProjectCard({ project, stats, maxTotal, onOpen }) {
           {s.approved > 0 && <Chip tone="success">{s.approved} approved</Chip>}
           {s.drafts > 0 && <Chip tone="muted">{s.drafts} draft</Chip>}
         </div>
-        <span className="flex items-center gap-1 text-[12px] font-semibold text-[#2563eb] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 -translate-x-1">
+        <span className="flex items-center gap-1 text-[12px] font-semibold text-[var(--accent)] opacity-0 transition-all duration-200 group-hover:translate-x-0 group-hover:opacity-100 -translate-x-1">
           Open
           <ArrowRight className="h-3.5 w-3.5" />
         </span>
@@ -618,9 +603,9 @@ function ProjectCard({ project, stats, maxTotal, onOpen }) {
 
 function Chip({ children, tone = 'neutral' }) {
   const tones = {
-    neutral: 'bg-[#f1f5f9] text-[#475569] ring-[#e4eaf3]',
-    success: 'bg-emerald-50 text-emerald-700 ring-emerald-200',
-    muted: 'bg-white text-[#94a3b8] ring-[#e9eef6]',
+    neutral: 'bg-white/[0.08] text-white/70 ring-white/[0.06]',
+    success: 'bg-[var(--accent)]/15 text-[var(--accent)] ring-[var(--accent)]/20',
+    muted: 'bg-white/[0.04] text-white/40 ring-white/[0.04]',
   }
   return (
     <span
@@ -662,12 +647,12 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
 
   return (
     <div className="flex h-full min-h-0 flex-col print:block print:h-auto">
-      <header className="shrink-0 border-b border-[#e1e8f1] bg-white px-4 pt-4 print:hidden sm:px-6">
+      <header className="shrink-0 border-b border-[#e1e8f1] bg-surface px-4 pt-4 print:hidden sm:px-6">
         <button
           type="button"
           onClick={onBack}
           title="Back to all projects"
-          className="group inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#9aa7ba] transition hover:text-[#1d4ed8]"
+          className="group inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#9aa7ba] transition hover:text-[#24b47e]"
         >
           <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-150 group-hover:-translate-x-0.5" />
           BOQ &amp; Quotes
@@ -681,7 +666,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
             <p className="mt-0.5 truncate text-[12px] text-[#8a98ac]">
               {project?.clientName || 'No client'}
               {project?.location ? ` · ${project.location}` : ''} ·{' '}
-              <span className="font-semibold text-[#475569] tabular-nums">
+              <span className="font-semibold text-secondary tabular-nums">
                 {formatInr(projectTotal)}
               </span>{' '}
               across {quotes.length} {quotes.length === 1 ? 'sheet' : 'sheets'}
@@ -694,7 +679,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
               setDraft(true)
               setActiveId(null)
             }}
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#2563eb] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(37,99,235,0.75)] transition hover:bg-[#1d4ed8]"
+            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#3ecf8e] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(37,99,235,0.75)] transition hover:bg-[#24b47e]"
           >
             <Plus className="h-4 w-4" />
             New sheet
@@ -718,7 +703,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
                     'flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-left transition-all duration-150',
                     active
                       ? 'border-[#c7dbfb] bg-[#eef4ff] shadow-[0_1px_2px_rgba(37,99,235,0.10)]'
-                      : 'border-[#e9eef6] bg-white hover:border-[#d7e0ec] hover:bg-[#f9fbfd]',
+                      : 'border-[#e9eef6] bg-surface hover:border-[#d7e0ec] hover:bg-[#f9fbfd]',
                   )}
                 >
                   <span
@@ -728,7 +713,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
                     <span
                       className={cn(
                         'block max-w-[180px] truncate text-[12.5px] font-semibold tracking-[-0.005em]',
-                        active ? 'text-[#1d4ed8]' : 'text-[#0b1220]',
+                        active ? 'text-[#24b47e]' : 'text-[#0b1220]',
                       )}
                     >
                       {q.title}
@@ -742,8 +727,8 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
               )
             })}
             {draft && (
-              <span className="flex shrink-0 items-center gap-2 rounded-xl border border-dashed border-[#b6cef7] bg-[#f5f9ff] px-3 py-2 text-[12px] font-semibold text-[#1d4ed8]">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#2563eb]" />
+              <span className="flex shrink-0 items-center gap-2 rounded-xl border border-dashed border-[#b6cef7] bg-[#f5f9ff] px-3 py-2 text-[12px] font-semibold text-[#24b47e]">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3ecf8e]" />
                 New sheet · unsaved
               </span>
             )}
@@ -753,7 +738,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
 
       <div className="min-h-0 flex-1 print:h-auto print:overflow-visible">
         {loading ? (
-          <div className="m-5 h-64 animate-pulse rounded-2xl bg-white" />
+          <div className="m-5 h-64 animate-pulse rounded-2xl bg-surface" />
         ) : !activeQuote && !draft ? (
           <EmptyProject onCreate={() => setDraft(true)} />
         ) : (
@@ -782,7 +767,7 @@ function EmptyProject({ onCreate }) {
   return (
     <div className="flex h-full items-center justify-center p-6">
       <div className={cn(CARD, 'max-w-lg px-10 py-12 text-center')}>
-        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#eef4ff] to-[#f7faff] text-[#2563eb] ring-1 ring-inset ring-[#dbe7fb]">
+        <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#eef4ff] to-[#f7faff] text-[#3ecf8e] ring-1 ring-inset ring-[#dbe7fb]">
           <FileSpreadsheet className="h-6 w-6" />
         </div>
         <p className="mt-4 text-[17px] font-semibold tracking-[-0.02em] text-[#0b1220]">
@@ -795,7 +780,7 @@ function EmptyProject({ onCreate }) {
         <button
           type="button"
           onClick={onCreate}
-          className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563eb] px-5 text-[13.5px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(37,99,235,0.6)] transition hover:bg-[#1d4ed8]"
+          className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#3ecf8e] px-5 text-[13.5px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(37,99,235,0.6)] transition hover:bg-[#24b47e]"
         >
           <Plus className="h-4 w-4" />
           Create BOQ
@@ -1119,7 +1104,7 @@ function BoqSheet({
   }
 
   const cell =
-    'w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-[12.5px] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-white focus:ring-2 focus:ring-[#2563eb]/10 disabled:cursor-not-allowed disabled:opacity-60'
+    'w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-[12.5px] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-surface focus:ring-2 focus:ring-[#3ecf8e]/10 disabled:cursor-not-allowed disabled:opacity-60'
 
   const filledLines = items.filter(
     (it) => it.description?.trim() || lineAmount(it) > 0,
@@ -1140,10 +1125,10 @@ function BoqSheet({
         onDrop={onDropFiles}
       >
         {dragOver && (
-          <div className="pointer-events-none absolute inset-3 z-30 flex items-center justify-center rounded-2xl border-2 border-dashed border-[#2563eb] bg-[#eef4ff]/85 backdrop-blur-[2px]">
+          <div className="pointer-events-none absolute inset-3 z-30 flex items-center justify-center rounded-2xl border-2 border-dashed border-[#3ecf8e] bg-[#eef4ff]/85 backdrop-blur-[2px]">
             <div className="text-center">
-              <Upload className="mx-auto h-7 w-7 text-[#2563eb]" />
-              <p className="mt-2 text-[14px] font-semibold text-[#1d4ed8]">
+              <Upload className="mx-auto h-7 w-7 text-[#3ecf8e]" />
+              <p className="mt-2 text-[14px] font-semibold text-[#24b47e]">
                 Drop to add
               </p>
               <p className="text-[12px] text-[#3b6fd4]">
@@ -1154,7 +1139,7 @@ function BoqSheet({
         )}
 
         {/* Sheet */}
-        <div className="flex min-h-[480px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2eaf5] bg-white shadow-[0_2px_4px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.25)] lg:min-h-0">
+        <div className="flex min-h-[480px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2eaf5] bg-surface shadow-[0_2px_4px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.25)] lg:min-h-0">
           {/* Action bar */}
           <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#edf1f7] px-4 py-3 sm:px-5">
             <div className="flex flex-1 items-center gap-2">
@@ -1165,7 +1150,7 @@ function BoqSheet({
                   markDirty()
                   setTitle(e.target.value)
                 }}
-                className="h-[34px] min-w-[140px] flex-1 rounded-lg border border-transparent bg-transparent px-2 text-[16px] font-semibold tracking-[-0.02em] text-[#0b1220] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-white placeholder:text-[#b4c0d0] disabled:opacity-70"
+                className="h-[34px] min-w-[140px] flex-1 rounded-lg border border-transparent bg-transparent px-2 text-[16px] font-semibold tracking-[-0.02em] text-[#0b1220] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-surface placeholder:text-[#b4c0d0] disabled:opacity-70"
                 placeholder="Sheet title"
               />
               <span
@@ -1197,7 +1182,7 @@ function BoqSheet({
                   markDirty()
                   setVersionLabel(e.target.value)
                 }}
-                className="h-[34px] w-28 rounded-xl border border-[#e4eaf3] bg-[#f7f9fc] px-2.5 text-[12px] font-medium text-[#475569] outline-none transition focus:border-[#b6cef7] focus:bg-white disabled:opacity-70"
+                className="h-[34px] w-28 rounded-xl border border-[#e4eaf3] bg-[#f7f9fc] px-2.5 text-[12px] font-medium text-secondary outline-none transition focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
                 placeholder="Version"
               />
               <input
@@ -1214,12 +1199,12 @@ function BoqSheet({
                 type="button"
                 disabled={locked || importing}
                 onClick={() => excelInputRef.current?.click()}
-                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 text-[12px] font-semibold text-[#1d4ed8] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
+                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 text-[12px] font-semibold text-[#24b47e] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
               >
                 <Upload className="h-3.5 w-3.5" />
                 {importing ? 'Reading…' : 'Import Excel'}
               </button>
-              <div className="flex h-[34px] items-center rounded-xl border border-[#e4eaf3] bg-white px-0.5">
+              <div className="flex h-[34px] items-center rounded-xl border border-[#e4eaf3] bg-surface px-0.5">
                 <ToolButton
                   label="Add line"
                   disabled={locked}
@@ -1235,7 +1220,7 @@ function BoqSheet({
                 <button
                   type="button"
                   onClick={onCancelDraft}
-                  className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-white px-3 text-[12px] font-semibold text-[#64748b] transition hover:bg-[#f4f7fb] hover:text-[#0b1220]"
+                  className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-surface px-3 text-[12px] font-semibold text-secondary transition hover:bg-[#f4f7fb] hover:text-[#0b1220]"
                 >
                   <X className="h-3.5 w-3.5" />
                   Discard
@@ -1282,7 +1267,7 @@ function BoqSheet({
                         className="sticky top-[35px] z-[5] border-b border-[#edf1f7] bg-[#f7f9fc] px-3 py-1.5"
                       >
                         <div className="flex items-center gap-2">
-                          <span className="h-3.5 w-[3px] rounded-full bg-[#2563eb]" />
+                          <span className="h-3.5 w-[3px] rounded-full bg-[#3ecf8e]" />
                           <input
                             list="boq-rooms"
                             disabled={locked}
@@ -1299,13 +1284,13 @@ function BoqSheet({
                                 ),
                               )
                             }}
-                            className="w-40 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-white focus:border-[#b6cef7] focus:bg-white disabled:opacity-70"
+                            className="w-40 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-surface focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
                           />
-                          <span className="rounded-full bg-white px-2 py-[2px] text-[10px] font-semibold tabular-nums text-[#8a98ac] ring-1 ring-inset ring-[#e4eaf3]">
+                          <span className="rounded-full bg-surface px-2 py-[2px] text-[10px] font-semibold tabular-nums text-[#8a98ac] ring-1 ring-inset ring-[#e4eaf3]">
                             {g.endIdx - g.startIdx + 1}{' '}
                             {g.endIdx - g.startIdx === 0 ? 'line' : 'lines'}
                           </span>
-                          <span className="ml-auto text-[12px] font-bold tabular-nums text-[#334155]">
+                          <span className="ml-auto text-[12px] font-bold tabular-nums text-primary">
                             {formatInr(g.total)}
                           </span>
                           {!locked && (
@@ -1313,7 +1298,7 @@ function BoqSheet({
                               type="button"
                               title={`Add a line to ${g.room}`}
                               onClick={() => addLine(g.endIdx, g.room)}
-                              className="rounded-md p-1 text-[#9aa7ba] transition hover:bg-white hover:text-[#2563eb]"
+                              className="rounded-md p-1 text-[#9aa7ba] transition hover:bg-surface hover:text-[#3ecf8e]"
                             >
                               <Plus className="h-3.5 w-3.5" />
                             </button>
@@ -1347,7 +1332,7 @@ function BoqSheet({
                                     type="button"
                                     title="Remove image"
                                     onClick={() => updateItem(idx, 'image', '')}
-                                    className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#0f172a] text-white shadow-sm group-hover/row:flex"
+                                    className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#171717] text-white shadow-sm group-hover/row:flex"
                                   >
                                     <X className="h-2.5 w-2.5" />
                                   </button>
@@ -1362,7 +1347,7 @@ function BoqSheet({
                                   rowImageTarget.current = idx
                                   rowImageInputRef.current?.click()
                                 }}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-[#dde5ef] text-[#c3ccd9] transition hover:border-[#b6cef7] hover:bg-[#f5f9ff] hover:text-[#2563eb] disabled:opacity-40"
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-[#dde5ef] text-[#c3ccd9] transition hover:border-[#b6cef7] hover:bg-[#f5f9ff] hover:text-[#3ecf8e] disabled:opacity-40"
                               >
                                 <ImageIcon className="h-3.5 w-3.5" />
                               </button>
@@ -1396,7 +1381,7 @@ function BoqSheet({
                               onChange={(e) =>
                                 updateItem(idx, 'unit', e.target.value)
                               }
-                              className={cn(cell, 'text-[#64748b]')}
+                              className={cn(cell, 'text-secondary')}
                             >
                               {UNITS.map((u) => (
                                 <option key={u.value} value={u.value}>
@@ -1415,7 +1400,7 @@ function BoqSheet({
                               onChange={(e) =>
                                 updateItem(idx, 'qty', e.target.value)
                               }
-                              className={cn(cell, 'text-right tabular-nums text-[#334155]')}
+                              className={cn(cell, 'text-right tabular-nums text-primary')}
                             />
                           </td>
                           <td className="px-1.5 py-1.5">
@@ -1428,7 +1413,7 @@ function BoqSheet({
                               onChange={(e) =>
                                 updateItem(idx, 'rate', e.target.value)
                               }
-                              className={cn(cell, 'text-right tabular-nums text-[#334155]')}
+                              className={cn(cell, 'text-right tabular-nums text-primary')}
                             />
                           </td>
                           <td className="px-3 py-1.5 text-right text-[12.5px] font-semibold tabular-nums text-[#0b1220]">
@@ -1441,7 +1426,7 @@ function BoqSheet({
                                 title="Duplicate line"
                                 disabled={locked}
                                 onClick={() => duplicateLine(idx)}
-                                className="rounded-md p-1.5 text-[#9aa7ba] transition hover:bg-[#eef2f7] hover:text-[#334155] disabled:opacity-30"
+                                className="rounded-md p-1.5 text-[#9aa7ba] transition hover:bg-surface-raised hover:text-primary disabled:opacity-30"
                               >
                                 <Copy className="h-3.5 w-3.5" />
                               </button>
@@ -1474,7 +1459,7 @@ function BoqSheet({
               <button
                 type="button"
                 onClick={() => addLine()}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-[12.5px] font-semibold text-[#2563eb] transition hover:bg-[#f7faff]"
+                className="flex w-full items-center gap-2 px-4 py-3 text-left text-[12.5px] font-semibold text-[#3ecf8e] transition hover:bg-[#f7faff]"
               >
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#eef4ff]">
                   <Plus className="h-3.5 w-3.5" />
@@ -1490,13 +1475,13 @@ function BoqSheet({
           {/* Status bar */}
           <div className="flex shrink-0 items-center gap-4 border-t border-[#edf1f7] bg-[#fafcfe] px-4 py-2 text-[11px] text-[#8a98ac] sm:px-5">
             <span>
-              <span className="font-semibold tabular-nums text-[#475569]">
+              <span className="font-semibold tabular-nums text-secondary">
                 {filledLines}
               </span>{' '}
               of {items.length} lines filled
             </span>
             <span className="hidden sm:inline">
-              <span className="font-semibold tabular-nums text-[#475569]">
+              <span className="font-semibold tabular-nums text-secondary">
                 {byRoom.length}
               </span>{' '}
               {byRoom.length === 1 ? 'room' : 'rooms'}
@@ -1527,10 +1512,10 @@ function BoqSheet({
               {formatInr(grand)}
             </p>
 
-            <div className="mt-4 space-y-2.5 border-t border-[#eef2f7] pt-3 text-[12px]">
+            <div className="mt-4 space-y-2.5 border-t border-border pt-3 text-[12px]">
               <div className="flex items-center justify-between">
                 <span className="text-[#8a98ac]">Subtotal</span>
-                <span className="font-semibold tabular-nums text-[#334155]">
+                <span className="font-semibold tabular-nums text-primary">
                   {formatInr(subtotal)}
                 </span>
               </div>
@@ -1547,13 +1532,13 @@ function BoqSheet({
                         markDirty()
                         setGst(Number(e.target.value))
                       }}
-                      className="h-7 w-16 rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] pl-2 pr-5 text-right text-[12px] tabular-nums text-[#334155] outline-none transition focus:border-[#b6cef7] focus:bg-white focus:ring-2 focus:ring-[#2563eb]/10 disabled:opacity-50"
+                      className="h-7 w-16 rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] pl-2 pr-5 text-right text-[12px] tabular-nums text-primary outline-none transition focus:border-[#b6cef7] focus:bg-surface focus:ring-2 focus:ring-[#3ecf8e]/10 disabled:opacity-50"
                     />
                     <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-[#9aa7ba]">
                       %
                     </span>
                   </div>
-                  <span className="w-[84px] text-right font-semibold tabular-nums text-[#334155]">
+                  <span className="w-[84px] text-right font-semibold tabular-nums text-primary">
                     {formatInr(gstAmount)}
                   </span>
                 </div>
@@ -1569,7 +1554,7 @@ function BoqSheet({
                     markDirty()
                     setDiscount(Number(e.target.value))
                   }}
-                  className="h-7 w-[124px] rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-right text-[12px] tabular-nums text-[#334155] outline-none transition focus:border-[#b6cef7] focus:bg-white focus:ring-2 focus:ring-[#2563eb]/10 disabled:opacity-50"
+                  className="h-7 w-[124px] rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-right text-[12px] tabular-nums text-primary outline-none transition focus:border-[#b6cef7] focus:bg-surface focus:ring-2 focus:ring-[#3ecf8e]/10 disabled:opacity-50"
                 />
               </div>
             </div>
@@ -1580,7 +1565,7 @@ function BoqSheet({
                   type="button"
                   disabled={save.isPending}
                   onClick={() => save.mutate(payload())}
-                  className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#2563eb] text-[13px] font-semibold text-white shadow-[0_8px_18px_-10px_rgba(37,99,235,0.9)] transition hover:bg-[#1d4ed8] disabled:opacity-50"
+                  className="mt-4 inline-flex h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#3ecf8e] text-[13px] font-semibold text-white shadow-[0_8px_18px_-10px_rgba(37,99,235,0.9)] transition hover:bg-[#24b47e] disabled:opacity-50"
                 >
                   <Save className="h-4 w-4" />
                   {save.isPending
@@ -1644,7 +1629,7 @@ function BoqSheet({
                       }
                       save.mutate(payload({ status: 'sent' }))
                     }}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] text-[12.5px] font-semibold text-[#1d4ed8] transition hover:bg-[#e0ebff] disabled:opacity-40"
+                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] text-[12.5px] font-semibold text-[#24b47e] transition hover:bg-[#e0ebff] disabled:opacity-40"
                   >
                     <Send className="h-3.5 w-3.5" />
                     Mark sent to client
@@ -1684,7 +1669,7 @@ function BoqSheet({
                         return
                       save.mutate(payload({ status: 'draft' }))
                     }}
-                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-white text-[12px] font-semibold text-[#475569] transition hover:bg-[#f4f7fb]"
+                    className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-surface text-[12px] font-semibold text-secondary transition hover:bg-[#f4f7fb]"
                   >
                     <Unlock className="h-3.5 w-3.5" />
                     Reopen as draft
@@ -1702,7 +1687,7 @@ function BoqSheet({
                     )
                       remove.mutate()
                   }}
-                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#f3d7d7] bg-white text-[12px] font-semibold text-[#dc2626] transition hover:bg-red-50 disabled:opacity-40"
+                  className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#f3d7d7] bg-surface text-[12px] font-semibold text-[#dc2626] transition hover:bg-red-50 disabled:opacity-40"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   Delete sheet
@@ -1732,7 +1717,7 @@ function BoqSheet({
                 type="button"
                 disabled={locked || uploading}
                 onClick={() => galleryInputRef.current?.click()}
-                className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#e4eaf3] bg-white px-2 text-[11px] font-semibold text-[#475569] transition hover:border-[#c7dbfb] hover:text-[#1d4ed8] disabled:opacity-40"
+                className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#e4eaf3] bg-surface px-2 text-[11px] font-semibold text-secondary transition hover:border-[#c7dbfb] hover:text-[#24b47e] disabled:opacity-40"
               >
                 <Upload className="h-3 w-3" />
                 {uploading ? 'Uploading…' : 'Add'}
@@ -1765,7 +1750,7 @@ function BoqSheet({
                             prev.filter((_, idx) => idx !== i),
                           )
                         }}
-                        className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-[#0f172a] text-white shadow-sm group-hover:flex"
+                        className="absolute -right-1.5 -top-1.5 hidden h-5 w-5 items-center justify-center rounded-full bg-[#171717] text-white shadow-sm group-hover:flex"
                       >
                         <X className="h-3 w-3" />
                       </button>
@@ -1788,7 +1773,7 @@ function BoqSheet({
                   return (
                     <div key={room}>
                       <div className="flex items-baseline justify-between gap-2">
-                        <span className="truncate text-[12px] font-medium text-[#334155]">
+                        <span className="truncate text-[12px] font-medium text-primary">
                           {room}
                         </span>
                         <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#0b1220]">
@@ -1796,9 +1781,9 @@ function BoqSheet({
                         </span>
                       </div>
                       <div className="mt-1 flex items-center gap-2">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#eef2f7]">
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-surface-raised">
                           <div
-                            className="h-full rounded-full bg-[#2563eb]/70 transition-all duration-500"
+                            className="h-full rounded-full bg-[#3ecf8e]/70 transition-all duration-500"
                             style={{ width: `${pct}%` }}
                           />
                         </div>
@@ -1819,7 +1804,7 @@ function BoqSheet({
         <div
           role="presentation"
           onClick={() => setPreview(null)}
-          className="on-dark fixed inset-0 z-[80] flex items-center justify-center bg-[#0f172a]/80 p-8 backdrop-blur-sm print:hidden"
+          className="on-dark fixed inset-0 z-[80] flex items-center justify-center bg-[#171717]/80 p-8 backdrop-blur-sm print:hidden"
         >
           <img
             src={preview}
@@ -1860,7 +1845,7 @@ function ToolButton({ children, label, onClick, disabled }) {
       title={label}
       onClick={onClick}
       disabled={disabled}
-      className="flex h-8 w-8 items-center justify-center rounded-lg py-1.5 text-[#64748b] transition hover:bg-[#f4f7fb] hover:text-[#0b1220] disabled:opacity-40"
+      className="flex h-8 w-8 items-center justify-center rounded-lg py-1.5 text-secondary transition hover:bg-[#f4f7fb] hover:text-[#0b1220] disabled:opacity-40"
     >
       {children}
     </button>
@@ -1882,8 +1867,8 @@ function Step({ index, label, hint, state, last }) {
         className={cn(
           'relative z-[1] mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ring-2 ring-white',
           state === 'done' && 'bg-emerald-500 text-white',
-          state === 'current' && 'bg-[#2563eb] text-white',
-          state === 'todo' && 'bg-[#eef2f7] text-[#b4c0d0]',
+          state === 'current' && 'bg-[#3ecf8e] text-white',
+          state === 'todo' && 'bg-surface-raised text-[#b4c0d0]',
         )}
       >
         {state === 'done' ? <Check className="h-3 w-3" /> : index}
@@ -1930,19 +1915,19 @@ function BoqPrintView({
     <div className="hidden print:block">
       <header className="mb-6 flex items-start justify-between border-b-2 border-[#0b1220] pb-4">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#64748b]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-secondary">
             EPM — Editco Project Management
           </p>
           <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-[#0b1220]">
             {title || 'Bill of Quantities'}
           </h1>
-          <p className="mt-1 text-[12px] text-[#475569]">
+          <p className="mt-1 text-[12px] text-secondary">
             {project?.name || 'Project'}
             {project?.clientName ? ` · ${project.clientName}` : ''}
             {project?.location ? ` · ${project.location}` : ''}
           </p>
         </div>
-        <div className="text-right text-[11px] text-[#64748b]">
+        <div className="text-right text-[11px] text-secondary">
           <p>
             Version:{' '}
             <span className="font-semibold text-[#0b1220]">
@@ -1958,7 +1943,7 @@ function BoqPrintView({
 
       <table className="w-full border-collapse text-[11px]">
         <thead>
-          <tr className="border-b border-[#cbd5e1] text-left text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
+          <tr className="border-b border-[#c7c7c7] text-left text-[10px] font-bold uppercase tracking-wide text-secondary">
             <th className="w-10 py-2 pr-2">S.no</th>
             <th className="w-14 py-2 pr-2">Location</th>
             <th className="w-24 py-2 pr-2">Room</th>
@@ -1971,8 +1956,8 @@ function BoqPrintView({
         </thead>
         <tbody>
           {rows.map((it, idx) => (
-            <tr key={it._key} className="border-b border-[#e2e8f0]">
-              <td className="py-1.5 pr-2 tabular-nums text-[#94a3b8]">
+            <tr key={it._key} className="border-b border-border">
+              <td className="py-1.5 pr-2 tabular-nums text-secondary">
                 {idx + 1}
               </td>
               <td className="py-1.5 pr-2">
@@ -1984,13 +1969,13 @@ function BoqPrintView({
                   />
                 ) : null}
               </td>
-              <td className="py-1.5 pr-2 text-[#334155]">
+              <td className="py-1.5 pr-2 text-primary">
                 {it.room || 'General'}
               </td>
               <td className="py-1.5 pr-2 text-[#0b1220]">
                 {it.description || '—'}
               </td>
-              <td className="py-1.5 pr-2 text-[#64748b]">{unitLabel(it.unit)}</td>
+              <td className="py-1.5 pr-2 text-secondary">{unitLabel(it.unit)}</td>
               <td className="py-1.5 pr-2 text-right tabular-nums">{it.qty}</td>
               <td className="py-1.5 pr-2 text-right tabular-nums">
                 {formatInr(it.rate)}
@@ -2005,16 +1990,16 @@ function BoqPrintView({
 
       <div className="mt-6 flex justify-end">
         <div className="w-[240px] space-y-1.5 text-[12px]">
-          <div className="flex justify-between text-[#475569]">
+          <div className="flex justify-between text-secondary">
             <span>Subtotal</span>
             <span className="tabular-nums">{formatInr(subtotal)}</span>
           </div>
-          <div className="flex justify-between text-[#475569]">
+          <div className="flex justify-between text-secondary">
             <span>GST ({gst || 0}%)</span>
             <span className="tabular-nums">{formatInr(gstAmount)}</span>
           </div>
           {(Number(discount) || 0) > 0 && (
-            <div className="flex justify-between text-[#475569]">
+            <div className="flex justify-between text-secondary">
               <span>Discount</span>
               <span className="tabular-nums">−{formatInr(discount)}</span>
             </div>
@@ -2027,14 +2012,14 @@ function BoqPrintView({
       </div>
 
       {byRoom.length > 1 && (
-        <div className="mt-8 border-t border-[#e2e8f0] pt-4">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
+        <div className="mt-8 border-t border-border pt-4">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-secondary">
             Summary by room
           </p>
           <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[11px]">
             {byRoom.map(([room, amount]) => (
               <div key={room} className="flex justify-between gap-4">
-                <span className="text-[#475569]">{room}</span>
+                <span className="text-secondary">{room}</span>
                 <span className="font-semibold tabular-nums text-[#0b1220]">
                   {formatInr(amount)}
                 </span>
@@ -2045,8 +2030,8 @@ function BoqPrintView({
       )}
 
       {attachments.length > 0 && (
-        <div className="mt-8 border-t border-[#e2e8f0] pt-4">
-          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-[#64748b]">
+        <div className="mt-8 border-t border-border pt-4">
+          <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-secondary">
             Reference images
           </p>
           <div className="grid grid-cols-3 gap-2">
@@ -2062,7 +2047,7 @@ function BoqPrintView({
         </div>
       )}
 
-      <footer className="mt-10 border-t border-[#e2e8f0] pt-4 text-[10px] leading-relaxed text-[#94a3b8]">
+      <footer className="mt-10 border-t border-border pt-4 text-[10px] leading-relaxed text-secondary">
         <p>
           This quotation is valid for 30 days from the date above unless
           otherwise agreed. Rates are in INR and exclusive of any items not

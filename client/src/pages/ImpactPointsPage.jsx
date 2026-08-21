@@ -198,10 +198,10 @@ export function ImpactPointsPage() {
   if (isLoading) {
     return (
       <div className="space-y-4 p-1">
-        <div className="h-36 animate-pulse rounded-3xl bg-white" />
+        <div className="h-36 animate-pulse rounded-3xl bg-surface" />
         <div className="grid gap-4 lg:grid-cols-3">
           {[0, 1, 2].map((i) => (
-            <div key={i} className="h-40 animate-pulse rounded-2xl bg-white" />
+            <div key={i} className="h-40 animate-pulse rounded-2xl bg-surface" />
           ))}
         </div>
       </div>
@@ -210,22 +210,22 @@ export function ImpactPointsPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 pb-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="on-dark flex flex-wrap items-end justify-between gap-4 rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] px-5 py-6 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.4)] sm:px-7">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
-            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--create-fg)]">
+            <Trophy className="h-3 w-3" />
             Performance scoring
           </div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-[#0f172a]">
+          <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.03em] text-white">
             Impact Points
           </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-[#64748b]">
+          <p className="mt-1.5 max-w-2xl text-[13px] text-white/55">
             Contribution, quality, collaboration, and delivery — scored
             automatically from work and adjustable by Admin / Owner.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl border border-[#e2e8f0] bg-[#eef2f7] p-1">
+          <div className="inline-flex rounded-full border border-white/[0.1] bg-white/[0.06] p-1">
             {[
               { key: 'overview', label: 'Overview' },
               ...(canManage ? [{ key: 'rules', label: 'Point rules' }] : []),
@@ -235,10 +235,10 @@ export function ImpactPointsPage() {
                 type="button"
                 onClick={() => setTab(item.key)}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-[12px] font-semibold transition',
+                  'rounded-full px-3 py-1.5 text-[12px] font-semibold transition',
                   tab === item.key
-                    ? 'bg-white text-[#0f172a] shadow-sm'
-                    : 'text-[#64748b] hover:text-[#0f172a]',
+                    ? 'bg-accent text-[#171717] shadow-sm'
+                    : 'text-secondary hover:text-primary',
                 )}
               >
                 {item.label}
@@ -249,7 +249,7 @@ export function ImpactPointsPage() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#dce4ee] bg-white px-3 text-[12px] font-semibold text-[#475569] shadow-sm hover:bg-[#f8fafc] disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-border bg-surface-raised px-3 text-[12px] font-semibold text-secondary transition hover:bg-active hover:text-primary disabled:opacity-50"
           >
             <RefreshCw className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')} />
             Refresh
@@ -317,8 +317,8 @@ export function ImpactPointsPage() {
                       className={cn(
                         'relative overflow-hidden rounded-2xl border p-3 text-center transition',
                         badge.earned
-                          ? 'border-amber-200/80 bg-gradient-to-b from-amber-50/80 via-white to-white shadow-[0_10px_24px_-16px_rgba(245,158,11,0.5)]'
-                          : 'border-[#e8eef5] bg-[#fafcfe]',
+                          ? 'border-amber-400/30 bg-amber-400/10'
+                          : 'border-white/[0.08] bg-white/[0.03]',
                       )}
                     >
                       {badge.earned && (
@@ -330,7 +330,7 @@ export function ImpactPointsPage() {
                       <div className="relative mx-auto h-14 w-14">
                         <span
                           className={cn(
-                            'flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br text-white ring-4 ring-white',
+                            'flex h-14 w-14 items-center justify-center rounded-full bg-gradient-to-br text-white ring-4 ring-[var(--panel-dark)]',
                             meta.tone,
                             badge.earned ? meta.glow : 'opacity-45 grayscale',
                           )}
@@ -339,10 +339,10 @@ export function ImpactPointsPage() {
                         </span>
                         <span
                           className={cn(
-                            'absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-white',
+                            'absolute -bottom-0.5 -right-0.5 flex h-5 w-5 items-center justify-center rounded-full ring-2 ring-[var(--panel-dark)]',
                             badge.earned
-                              ? 'bg-emerald-500 text-white'
-                              : 'bg-[#e2e8f0] text-[#94a3b8]',
+                              ? 'bg-[var(--accent)] text-[var(--create-fg)]'
+                              : 'bg-white/20 text-white/50',
                           )}
                         >
                           {badge.earned ? (
@@ -353,21 +353,21 @@ export function ImpactPointsPage() {
                         </span>
                       </div>
 
-                      <p className="mt-2 text-[12px] font-bold text-[#0f172a]">
+                      <p className="mt-2 text-[12px] font-bold text-white">
                         {badge.label}
                       </p>
-                      <p className="mt-0.5 text-[9.5px] leading-snug text-[#94a3b8]">
+                      <p className="mt-0.5 text-[9.5px] leading-snug text-white/45">
                         {badge.description}
                       </p>
 
                       {badge.earned ? (
-                        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-amber-700">
+                        <p className="mt-2 inline-flex items-center gap-1 rounded-full bg-amber-400/15 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-amber-300">
                           <Award className="h-2.5 w-2.5" />
                           Badge unlocked
                         </p>
                       ) : (
                         <div className="mt-2">
-                          <div className="h-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                          <div className="h-1 overflow-hidden rounded-full bg-white/[0.08]">
                             <div
                               className={cn(
                                 'h-full rounded-full bg-gradient-to-r',
@@ -376,7 +376,7 @@ export function ImpactPointsPage() {
                               style={{ width: `${pct}%` }}
                             />
                           </div>
-                          <p className="mt-1 text-[9.5px] font-semibold tabular-nums text-[#94a3b8]">
+                          <p className="mt-1 text-[9.5px] font-semibold tabular-nums text-white/45">
                             {toGo.toLocaleString('en-IN')} pts to go ·{' '}
                             {badge.minPoints}+
                           </p>
@@ -408,7 +408,7 @@ export function ImpactPointsPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedUserId('')}
-                        className="rounded-lg border border-[#dce4ee] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475569] shadow-sm hover:bg-[#f8fafc]"
+                        className="rounded-lg border border-white/[0.1] bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold text-white/60 hover:bg-white/[0.1] hover:text-white"
                       >
                         Back to company
                       </button>
@@ -420,29 +420,31 @@ export function ImpactPointsPage() {
                       <AreaChart data={trend} margin={{ top: 8, right: 8, left: -18 }}>
                         <defs>
                           <linearGradient id="impactFill" x1="0" y1="0" x2="0" y2="1">
-                            <stop offset="0%" stopColor="#2563eb" stopOpacity={0.28} />
-                            <stop offset="100%" stopColor="#2563eb" stopOpacity={0} />
+                            <stop offset="0%" stopColor="#3ecf8e" stopOpacity={0.28} />
+                            <stop offset="100%" stopColor="#3ecf8e" stopOpacity={0} />
                           </linearGradient>
                         </defs>
-                        <CartesianGrid stroke="#e8eef5" vertical={false} />
+                        <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
                         <XAxis
                           dataKey="date"
-                          stroke="#94a3b8"
+                          stroke="rgba(255,255,255,0.35)"
                           fontSize={10}
                           tickFormatter={(v) => String(v).slice(5)}
                         />
-                        <YAxis stroke="#94a3b8" fontSize={10} />
+                        <YAxis stroke="rgba(255,255,255,0.35)" fontSize={10} />
                         <Tooltip
                           contentStyle={{
                             borderRadius: 12,
-                            border: '1px solid #dce4ee',
-                            boxShadow: '0 8px 24px rgba(15,23,42,0.08)',
+                            background: '#1c1c1c',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            color: '#fafafa',
+                            boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
                           }}
                         />
                         <Area
                           type="monotone"
                           dataKey="points"
-                          stroke="#2563eb"
+                          stroke="#3ecf8e"
                           fill="url(#impactFill)"
                           strokeWidth={2}
                         />
@@ -464,7 +466,7 @@ export function ImpactPointsPage() {
                 >
                   <div className="space-y-3">
                     {breakdown.length === 0 && (
-                      <p className="py-8 text-center text-[12px] text-[#94a3b8]">
+                      <p className="py-8 text-center text-[12px] text-white/45">
                         No scored activity yet.
                       </p>
                     )}
@@ -477,23 +479,23 @@ export function ImpactPointsPage() {
                       return (
                         <div key={row.category}>
                           <div className="flex items-center justify-between gap-2 text-[12px]">
-                            <span className="font-medium text-[#334155]">
+                            <span className="font-medium text-primary">
                               {CATEGORY_LABELS[row.category] || row.category}
                             </span>
                             <span
                               className={cn(
                                 'font-semibold tabular-nums',
-                                row.points < 0 ? 'text-red-600' : 'text-[#0f172a]',
+                                row.points < 0 ? 'text-red-600' : 'text-primary',
                               )}
                             >
                               {formatPoints(row.points)}
                             </span>
                           </div>
-                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#eef2f7]">
+                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
                             <div
                               className={cn(
                                 'h-full rounded-full',
-                                row.points < 0 ? 'bg-red-400' : 'bg-[#2563eb]',
+                                row.points < 0 ? 'bg-red-400' : 'bg-[#3ecf8e]',
                               )}
                               style={{ width: `${pct}%` }}
                             />
@@ -511,17 +513,17 @@ export function ImpactPointsPage() {
                 subtitle="Ranked by impact across the company"
                 action={
                   <div className="flex flex-wrap items-center gap-2">
-                    <div className="inline-flex rounded-lg border border-[#e2e8f0] bg-[#f8fafc] p-0.5">
+                    <div className="inline-flex rounded-full border border-white/[0.1] bg-white/[0.06] p-0.5">
                       {PERIODS.map((p) => (
                         <button
                           key={p.key}
                           type="button"
                           onClick={() => setPeriod(p.key)}
                           className={cn(
-                            'rounded-md px-2.5 py-1 text-[11px] font-semibold',
+                            'rounded-full px-2.5 py-1 text-[11px] font-semibold',
                             period === p.key
-                              ? 'bg-white text-[#0f172a] shadow-sm'
-                              : 'text-[#64748b]',
+                              ? 'bg-accent text-[#171717] shadow-sm'
+                              : 'text-secondary hover:text-primary',
                           )}
                         >
                           {p.label}
@@ -529,18 +531,18 @@ export function ImpactPointsPage() {
                       ))}
                     </div>
                     <div className="relative">
-                      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+                      <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
                       <input
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
                         placeholder="Search people"
-                        className="h-8 w-40 rounded-lg border border-[#dce4ee] bg-white pl-8 pr-2 text-[11.5px] outline-none focus:border-[#93b4ec]"
+                        className="h-8 w-40 rounded-lg border border-white/[0.1] bg-white/[0.06] pl-8 pr-2 text-[11.5px] text-white outline-none placeholder:text-white/35 focus:border-[var(--accent)]/40"
                       />
                     </div>
                     <select
                       value={roleFilter}
                       onChange={(e) => setRoleFilter(e.target.value)}
-                      className="h-8 rounded-lg border border-[#dce4ee] bg-white px-2 text-[11.5px] font-medium text-[#475569] outline-none"
+                      className="h-8 rounded-lg border border-white/[0.1] bg-white/[0.06] px-2 text-[11.5px] font-medium text-white/70 outline-none"
                     >
                       <option value="all">All roles</option>
                       {roles.map((role) => (
@@ -556,7 +558,7 @@ export function ImpactPointsPage() {
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[720px] border-collapse">
                     <thead>
-                      <tr className="border-y border-[#e8eef5] bg-[#f8fafc] text-left text-[10px] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
+                      <tr className="border-y border-white/[0.06] bg-white/[0.03] text-left text-[10px] font-bold uppercase tracking-[0.08em] text-white/40">
                         <th className="px-5 py-2.5">Rank</th>
                         <th className="px-3 py-2.5">Employee</th>
                         <th className="px-3 py-2.5 text-center">Week</th>
@@ -565,10 +567,10 @@ export function ImpactPointsPage() {
                         <th className="px-5 py-2.5">Badges</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-[#edf1f6]">
+                    <tbody className="divide-y divide-white/[0.06]">
                       {boardLoading && (
                         <tr>
-                          <td colSpan={6} className="px-5 py-10 text-center text-[12px] text-[#94a3b8]">
+                          <td colSpan={6} className="px-5 py-10 text-center text-[12px] text-white/45">
                             Loading leaderboard…
                           </td>
                         </tr>
@@ -581,8 +583,8 @@ export function ImpactPointsPage() {
                             <tr
                               key={row.user._id}
                               className={cn(
-                                'cursor-pointer transition hover:bg-[#fbfdff]',
-                                active && 'bg-[#f5f9ff]',
+                                'cursor-pointer transition hover:bg-white/[0.03]',
+                                active && 'bg-[var(--accent)]/10',
                               )}
                               onClick={() => setSelectedUserId(String(row.user._id))}
                             >
@@ -597,22 +599,22 @@ export function ImpactPointsPage() {
                                     size="sm"
                                   />
                                   <div className="min-w-0">
-                                    <p className="truncate text-[12.5px] font-semibold text-[#0f172a]">
+                                    <p className="truncate text-[12.5px] font-semibold text-white">
                                       {row.user.name}
                                     </p>
-                                    <p className="truncate text-[10.5px] text-[#94a3b8]">
+                                    <p className="truncate text-[10.5px] text-white/45">
                                       {row.user.title || roleLabel(row.user.role)}
                                     </p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="px-3 py-3 text-center text-[12px] font-semibold tabular-nums text-[#475569]">
+                              <td className="px-3 py-3 text-center text-[12px] font-semibold tabular-nums text-white/55">
                                 {row.weeklyPoints}
                               </td>
-                              <td className="px-3 py-3 text-center text-[12px] font-semibold tabular-nums text-[#475569]">
+                              <td className="px-3 py-3 text-center text-[12px] font-semibold tabular-nums text-white/55">
                                 {row.monthlyPoints}
                               </td>
-                              <td className="px-3 py-3 text-center text-[13px] font-bold tabular-nums text-[#0f172a]">
+                              <td className="px-3 py-3 text-center text-[13px] font-bold tabular-nums text-white">
                                 {row.totalPoints}
                               </td>
                               <td className="px-5 py-3">
@@ -626,7 +628,7 @@ export function ImpactPointsPage() {
                                         key={key}
                                         title={meta.label}
                                         className={cn(
-                                          'flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-sm ring-1 ring-white',
+                                          'flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br text-white shadow-sm ring-1 ring-[var(--panel-dark)]',
                                           meta.tone,
                                         )}
                                       >
@@ -635,7 +637,7 @@ export function ImpactPointsPage() {
                                     )
                                   })}
                                   {!row.badges?.length && (
-                                    <span className="text-[11px] text-[#cbd5e1]">—</span>
+                                    <span className="text-[11px] text-white/30">—</span>
                                   )}
                                 </div>
                               </td>
@@ -644,7 +646,7 @@ export function ImpactPointsPage() {
                         })}
                       {!boardLoading && !leaderboard.length && (
                         <tr>
-                          <td colSpan={6} className="px-5 py-10 text-center text-[12px] text-[#94a3b8]">
+                          <td colSpan={6} className="px-5 py-10 text-center text-[12px] text-white/45">
                             No people match these filters.
                           </td>
                         </tr>
@@ -754,7 +756,7 @@ export function ImpactPointsPage() {
                     <button
                       type="button"
                       onClick={() => setSelectedUserId('')}
-                      className="rounded-lg border border-[#dce4ee] bg-white px-2.5 py-1 text-[11px] font-semibold text-[#475569] shadow-sm hover:bg-[#f8fafc]"
+                      className="rounded-lg border border-white/[0.1] bg-white/[0.06] px-2.5 py-1 text-[11px] font-semibold text-white/60 hover:bg-white/[0.1] hover:text-white"
                     >
                       Company feed
                     </button>
@@ -764,7 +766,7 @@ export function ImpactPointsPage() {
               >
                 <div className="max-h-[420px] overflow-y-auto">
                   {timeline.length === 0 && (
-                    <p className="px-5 py-10 text-center text-[12px] text-[#94a3b8]">
+                    <p className="px-5 py-10 text-center text-[12px] text-secondary">
                       No transactions yet.
                     </p>
                   )}
@@ -795,11 +797,11 @@ export function ImpactPointsPage() {
                       <div className="min-w-0 flex-1">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <p className="text-[12.5px] font-semibold text-[#0f172a]">
+                            <p className="text-[12.5px] font-semibold text-primary">
                               {entry.label}
                             </p>
                             {!viewingPerson && entryUser?.name && (
-                              <p className="mt-0.5 text-[11px] font-medium text-[#475569]">
+                              <p className="mt-0.5 text-[11px] font-medium text-secondary">
                                 {entryUser.name}
                               </p>
                             )}
@@ -815,7 +817,7 @@ export function ImpactPointsPage() {
                             {formatPoints(entry.weightedPoints)}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">
+                        <p className="mt-0.5 text-[10.5px] text-secondary">
                           {CATEGORY_LABELS[entry.category] || entry.category}
                           {entry.source === 'manual' ? ' · Manual' : ' · Auto'}
                           {entry.projectId?.name
@@ -830,7 +832,7 @@ export function ImpactPointsPage() {
                           })}
                         </p>
                         {entry.note && (
-                          <p className="mt-1 text-[11px] text-[#64748b]">
+                          <p className="mt-1 text-[11px] text-secondary">
                             {entry.note}
                           </p>
                         )}
@@ -854,45 +856,37 @@ function ChampionRewardCard({ champion, isMe }) {
   const monthLabel = now.toLocaleString('en-IN', { month: 'long' })
 
   return (
-    <section
-      className="relative overflow-hidden rounded-2xl border border-[#f0e2c4] bg-[#fffdf7] p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
-      style={{
-        backgroundImage:
-          'radial-gradient(480px 170px at 100% 0%, rgba(245,158,11,0.10), transparent 60%)',
-      }}
-    >
+    <section className="on-dark relative overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-5 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-100 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-700">
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-400/15 px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-amber-300">
           <Crown className="h-3 w-3" />
           Company Champion
         </span>
-        <span className="rounded-full border border-[#eadfc8] bg-white px-2.5 py-1 text-[10px] font-semibold text-[#8a7a55]">
+        <span className="rounded-full border border-white/[0.1] bg-white/[0.06] px-2.5 py-1 text-[10px] font-semibold text-white/50">
           {daysLeft} {daysLeft === 1 ? 'day' : 'days'} left in {monthLabel}
         </span>
       </div>
 
-      <h3 className="mt-3 text-[16px] font-bold leading-snug tracking-[-0.02em] text-[#0f172a]">
+      <h3 className="mt-3 text-[16px] font-bold leading-snug tracking-[-0.02em] text-white">
         Finish #1 this month &amp; win the champion&apos;s reward
       </h3>
-      <p className="mt-1 text-[11.5px] leading-relaxed text-[#8a8264]">
+      <p className="mt-1 text-[11.5px] leading-relaxed text-white/45">
         Every month the company rewards the top performer on the impact
         leaderboard.
       </p>
 
-      {/* Voucher ticket */}
-      <div className="relative mt-4 overflow-hidden rounded-xl border border-dashed border-amber-300 bg-white p-3.5 shadow-[0_6px_16px_-12px_rgba(245,158,11,0.6)]">
-        {/* perforation notches */}
-        <span className="absolute -left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-dashed border-amber-300 bg-[#fffdf7]" />
-        <span className="absolute -right-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-dashed border-amber-300 bg-[#fffdf7]" />
+      <div className="relative mt-4 overflow-hidden rounded-xl border border-dashed border-amber-400/40 bg-amber-400/10 p-3.5">
+        <span className="absolute -left-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-dashed border-amber-400/40 bg-[var(--panel-dark)]" />
+        <span className="absolute -right-2.5 top-1/2 h-5 w-5 -translate-y-1/2 rounded-full border border-dashed border-amber-400/40 bg-[var(--panel-dark)]" />
         <div className="flex items-center gap-3 px-2">
           <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white shadow-[0_6px_14px_-6px_rgba(234,88,12,0.6)]">
             <Gift className="h-5 w-5" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="text-[13.5px] font-bold text-[#92400e]">
+            <p className="text-[13.5px] font-bold text-amber-200">
               Amazon Gift Voucher
             </p>
-            <p className="text-[10.5px] text-[#a49a7c]">
+            <p className="text-[10.5px] text-white/40">
               Sponsored by the company · awarded at month end
             </p>
           </div>
@@ -900,8 +894,7 @@ function ChampionRewardCard({ champion, isMe }) {
         </div>
       </div>
 
-      {/* Current leader */}
-      <div className="mt-3 flex items-center gap-3 rounded-xl border border-[#f1ecdd] bg-white/80 p-3">
+      <div className="mt-3 flex items-center gap-3 rounded-xl border border-white/[0.08] bg-white/[0.04] p-3">
         {champion ? (
           <>
             <div className="relative shrink-0">
@@ -910,32 +903,32 @@ function ChampionRewardCard({ champion, isMe }) {
                 name={champion.user?.name}
                 size="sm"
               />
-              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white ring-2 ring-white">
+              <span className="absolute -right-1.5 -top-1.5 flex h-4 w-4 items-center justify-center rounded-full bg-gradient-to-br from-amber-400 to-orange-500 text-white ring-2 ring-[var(--panel-dark)]">
                 <Crown className="h-2.5 w-2.5" />
               </span>
             </div>
             <div className="min-w-0 flex-1">
-              <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#b3a67f]">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-white/40">
                 Currently leading
               </p>
-              <p className="truncate text-[12.5px] font-semibold text-[#0f172a]">
+              <p className="truncate text-[12.5px] font-semibold text-white">
                 {champion.user?.name}
               </p>
             </div>
             {isMe && (
-              <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-emerald-700">
+              <span className="shrink-0 rounded-full bg-[var(--accent)]/15 px-2 py-0.5 text-[9.5px] font-bold uppercase tracking-wide text-[var(--accent)]">
                 You
               </span>
             )}
             <div className="shrink-0 text-right">
-              <p className="text-[15px] font-bold tabular-nums text-amber-600">
+              <p className="text-[15px] font-bold tabular-nums text-amber-300">
                 {(champion.monthlyPoints || 0).toLocaleString('en-IN')}
               </p>
-              <p className="text-[9.5px] text-[#b3a67f]">pts this month</p>
+              <p className="text-[9.5px] text-white/40">pts this month</p>
             </div>
           </>
         ) : (
-          <p className="w-full py-1 text-center text-[11.5px] text-[#a49a7c]">
+          <p className="w-full py-1 text-center text-[11.5px] text-white/40">
             No points scored this month yet — the crown is up for grabs.
           </p>
         )}
@@ -946,20 +939,14 @@ function ChampionRewardCard({ champion, isMe }) {
 
 function ScoreHero({ total, weekly, monthly, rank }) {
   return (
-    <section
-      className="relative overflow-hidden rounded-3xl border border-[#dce7f5] bg-white p-5 shadow-[0_1px_3px_rgba(15,23,42,0.04)] md:col-span-2 xl:col-span-1"
-      style={{
-        backgroundImage:
-          'radial-gradient(500px 180px at 100% 0%, rgba(37,99,235,0.10), transparent 60%)',
-      }}
-    >
-      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
+    <section className="on-dark relative overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-5 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)] md:col-span-2 xl:col-span-1">
+      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-white/40">
         Your impact score
       </p>
-      <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.04em] text-[#0f172a]">
+      <p className="mt-2 text-[36px] font-semibold leading-none tracking-[-0.04em] text-white">
         {(total || 0).toLocaleString('en-IN')}
       </p>
-      <p className="mt-2 text-[12px] text-[#64748b]">
+      <p className="mt-2 text-[12px] text-white/50">
         Rank #{rank} · Week {formatPoints(weekly)} · Month{' '}
         {formatPoints(monthly)}
       </p>
@@ -969,20 +956,25 @@ function ScoreHero({ total, weekly, monthly, rank }) {
 
 function MiniMetric({ icon: Icon, label, value, tone }) {
   const tones = {
-    blue: 'bg-blue-50 text-blue-600',
-    amber: 'bg-amber-50 text-amber-600',
-    violet: 'bg-violet-50 text-violet-600',
+    blue: 'bg-[var(--accent)]/15 text-[var(--accent)]',
+    amber: 'bg-amber-400/15 text-amber-300',
+    violet: 'bg-violet-400/15 text-violet-300',
   }
   return (
-    <section className="rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+    <section className="on-dark rounded-[18px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-4 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
       <div className="flex items-start justify-between">
         <div>
-          <p className="text-[11px] font-medium text-[#64748b]">{label}</p>
-          <p className="mt-2 text-[22px] font-semibold tabular-nums tracking-[-0.03em] text-[#0f172a]">
+          <p className="text-[11px] font-medium text-white/45">{label}</p>
+          <p className="mt-2 text-[22px] font-semibold tabular-nums tracking-[-0.03em] text-white">
             {value}
           </p>
         </div>
-        <span className={cn('flex h-9 w-9 items-center justify-center rounded-xl', tones[tone])}>
+        <span
+          className={cn(
+            'flex h-9 w-9 items-center justify-center rounded-xl',
+            tones[tone],
+          )}
+        >
           <Icon className="h-4 w-4" />
         </span>
       </div>
@@ -994,20 +986,20 @@ function Panel({ title, subtitle, action, children, className, noPadding }) {
   return (
     <section
       className={cn(
-        'overflow-hidden rounded-2xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+        'on-dark overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]',
         className,
       )}
     >
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] bg-[var(--panel-dark-raised)] px-5 py-4">
         <div>
-          <h2 className="text-[13.5px] font-semibold text-[#0f172a]">{title}</h2>
+          <h2 className="text-[13.5px] font-semibold text-white">{title}</h2>
           {subtitle && (
-            <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">{subtitle}</p>
+            <p className="mt-0.5 text-[10.5px] text-white/45">{subtitle}</p>
           )}
         </div>
         {action}
       </div>
-      <div className={noPadding ? '' : 'px-5 pb-5'}>{children}</div>
+      <div className={noPadding ? '' : 'px-5 pb-5 pt-1'}>{children}</div>
     </section>
   )
 }
@@ -1015,27 +1007,27 @@ function Panel({ title, subtitle, action, children, className, noPadding }) {
 function RankBadge({ rank }) {
   if (rank === 1) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-[0_4px_10px_-3px_rgba(245,158,11,0.7)] ring-2 ring-amber-100">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-amber-300 to-orange-500 text-white shadow-[0_4px_10px_-3px_rgba(245,158,11,0.7)] ring-2 ring-amber-400/20">
         <Crown className="h-3.5 w-3.5" />
       </span>
     )
   }
   if (rank === 2) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-slate-100 text-[12px] font-bold text-slate-600">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.1] text-[12px] font-bold text-white/70">
         2
       </span>
     )
   }
   if (rank === 3) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-orange-100 text-[12px] font-bold text-orange-700">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-amber-400/15 text-[12px] font-bold text-amber-300">
         3
       </span>
     )
   }
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f1f5f9] text-[11px] font-bold text-[#64748b]">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/[0.06] text-[11px] font-bold text-white/45">
       {rank}
     </span>
   )
@@ -1065,7 +1057,7 @@ function RulesPanel({ rules, onSave }) {
       title="Company point rules"
       subtitle="Customise weights and point values for your studio"
       action={
-        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-[#64748b]">
+        <span className="inline-flex items-center gap-1.5 text-[11px] font-semibold text-secondary">
           <Settings2 className="h-3.5 w-3.5" />
           Admin / Owner only
         </span>
@@ -1086,15 +1078,15 @@ function RulesPanel({ rules, onSave }) {
               className="grid gap-3 px-5 py-4 md:grid-cols-[minmax(0,1.4fr)_100px_90px_90px_110px]"
             >
               <div className="min-w-0">
-                <p className="text-[13px] font-semibold text-[#0f172a]">
+                <p className="text-[13px] font-semibold text-primary">
                   {rule.label}
                 </p>
-                <p className="mt-0.5 text-[11px] text-[#94a3b8]">
+                <p className="mt-0.5 text-[11px] text-secondary">
                   {rule.description || CATEGORY_LABELS[rule.category]}
                   {rule.auto ? ' · Auto' : ' · Manual'}
                 </p>
               </div>
-              <label className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+              <label className="text-[10px] font-semibold uppercase tracking-wide text-secondary">
                 Points
                 <input
                   type="number"
@@ -1105,10 +1097,10 @@ function RulesPanel({ rules, onSave }) {
                       [rule._id]: { ...draft, points: Number(e.target.value) },
                     }))
                   }
-                  className="mt-1 h-8 w-full rounded-lg border border-[#dce4ee] px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-[#93b4ec]"
+                  className="mt-1 h-8 w-full rounded-lg border border-border px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-accent/40"
                 />
               </label>
-              <label className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+              <label className="text-[10px] font-semibold uppercase tracking-wide text-secondary">
                 Weight
                 <input
                   type="number"
@@ -1121,10 +1113,10 @@ function RulesPanel({ rules, onSave }) {
                       [rule._id]: { ...draft, weight: Number(e.target.value) },
                     }))
                   }
-                  className="mt-1 h-8 w-full rounded-lg border border-[#dce4ee] px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-[#93b4ec]"
+                  className="mt-1 h-8 w-full rounded-lg border border-border px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-accent/40"
                 />
               </label>
-              <label className="flex items-end gap-2 pb-1 text-[11px] font-semibold text-[#475569]">
+              <label className="flex items-end gap-2 pb-1 text-[11px] font-semibold text-secondary">
                 <input
                   type="checkbox"
                   checked={!!draft.enabled}

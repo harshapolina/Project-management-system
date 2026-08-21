@@ -33,6 +33,8 @@ const tenantSchema = new mongoose.Schema(
       default: defaultTenantFeatures,
     },
     notes: { type: String, default: '' },
+    /** Company brand mark shown in the workspace sidebar. */
+    logoUrl: { type: String, default: '' },
   },
   { timestamps: true },
 )

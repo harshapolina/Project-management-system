@@ -154,7 +154,7 @@ export function AssignedCommentsPage() {
               {scope === t.id && (
                 <motion.span
                   layoutId="assigned-tab"
-                  className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-white"
+                  className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-surface"
                 />
               )}
             </button>

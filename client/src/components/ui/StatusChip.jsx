@@ -24,7 +24,7 @@ export function StatusChip({ status, label, className, accent }) {
       )}
       style={{
         backgroundColor: bg,
-        color: isNeon || isDarkPill ? (isNeon ? '#0E0E10' : '#F5F5F4') : '#fff',
+        color: isNeon || isDarkPill ? (isNeon ? '#171717' : '#F5F5F4') : '#fff',
       }}
     >
       {label || formatLabel(status)}

@@ -106,20 +106,20 @@ export function InventoryStockPage() {
     <div className="space-y-5 pb-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-1 text-sm text-[#64748b]">
+          <p className="mb-1 text-sm text-secondary">
             EPM · Owner & Admin only
           </p>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#0f172a] md:text-[32px]">
+          <h1 className="text-[28px] font-semibold tracking-tight text-primary md:text-[32px]">
             Inventory
           </h1>
-          <p className="mt-1 max-w-xl text-[13px] text-[#64748b]">
+          <p className="mt-1 max-w-xl text-[13px] text-secondary">
             Track materials and supplies across your studio warehouse.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Link
             to="/inventory/movements"
-            className="inline-flex h-10 items-center rounded-xl border border-[#e2e8f0] bg-white px-3 text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc]"
+            className="inline-flex h-10 items-center rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-primary hover:bg-surface-raised"
           >
             Stock log
           </Link>
@@ -152,17 +152,17 @@ export function InventoryStockPage() {
 
       <Card className="space-y-4">
         <div className="relative max-w-sm">
-          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary" />
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
             placeholder="Search name, SKU, category…"
-            className="h-10 w-full rounded-xl border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 text-[13px] outline-none focus:border-[#93c5fd]"
+            className="h-10 w-full rounded-xl border border-border bg-surface-raised pl-9 pr-3 text-[13px] outline-none focus:border-[#4ade80]"
           />
         </div>
 
         {isLoading ? (
-          <p className="py-10 text-center text-sm text-[#64748b]">Loading inventory…</p>
+          <p className="py-10 text-center text-sm text-secondary">Loading inventory…</p>
         ) : items.length === 0 ? (
           <EmptyState
             icon={Package}
@@ -174,7 +174,7 @@ export function InventoryStockPage() {
         ) : (
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-[13px]">
-              <thead className="border-b border-[#e2e8f0] text-[11px] uppercase tracking-wide text-[#64748b]">
+              <thead className="border-b border-border text-[11px] uppercase tracking-wide text-secondary">
                 <tr>
                   <th className="px-2 py-2 font-semibold">Item</th>
                   <th className="px-2 py-2 font-semibold">Category</th>
@@ -192,13 +192,13 @@ export function InventoryStockPage() {
                     className="border-b border-[#f1f5f9] last:border-0"
                   >
                     <td className="px-2 py-3">
-                      <p className="font-semibold text-[#0f172a]">{item.name}</p>
-                      <p className="text-[11px] text-[#94a3b8]">
+                      <p className="font-semibold text-primary">{item.name}</p>
+                      <p className="text-[11px] text-secondary">
                         {item.sku || 'No SKU'} · {item.unit}
                       </p>
                     </td>
-                    <td className="px-2 py-3 text-[#475569]">{item.category}</td>
-                    <td className="px-2 py-3 text-[#475569]">
+                    <td className="px-2 py-3 text-secondary">{item.category}</td>
+                    <td className="px-2 py-3 text-secondary">
                       {item.location || '—'}
                     </td>
                     <td className="px-2 py-3 text-right">
@@ -211,10 +211,10 @@ export function InventoryStockPage() {
                         {item.quantity}
                       </span>
                     </td>
-                    <td className="px-2 py-3 text-right tabular-nums text-[#64748b]">
+                    <td className="px-2 py-3 text-right tabular-nums text-secondary">
                       {item.reorderLevel}
                     </td>
-                    <td className="px-2 py-3 text-right tabular-nums text-[#475569]">
+                    <td className="px-2 py-3 text-right tabular-nums text-secondary">
                       {formatInr(item.unitCost)}
                     </td>
                     <td className="px-2 py-3 text-right">
@@ -224,7 +224,7 @@ export function InventoryStockPage() {
                           setMoveItem(item)
                           setMoveForm({ type: 'in', quantity: '1', note: '' })
                         }}
-                        className="rounded-lg px-2 py-1 text-[12px] font-semibold text-[#2563eb] hover:bg-[#eff6ff]"
+                        className="rounded-lg px-2 py-1 text-[12px] font-semibold text-[#3ecf8e] hover:bg-[#ecfdf5]"
                       >
                         Adjust
                       </button>
@@ -435,19 +435,19 @@ export function InventoryMovementsPage() {
     <div className="space-y-5 pb-8">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <p className="mb-1 text-sm text-[#64748b]">
+          <p className="mb-1 text-sm text-secondary">
             EPM · Owner & Admin only
           </p>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#0f172a] md:text-[32px]">
+          <h1 className="text-[28px] font-semibold tracking-tight text-primary md:text-[32px]">
             Stock log
           </h1>
-          <p className="mt-1 max-w-xl text-[13px] text-[#64748b]">
+          <p className="mt-1 max-w-xl text-[13px] text-secondary">
             Every receive, issue, and adjustment across inventory.
           </p>
         </div>
         <Link
           to="/inventory"
-          className="inline-flex h-10 items-center rounded-xl border border-[#e2e8f0] bg-white px-3 text-[13px] font-semibold text-[#0f172a] hover:bg-[#f8fafc]"
+          className="inline-flex h-10 items-center rounded-xl border border-border bg-surface px-3 text-[13px] font-semibold text-primary hover:bg-surface-raised"
         >
           Back to inventory
         </Link>
@@ -455,7 +455,7 @@ export function InventoryMovementsPage() {
 
       <Card>
         {isLoading ? (
-          <p className="py-10 text-center text-sm text-[#64748b]">
+          <p className="py-10 text-center text-sm text-secondary">
             Loading stock movements…
           </p>
         ) : movements.length === 0 ? (
@@ -474,7 +474,7 @@ export function InventoryMovementsPage() {
               return (
                 <div
                   key={m._id}
-                  className="flex flex-wrap items-center gap-3 rounded-xl border border-[#eef2f7] bg-[#fafbfc] px-3 py-3"
+                  className="flex flex-wrap items-center gap-3 rounded-xl border border-border bg-[#fafbfc] px-3 py-3"
                 >
                   <span
                     className={cn(
@@ -486,21 +486,21 @@ export function InventoryMovementsPage() {
                     {meta.label}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-semibold text-[#0f172a]">
+                    <p className="truncate text-[13px] font-semibold text-primary">
                       {m.itemId?.name || 'Item'}
                     </p>
-                    <p className="truncate text-[11px] text-[#64748b]">
+                    <p className="truncate text-[11px] text-secondary">
                       {m.note || 'No note'}
                       {m.createdBy?.name ? ` · ${m.createdBy.name}` : ''}
                       {m.projectId?.name ? ` · ${m.projectId.name}` : ''}
                     </p>
                   </div>
                   <div className="text-right">
-                    <p className="text-[13px] font-semibold tabular-nums text-[#0f172a]">
+                    <p className="text-[13px] font-semibold tabular-nums text-primary">
                       {m.type === 'out' ? '−' : m.type === 'in' ? '+' : '='}
                       {m.quantity} {m.itemId?.unit || ''}
                     </p>
-                    <p className="text-[11px] text-[#94a3b8]">
+                    <p className="text-[11px] text-secondary">
                       Bal {m.balanceAfter} ·{' '}
                       {new Date(m.createdAt).toLocaleString('en-IN', {
                         day: 'numeric',

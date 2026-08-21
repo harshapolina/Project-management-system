@@ -119,7 +119,7 @@ export function CompanyAdminDashboard() {
     kpis?.budgetUtilization != null ? `${kpis.budgetUtilization}%` : '—'
   const statusSegments = d?.statusOverview?.length
     ? d.statusOverview
-    : [{ key: 'empty', label: 'No projects', value: 1, color: '#cbd5e1' }]
+    : [{ key: 'empty', label: 'No projects', value: 1, color: 'var(--border-subtle)' }]
   const statusTotal =
     statusSegments.reduce((s, seg) => s + (seg.value || 0), 0) || 1
   const delayedSegment = statusSegments.find((seg) =>
@@ -130,33 +130,32 @@ export function CompanyAdminDashboard() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-4 pb-10">
-      {/* Header */}
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
-            <Building2 className="h-3.5 w-3.5 text-blue-600" />
+          <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-secondary">
+            <Building2 className="h-3.5 w-3.5 text-accent" />
             Company overview
           </div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-[#0f172a]">
+          <h1 className="mt-1 text-[28px] font-medium tracking-tight text-primary">
             Company Admin
           </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-[#64748b]">
+          <p className="mt-1 max-w-2xl text-[13px] text-secondary">
             Projects, pipeline, spend, and vendors — the whole company at a
             glance.
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-xl border border-[#e2e8f0] bg-[#eef2f7] p-1">
+          <div className="inline-flex rounded-[8px] border border-border bg-canvas p-1">
             {RANGES.map((r) => (
               <button
                 key={r.key}
                 type="button"
                 onClick={() => setRange(r.key)}
                 className={cn(
-                  'rounded-lg px-3 py-1.5 text-[12px] font-semibold transition',
+                  'rounded-[6px] px-3 py-1.5 text-[12px] font-medium transition',
                   range === r.key
-                    ? 'bg-white text-[#0f172a] shadow-sm'
-                    : 'text-[#64748b] hover:text-[#0f172a]',
+                    ? 'bg-accent text-[#171717] shadow-sm'
+                    : 'text-secondary hover:text-primary',
                 )}
               >
                 {r.label}
@@ -169,7 +168,6 @@ export function CompanyAdminDashboard() {
         </div>
       </header>
 
-      {/* KPI strip */}
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           to="/projects"
@@ -179,7 +177,7 @@ export function CompanyAdminDashboard() {
           value={kpis?.totalProjects ?? 0}
           delta={projectTrend}
           foot={
-            <span className="inline-flex items-center gap-1 font-semibold text-[#2563eb]">
+            <span className="inline-flex items-center gap-1 font-medium text-accent">
               View projects <ArrowUpRight className="h-3 w-3" />
             </span>
           }
@@ -212,7 +210,6 @@ export function CompanyAdminDashboard() {
         />
       </section>
 
-      {/* Status + Budget — matched heights, content fills the card */}
       <div className="grid gap-4 lg:grid-cols-5 lg:items-stretch">
         <Panel
           className="h-full lg:col-span-2"
@@ -222,7 +219,7 @@ export function CompanyAdminDashboard() {
           action={
             <Link
               to="/portfolio"
-              className="text-[12px] font-semibold text-[#2563eb] hover:underline"
+              className="text-[12px] font-medium text-accent hover:underline"
             >
               Portfolio
             </Link>
@@ -246,23 +243,26 @@ export function CompanyAdminDashboard() {
                     ((seg.value || 0) / statusTotal) * 100,
                   )
                   return (
-                    <div key={seg.key} className="rounded-xl bg-[#f8fafc] px-3 py-2.5">
+                    <div
+                      key={seg.key}
+                      className="rounded-[8px] bg-canvas px-3 py-2.5"
+                    >
                       <div className="flex items-center justify-between gap-2 text-[12px]">
-                        <span className="inline-flex items-center gap-2 font-medium text-[#334155]">
+                        <span className="inline-flex items-center gap-2 font-medium text-primary">
                           <span
                             className="h-2.5 w-2.5 shrink-0 rounded-full"
                             style={{ backgroundColor: seg.color }}
                           />
                           {seg.label}
                         </span>
-                        <span className="shrink-0 tabular-nums text-[#64748b]">
-                          <span className="font-semibold text-[#0f172a]">
+                        <span className="shrink-0 tabular-nums text-secondary">
+                          <span className="font-semibold text-primary">
                             {seg.value}
                           </span>{' '}
                           · {pct}%
                         </span>
                       </div>
-                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white">
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-border">
                         <div
                           className="h-full rounded-full"
                           style={{
@@ -276,14 +276,14 @@ export function CompanyAdminDashboard() {
                 })}
               </div>
               {delayedSegment?.value > 0 ? (
-                <p className="mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-[11px] font-semibold text-red-600">
+                <p className="mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-red-50 px-3 py-1.5 text-[11px] font-medium text-red-600">
                   <AlertTriangle className="h-3 w-3" />
                   {delayedSegment.value}{' '}
                   {delayedSegment.value === 1 ? 'project' : 'projects'} delayed
                   — needs attention
                 </p>
               ) : (
-                <p className="mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-[11px] font-semibold text-emerald-700">
+                <p className="mt-auto inline-flex w-fit items-center gap-1.5 rounded-full bg-[var(--accent)]/12 px-3 py-1.5 text-[11px] font-medium text-[var(--accent-hover)]">
                   All projects on track
                 </p>
               )}
@@ -299,7 +299,7 @@ export function CompanyAdminDashboard() {
           action={
             <Link
               to="/finance"
-              className="text-[12px] font-semibold text-[#2563eb] hover:underline"
+              className="text-[12px] font-medium text-accent hover:underline"
             >
               Money
             </Link>
@@ -329,8 +329,8 @@ export function CompanyAdminDashboard() {
 
             <div className="mb-4 shrink-0">
               <div className="mb-1.5 flex items-center justify-between text-[12px]">
-                <span className="text-[#64748b]">Utilization</span>
-                <span className="font-semibold tabular-nums text-[#0f172a]">
+                <span className="text-secondary">Utilization</span>
+                <span className="font-semibold tabular-nums text-primary">
                   {utilization}
                 </span>
               </div>
@@ -341,7 +341,7 @@ export function CompanyAdminDashboard() {
                 )}
               />
               {budget?.periodSpend != null && (
-                <p className="mt-2 text-[11px] text-[#94a3b8]">
+                <p className="mt-2 text-[11px] text-secondary">
                   Approved expense spend in range:{' '}
                   {formatInr(budget.periodSpend)}
                   {budget.spendDelta != null && (
@@ -349,8 +349,8 @@ export function CompanyAdminDashboard() {
                       className={cn(
                         'ml-1 font-semibold',
                         budget.spendDelta >= 0
-                          ? 'text-[#dc2626]'
-                          : 'text-[#059669]',
+                          ? 'text-red-600'
+                          : 'text-[var(--accent-hover)]',
                       )}
                     >
                       ({budget.spendDelta >= 0 ? '+' : ''}
@@ -361,42 +361,42 @@ export function CompanyAdminDashboard() {
               )}
             </div>
 
-            <p className="mb-1 shrink-0 text-[10px] font-bold uppercase tracking-[0.1em] text-[#94a3b8]">
+            <p className="mb-1 shrink-0 text-[10px] font-semibold uppercase tracking-[0.1em] text-secondary">
               By project
             </p>
-            <ul className="min-h-0 flex-1 divide-y divide-[#eef2f7] overflow-y-auto">
+            <ul className="min-h-0 flex-1 divide-y divide-border overflow-y-auto">
               {(budget?.projects || []).slice(0, 6).map((row) => (
                 <li key={row.id}>
                   <Link
                     to={`/projects/${row.id}/overview`}
-                    className="-mx-2 flex items-center gap-3 rounded-lg px-2 py-2.5 transition hover:bg-[#f8fafc]"
+                    className="flex items-center gap-3 rounded-[6px] px-1 py-2.5 transition hover:bg-canvas"
                   >
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center justify-between gap-3">
-                        <p className="truncate text-[13px] font-medium text-[#0f172a]">
+                        <p className="truncate text-[13px] font-medium text-primary">
                           {row.name}
                         </p>
-                        <span className="shrink-0 text-[12px] font-semibold tabular-nums text-[#475569]">
+                        <span className="shrink-0 text-[12px] font-semibold tabular-nums text-secondary">
                           {row.utilization != null
                             ? `${Math.round(row.utilization)}%`
                             : '—'}
                         </span>
                       </div>
                       <div className="mt-1.5 flex items-center gap-3">
-                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#eef2f7]">
+                        <div className="h-1 flex-1 overflow-hidden rounded-full bg-border">
                           <div
                             className={cn(
                               'h-full rounded-full',
                               (row.utilization || 0) > 100
-                                ? 'bg-red-400'
-                                : 'bg-[#2563eb]',
+                                ? 'bg-red-500'
+                                : 'bg-accent',
                             )}
                             style={{
                               width: `${Math.min(100, Math.max(0, Math.round(row.utilization || 0)))}%`,
                             }}
                           />
                         </div>
-                        <span className="shrink-0 text-[10.5px] tabular-nums text-[#94a3b8]">
+                        <span className="shrink-0 text-[10.5px] tabular-nums text-secondary">
                           {formatInr(row.spent)} / {formatInr(row.budget)}
                         </span>
                       </div>
@@ -405,7 +405,7 @@ export function CompanyAdminDashboard() {
                 </li>
               ))}
               {!budget?.projects?.length && (
-                <li className="py-6 text-center text-sm text-[#94a3b8]">
+                <li className="py-6 text-center text-sm text-secondary">
                   No budget rows yet
                 </li>
               )}
@@ -414,7 +414,6 @@ export function CompanyAdminDashboard() {
         </Panel>
       </div>
 
-      {/* Materials + Vendors + Activity — compact equal height with scroll */}
       <div className="grid gap-4 lg:grid-cols-3">
         <Panel
           className="flex h-[360px] flex-col"
@@ -424,33 +423,33 @@ export function CompanyAdminDashboard() {
           action={
             <Link
               to="/procurement"
-              className="text-[12px] font-semibold text-[#2563eb] hover:underline"
+              className="text-[12px] font-medium text-accent hover:underline"
             >
               Materials
             </Link>
           }
         >
-          <div className="min-h-0 flex-1 space-y-3 overflow-y-auto pr-0.5">
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-xl bg-[#f8fafc] p-3">
-                <p className="text-[11px] font-medium text-[#64748b]">
+          <div className="flex min-h-0 flex-1 flex-col gap-3">
+            <div className="grid shrink-0 grid-cols-2 gap-3">
+              <div className="rounded-[8px] bg-canvas p-3">
+                <p className="text-[11px] font-medium text-secondary">
                   Approved BOQ lines
                 </p>
-                <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-[-0.02em] text-[#0f172a]">
+                <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-tight text-primary">
                   {d?.materials?.approvedBoqLines ?? 0}
                 </p>
               </div>
-              <div className="rounded-xl bg-[#f8fafc] p-3">
-                <p className="text-[11px] font-medium text-[#64748b]">PO lines</p>
-                <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-[-0.02em] text-[#0f172a]">
+              <div className="rounded-[8px] bg-canvas p-3">
+                <p className="text-[11px] font-medium text-secondary">PO lines</p>
+                <p className="mt-1 text-[20px] font-semibold tabular-nums tracking-tight text-primary">
                   {d?.materials?.poLines ?? 0}
                 </p>
               </div>
             </div>
-            <div>
+            <div className="shrink-0">
               <div className="mb-1.5 flex justify-between text-[12px]">
-                <span className="text-[#64748b]">BOQ → PO coverage</span>
-                <span className="font-semibold tabular-nums text-[#0f172a]">
+                <span className="text-secondary">BOQ → PO coverage</span>
+                <span className="font-semibold tabular-nums text-primary">
                   {d?.materials?.coveragePct != null
                     ? `${d.materials.coveragePct}%`
                     : '—'}
@@ -458,21 +457,21 @@ export function CompanyAdminDashboard() {
               </div>
               <ProgressBar value={d?.materials?.coveragePct || 0} />
             </div>
-            <ul className="space-y-1">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
               {(d?.materials?.poStatus || []).map((row) => (
                 <li
                   key={row.key}
-                  className="flex items-center justify-between rounded-lg px-2 py-1.5 text-[12px] odd:bg-[#fafcfe]"
+                  className="flex items-center justify-between rounded-[6px] px-2 py-1.5 text-[12px] odd:bg-canvas"
                 >
-                  <span className="text-[#64748b]">{row.label}</span>
-                  <span className="font-semibold tabular-nums text-[#0f172a]">
+                  <span className="text-secondary">{row.label}</span>
+                  <span className="font-semibold tabular-nums text-primary">
                     {row.value}
                   </span>
                 </li>
               ))}
             </ul>
             {d?.materials?.note && (
-              <p className="text-[10px] leading-relaxed text-[#94a3b8]">
+              <p className="shrink-0 text-[10px] leading-relaxed text-secondary">
                 {d.materials.note}
               </p>
             )}
@@ -487,14 +486,14 @@ export function CompanyAdminDashboard() {
           action={
             <Link
               to="/procurement"
-              className="text-[12px] font-semibold text-[#2563eb] hover:underline"
+              className="text-[12px] font-medium text-accent hover:underline"
             >
               Vendors
             </Link>
           }
         >
           <div className="flex min-h-0 flex-1 flex-col">
-            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto pr-0.5">
+            <ul className="min-h-0 flex-1 space-y-1 overflow-y-auto">
               {(d?.topVendors || []).map((vendor, idx) => {
                 const maxValue = Math.max(
                   ...(d?.topVendors || []).map((v) => v.value || 0),
@@ -504,38 +503,38 @@ export function CompanyAdminDashboard() {
                 return (
                   <li
                     key={vendor.id}
-                    className="rounded-xl px-2 py-2.5 transition hover:bg-[#f8fafc]"
+                    className="rounded-[8px] px-2 py-2.5 transition hover:bg-canvas"
                   >
                     <div className="flex items-center gap-3">
                       <span
                         className={cn(
-                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-[12px] font-bold text-white shadow-sm',
+                          'flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] text-[12px] font-bold text-[#171717]',
                           idx === 0
-                            ? 'bg-gradient-to-br from-amber-400 to-orange-500'
+                            ? 'bg-accent'
                             : idx === 1
-                              ? 'bg-gradient-to-br from-slate-400 to-slate-600'
-                              : 'bg-gradient-to-br from-blue-400 to-indigo-600',
+                              ? 'bg-canvas text-secondary ring-1 ring-border'
+                              : 'bg-[var(--accent)]/20 text-[var(--accent-hover)]',
                         )}
                       >
                         {idx + 1}
                       </span>
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between gap-2">
-                          <p className="truncate text-[13px] font-semibold text-[#0f172a]">
+                          <p className="truncate text-[13px] font-medium text-primary">
                             {vendor.name}
                           </p>
-                          <span className="shrink-0 text-[12px] font-bold tabular-nums text-[#0f172a]">
+                          <span className="shrink-0 text-[12px] font-semibold tabular-nums text-primary">
                             {formatInr(vendor.value)}
                           </span>
                         </div>
                         <div className="mt-1 flex items-center gap-2">
-                          <div className="h-1 flex-1 overflow-hidden rounded-full bg-[#eef2f7]">
+                          <div className="h-1 flex-1 overflow-hidden rounded-full bg-border">
                             <div
-                              className="h-full rounded-full bg-[#2563eb]"
+                              className="h-full rounded-full bg-accent"
                               style={{ width: `${share}%` }}
                             />
                           </div>
-                          <span className="shrink-0 text-[10.5px] text-[#94a3b8]">
+                          <span className="shrink-0 text-[10.5px] text-secondary">
                             {vendor.poCount} POs
                             {vendor.deliveryRate != null
                               ? ` · ${vendor.deliveryRate}% delivered`
@@ -548,12 +547,12 @@ export function CompanyAdminDashboard() {
                 )
               })}
               {!d?.topVendors?.length && (
-                <li className="py-8 text-center text-sm text-[#94a3b8]">
+                <li className="py-8 text-center text-sm text-secondary">
                   No vendor spend yet
                 </li>
               )}
             </ul>
-            <div className="mt-2 shrink-0 rounded-xl border border-dashed border-[#e2e8f0] bg-[#f8fafc] px-3 py-2 text-center text-[11px] text-[#64748b]">
+            <div className="mt-2 shrink-0 rounded-[8px] border border-dashed border-border bg-canvas px-3 py-2 text-center text-[11px] text-secondary">
               {(d?.topVendors || []).length} vendors ·{' '}
               {formatInr(
                 (d?.topVendors || []).reduce((s, v) => s + (v.value || 0), 0),
@@ -580,14 +579,14 @@ export function CompanyAdminDashboard() {
                     size="sm"
                   />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] leading-snug text-[#334155]">
+                    <p className="text-[13px] leading-snug text-primary">
                       {item.message}
                     </p>
-                    <p className="mt-0.5 text-[11px] text-[#94a3b8]">
+                    <p className="mt-0.5 text-[11px] text-secondary">
                       {item.project ? (
                         <Link
                           to={`/projects/${item.project.id}/overview`}
-                          className="font-medium text-[#2563eb] hover:underline"
+                          className="font-medium text-accent hover:underline"
                         >
                           {item.project.name}
                         </Link>
@@ -601,7 +600,7 @@ export function CompanyAdminDashboard() {
                 </li>
               ))}
               {!d?.activity?.length && (
-                <li className="py-8 text-center text-sm text-[#94a3b8]">
+                <li className="py-8 text-center text-sm text-secondary">
                   No activity in this range
                 </li>
               )}
@@ -610,57 +609,57 @@ export function CompanyAdminDashboard() {
         </Panel>
       </div>
 
-      {/* Timeline */}
       <Panel
         icon={ClipboardList}
         title="Project timeline"
         subtitle="Progress, dates, and spend for every project"
         action={
-          <span className="inline-flex items-center gap-1.5 text-[11px] text-[#94a3b8]">
+          <span className="inline-flex items-center gap-1.5 text-[11px] text-secondary">
             <Percent className="h-3.5 w-3.5" />
             Live from project data
           </span>
         }
         noPadding
       >
-        {/* Desktop table */}
         <div className="hidden overflow-x-auto md:block">
           <table className="min-w-full border-collapse text-left text-[13px]">
             <thead>
-              <tr className="border-y border-[#e8eef5] bg-[#f8fafc] text-[10px] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
-                <th className="px-5 py-2.5">Project</th>
-                <th className="px-3 py-2.5">Status</th>
-                <th className="px-3 py-2.5">Stage</th>
-                <th className="px-3 py-2.5">Start</th>
-                <th className="px-3 py-2.5">End</th>
-                <th className="px-3 py-2.5">Progress</th>
-                <th className="px-5 py-2.5 text-right">Spend / Budget</th>
+              <tr className="border-y border-border bg-canvas text-[10px] font-semibold uppercase tracking-[0.08em] text-secondary">
+                <th className="px-5 py-2.5 font-semibold">Project</th>
+                <th className="px-3 py-2.5 font-semibold">Status</th>
+                <th className="px-3 py-2.5 font-semibold">Stage</th>
+                <th className="px-3 py-2.5 font-semibold">Start</th>
+                <th className="px-3 py-2.5 font-semibold">End</th>
+                <th className="px-3 py-2.5 font-semibold">Progress</th>
+                <th className="px-5 py-2.5 text-right font-semibold">
+                  Spend / Budget
+                </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#edf1f6]">
+            <tbody className="divide-y divide-border">
               {(d?.timeline || []).map((row) => (
-                <tr key={row.id} className="transition hover:bg-[#fbfdff]">
+                <tr key={row.id} className="transition hover:bg-canvas">
                   <td className="px-5 py-3">
                     <Link
                       to={`/projects/${row.id}/overview`}
-                      className="font-semibold text-[#0f172a] hover:text-[#2563eb]"
+                      className="font-medium text-primary hover:text-accent"
                     >
                       {row.name}
                     </Link>
-                    <p className="text-[11px] text-[#94a3b8]">
+                    <p className="text-[11px] text-secondary">
                       {row.clientName}
                     </p>
                   </td>
                   <td className="px-3 py-3">
                     <StatusChip status={statusTone(row)} />
                   </td>
-                  <td className="px-3 py-3 text-[#475569]">
+                  <td className="px-3 py-3 text-secondary">
                     {stageLabel(row.currentStage)}
                   </td>
-                  <td className="px-3 py-3 tabular-nums text-[#475569]">
+                  <td className="px-3 py-3 tabular-nums text-secondary">
                     {formatShortDate(row.startDate)}
                   </td>
-                  <td className="px-3 py-3 tabular-nums text-[#475569]">
+                  <td className="px-3 py-3 tabular-nums text-secondary">
                     {formatShortDate(row.endDate)}
                   </td>
                   <td className="px-3 py-3">
@@ -669,16 +668,16 @@ export function CompanyAdminDashboard() {
                         value={row.progress || 0}
                         className="flex-1"
                       />
-                      <span className="w-8 text-right text-[11px] tabular-nums text-[#64748b]">
+                      <span className="w-8 text-right text-[11px] tabular-nums text-secondary">
                         {row.progress || 0}%
                       </span>
                     </div>
                   </td>
                   <td className="px-5 py-3 text-right tabular-nums">
-                    <span className="font-semibold text-[#0f172a]">
+                    <span className="font-semibold text-primary">
                       {formatInr(row.spent)}
                     </span>
-                    <span className="text-[#94a3b8]">
+                    <span className="text-secondary">
                       {' '}
                       / {formatInr(row.budget)}
                     </span>
@@ -689,7 +688,7 @@ export function CompanyAdminDashboard() {
                 <tr>
                   <td
                     colSpan={7}
-                    className="px-4 py-10 text-center text-sm text-[#94a3b8]"
+                    className="px-4 py-10 text-center text-sm text-secondary"
                   >
                     No projects to show on the timeline
                   </td>
@@ -699,40 +698,37 @@ export function CompanyAdminDashboard() {
           </table>
         </div>
 
-        {/* Mobile cards */}
-        <div className="divide-y divide-[#eef2f7] md:hidden">
+        <div className="divide-y divide-border md:hidden">
           {(d?.timeline || []).map((row) => (
             <Link
               key={row.id}
               to={`/projects/${row.id}/overview`}
-              className="block px-4 py-3 hover:bg-[#f8fafc]"
+              className="block px-4 py-3 hover:bg-canvas"
             >
               <div className="flex items-start justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="truncate font-medium text-[#0f172a]">
-                    {row.name}
-                  </p>
-                  <p className="text-[11px] text-[#94a3b8]">{row.clientName}</p>
+                  <p className="truncate font-medium text-primary">{row.name}</p>
+                  <p className="text-[11px] text-secondary">{row.clientName}</p>
                 </div>
                 <StatusChip status={statusTone(row)} />
               </div>
-              <p className="mt-2 text-[11px] text-[#64748b]">
+              <p className="mt-2 text-[11px] text-secondary">
                 {stageLabel(row.currentStage)} · {formatShortDate(row.startDate)}{' '}
                 → {formatShortDate(row.endDate)}
               </p>
               <div className="mt-2 flex items-center gap-2">
                 <ProgressBar value={row.progress || 0} className="flex-1" />
-                <span className="text-[11px] tabular-nums text-[#64748b]">
+                <span className="text-[11px] tabular-nums text-secondary">
                   {row.progress || 0}%
                 </span>
               </div>
-              <p className="mt-2 text-[12px] tabular-nums text-[#475569]">
+              <p className="mt-2 text-[12px] tabular-nums text-secondary">
                 {formatInr(row.spent)} / {formatInr(row.budget)}
               </p>
             </Link>
           ))}
           {!d?.timeline?.length && (
-            <p className="px-4 py-10 text-center text-sm text-[#94a3b8]">
+            <p className="px-4 py-10 text-center text-sm text-secondary">
               No projects to show
             </p>
           )}
@@ -744,23 +740,23 @@ export function CompanyAdminDashboard() {
 
 function StatCard({ to, icon: Icon, tone, label, value, delta, foot }) {
   const tones = {
-    blue: 'bg-blue-50 text-blue-600',
-    violet: 'bg-violet-50 text-violet-600',
-    amber: 'bg-amber-50 text-amber-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
+    blue: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
+    violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
+    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+    emerald: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
   }
   return (
     <Link
       to={to}
-      className="group block rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(15,23,42,0.28)]"
+      className="group block rounded-[12px] border border-border bg-surface p-4 transition hover:bg-canvas"
     >
       <div className="flex items-start justify-between gap-2">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8]">
+        <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-secondary">
           {label}
         </p>
         <span
           className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+            'flex h-9 w-9 shrink-0 items-center justify-center rounded-[8px]',
             tones[tone],
           )}
         >
@@ -768,7 +764,7 @@ function StatCard({ to, icon: Icon, tone, label, value, delta, foot }) {
         </span>
       </div>
       <div className="mt-1 flex items-baseline gap-2">
-        <p className="text-[26px] font-semibold tabular-nums tracking-[-0.03em] text-[#0f172a]">
+        <p className="text-[26px] font-semibold tabular-nums tracking-tight text-primary">
           {value}
         </p>
         {delta && (
@@ -776,7 +772,7 @@ function StatCard({ to, icon: Icon, tone, label, value, delta, foot }) {
             className={cn(
               'rounded-full px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
               delta.up
-                ? 'bg-emerald-50 text-emerald-600'
+                ? 'bg-[var(--accent)]/15 text-[var(--accent-hover)]'
                 : 'bg-red-50 text-red-600',
             )}
           >
@@ -784,33 +780,28 @@ function StatCard({ to, icon: Icon, tone, label, value, delta, foot }) {
           </span>
         )}
       </div>
-      <p className="mt-1.5 text-[11px] text-[#64748b]">{foot}</p>
+      <p className="mt-1.5 text-[11px] text-secondary">{foot}</p>
     </Link>
   )
 }
 
 function BudgetTile({ label, value, tone }) {
   const tones = {
-    blue: 'bg-[#eff6ff] text-[#2563eb]',
-    red: 'bg-[#fef2f2] text-[#dc2626]',
-    green: 'bg-[#ecfdf5] text-[#059669]',
+    blue: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
+    red: 'bg-red-50 text-red-600',
+    green: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
   }
   return (
-    <div className={cn('rounded-xl p-3', tone ? tones[tone] : 'bg-[#f8fafc]')}>
+    <div className={cn('rounded-[8px] p-3', tone ? tones[tone] : 'bg-canvas text-primary')}>
       <p
         className={cn(
           'text-[11px] font-medium',
-          tone ? 'opacity-80' : 'text-[#64748b]',
+          tone ? 'opacity-80' : 'text-secondary',
         )}
       >
         {label}
       </p>
-      <p
-        className={cn(
-          'mt-1 text-[17px] font-semibold tabular-nums tracking-[-0.02em]',
-          !tone && 'text-[#0f172a]',
-        )}
-      >
+      <p className="mt-1 text-[17px] font-semibold tabular-nums tracking-tight">
         {value}
       </p>
     </div>
@@ -832,7 +823,7 @@ function Donut({ segments, size = 'md' }) {
         cy="50"
         r={radius}
         fill="none"
-        stroke="#eef2f7"
+        stroke="var(--border-subtle)"
         strokeWidth="13"
       />
       {segments.map((seg) => {
@@ -860,7 +851,7 @@ function Donut({ segments, size = 'md' }) {
         x="50"
         y="47"
         textAnchor="middle"
-        className="fill-[#0f172a]"
+        fill="var(--text-primary)"
         style={{ fontSize: '20px', fontWeight: 700 }}
       >
         {total}
@@ -869,7 +860,7 @@ function Donut({ segments, size = 'md' }) {
         x="50"
         y="60"
         textAnchor="middle"
-        className="fill-[#94a3b8]"
+        fill="var(--text-secondary)"
         style={{ fontSize: '7px', fontWeight: 600, letterSpacing: '0.1em' }}
       >
         PROJECTS
@@ -882,23 +873,21 @@ function Panel({ icon: Icon, title, subtitle, action, children, className, noPad
   return (
     <section
       className={cn(
-        'flex flex-col overflow-hidden rounded-2xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]',
+        'flex flex-col overflow-hidden rounded-[12px] border border-border bg-surface',
         className,
       )}
     >
-      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 px-5 py-4">
+      <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
         <div className="flex items-center gap-2.5">
           {Icon && (
-            <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">
+            <span className="flex h-8 w-8 items-center justify-center rounded-[8px] bg-[var(--accent)]/12 text-[var(--accent-hover)]">
               <Icon className="h-4 w-4" />
             </span>
           )}
           <div>
-            <h2 className="text-[13.5px] font-semibold text-[#0f172a]">
-              {title}
-            </h2>
+            <h2 className="text-[13.5px] font-medium text-primary">{title}</h2>
             {subtitle && (
-              <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">{subtitle}</p>
+              <p className="mt-0.5 text-[10.5px] text-secondary">{subtitle}</p>
             )}
           </div>
         </div>
@@ -907,7 +896,7 @@ function Panel({ icon: Icon, title, subtitle, action, children, className, noPad
       <div
         className={cn(
           'flex min-h-0 flex-1 flex-col',
-          noPadding ? '' : 'px-5 pb-5',
+          noPadding ? '' : 'px-5 pb-5 pt-4',
         )}
       >
         {children}

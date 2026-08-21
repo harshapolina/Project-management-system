@@ -1,15 +1,50 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
 
-/** The app ships a single light theme (navy rail + light canvas). */
-export function applyTheme() {
-  document.documentElement.setAttribute('data-theme', 'light')
-  document.documentElement.style.colorScheme = 'light'
+const THEME_KEY = 'epm-theme'
+
+export function getStoredTheme() {
+  try {
+    const fromStore = localStorage.getItem(THEME_KEY)
+    if (fromStore === 'dark' || fromStore === 'light') return fromStore
+    const ui = JSON.parse(localStorage.getItem('cubic-ui') || '{}')
+    if (ui?.state?.theme === 'dark' || ui?.state?.theme === 'light') {
+      return ui.state.theme
+    }
+  } catch {
+    /* ignore */
+  }
+  return 'light'
+}
+
+export function applyTheme(theme = getStoredTheme()) {
+  const next = theme === 'dark' ? 'dark' : 'light'
+  document.documentElement.setAttribute('data-theme', next)
+  document.documentElement.style.colorScheme = next
+  try {
+    localStorage.setItem(THEME_KEY, next)
+  } catch {
+    /* ignore */
+  }
+  const meta = document.querySelector('meta[name="theme-color"]')
+  if (meta) meta.setAttribute('content', next === 'dark' ? '#0f0f0f' : '#fafafa')
 }
 
 export const useUiStore = create(
   persist(
-    (set) => ({
+    (set, get) => ({
+      theme: 'light',
+      setTheme: (theme) => {
+        const next = theme === 'dark' ? 'dark' : 'light'
+        applyTheme(next)
+        set({ theme: next })
+      },
+      toggleTheme: () => {
+        const next = get().theme === 'dark' ? 'light' : 'dark'
+        applyTheme(next)
+        set({ theme: next })
+      },
+
       /** ClickUp-style: home | inbox | spaces | dashboards | hubs */
       globalNav: 'home',
       setGlobalNav: (globalNav) => set({ globalNav }),
@@ -65,14 +100,15 @@ export const useUiStore = create(
     {
       name: 'cubic-ui',
       partialize: (s) => ({
+        theme: s.theme,
         globalNav: s.globalNav,
         sidebarCollapsed: s.sidebarCollapsed,
         spacesExpanded: s.spacesExpanded,
         favorites: s.favorites,
         sidebarSections: s.sidebarSections,
       }),
-      onRehydrateStorage: () => () => {
-        applyTheme()
+      onRehydrateStorage: () => (state) => {
+        applyTheme(state?.theme || getStoredTheme())
       },
     },
   ),

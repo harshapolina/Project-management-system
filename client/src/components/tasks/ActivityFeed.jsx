@@ -33,7 +33,7 @@ function StatusPhrase({ fromValue, toValue, fromLabel, toLabel }) {
   return (
     <span className="inline-flex flex-wrap items-center gap-x-1 gap-y-0.5">
       <StatusInline status={from} />
-      <span className="text-[#94a3b8]">to</span>
+      <span className="text-secondary">to</span>
       <StatusInline status={to} />
     </span>
   )
@@ -59,19 +59,19 @@ export function ActivityItem({ item, currentUser }) {
   if (item.kind === 'comment') {
     body = (
       <>
-        <span className="font-medium text-[#0f172a]">{who}</span>
+        <span className="font-medium text-primary">{who}</span>
         {': '}
-        <span className="text-[#475569]">{item.text}</span>
+        <span className="text-secondary">{item.text}</span>
       </>
     )
   } else if (item.type === 'task_created' || field === 'created') {
     body = (
       <>
-        <span className="text-[#475569]">{who} created this task</span>
+        <span className="text-secondary">{who} created this task</span>
         {item.title ? (
           <>
-            <span className="text-[#94a3b8]">: </span>
-            <span className="font-medium text-[#0f172a]">{item.title}</span>
+            <span className="text-secondary">: </span>
+            <span className="font-medium text-primary">{item.title}</span>
           </>
         ) : null}
       </>
@@ -79,7 +79,7 @@ export function ActivityItem({ item, currentUser }) {
   } else if (field === 'status') {
     body = (
       <>
-        <span className="text-[#475569]">{who} changed status from </span>
+        <span className="text-secondary">{who} changed status from </span>
         <StatusPhrase
           fromValue={meta.fromValue}
           toValue={meta.toValue}
@@ -96,7 +96,7 @@ export function ActivityItem({ item, currentUser }) {
       String(toName).toLowerCase() === String(currentUser.name).toLowerCase()
     body = (
       <>
-        <span className="text-[#475569]">{who} assigned to: </span>
+        <span className="text-secondary">{who} assigned to: </span>
         {toName && toName !== 'Empty' ? (
           <span className="inline-flex items-center gap-1">
             <Avatar
@@ -104,12 +104,12 @@ export function ActivityItem({ item, currentUser }) {
               name={toName}
               size="xs"
             />
-            <span className="font-medium text-[#0f172a]">
+            <span className="font-medium text-primary">
               {isYou ? 'You' : toName}
             </span>
           </span>
         ) : (
-          <span className="text-[#64748b]">Empty</span>
+          <span className="text-secondary">Empty</span>
         )}
       </>
     )
@@ -123,7 +123,7 @@ export function ActivityItem({ item, currentUser }) {
     )
     body = (
       <>
-        <span className="text-[#475569]">{who} set priority to </span>
+        <span className="text-secondary">{who} set priority to </span>
         <span className="inline-flex items-center gap-1" style={{ color: p.color }}>
           <Flag className="h-3 w-3" fill={p.color} />
           <span className="font-medium">{p.label}</span>
@@ -133,10 +133,10 @@ export function ActivityItem({ item, currentUser }) {
   } else if (field === 'title') {
     body = (
       <>
-        <span className="text-[#475569]">{who} changed the task name from </span>
-        <span className="text-[#64748b]">{meta.from || 'Empty'}</span>
-        <span className="text-[#94a3b8]"> → </span>
-        <span className="font-medium text-[#0f172a]">{meta.to || 'Empty'}</span>
+        <span className="text-secondary">{who} changed the task name from </span>
+        <span className="text-secondary">{meta.from || 'Empty'}</span>
+        <span className="text-secondary"> → </span>
+        <span className="font-medium text-primary">{meta.to || 'Empty'}</span>
       </>
     )
   } else if (
@@ -173,12 +173,12 @@ export function ActivityItem({ item, currentUser }) {
                         : 'Field')
     body = (
       <>
-        <span className="text-[#475569]">
+        <span className="text-secondary">
           {who} changed {label} from{' '}
         </span>
-        <span className="text-[#64748b]">{meta.from || 'Empty'}</span>
-        <span className="text-[#94a3b8]"> to </span>
-        <span className="font-medium text-[#0f172a]">{meta.to || 'Empty'}</span>
+        <span className="text-secondary">{meta.from || 'Empty'}</span>
+        <span className="text-secondary"> to </span>
+        <span className="font-medium text-primary">{meta.to || 'Empty'}</span>
       </>
     )
   } else {
@@ -188,16 +188,16 @@ export function ActivityItem({ item, currentUser }) {
       text = text.replace(item.actor.name, 'You')
     }
     // Inject status dots if message mentions statuses
-    body = <span className="text-[#475569]">{text}</span>
+    body = <span className="text-secondary">{text}</span>
   }
 
   return (
     <div className="group flex gap-2 px-1 py-1.5 text-[12.5px] leading-snug">
-      <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[#cbd5e1]" />
+      <span className="mt-[7px] h-1 w-1 shrink-0 rounded-full bg-[#c7c7c7]" />
       <div className="min-w-0 flex-1">
         <div className="flex items-start gap-2">
-          <p className="min-w-0 flex-1 text-[#475569]">{body}</p>
-          <span className="shrink-0 pt-0.5 text-[11px] text-[#94a3b8]">{when}</span>
+          <p className="min-w-0 flex-1 text-secondary">{body}</p>
+          <span className="shrink-0 pt-0.5 text-[11px] text-secondary">{when}</span>
         </div>
       </div>
     </div>

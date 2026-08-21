@@ -43,35 +43,35 @@ export function PlatformSubscriptionsPage() {
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-[#0f172a]">Subscriptions</h1>
-        <p className="mt-1 text-sm text-[#64748b]">
+        <h1 className="text-[28px] font-semibold tracking-tight text-primary">Subscriptions</h1>
+        <p className="mt-1 text-sm text-secondary">
           Cancel, reactivate, and review billing status for every company on the platform.
         </p>
       </div>
 
-      {isLoading && <p className="text-sm text-[#64748b]">Loading…</p>}
+      {isLoading && <p className="text-sm text-secondary">Loading…</p>}
 
       {['active', 'trial', 'suspended', 'cancelled'].map((status) => (
         <Card key={status} variant="light" className="space-y-3">
           <div className="flex items-center gap-2">
             <StatusChip status={status} />
-            <span className="text-sm text-[#64748b]">({grouped[status].length})</span>
+            <span className="text-sm text-secondary">({grouped[status].length})</span>
           </div>
           {grouped[status].length === 0 ? (
-            <p className="text-sm text-[#64748b]">None</p>
+            <p className="text-sm text-secondary">None</p>
           ) : (
-            <ul className="divide-y divide-[#dce4ee]">
+            <ul className="divide-y divide-border">
               {grouped[status].map((t) => (
                 <li key={t._id} className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
                   <div>
-                    <p className="font-medium text-[#0f172a]">{t.name}</p>
-                    <p className="text-xs text-[#64748b]">
+                    <p className="font-medium text-primary">{t.name}</p>
+                    <p className="text-xs text-secondary">
                       {t.subscriptionPlan || 'pro'} plan · {t.seatsUsed}/{t.seatLimit} seats
                       {t.cancelledAt && ` · cancelled ${new Date(t.cancelledAt).toLocaleDateString()}`}
                     </p>
                   </div>
                   <div className="flex flex-wrap gap-2">
-                    <Link to="/platform/companies" className="text-[12px] font-medium text-[#2563eb] hover:underline">
+                    <Link to="/platform/companies" className="text-[12px] font-medium text-[#3ecf8e] hover:underline">
                       Manage
                     </Link>
                     {status === 'cancelled' || t.cancelledAt ? (
@@ -92,18 +92,18 @@ export function PlatformSubscriptionsPage() {
       ))}
 
       <Card variant="light" className="space-y-2">
-        <p className="font-semibold text-[#0f172a]">Available plans</p>
+        <p className="font-semibold text-primary">Available plans</p>
         <div className="grid gap-3 sm:grid-cols-3">
           {SUBSCRIPTION_PLANS.map((p) => (
-            <div key={p.value} className="rounded-xl border border-[#dce4ee] bg-[#f8fafc] p-3">
-              <p className="font-semibold capitalize text-[#0f172a]">{p.label}</p>
-              <p className="mt-1 text-xs text-[#64748b]">
+            <div key={p.value} className="rounded-xl border border-border bg-surface-raised p-3">
+              <p className="font-semibold capitalize text-primary">{p.label}</p>
+              <p className="mt-1 text-xs text-secondary">
                 {tenants.filter((t) => (t.subscriptionPlan || 'pro') === p.value).length} companies
               </p>
             </div>
           ))}
         </div>
-        <Link to="/platform/features" className="text-sm font-medium text-[#2563eb] hover:underline">
+        <Link to="/platform/features" className="text-sm font-medium text-[#3ecf8e] hover:underline">
           Configure feature bundles per plan →
         </Link>
       </Card>

@@ -46,7 +46,7 @@ export function StatusSelect({ value, onChange, className }) {
       <select
         value={value}
         onChange={(e) => onChange?.(e.target.value)}
-        className="cursor-pointer appearance-none rounded border border-[#e2e8f0] bg-white py-1 pl-6 pr-6 text-[11px] font-semibold tracking-wide text-[#0f172a] outline-none hover:border-[#cbd5e1]"
+        className="cursor-pointer appearance-none rounded border border-border bg-surface py-1 pl-6 pr-6 text-[11px] font-semibold tracking-wide text-primary outline-none hover:border-[#c7c7c7]"
       >
         {TASK_STATUSES.map((s) => (
           <option key={s.value} value={s.value}>
@@ -78,7 +78,7 @@ export function StatusInline({ status }) {
         className="inline-block h-2 w-2 rounded-full"
         style={{ background: meta.dot }}
       />
-      <span className="font-medium text-[#0f172a]">{meta.shortLabel}</span>
+      <span className="font-medium text-primary">{meta.shortLabel}</span>
     </span>
   )
 }

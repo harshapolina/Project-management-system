@@ -685,7 +685,7 @@ export function CustomizeSidebarModal({ open, onClose, sidebarSections, onToggle
               >
                 <span
                   className={cn(
-                    'absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform',
+                    'absolute top-0.5 h-4 w-4 rounded-full bg-surface transition-transform',
                     checked ? 'translate-x-[18px]' : 'translate-x-0.5',
                   )}
                 />

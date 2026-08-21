@@ -40,7 +40,7 @@ export function PortfolioPage() {
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <p className="text-sm text-secondary mb-1">Real-time visibility across all interior projects</p>
-          <h1 className="text-[28px] font-semibold tracking-tight leading-none text-[#0f172a] md:text-[32px]">
+          <h1 className="text-[28px] font-semibold tracking-tight leading-none text-primary md:text-[32px]">
             Project Dashboard
           </h1>
         </div>

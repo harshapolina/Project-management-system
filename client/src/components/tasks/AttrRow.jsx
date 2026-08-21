@@ -9,7 +9,7 @@ export function AttrRow({ label, icon: Icon, children, className }) {
         className,
       )}
     >
-      <div className="flex min-w-0 items-center gap-2 text-[#64748b]">
+      <div className="flex min-w-0 items-center gap-2 text-secondary">
         {Icon ? <Icon className="h-3.5 w-3.5 shrink-0" strokeWidth={1.75} /> : null}
         <span className="truncate text-[13px]">{label}</span>
       </div>

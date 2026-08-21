@@ -55,24 +55,24 @@ export function PlatformLoginPage() {
 
   return (
     <div
-      className="flex min-h-dvh items-center justify-center bg-[#F5F7FB] px-5 py-16 text-[#0F172A]"
+      className="flex min-h-dvh items-center justify-center bg-surface-raised px-5 py-16 text-primary"
       style={{ fontFamily: 'var(--font-landing)' }}
     >
-      <div className="w-full max-w-md rounded-[24px] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] md:p-10">
+      <div className="w-full max-w-md rounded-[12px] border border-border bg-surface p-8 shadow-[0_8px_24px_rgba(0,0,0,0.08)] md:p-10">
         <div className="mb-8 flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#2563eb] text-[14px] font-bold text-white">
+          <span className="flex h-10 w-10 items-center justify-center rounded-[6px] bg-[#3ecf8e] text-[14px] font-bold text-[#171717]">
             E
           </span>
           <div>
-            <p className="text-[16px] font-semibold text-[#0f172a]">Editco Platform</p>
-            <p className="text-[12px] text-[#64748b]">Administrator sign-in</p>
+            <p className="text-[16px] font-semibold text-primary">Editco Platform</p>
+            <p className="text-[12px] text-secondary">Administrator sign-in</p>
           </div>
         </div>
 
-        <h1 className="text-[22px] font-bold tracking-tight text-[#0f172a]">
+        <h1 className="text-[22px] font-bold tracking-tight text-primary">
           Platform admin
         </h1>
-        <p className="mt-2 mb-6 text-[13px] leading-relaxed text-[#64748b]">
+        <p className="mt-2 mb-6 text-[13px] leading-relaxed text-secondary">
           Manage workspaces and provision login credentials for companies like Cubic.
           This portal is separate from company workspaces.
         </p>
@@ -101,7 +101,7 @@ export function PlatformLoginPage() {
 
         <Link
           to="/login"
-          className="mt-6 block text-center text-[12px] text-[#64748b] hover:text-[#2563eb]"
+          className="mt-6 block text-center text-[12px] text-secondary hover:text-[#3ecf8e]"
         >
           ← Back to company login
         </Link>

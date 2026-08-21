@@ -85,8 +85,8 @@ export function PlatformCompaniesPage() {
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-[#0f172a]">Companies</h1>
-          <p className="mt-1 text-sm text-[#64748b]">
+          <h1 className="text-[28px] font-semibold tracking-tight text-primary">Companies</h1>
+          <p className="mt-1 text-sm text-secondary">
             Create and control every company workspace — Cubic and others you provision.
           </p>
         </div>
@@ -105,16 +105,16 @@ export function PlatformCompaniesPage() {
           { label: 'Users', value: stats.seats },
         ].map((item) => (
           <Card key={item.label} variant="light" className="p-4!">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">{item.label}</p>
-            <p className="mt-1 text-2xl font-bold text-[#0f172a]">{item.value}</p>
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">{item.label}</p>
+            <p className="mt-1 text-2xl font-bold text-primary">{item.value}</p>
           </Card>
         ))}
       </div>
 
       {showCreate && (
         <Card variant="light" className="space-y-4">
-          <div className="flex items-center gap-2 font-semibold text-[#0f172a]">
-            <Building2 className="h-4 w-4 text-[#2563eb]" />
+          <div className="flex items-center gap-2 font-semibold text-primary">
+            <Building2 className="h-4 w-4 text-[#3ecf8e]" />
             New company workspace
           </div>
           <div className="grid gap-3 sm:grid-cols-2">
@@ -138,7 +138,7 @@ export function PlatformCompaniesPage() {
               <Input label="Admin password" type="text" placeholder="Auto-generate if blank" light value={form.adminPassword}
                 onChange={(e) => setForm((s) => ({ ...s, adminPassword: e.target.value }))} />
               <button type="button" onClick={() => setForm((s) => ({ ...s, adminPassword: generatePassword() }))}
-                className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#2563eb]">
+                className="mt-2 inline-flex items-center gap-1.5 text-[12px] font-medium text-[#3ecf8e]">
                 <KeyRound className="h-3.5 w-3.5" /> Generate password
               </button>
             </div>
@@ -151,13 +151,13 @@ export function PlatformCompaniesPage() {
       )}
 
       <div className="relative">
-        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#94a3b8]" />
+        <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary" />
         <input value={search} onChange={(e) => setSearch(e.target.value)}
           placeholder="Search companies…"
-          className="h-10 w-full rounded-xl border border-[#dce4ee] bg-white pl-10 pr-3 text-sm outline-none focus:border-[#2563eb] focus:ring-2 focus:ring-[#2563eb]/15" />
+          className="h-10 w-full rounded-xl border border-border bg-surface pl-10 pr-3 text-sm outline-none focus:border-[#3ecf8e] focus:ring-2 focus:ring-[#3ecf8e]/15" />
       </div>
 
-      {isLoading && <p className="text-sm text-[#64748b]">Loading…</p>}
+      {isLoading && <p className="text-sm text-secondary">Loading…</p>}
       <div className="space-y-3">
         {filtered.map((tenant) => (
           <CompanyControlPanel key={tenant._id} tenant={tenant}
@@ -165,7 +165,7 @@ export function PlatformCompaniesPage() {
             onToggle={() => setExpandedId((id) => (id === tenant._id ? null : tenant._id))} />
         ))}
         {!isLoading && filtered.length === 0 && (
-          <Card variant="light" className="text-center text-sm text-[#64748b]">No companies found.</Card>
+          <Card variant="light" className="text-center text-sm text-secondary">No companies found.</Card>
         )}
       </div>
 

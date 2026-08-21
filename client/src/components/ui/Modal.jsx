@@ -46,7 +46,7 @@ export function Modal({
             role="dialog"
             aria-modal="true"
             className={cn(
-              'relative w-full rounded-[20px] bg-surface border border-border shadow-[0_20px_60px_rgba(0,0,0,0.5)]',
+              'relative w-full rounded-[16px] border border-border bg-surface shadow-[0_16px_48px_rgba(0,0,0,0.12)]',
               widths[size],
               className,
             )}

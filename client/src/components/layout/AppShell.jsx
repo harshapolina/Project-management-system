@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
@@ -29,8 +29,12 @@ import {
   Package,
   History,
   Receipt,
+  ChevronLeft,
+  ChevronRight,
+  Moon,
+  Sun,
 } from 'lucide-react'
-import { api, useAuthStore } from '../../lib/api'
+import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { useUiStore } from '../../store/uiStore'
 import { toast } from '../ui'
 import { cn } from '../../lib/utils'
@@ -43,6 +47,11 @@ import {
   GlobalSearchModal,
   InviteModal,
 } from './GlobalChrome'
+import {
+  CollapsedFlyoutCard,
+  FlyoutAnchor,
+  useCollapsedFlyout,
+} from './CollapsedFlyout'
 import {
   CreateSpaceModal,
   CreateProjectModal,
@@ -156,18 +165,24 @@ function navActive(pathname, search, to) {
 export function AppShell({ children }) {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, tenant, logout, setUser } = useAuthStore()
+  const { user, tenant, logout, setUser, setTenant } = useAuthStore()
   const {
     searchOpen,
     setSearchOpen,
     openSearch,
     inviteOpen,
     setInviteOpen,
+    sidebarCollapsed,
+    toggleSidebar,
+    theme,
+    toggleTheme,
   } = useUiStore()
 
   const [mobileNavOpen, setMobileNavOpen] = useState(false)
   const [spaceModalOpen, setSpaceModalOpen] = useState(false)
   const [projectModalOpen, setProjectModalOpen] = useState(false)
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false)
+  const profileMenuRef = useRef(null)
   const [timerTick, setTimerTick] = useState(() => Date.now())
   const qc = useQueryClient()
   const caps = capabilitiesForUser(user, tenant)
@@ -199,14 +214,33 @@ export function AppShell({ children }) {
 
   useEffect(() => {
     setMobileNavOpen(false)
+    setProfileMenuOpen(false)
   }, [location.pathname, location.search])
+
+  useEffect(() => {
+    if (!profileMenuOpen) return undefined
+    const onPointerDown = (e) => {
+      if (!profileMenuRef.current?.contains(e.target)) {
+        setProfileMenuOpen(false)
+      }
+    }
+    const onKeyDown = (e) => {
+      if (e.key === 'Escape') setProfileMenuOpen(false)
+    }
+    document.addEventListener('mousedown', onPointerDown)
+    document.addEventListener('keydown', onKeyDown)
+    return () => {
+      document.removeEventListener('mousedown', onPointerDown)
+      document.removeEventListener('keydown', onKeyDown)
+    }
+  }, [profileMenuOpen])
 
   useEffect(() => {
     const refreshAccess = () => {
       api('/auth/me')
         .then((result) => {
-          if (!result?.user) return
-          setUser(result.user)
+          if (result?.user) setUser(result.user)
+          if (result?.tenant) setTenant(result.tenant)
         })
         .catch(() => {})
     }
@@ -224,7 +258,7 @@ export function AppShell({ children }) {
       window.removeEventListener('focus', refreshAccess)
       document.removeEventListener('visibilitychange', onVisible)
     }
-  }, [setUser])
+  }, [setUser, setTenant])
 
   useEffect(() => {
     const userId = user?.id || user?._id
@@ -320,137 +354,177 @@ export function AppShell({ children }) {
     .slice(0, 2)
     .toUpperCase()
 
-  const SidebarNav = ({ onNavigate }) => (
-    <>
-      <div className="mb-6 px-3 pt-5">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#1e3a5f] text-[13px] font-bold text-white">
-            E
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-[13px] font-bold tracking-wide text-white">
-              EPM
-            </p>
-            <p className="truncate text-[10px] uppercase tracking-[0.1em] text-[#8ba3bc]">
-              Editco Project Mgmt
-            </p>
-          </div>
-        </div>
-      </div>
+  const navItemClass = (active, collapsed) =>
+    cn(
+      'relative flex items-center rounded-[8px] py-2 text-[13px] font-medium transition',
+      collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
+      active
+        ? 'bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]'
+        : 'text-[var(--shell-text)] hover:bg-[var(--shell-hover)] hover:text-[var(--shell-text-strong)]',
+      active &&
+        !collapsed &&
+        'before:absolute before:left-0 before:top-1/2 before:h-4 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-accent',
+    )
 
-      <nav className="flex flex-1 flex-col gap-0.5 overflow-y-auto px-2 pb-4">
-        {primaryNav.map((item) => {
-          const active = navActive(
-            location.pathname,
-            location.search,
-            item.to,
-          )
-          return (
-            <NavLink
-              key={item.to}
-              to={item.to}
-              onClick={onNavigate}
+  const SidebarNav = ({ onNavigate, collapsed = false }) => {
+    const flyout = useCollapsedFlyout(collapsed)
+    const brandLabel = tenant?.name || 'EPM'
+
+    return (
+      <>
+        <div
+          className={cn(
+            'mb-4 border-b border-[var(--shell-border)] pb-4 pt-5',
+            collapsed ? 'px-2' : 'px-3',
+          )}
+        >
+          <FlyoutAnchor
+            collapsed={collapsed}
+            flyout={flyout}
+            id="brand"
+            label={brandLabel}
+          >
+            <div
               className={cn(
-                'flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition',
-                active
-                  ? 'bg-[#1e4a7a] text-white shadow-sm'
-                  : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
+                'flex items-center gap-2.5',
+                collapsed && 'justify-center',
               )}
             >
-              <item.icon className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-              {item.label}
-            </NavLink>
-          )
-        })}
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[8px] bg-accent">
+                {tenant?.logoUrl ? (
+                  <img
+                    src={assetUrl(tenant.logoUrl)}
+                    alt=""
+                    className="h-full w-full object-contain p-0.5"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center text-[13px] font-bold text-[#171717]">
+                    {brandLabel.charAt(0).toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className={cn('min-w-0', collapsed && 'sr-only')}>
+                <p className="truncate text-[13px] font-semibold tracking-tight text-[var(--shell-text-strong)]">
+                  {brandLabel}
+                </p>
+                <p className="truncate text-[10px] uppercase tracking-[0.1em] text-[var(--shell-text)]">
+                  {tenant?.slug || 'Editco Project Mgmt'}
+                </p>
+              </div>
+            </div>
+          </FlyoutAnchor>
 
-        {showPeople && (
-          <NavLink
-            to="/admin"
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'mt-1 flex items-center gap-2.5 rounded-xl px-3 py-2.5 text-[13px] font-medium transition',
-                isActive
-                  ? 'bg-[#1e4a7a] text-white shadow-sm'
-                  : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
-              )
-            }
-          >
-            <Users className="h-[18px] w-[18px] shrink-0" strokeWidth={1.75} />
-            People
-          </NavLink>
-        )}
-
-        <div className="mt-auto space-y-0.5 border-t border-white/10 pt-3">
-          <NavLink
-            to="/inbox?tab=primary"
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium',
-                isActive
-                  ? 'bg-[#1e4a7a] text-white'
-                  : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
-              )
-            }
-          >
-            <Inbox className="h-4 w-4" />
-            Notifications
-          </NavLink>
-          {isSupervisor && (
-            <NavLink
-              to="/mobile"
-              onClick={onNavigate}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium',
-                  isActive
-                    ? 'bg-[#1e4a7a] text-white'
-                    : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
-                )
-              }
+          {canCreate && (
+            <button
+              type="button"
+              onClick={() => {
+                setProjectModalOpen(true)
+                onNavigate?.()
+              }}
+              title="New project"
+              className={cn(
+                'mt-4 flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] bg-accent text-[13px] font-semibold text-[#171717] hover:bg-accent-hover',
+                collapsed && 'px-0',
+              )}
             >
-              <Smartphone className="h-4 w-4" />
-              Phone site mode
-            </NavLink>
+              <Plus className="h-3.5 w-3.5 shrink-0" strokeWidth={2.5} />
+              <span className={cn(collapsed && 'sr-only')}>New project</span>
+            </button>
           )}
-          <NavLink
-            to="/settings"
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              cn(
-                'flex items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium',
-                isActive
-                  ? 'bg-[#1e4a7a] text-white'
-                  : 'text-[#a8bdd4] hover:bg-white/5 hover:text-white',
-              )
-            }
-          >
-            <Settings className="h-4 w-4" />
-            Settings
-          </NavLink>
-          <button
-            type="button"
-            onClick={() => {
-              logout()
-              navigate('/login')
-            }}
-            className="flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] font-medium text-[#a8bdd4] hover:bg-white/5 hover:text-white"
-          >
-            <LogOut className="h-4 w-4" />
-            Log out
-          </button>
         </div>
-      </nav>
-    </>
-  )
+
+        <nav
+          className={cn(
+            'flex flex-1 flex-col gap-0.5 overflow-y-auto pb-4',
+            collapsed ? 'px-1.5' : 'px-2',
+          )}
+        >
+          {primaryNav.map((item) => {
+            const active = navActive(
+              location.pathname,
+              location.search,
+              item.to,
+            )
+            return (
+              <FlyoutAnchor
+                key={item.to}
+                collapsed={collapsed}
+                flyout={flyout}
+                id={item.to}
+                label={item.label}
+                to={item.to}
+                icon={item.icon}
+                onNavigate={onNavigate}
+              >
+                <NavLink
+                  to={item.to}
+                  aria-label={item.label}
+                  onClick={onNavigate}
+                  className={navItemClass(active, collapsed)}
+                >
+                  <item.icon
+                    className="h-[17px] w-[17px] shrink-0"
+                    strokeWidth={1.75}
+                  />
+                  <span className={cn(collapsed && 'sr-only')}>{item.label}</span>
+                </NavLink>
+              </FlyoutAnchor>
+            )
+          })}
+
+          {showPeople && (
+            <FlyoutAnchor
+              collapsed={collapsed}
+              flyout={flyout}
+              id="/admin"
+              label="People"
+              to="/admin"
+              icon={Users}
+              onNavigate={onNavigate}
+            >
+              <NavLink
+                to="/admin"
+                aria-label="People"
+                onClick={onNavigate}
+                className={({ isActive }) => navItemClass(isActive, collapsed)}
+              >
+                <Users className="h-[17px] w-[17px] shrink-0" strokeWidth={1.75} />
+                <span className={cn(collapsed && 'sr-only')}>People</span>
+              </NavLink>
+            </FlyoutAnchor>
+          )}
+        </nav>
+        <CollapsedFlyoutCard tip={flyout.tip} flyout={flyout} />
+      </>
+    )
+  }
 
   return (
-    <div className="flex h-[100dvh] overflow-hidden bg-[#F0F4F8] text-[#0f172a] print:h-auto print:overflow-visible">
+    <div className="flex h-[100dvh] overflow-hidden bg-canvas text-primary print:h-auto print:overflow-visible">
       {/* Desktop sidebar */}
-      <aside className="z-40 hidden w-[240px] shrink-0 flex-col bg-[#0B1B2B] print:hidden lg:flex">
-        <SidebarNav />
-      </aside>
+      <div
+        className={cn(
+          'relative z-40 hidden h-full shrink-0 print:hidden lg:block',
+          'transition-[width] duration-200 ease-out',
+          sidebarCollapsed ? 'w-[68px]' : 'w-[240px]',
+        )}
+      >
+        <aside className="flex h-full w-full flex-col overflow-hidden border-r border-[var(--shell-border)] bg-[var(--shell-bg)]">
+          <SidebarNav collapsed={sidebarCollapsed} />
+        </aside>
+        <button
+          type="button"
+          onClick={toggleSidebar}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          className="absolute -right-3 top-[26px] z-50 flex h-6 w-6 items-center justify-center rounded-full border border-[var(--shell-border)] bg-[var(--shell-bg)] text-[var(--shell-text)] shadow-[0_2px_8px_rgba(0,0,0,0.08)] hover:bg-[var(--shell-hover)] hover:text-[var(--shell-text-strong)]"
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="h-3.5 w-3.5" strokeWidth={2.25} />
+          ) : (
+            <ChevronLeft className="h-3.5 w-3.5" strokeWidth={2.25} />
+          )}
+        </button>
+      </div>
 
       {/* Mobile drawer */}
       {mobileNavOpen && (
@@ -461,10 +535,10 @@ export function AppShell({ children }) {
             className="absolute inset-0 bg-black/50"
             onClick={() => setMobileNavOpen(false)}
           />
-          <aside className="absolute inset-y-0 left-0 flex w-[min(88vw,280px)] flex-col bg-[#0B1B2B] shadow-2xl">
+          <aside className="absolute inset-y-0 left-0 flex w-[min(88vw,280px)] flex-col border-r border-[var(--shell-border)] bg-[var(--shell-bg)] shadow-[0_16px_48px_rgba(0,0,0,0.12)]">
             <button
               type="button"
-              className="absolute right-3 top-4 rounded-lg p-1.5 text-[#a8bdd4] hover:bg-white/10"
+              className="absolute right-3 top-4 rounded-[6px] p-1.5 text-[var(--shell-text)] hover:bg-[var(--shell-hover)]"
               onClick={() => setMobileNavOpen(false)}
             >
               <X className="h-4 w-4" />
@@ -474,36 +548,25 @@ export function AppShell({ children }) {
         </div>
       )}
 
-      <div className="relative flex min-w-0 flex-1 flex-col">
-        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[#dce4ee] bg-white/90 px-3 backdrop-blur print:hidden sm:px-5">
+      <div className="relative flex min-w-0 flex-1 flex-col bg-canvas">
+        <header className="flex h-14 shrink-0 items-center gap-2 border-b border-[var(--shell-border)] bg-[var(--shell-bg)] px-3 print:hidden sm:px-5">
           <button
             type="button"
-            className="flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] hover:bg-[#f0f4f8] lg:hidden"
+            className="flex h-9 w-9 items-center justify-center rounded-[8px] text-[var(--shell-text)] hover:bg-[var(--shell-hover)] lg:hidden"
             onClick={() => setMobileNavOpen(true)}
             aria-label="Open menu"
           >
             <Menu className="h-5 w-5" />
           </button>
 
-          {canCreate && (
-            <button
-              type="button"
-              onClick={() => setProjectModalOpen(true)}
-              className="hidden h-9 items-center gap-1.5 rounded-xl bg-[#2563eb] px-3 text-[13px] font-semibold text-white hover:bg-[#1d4ed8] sm:inline-flex"
-            >
-              <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
-              New project
-            </button>
-          )}
-
           <div className="relative mx-auto min-w-0 flex-1 max-w-[420px]">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[var(--shell-text)]" />
             <input
               readOnly
               onFocus={openSearch}
               onClick={openSearch}
               placeholder="Search projects, tasks…"
-              className="h-9 w-full cursor-pointer rounded-full border border-[#e2e8f0] bg-[#f8fafc] pl-9 pr-3 text-[13px] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd] focus:bg-white"
+              className="h-9 w-full cursor-pointer rounded-[8px] border border-[var(--shell-border)] bg-[var(--shell-input)] pl-9 pr-3 text-[13px] text-[var(--shell-text-strong)] outline-none placeholder:text-[var(--shell-text)] focus:border-accent/40 focus:bg-[var(--shell-bg)]"
             />
           </div>
 
@@ -541,6 +604,16 @@ export function AppShell({ children }) {
                 <UserPlus className="h-4 w-4" />
               </IconBtn>
             )}
+            <IconBtn
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+              onClick={toggleTheme}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-4 w-4" strokeWidth={1.75} />
+              ) : (
+                <Moon className="h-4 w-4" strokeWidth={1.75} />
+              )}
+            </IconBtn>
             <IconBtn title="Notifications" onClick={() => navigate('/inbox?tab=primary')}>
               <span className="relative">
                 <Bell className="h-4 w-4" />
@@ -551,14 +624,85 @@ export function AppShell({ children }) {
                 )}
               </span>
             </IconBtn>
-            <button
-              type="button"
-              title={user?.name}
-              onClick={() => navigate('/settings')}
-              className="ml-1 flex h-9 w-9 items-center justify-center rounded-full bg-[#2563eb] text-[11px] font-bold text-white"
-            >
-              {initials}
-            </button>
+            <div className="relative ml-1" ref={profileMenuRef}>
+              <button
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={profileMenuOpen}
+                onClick={() => setProfileMenuOpen((open) => !open)}
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-[#171717]"
+              >
+                {initials}
+              </button>
+
+              {profileMenuOpen && (
+                <div
+                  role="menu"
+                  className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-[8px] border border-border bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
+                >
+                  <div className="border-b border-border px-3 py-2.5">
+                    <p className="truncate text-[13px] font-medium text-primary">
+                      {user?.name || 'Account'}
+                    </p>
+                    <p className="truncate text-[11px] text-secondary">
+                      {user?.email || ''}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
+                    onClick={() => {
+                      setProfileMenuOpen(false)
+                      navigate('/inbox?tab=primary')
+                    }}
+                  >
+                    <Inbox className="h-4 w-4" />
+                    Notifications
+                  </button>
+                  {isSupervisor && (
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        navigate('/mobile')
+                      }}
+                    >
+                      <Smartphone className="h-4 w-4" />
+                      Phone site mode
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
+                    onClick={() => {
+                      setProfileMenuOpen(false)
+                      navigate('/settings')
+                    }}
+                  >
+                    <Settings className="h-4 w-4" />
+                    Settings
+                  </button>
+                  <div className="my-1 border-t border-border" />
+                  <button
+                    type="button"
+                    role="menuitem"
+                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
+                    onClick={() => {
+                      setProfileMenuOpen(false)
+                      logout()
+                      navigate('/login')
+                    }}
+                  >
+                    <LogOut className="h-4 w-4" />
+                    Log out
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
         </header>
 
@@ -566,7 +710,7 @@ export function AppShell({ children }) {
           {children}
         </main>
 
-        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-[#dce4ee] bg-white/95 backdrop-blur print:hidden lg:hidden">
+        <nav className="fixed inset-x-0 bottom-0 z-50 border-t border-border bg-surface/95 backdrop-blur print:hidden lg:hidden">
           <div className="mx-auto grid max-w-lg grid-cols-5 px-1 py-1">
             <BottomTab
               label="Home"
@@ -591,7 +735,7 @@ export function AppShell({ children }) {
                 className="-mt-3 flex flex-col items-center"
                 aria-label="Create"
               >
-                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#2563eb] text-white shadow-lg shadow-blue-500/30">
+                <span className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-accent text-[#171717] shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
                   <Plus className="h-6 w-6" strokeWidth={2.5} />
                 </span>
               </button>
@@ -636,7 +780,7 @@ function IconBtn({ children, title, onClick, className }) {
       title={title}
       onClick={onClick}
       className={cn(
-        'flex h-9 w-9 items-center justify-center rounded-xl text-[#64748b] hover:bg-[#f0f4f8] hover:text-[#0f172a]',
+        'flex h-9 w-9 items-center justify-center rounded-[8px] text-[var(--shell-text)] transition-colors hover:bg-[var(--shell-hover)] hover:text-[var(--shell-text-strong)]',
         className,
       )}
     >
@@ -652,7 +796,7 @@ function BottomTab({ label, active, onClick, icon: Icon }) {
       onClick={onClick}
       className={cn(
         'flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium',
-        active ? 'text-[#2563eb]' : 'text-[#94a3b8]',
+        active ? 'text-accent' : 'text-secondary',
       )}
     >
       <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />

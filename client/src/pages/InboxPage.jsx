@@ -132,7 +132,7 @@ export function InboxPage() {
             <t.icon className="h-3.5 w-3.5" strokeWidth={1.75} />
             {t.label}
             {tab === t.id && (
-              <span className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-white" />
+              <span className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-surface" />
             )}
           </button>
         ))}
@@ -251,8 +251,8 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
         <div
           key={n._id}
           className={cn(
-            'flex w-full items-start gap-3 border-b border-[#e2e8f0] px-5 py-3.5 transition hover:bg-[#f8fafc]',
-            !n.read && 'bg-[#eff6ff]/50',
+            'flex w-full items-start gap-3 border-b border-border px-5 py-3.5 transition hover:bg-surface-raised',
+            !n.read && 'bg-[#ecfdf5]/50',
           )}
         >
           <button
@@ -269,13 +269,13 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
             <span
               className={cn(
                 'mt-1.5 h-2 w-2 shrink-0 rounded-full',
-                n.read ? 'bg-[#cbd5e1]' : 'bg-[#2563eb]',
+                n.read ? 'bg-[#c7c7c7]' : 'bg-[#3ecf8e]',
               )}
             />
             <div className="min-w-0 flex-1">
-              <p className="text-[13px] font-semibold text-[#0f172a]">{n.title}</p>
-              <p className="mt-0.5 text-[12px] text-[#64748b]">{n.body}</p>
-              <p className="mt-1 text-[11px] text-[#94a3b8]">
+              <p className="text-[13px] font-semibold text-primary">{n.title}</p>
+              <p className="mt-0.5 text-[12px] text-secondary">{n.body}</p>
+              <p className="mt-1 text-[11px] text-secondary">
                 {n.createdAt &&
                   formatDistanceToNow(new Date(n.createdAt), {
                     addSuffix: true,

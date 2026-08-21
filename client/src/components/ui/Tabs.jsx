@@ -34,7 +34,7 @@ export function Tabs({ tabs = [], value, onChange, className, variant = 'pill' }
   return (
     <div
       className={cn(
-        'inline-flex items-center gap-1 rounded-full bg-surface-raised p-1 border border-border',
+        'inline-flex items-center gap-1 rounded-[8px] border border-border bg-surface-raised p-1',
         className,
       )}
     >
@@ -46,14 +46,14 @@ export function Tabs({ tabs = [], value, onChange, className, variant = 'pill' }
             type="button"
             onClick={() => onChange?.(tab.value)}
             className={cn(
-              'relative rounded-full px-4 py-1.5 text-sm font-medium transition-colors duration-150',
-              active ? 'text-on-light' : 'text-secondary hover:text-primary',
+              'relative rounded-[6px] px-4 py-1.5 text-sm font-medium transition-colors duration-150',
+              active ? 'text-primary' : 'text-secondary hover:text-primary',
             )}
           >
             {active && (
               <motion.span
                 layoutId="tab-pill"
-                className="absolute inset-0 rounded-full bg-zinc-200"
+                className="absolute inset-0 rounded-[6px] bg-surface"
                 transition={{ type: 'spring', stiffness: 400, damping: 30 }}
               />
             )}

@@ -200,47 +200,47 @@ export function ProjectOverview() {
 
       {/* Hero + KPIs — fills width, less empty space */}
       <div className="grid gap-4 xl:grid-cols-12">
-        <section className="flex flex-col rounded-2xl border border-[#d6e4f5] bg-white p-4 shadow-sm sm:p-5 xl:col-span-7">
+        <section className="flex flex-col rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm sm:p-5 xl:col-span-7">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-2 flex items-center gap-2">
-                <span className="rounded-full bg-[#dbeafe] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#1d4ed8]">
+                <span className="rounded-full bg-[#d1fae5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#24b47e]">
                   Current phase
                 </span>
-                <span className="text-[11px] font-medium text-[#94a3b8]">
+                <span className="text-[11px] font-medium text-secondary">
                   {currentStageIndex + 1} of {STAGE_ORDER.length}
                 </span>
               </div>
-              <h2 className="text-[26px] font-semibold tracking-tight text-[#0f172a] md:text-[30px]">
+              <h2 className="text-[26px] font-semibold tracking-tight text-primary md:text-[30px]">
                 {help.title}
               </h2>
-              <p className="mt-0.5 text-[14px] text-[#64748b]">{help.plain}</p>
+              <p className="mt-0.5 text-[14px] text-secondary">{help.plain}</p>
             </div>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ecfdf5] text-[#3ecf8e]">
               <CalendarDays className="h-5 w-5" />
             </div>
           </div>
 
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between text-[11px]">
-              <span className="font-medium text-[#64748b]">Project journey</span>
-              <span className="font-semibold text-[#2563eb]">
+              <span className="font-medium text-secondary">Project journey</span>
+              <span className="font-semibold text-[#3ecf8e]">
                 {Math.round(stageProgress)}%
               </span>
             </div>
             <div className="h-2 overflow-hidden rounded-full bg-[#e8eef4]">
               <div
-                className="h-full rounded-full bg-[#2563eb] transition-all"
+                className="h-full rounded-full bg-[#3ecf8e] transition-all"
                 style={{ width: `${stageProgress}%` }}
               />
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-[#dbeafe] bg-[#f8fbff] px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#2563eb]">
+          <div className="mt-4 rounded-xl border border-[#d1fae5] bg-[#f8fbff] px-3.5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#3ecf8e]">
               Next priority
             </p>
-            <p className="mt-1 text-[13px] font-medium leading-snug text-[#334155]">
+            <p className="mt-1 text-[13px] font-medium leading-snug text-primary">
               {help.next}
             </p>
           </div>
@@ -249,12 +249,12 @@ export function ProjectOverview() {
             {help.focus.map((item, index) => (
               <div
                 key={item}
-                className="flex items-center gap-2 rounded-xl border border-[#e8eef4] bg-[#f8fafc] px-3 py-2.5"
+                className="flex items-center gap-2 rounded-xl border border-border bg-surface-raised px-3 py-2.5"
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-white text-[10px] font-bold text-[#2563eb] ring-1 ring-[#bfdbfe]">
+                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-[10px] font-bold text-[#3ecf8e] ring-1 ring-[#bfdbfe]">
                   {index + 1}
                 </span>
-                <span className="text-[11px] font-medium leading-tight text-[#475569]">
+                <span className="text-[11px] font-medium leading-tight text-secondary">
                   {item}
                 </span>
               </div>
@@ -264,14 +264,14 @@ export function ProjectOverview() {
           <div className="mt-auto flex flex-wrap gap-2 pt-4">
             <Link
               to={tab(help.cta.to)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#2563eb] px-4 text-[13px] font-semibold text-white shadow-sm hover:bg-[#1d4ed8]"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#3ecf8e] px-4 text-[13px] font-semibold text-white shadow-sm hover:bg-[#24b47e]"
             >
               {help.cta.label}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to={tab(help.secondary.to)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d6e4f5] bg-white px-4 text-[13px] font-semibold text-[#334155] hover:bg-[#f8fafc]"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d6e4f5] bg-surface px-4 text-[13px] font-semibold text-primary hover:bg-surface-raised"
             >
               {help.secondary.label}
             </Link>
@@ -291,35 +291,35 @@ export function ProjectOverview() {
         <div className="grid gap-3 sm:grid-cols-3 xl:col-span-5 xl:grid-cols-1">
           <div
             className={cn(
-              'rounded-2xl border bg-white p-4 shadow-sm',
+              'rounded-2xl border bg-surface p-4 shadow-sm',
               isOverBudget ? 'border-[#fecaca]' : 'border-[#d6e4f5]',
             )}
           >
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-medium text-[#64748b]">
+              <p className="text-[12px] font-medium text-secondary">
                 Budget & spend
               </p>
               <Wallet
                 className={cn(
                   'h-4 w-4',
-                  isOverBudget ? 'text-[#dc2626]' : 'text-[#2563eb]',
+                  isOverBudget ? 'text-[#dc2626]' : 'text-[#3ecf8e]',
                 )}
               />
             </div>
             <div className="mt-2 grid grid-cols-2 gap-3">
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-secondary">
                   Spent
                 </p>
-                <p className="mt-0.5 text-[18px] font-semibold tabular-nums text-[#0f172a]">
+                <p className="mt-0.5 text-[18px] font-semibold tabular-nums text-primary">
                   {formatInr(spent)}
                 </p>
               </div>
               <div>
-                <p className="text-[10px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+                <p className="text-[10px] font-semibold uppercase tracking-wide text-secondary">
                   Approved budget
                 </p>
-                <p className="mt-0.5 text-[18px] font-semibold tabular-nums text-[#0f172a]">
+                <p className="mt-0.5 text-[18px] font-semibold tabular-nums text-primary">
                   {formatInr(budget)}
                 </p>
               </div>
@@ -328,7 +328,7 @@ export function ProjectOverview() {
               <div
                 className={cn(
                   'h-full rounded-full',
-                  isOverBudget ? 'bg-[#dc2626]' : 'bg-[#2563eb]',
+                  isOverBudget ? 'bg-[#dc2626]' : 'bg-[#3ecf8e]',
                 )}
                 style={{ width: `${spendBarPct}%` }}
               />
@@ -337,7 +337,7 @@ export function ProjectOverview() {
               <span
                 className={cn(
                   'font-semibold',
-                  isOverBudget ? 'text-[#dc2626]' : 'text-[#2563eb]',
+                  isOverBudget ? 'text-[#dc2626]' : 'text-[#3ecf8e]',
                 )}
               >
                 {exactPct == null ? 'Budget not set' : `${exactPct}% used`}
@@ -346,7 +346,7 @@ export function ProjectOverview() {
                 <span
                   className={cn(
                     'tabular-nums',
-                    isOverBudget ? 'font-semibold text-[#dc2626]' : 'text-[#64748b]',
+                    isOverBudget ? 'font-semibold text-[#dc2626]' : 'text-secondary',
                   )}
                 >
                   {isOverBudget
@@ -357,32 +357,32 @@ export function ProjectOverview() {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-[#d6e4f5] bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-medium text-[#64748b]">Open work</p>
-              <CheckSquare className="h-4 w-4 text-[#2563eb]" />
+              <p className="text-[12px] font-medium text-secondary">Open work</p>
+              <CheckSquare className="h-4 w-4 text-[#3ecf8e]" />
             </div>
-            <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-[#0f172a]">
+            <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-primary">
               {stats?.openTasks ?? openTasks.length}
             </p>
             <Link
               to={tab('tasks')}
-              className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#2563eb]"
+              className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#3ecf8e]"
             >
               Manage tasks <ArrowRight className="h-3 w-3" />
             </Link>
           </div>
 
-          <div className="rounded-2xl border border-[#d6e4f5] bg-white p-4 shadow-sm">
+          <div className="rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm">
             <div className="flex items-center justify-between">
-              <p className="text-[12px] font-medium text-[#64748b]">Timeline</p>
-              <CalendarDays className="h-4 w-4 text-[#2563eb]" />
+              <p className="text-[12px] font-medium text-secondary">Timeline</p>
+              <CalendarDays className="h-4 w-4 text-[#3ecf8e]" />
             </div>
-            <p className="mt-2 text-[13px] font-semibold leading-snug text-[#0f172a]">
+            <p className="mt-2 text-[13px] font-semibold leading-snug text-primary">
               {project.startDate
                 ? format(new Date(project.startDate), 'dd MMM yyyy')
                 : 'Start TBD'}
-              <span className="font-normal text-[#94a3b8]"> → </span>
+              <span className="font-normal text-secondary"> → </span>
               {project.endDate
                 ? format(new Date(project.endDate), 'dd MMM yyyy')
                 : 'End TBD'}
@@ -397,12 +397,12 @@ export function ProjectOverview() {
       </div>
 
       {/* Steps — compact, clickable */}
-      <section className="rounded-2xl border border-[#d6e4f5] bg-white p-4 shadow-sm">
+      <section className="rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm">
         <div className="mb-3 flex items-center justify-between gap-2">
-          <p className="text-[13px] font-semibold text-[#0f172a]">
+          <p className="text-[13px] font-semibold text-primary">
             Project journey
           </p>
-          <p className="text-[11px] text-[#94a3b8]">
+          <p className="text-[11px] text-secondary">
             {canManage ? 'Click a step to jump there · use “Mark done” to advance' : 'Click a step to open that area'}
           </p>
         </div>
@@ -424,17 +424,17 @@ export function ProjectOverview() {
                   className={cn(
                     'flex h-full items-center gap-2.5 rounded-xl border px-3 py-2.5 transition hover:shadow-sm',
                     state === 'now'
-                      ? 'border-[#2563eb] bg-[#eff6ff]'
-                      : 'border-[#e8eef4] bg-[#f8fafc] hover:border-[#bfdbfe]',
+                      ? 'border-[#3ecf8e] bg-[#ecfdf5]'
+                      : 'border-border bg-surface-raised hover:border-[#bfdbfe]',
                   )}
                 >
                   <span
                     className={cn(
                       'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold',
                       state === 'done' && 'bg-emerald-500 text-white',
-                      state === 'now' && 'bg-[#2563eb] text-white',
+                      state === 'now' && 'bg-[#3ecf8e] text-white',
                       state === 'todo' &&
-                        'bg-white text-[#64748b] ring-1 ring-[#cbd5e1]',
+                        'bg-surface text-secondary ring-1 ring-[#c7c7c7]',
                     )}
                   >
                     {state === 'done' ? <Check className="h-3.5 w-3.5" /> : i + 1}
@@ -443,12 +443,12 @@ export function ProjectOverview() {
                     <p
                       className={cn(
                         'truncate text-[12px] font-semibold',
-                        state === 'now' ? 'text-[#1d4ed8]' : 'text-[#0f172a]',
+                        state === 'now' ? 'text-[#24b47e]' : 'text-primary',
                       )}
                     >
                       {s.label || stageLabel(s.key)}
                     </p>
-                    <p className="text-[10px] text-[#94a3b8]">
+                    <p className="text-[10px] text-secondary">
                       {state === 'done'
                         ? 'Done'
                         : state === 'now'
@@ -465,7 +465,7 @@ export function ProjectOverview() {
 
       {/* Quick actions — one dense row */}
       <section>
-        <p className="mb-2 text-[13px] font-semibold text-[#0f172a]">
+        <p className="mb-2 text-[13px] font-semibold text-primary">
           Quick actions
         </p>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
@@ -489,10 +489,10 @@ export function ProjectOverview() {
                   <Icon className="h-4 w-4" />
                 </span>
                 <div>
-                  <p className="text-[13px] font-semibold text-[#0f172a]">
+                  <p className="text-[13px] font-semibold text-primary">
                     {a.title}
                   </p>
-                  <p className="text-[11px] text-[#64748b]">{a.desc}</p>
+                  <p className="text-[11px] text-secondary">{a.desc}</p>
                 </div>
               </Link>
             )
@@ -505,23 +505,23 @@ export function ProjectOverview() {
 
       {/* Live lists — fill the page */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-[#d6e4f5] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#e8eef4] px-4 py-3">
-            <p className="text-[13px] font-semibold text-[#0f172a]">
+        <section className="rounded-2xl border border-[#d6e4f5] bg-surface shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <p className="text-[13px] font-semibold text-primary">
               Open tasks
             </p>
             <Link
               to={tab('tasks')}
-              className="text-[12px] font-semibold text-[#2563eb]"
+              className="text-[12px] font-semibold text-[#3ecf8e]"
             >
               All tasks
             </Link>
           </div>
-          <ul className="divide-y divide-[#eef2f7]">
+          <ul className="divide-y divide-border">
             {openTasks.length === 0 && (
-              <li className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">
+              <li className="px-4 py-8 text-center text-[13px] text-secondary">
                 No open tasks.{' '}
-                <Link to={tab('tasks')} className="font-semibold text-[#2563eb]">
+                <Link to={tab('tasks')} className="font-semibold text-[#3ecf8e]">
                   Add one
                 </Link>
               </li>
@@ -530,46 +530,46 @@ export function ProjectOverview() {
               <li key={t._id}>
                 <Link
                   to={tab(`tasks?task=${t._id}`)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-[#f8fafc]"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-raised"
                 >
-                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#2563eb]" />
+                  <span className="h-2 w-2 shrink-0 rounded-full bg-[#3ecf8e]" />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[13px] font-medium text-[#0f172a]">
+                    <p className="truncate text-[13px] font-medium text-primary">
                       {t.title}
                     </p>
-                    <p className="text-[11px] text-[#94a3b8]">
+                    <p className="text-[11px] text-secondary">
                       {t.assignee?.name || 'Unassigned'}
                       {t.dueDate
                         ? ` · due ${format(new Date(t.dueDate), 'dd MMM')}`
                         : ''}
                     </p>
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-[#cbd5e1]" />
+                  <ArrowRight className="h-3.5 w-3.5 text-[#c7c7c7]" />
                 </Link>
               </li>
             ))}
           </ul>
         </section>
 
-        <section className="rounded-2xl border border-[#d6e4f5] bg-white shadow-sm">
-          <div className="flex items-center justify-between border-b border-[#e8eef4] px-4 py-3">
-            <p className="text-[13px] font-semibold text-[#0f172a]">
+        <section className="rounded-2xl border border-[#d6e4f5] bg-surface shadow-sm">
+          <div className="flex items-center justify-between border-b border-border px-4 py-3">
+            <p className="text-[13px] font-semibold text-primary">
               Recent site updates
             </p>
             <Link
               to={tab('site')}
-              className="text-[12px] font-semibold text-[#2563eb]"
+              className="text-[12px] font-semibold text-[#3ecf8e]"
             >
               Site tab
             </Link>
           </div>
-          <ul className="divide-y divide-[#eef2f7]">
+          <ul className="divide-y divide-border">
             {recentUpdates.length === 0 && (
-              <li className="px-4 py-8 text-center text-[13px] text-[#94a3b8]">
+              <li className="px-4 py-8 text-center text-[13px] text-secondary">
                 No updates yet.{' '}
                 <Link
                   to={tab('site?compose=1')}
-                  className="font-semibold text-[#2563eb]"
+                  className="font-semibold text-[#3ecf8e]"
                 >
                   Post one
                 </Link>
@@ -583,10 +583,10 @@ export function ProjectOverview() {
                   size="sm"
                 />
                 <div className="min-w-0">
-                  <p className="line-clamp-2 text-[13px] text-[#334155]">
+                  <p className="line-clamp-2 text-[13px] text-primary">
                     {u.note || 'Update posted'}
                   </p>
-                  <p className="mt-0.5 text-[11px] text-[#94a3b8]">
+                  <p className="mt-0.5 text-[11px] text-secondary">
                     {u.author?.name || 'Team'}
                     {u.createdAt
                       ? ` · ${formatDistanceToNow(new Date(u.createdAt), { addSuffix: true })}`

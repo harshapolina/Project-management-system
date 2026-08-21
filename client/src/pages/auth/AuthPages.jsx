@@ -97,18 +97,18 @@ export function ForgotPasswordPage() {
 function AuthShell({ title, subtitle, children }) {
   return (
     <div
-      className="flex min-h-[100dvh] items-center justify-center bg-[#F5F7FB] px-5 py-16 text-[#0F172A]"
+      className="flex min-h-[100dvh] items-center justify-center bg-surface-raised px-5 py-16 text-primary"
       style={{ fontFamily: 'var(--font-landing)' }}
     >
-      <div className="w-full max-w-md rounded-[24px] border border-slate-100 bg-white p-8 shadow-[0_20px_50px_rgba(15,23,42,0.08)] md:p-10">
+      <div className="w-full max-w-md rounded-[12px] border border-border bg-surface p-8 shadow-[0_8px_24px_rgba(0,0,0,0.08)] md:p-10">
         <Link to="/login" className="mb-8 flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-[#0F172A] text-[12px] font-bold text-accent">
+          <span className="flex h-8 w-8 items-center justify-center rounded-[6px] bg-[#3ecf8e] text-[12px] font-bold text-[#171717]">
             E
           </span>
-          <span className="text-[16px] font-semibold">EPM</span>
+          <span className="text-[16px] font-semibold text-primary">EPM</span>
         </Link>
-        <h1 className="text-[26px] font-bold tracking-tight">{title}</h1>
-        <p className="mt-2 mb-8 text-[14px] text-slate-500">{subtitle}</p>
+        <h1 className="text-[26px] font-medium tracking-tight text-primary">{title}</h1>
+        <p className="mt-2 mb-8 text-[14px] text-secondary">{subtitle}</p>
         {children}
       </div>
     </div>

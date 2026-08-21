@@ -20,49 +20,49 @@ const TYPES = {
   task_assigned: {
     icon: ClipboardCheck,
     label: 'TASK ASSIGNED',
-    labelColor: 'text-[#1d4ed8]',
-    iconColor: 'text-[#2563eb]',
-    card: 'border-[#bfdbfe] bg-[#eff6ff]',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-transparent bg-[var(--nav-active-bg)]',
     cta: 'Review task',
   },
   task: {
     icon: ClipboardCheck,
     label: 'TASK ASSIGNED',
-    labelColor: 'text-[#1d4ed8]',
-    iconColor: 'text-[#2563eb]',
-    card: 'border-[#bfdbfe] bg-[#eff6ff]',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-transparent bg-[var(--nav-active-bg)]',
     cta: 'Review task',
   },
   lead_assigned: {
     icon: ClipboardCheck,
     label: 'TASK ASSIGNED',
-    labelColor: 'text-[#1d4ed8]',
-    iconColor: 'text-[#2563eb]',
-    card: 'border-[#bfdbfe] bg-[#eff6ff]',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-transparent bg-[var(--nav-active-bg)]',
     cta: 'Review task',
   },
   mention: {
     icon: AtSign,
     label: 'MENTION',
-    labelColor: 'text-[#6d28d9]',
-    iconColor: 'text-[#7c3aed]',
-    card: 'border-[#ddd6fe] bg-[#faf5ff]',
+    labelColor: 'text-secondary',
+    iconColor: 'text-secondary',
+    card: 'border-transparent bg-surface-raised',
     cta: 'Review comment',
   },
   mail: {
     icon: Mail,
     label: 'MESSAGE',
-    labelColor: 'text-[#0f766e]',
-    iconColor: 'text-[#0d9488]',
-    card: 'border-[#99f6e4] bg-[#f0fdfa]',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-transparent bg-[var(--nav-active-bg)]',
     cta: 'Open message',
   },
   default: {
     icon: Bell,
     label: 'UPDATE',
-    labelColor: 'text-[#475569]',
-    iconColor: 'text-[#64748b]',
-    card: 'border-[#e2e8f0] bg-white',
+    labelColor: 'text-secondary',
+    iconColor: 'text-secondary',
+    card: 'border-transparent bg-surface-raised',
     cta: 'Review',
   },
 }
@@ -138,7 +138,7 @@ function AlertRow({ item, onDismiss, onReview }) {
         type="button"
         onClick={onDismiss}
         aria-label="Dismiss alert"
-        className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-lg text-[#94a3b8] transition hover:bg-white hover:text-[#0f172a]"
+        className="absolute right-3 top-3 flex h-6 w-6 items-center justify-center rounded-lg text-secondary transition hover:bg-surface hover:text-primary"
       >
         <X className="h-3.5 w-3.5" />
       </button>
@@ -156,30 +156,30 @@ function AlertRow({ item, onDismiss, onReview }) {
             >
               {config.label}
             </span>
-            <span className="text-[13px] font-semibold text-[#0f172a]">
+            <span className="text-[13px] font-semibold text-primary">
               {meta.taskTitle || item.body || item.title}
             </span>
           </div>
 
-          <p className="mt-1 text-[12px] leading-relaxed text-[#475569]">
+          <p className="mt-1 text-[12px] leading-relaxed text-secondary">
             {item.type === 'mention' && meta.commentBody
               ? `“${meta.commentBody}”`
               : item.title}
           </p>
 
           {context && (
-            <p className="mt-1 text-[11px] text-[#64748b]">{context}</p>
+            <p className="mt-1 text-[11px] text-secondary">{context}</p>
           )}
 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
-            <p className="text-[11px] text-[#94a3b8]">
+            <p className="text-[11px] text-secondary">
               {actor ? `From ${actor}` : 'Workspace'}
               {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ''}
             </p>
             <button
               type="button"
               onClick={onReview}
-              className="inline-flex h-8 items-center rounded-lg bg-[#2563eb] px-3.5 text-[12px] font-semibold text-white transition hover:bg-[#1d4ed8]"
+              className="inline-flex h-8 items-center rounded-lg bg-[#3ecf8e] px-3.5 text-[12px] font-semibold text-white transition hover:bg-[#24b47e]"
             >
               {config.cta}
             </button>
@@ -321,7 +321,7 @@ export function LiveNotificationCenter() {
       {alerts.length > 0 && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <motion.div
-            className="absolute inset-0 bg-[#0b1b2b]/45 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-[#1c1c1c]/45 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -335,17 +335,17 @@ export function LiveNotificationCenter() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 12, scale: 0.98 }}
             transition={{ type: 'spring', stiffness: 280, damping: 26 }}
-            className="relative flex max-h-[82vh] w-full max-w-[520px] flex-col overflow-hidden rounded-[20px] bg-white shadow-[0_30px_90px_rgba(9,20,38,0.35)]"
+            className="relative flex max-h-[82vh] w-full max-w-[520px] flex-col overflow-hidden rounded-[20px] bg-surface shadow-[0_30px_90px_rgba(9,20,38,0.35)]"
           >
-            <div className="flex items-start gap-3 border-b border-[#eef2f7] px-5 py-4">
-              <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#eff6ff]">
-                <AlertCircle className="h-4 w-4 text-[#2563eb]" />
+            <div className="flex items-start gap-3 border-b border-border px-5 py-4">
+              <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#ecfdf5]">
+                <AlertCircle className="h-4 w-4 text-[#3ecf8e]" />
               </span>
               <div className="min-w-0 flex-1">
-                <h2 className="text-[15px] font-semibold text-[#0f172a]">
+                <h2 className="text-[15px] font-semibold text-primary">
                   New work assigned to you
                 </h2>
-                <p className="mt-0.5 text-[12px] text-[#64748b]">
+                <p className="mt-0.5 text-[12px] text-secondary">
                   Please review and acknowledge these updates to proceed
                 </p>
               </div>
@@ -353,7 +353,7 @@ export function LiveNotificationCenter() {
                 type="button"
                 onClick={closeAll}
                 aria-label="Close"
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-[#94a3b8] transition hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-secondary transition hover:bg-surface-raised hover:text-primary"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -372,14 +372,14 @@ export function LiveNotificationCenter() {
               </AnimatePresence>
             </div>
 
-            <div className="flex items-center justify-between gap-3 border-t border-[#eef2f7] px-5 py-3.5">
-              <p className="text-[12px] text-[#64748b]">
+            <div className="flex items-center justify-between gap-3 border-t border-border px-5 py-3.5">
+              <p className="text-[12px] text-secondary">
                 {alerts.length} alert{alerts.length > 1 ? 's' : ''} remaining
               </p>
               <button
                 type="button"
                 onClick={closeAll}
-                className="inline-flex h-9 items-center rounded-xl bg-[#0f172a] px-4 text-[13px] font-semibold text-white transition hover:bg-[#1e293b]"
+                className="inline-flex h-9 items-center rounded-xl bg-[#171717] px-4 text-[13px] font-semibold text-white transition hover:bg-[#1e293b]"
               >
                 Close popup
               </button>

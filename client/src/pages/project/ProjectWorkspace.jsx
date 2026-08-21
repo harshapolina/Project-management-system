@@ -122,28 +122,28 @@ export function ProjectWorkspace() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#F0F4F8] print:h-auto print:overflow-visible">
+    <div className="flex h-full min-h-0 flex-col bg-surface-raised print:h-auto print:overflow-visible">
       {/* One dense project chrome — no stacked empty bars */}
-      <header className="shrink-0 border-b border-[#dce4ee] bg-white print:hidden">
+      <header className="shrink-0 border-b border-border bg-surface print:hidden">
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-4">
           <div className="min-w-0 flex-1">
-            <div className="flex items-center gap-1 text-[11px] text-[#94a3b8]">
-              <Link to="/projects" className="hover:text-[#2563eb]">
+            <div className="flex items-center gap-1 text-[11px] text-secondary">
+              <Link to="/projects" className="hover:text-[#3ecf8e]">
                 All projects
               </Link>
               <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
-              <span className="truncate text-[#64748b]">{project.name}</span>
+              <span className="truncate text-secondary">{project.name}</span>
             </div>
             <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <h1 className="truncate text-[16px] font-semibold tracking-tight text-[#0f172a]">
+              <h1 className="truncate text-[16px] font-semibold tracking-tight text-primary">
                 {project.name}
               </h1>
-              <p className="truncate text-[11px] text-[#64748b]">
+              <p className="truncate text-[11px] text-secondary">
                 {project.clientName}
                 {project.clientPhone ? ` · ${project.clientPhone}` : ''}
                 {project.location ? ` · ${project.location}` : ''}
                 {' · '}
-                <span className="font-medium text-[#334155]">
+                <span className="font-medium text-primary">
                   {stageLabel(project.currentStage)}
                 </span>
               </p>
@@ -156,7 +156,7 @@ export function ProjectWorkspace() {
                 type="button"
                 title="Delete project"
                 onClick={() => setConfirmDelete(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-[#94a3b8] hover:bg-red-50 hover:text-red-600"
+                className="flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-red-50 hover:text-red-600"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -171,7 +171,7 @@ export function ProjectWorkspace() {
                   toast('Could not copy link', { type: 'error' })
                 }
               }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-2.5 text-[12px] font-semibold text-[#475569] hover:bg-white"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2.5 text-[12px] font-semibold text-secondary hover:bg-surface"
             >
               <Share2 className="h-3.5 w-3.5" />
               Share
@@ -218,8 +218,8 @@ export function ProjectWorkspace() {
                 cn(
                   'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition',
                   isActive
-                    ? 'bg-[#2563eb] text-white shadow-sm'
-                    : 'text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]',
+                    ? 'bg-[#3ecf8e] text-white shadow-sm'
+                    : 'text-secondary hover:bg-surface-raised hover:text-primary',
                 )
               }
             >

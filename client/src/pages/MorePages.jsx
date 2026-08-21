@@ -25,6 +25,8 @@ import {
   Sparkles,
   TrendingUp,
   Users,
+  Moon,
+  Sun,
 } from 'lucide-react'
 import { api, getTenantSlug, useAuthStore } from '../lib/api'
 import { formatInr, stageLabel } from '../lib/format'
@@ -38,6 +40,7 @@ import {
   StatusChip,
   toast,
 } from '../components/ui'
+import { useUiStore } from '../store/uiStore'
 
 export function ReportsPage() {
   const { data, isLoading, isError, refetch, isFetching } = useQuery({
@@ -169,13 +172,16 @@ export function ReportsPage() {
   if (isLoading) {
     return (
       <div className="space-y-5">
-        <div className="h-20 animate-pulse rounded-2xl bg-white" />
+        <div className="h-20 animate-pulse rounded-[22px] bg-[var(--panel-dark)]" />
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="h-32 animate-pulse rounded-2xl bg-white" />
+            <div
+              key={i}
+              className="h-32 animate-pulse rounded-[18px] bg-[var(--panel-dark)]"
+            />
           ))}
         </div>
-        <div className="h-72 animate-pulse rounded-2xl bg-white" />
+        <div className="h-72 animate-pulse rounded-[20px] bg-[var(--panel-dark)]" />
       </div>
     )
   }
@@ -183,9 +189,9 @@ export function ReportsPage() {
   if (isError) {
     return (
       <div className="flex min-h-[420px] items-center justify-center">
-        <div className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+        <div className="rounded-2xl border border-red-200 bg-surface p-8 text-center shadow-sm">
           <AlertTriangle className="mx-auto h-7 w-7 text-red-500" />
-          <h2 className="mt-3 text-lg font-semibold text-[#0f172a]">
+          <h2 className="mt-3 text-lg font-semibold text-primary">
             Reports could not be loaded
           </h2>
           <Button className="mt-4" onClick={() => refetch()}>
@@ -198,16 +204,16 @@ export function ReportsPage() {
 
   return (
     <div className="mx-auto w-full max-w-[1500px] space-y-5 pb-8">
-      <header className="flex flex-wrap items-end justify-between gap-4">
+      <header className="on-dark flex flex-wrap items-end justify-between gap-4 rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] px-5 py-6 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.4)] sm:px-7">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
-            <BarChart3 className="h-3.5 w-3.5 text-[#2563eb]" />
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--create-fg)]">
+            <BarChart3 className="h-3 w-3" />
             Company intelligence
           </div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-[#0f172a]">
+          <h1 className="mt-3 text-[28px] font-semibold tracking-[-0.03em] text-white">
             Reports &amp; Analytics
           </h1>
-          <p className="mt-1 text-[13px] text-[#64748b]">
+          <p className="mt-1.5 text-[13px] text-white/55">
             Live portfolio, task, pipeline, and people performance in one view.
           </p>
         </div>
@@ -216,7 +222,7 @@ export function ReportsPage() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-[#dce4ee] bg-white px-3 text-[12px] font-semibold text-[#475569] shadow-sm transition hover:bg-[#f8fafc] disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl border border-white/[0.1] bg-white/[0.06] px-3 text-[12px] font-semibold text-white/70 transition hover:bg-white/[0.1] hover:text-white disabled:opacity-50"
           >
             <RefreshCw className={`h-3.5 w-3.5 ${isFetching ? 'animate-spin' : ''}`} />
             Refresh
@@ -224,7 +230,7 @@ export function ReportsPage() {
           <button
             type="button"
             onClick={exportPeople}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[#2563eb] px-3 text-[12px] font-semibold text-white shadow-sm transition hover:bg-[#1d4ed8]"
+            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-[var(--accent)] px-3 text-[12px] font-semibold text-[var(--create-fg)] shadow-sm transition hover:bg-[var(--accent-hover)]"
           >
             <Download className="h-3.5 w-3.5" />
             Export team
@@ -265,16 +271,16 @@ export function ReportsPage() {
         />
       </div>
 
-      <section className="rounded-2xl border border-[#dce7f5] bg-gradient-to-r from-[#f7faff] to-white p-4 shadow-sm">
+      <section className="on-dark rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-4 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
         <div className="flex items-center gap-2">
-          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#eaf2ff] text-[#2563eb]">
+          <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent)]/15 text-[var(--accent)]">
             <Sparkles className="h-4 w-4" />
           </span>
           <div>
-            <h3 className="text-[13px] font-semibold text-[#0f172a]">
+            <h3 className="text-[13px] font-semibold text-white">
               Insights assistant
             </h3>
-            <p className="text-[11px] text-[#94a3b8]">
+            <p className="text-[11px] text-white/45">
               Ask about risk, workload, pipeline, or budgets
             </p>
           </div>
@@ -296,7 +302,7 @@ export function ReportsPage() {
           </Button>
         </form>
         {answer && (
-          <p className="mt-3 rounded-xl border border-[#dce7f5] bg-white px-4 py-3 text-[13px] leading-relaxed text-[#475569]">
+          <p className="mt-3 rounded-xl border border-white/[0.08] bg-white/[0.04] px-4 py-3 text-[13px] leading-relaxed text-white/70">
             {answer}
           </p>
         )}
@@ -310,19 +316,19 @@ export function ReportsPage() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={taskChart} margin={{ top: 8, right: 8, left: -18 }}>
-                <CartesianGrid stroke="#e6ecf4" vertical={false} />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} allowDecimals={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.35)" fontSize={11} />
+                <YAxis stroke="rgba(255,255,255,0.35)" fontSize={11} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    background: '#ffffff',
-                    border: '1px solid #dce4ee',
+                    background: '#1c1c1c',
+                    border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 12,
-                    color: '#0f172a',
-                    boxShadow: '0 6px 24px rgba(11,27,43,0.1)',
+                    color: '#fafafa',
+                    boxShadow: '0 6px 24px rgba(0,0,0,0.35)',
                   }}
                 />
-                <Bar dataKey="count" fill="#2563eb" radius={[7, 7, 0, 0]} />
+                <Bar dataKey="count" fill="#3ecf8e" radius={[7, 7, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -335,19 +341,19 @@ export function ReportsPage() {
           <div className="h-64">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={stageChart} margin={{ top: 8, right: 8, left: -18 }}>
-                <CartesianGrid stroke="#e6ecf4" vertical={false} />
-                <XAxis dataKey="name" stroke="#94a3b8" fontSize={11} />
-                <YAxis stroke="#94a3b8" fontSize={11} allowDecimals={false} />
+                <CartesianGrid stroke="rgba(255,255,255,0.06)" vertical={false} />
+                <XAxis dataKey="name" stroke="rgba(255,255,255,0.35)" fontSize={11} />
+                <YAxis stroke="rgba(255,255,255,0.35)" fontSize={11} allowDecimals={false} />
                 <Tooltip
                   contentStyle={{
-                    background: '#ffffff',
-                    border: '1px solid #dce4ee',
+                    background: '#1c1c1c',
+                    border: '1px solid rgba(255,255,255,0.08)',
                     borderRadius: 12,
-                    color: '#0f172a',
-                    boxShadow: '0 8px 24px rgba(15,23,42,0.1)',
+                    color: '#fafafa',
+                    boxShadow: '0 8px 24px rgba(0,0,0,0.35)',
                   }}
                 />
-                <Bar dataKey="count" fill="#7c3aed" radius={[7, 7, 0, 0]} />
+                <Bar dataKey="count" fill="#34d399" radius={[7, 7, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -360,18 +366,18 @@ export function ReportsPage() {
         action={
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-white/35" />
               <input
                 value={peopleSearch}
                 onChange={(e) => setPeopleSearch(e.target.value)}
                 placeholder="Search people"
-                className="h-8 w-44 rounded-lg border border-[#dce4ee] bg-[#f8fafc] pl-8 pr-2 text-[11.5px] outline-none focus:border-[#93b4ec] focus:bg-white"
+                className="h-8 w-44 rounded-lg border border-white/[0.1] bg-white/[0.06] pl-8 pr-2 text-[11.5px] text-white outline-none placeholder:text-white/35 focus:border-[var(--accent)]/40"
               />
             </div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="h-8 rounded-lg border border-[#dce4ee] bg-[#f8fafc] px-2 text-[11.5px] font-medium text-[#475569] outline-none focus:border-[#93b4ec]"
+              className="h-8 rounded-lg border border-white/[0.1] bg-white/[0.06] px-2 text-[11.5px] font-medium text-white/70 outline-none focus:border-[var(--accent)]/40"
             >
               <option value="all">All roles</option>
               {roles.map((role) => (
@@ -387,7 +393,7 @@ export function ReportsPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[980px] border-collapse">
             <thead>
-              <tr className="border-y border-[#e8eef5] bg-[#f8fafc] text-left text-[10px] font-bold uppercase tracking-[0.08em] text-[#94a3b8]">
+              <tr className="border-y border-white/[0.06] bg-white/[0.03] text-left text-[10px] font-bold uppercase tracking-[0.08em] text-white/40">
                 <th className="px-5 py-2.5">Team member</th>
                 <th className="px-3 py-2.5">Status</th>
                 <th className="px-3 py-2.5 text-center">Assigned</th>
@@ -399,9 +405,12 @@ export function ReportsPage() {
                 <th className="px-5 py-2.5 text-right">Tracked</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-[#edf1f6]">
+            <tbody className="divide-y divide-white/[0.06]">
               {people.map((person) => (
-                <tr key={person.user._id} className="transition hover:bg-[#fbfdff]">
+                <tr
+                  key={person.user._id}
+                  className="transition hover:bg-white/[0.03]"
+                >
                   <td className="px-5 py-3">
                     <div className="flex items-center gap-3">
                       <Avatar
@@ -410,10 +419,10 @@ export function ReportsPage() {
                         size="sm"
                       />
                       <div className="min-w-0">
-                        <p className="truncate text-[12.5px] font-semibold text-[#0f172a]">
+                        <p className="truncate text-[12.5px] font-semibold text-white">
                           {person.user.name}
                         </p>
-                        <p className="truncate text-[10.5px] text-[#94a3b8]">
+                        <p className="truncate text-[10.5px] text-white/45">
                           {person.user.title || roleLabel(person.user.role)}
                         </p>
                       </div>
@@ -423,15 +432,15 @@ export function ReportsPage() {
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full px-2 py-1 text-[10.5px] font-semibold ${
                         person.user.isActive === false
-                          ? 'bg-slate-100 text-slate-500'
-                          : 'bg-emerald-50 text-emerald-700'
+                          ? 'bg-white/[0.06] text-white/45'
+                          : 'bg-[var(--accent)]/15 text-[var(--accent)]'
                       }`}
                     >
                       <span
                         className={`h-1.5 w-1.5 rounded-full ${
                           person.user.isActive === false
-                            ? 'bg-slate-400'
-                            : 'bg-emerald-500'
+                            ? 'bg-white/40'
+                            : 'bg-[var(--accent)]'
                         }`}
                       />
                       {person.user.isActive === false ? 'Inactive' : 'Active'}
@@ -447,24 +456,24 @@ export function ReportsPage() {
                   />
                   <td className="px-3 py-3">
                     <div className="flex items-center gap-2">
-                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                      <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
                         <div
                           className={`h-full rounded-full ${
                             person.completionRate >= 75
-                              ? 'bg-emerald-500'
+                              ? 'bg-emerald-400'
                               : person.completionRate >= 40
-                                ? 'bg-[#2563eb]'
-                                : 'bg-amber-500'
+                                ? 'bg-[var(--accent)]'
+                                : 'bg-amber-400'
                           }`}
                           style={{ width: `${person.completionRate}%` }}
                         />
                       </div>
-                      <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-[#475569]">
+                      <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-white/50">
                         {person.completionRate}%
                       </span>
                     </div>
                   </td>
-                  <td className="px-5 py-3 text-right text-[11.5px] font-semibold tabular-nums text-[#475569]">
+                  <td className="px-5 py-3 text-right text-[11.5px] font-semibold tabular-nums text-white/50">
                     {person.trackedHours}h
                   </td>
                 </tr>
@@ -472,7 +481,7 @@ export function ReportsPage() {
             </tbody>
           </table>
           {!people.length && (
-            <div className="px-5 py-12 text-center text-[12px] text-[#94a3b8]">
+            <div className="px-5 py-12 text-center text-[12px] text-white/45">
               No users match these filters.
             </div>
           )}
@@ -484,42 +493,42 @@ export function ReportsPage() {
         subtitle="Projects requiring attention are shown first"
         noPadding
       >
-        <div className="grid gap-px bg-[#edf1f6] sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-px bg-white/[0.06] sm:grid-cols-2 xl:grid-cols-3">
           {(d?.projectHealth || []).map((project) => (
-            <div key={project._id} className="bg-white p-4">
+            <div key={project._id} className="bg-[var(--panel-dark)] p-4">
               <div className="flex items-start justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="truncate text-[13px] font-semibold text-[#0f172a]">
+                  <p className="truncate text-[13px] font-semibold text-white">
                     {project.name}
                   </p>
-                  <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">
+                  <p className="mt-0.5 text-[10.5px] text-white/45">
                     {project.done}/{project.totalTasks} tasks completed
                   </p>
                 </div>
                 {project.overdue > 0 ? (
-                  <span className="rounded-full bg-red-50 px-2 py-1 text-[10px] font-bold text-red-600">
+                  <span className="rounded-full bg-red-400/15 px-2 py-1 text-[10px] font-bold text-red-300">
                     {project.overdue} overdue
                   </span>
                 ) : (
-                  <span className="rounded-full bg-emerald-50 px-2 py-1 text-[10px] font-bold text-emerald-700">
+                  <span className="rounded-full bg-[var(--accent)]/15 px-2 py-1 text-[10px] font-bold text-[var(--accent)]">
                     On track
                   </span>
                 )}
               </div>
               <div className="mt-4 flex items-center gap-2">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#e8eef5]">
+                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/[0.08]">
                   <div
                     className={`h-full rounded-full ${
-                      project.isDelayed ? 'bg-red-500' : 'bg-[#2563eb]'
+                      project.isDelayed ? 'bg-red-400' : 'bg-[var(--accent)]'
                     }`}
                     style={{ width: `${project.progress}%` }}
                   />
                 </div>
-                <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-[#475569]">
+                <span className="w-9 text-right text-[11px] font-semibold tabular-nums text-white/50">
                   {project.progress}%
                 </span>
               </div>
-              <div className="mt-3 flex items-center justify-between text-[10.5px] text-[#94a3b8]">
+              <div className="mt-3 flex items-center justify-between text-[10.5px] text-white/45">
                 <span>Budget {formatInr(project.budget)}</span>
                 <span>Spent {formatInr(project.spent)}</span>
               </div>
@@ -554,18 +563,18 @@ export function ReportsPage() {
 
 function ReportKpi({ icon: Icon, label, value, note, tone = 'blue', progress }) {
   const tones = {
-    blue: 'bg-blue-50 text-blue-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
-    violet: 'bg-violet-50 text-violet-600',
-    amber: 'bg-amber-50 text-amber-600',
-    rose: 'bg-rose-50 text-rose-600',
+    blue: 'bg-[var(--accent)]/15 text-[var(--accent)]',
+    emerald: 'bg-emerald-400/15 text-emerald-300',
+    violet: 'bg-violet-400/15 text-violet-300',
+    amber: 'bg-amber-400/15 text-amber-300',
+    rose: 'bg-rose-400/15 text-rose-300',
   }
   return (
-    <section className="rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+    <section className="on-dark rounded-[18px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-4 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <p className="text-[11px] font-medium text-[#64748b]">{label}</p>
-          <p className="mt-2 text-[24px] font-semibold leading-none tabular-nums tracking-[-0.03em] text-[#0f172a]">
+          <p className="text-[11px] font-medium text-white/45">{label}</p>
+          <p className="mt-2 text-[24px] font-semibold leading-none tabular-nums tracking-[-0.03em] text-white">
             {value}
           </p>
         </div>
@@ -573,13 +582,11 @@ function ReportKpi({ icon: Icon, label, value, note, tone = 'blue', progress }) 
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-3 truncate text-[10.5px] text-[#94a3b8]">{note}</p>
+      <p className="mt-3 truncate text-[10.5px] text-white/45">{note}</p>
       {progress !== undefined && (
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#edf1f6]">
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/[0.08]">
           <div
-            className={`h-full rounded-full ${
-              tone === 'emerald' ? 'bg-emerald-500' : 'bg-[#2563eb]'
-            }`}
+            className="h-full rounded-full bg-[var(--accent)]"
             style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
           />
         </div>
@@ -590,29 +597,33 @@ function ReportKpi({ icon: Icon, label, value, note, tone = 'blue', progress }) 
 
 function ReportPanel({ title, subtitle, action, children, noPadding = false }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-      <div className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
+    <section className="on-dark overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
+      <div className="flex flex-wrap items-center justify-between gap-3 border-b border-white/[0.06] bg-[var(--panel-dark-raised)] px-5 py-4">
         <div>
-          <h2 className="text-[13.5px] font-semibold text-[#0f172a]">{title}</h2>
-          {subtitle && <p className="mt-0.5 text-[10.5px] text-[#94a3b8]">{subtitle}</p>}
+          <h2 className="text-[13.5px] font-semibold text-white">{title}</h2>
+          {subtitle && (
+            <p className="mt-0.5 text-[10.5px] text-white/45">{subtitle}</p>
+          )}
         </div>
         {action}
       </div>
-      <div className={noPadding ? '' : 'px-4 pb-4'}>{children}</div>
+      <div className={noPadding ? '' : 'px-4 pb-4 pt-1'}>{children}</div>
     </section>
   )
 }
 
 function MetricCell({ value, tone = 'default' }) {
   const tones = {
-    default: 'text-[#475569]',
-    success: 'text-emerald-600',
-    violet: 'text-violet-600',
-    danger: 'text-red-600',
-    muted: 'text-[#94a3b8]',
+    default: 'text-white/55',
+    success: 'text-emerald-300',
+    violet: 'text-violet-300',
+    danger: 'text-red-400',
+    muted: 'text-white/40',
   }
   return (
-    <td className={`px-3 py-3 text-center text-[12px] font-semibold tabular-nums ${tones[tone]}`}>
+    <td
+      className={`px-3 py-3 text-center text-[12px] font-semibold tabular-nums ${tones[tone]}`}
+    >
       {value}
     </td>
   )
@@ -620,18 +631,22 @@ function MetricCell({ value, tone = 'default' }) {
 
 function MiniStat({ icon: Icon, label, value, tone }) {
   const tones = {
-    red: 'bg-red-50 text-red-600',
-    amber: 'bg-amber-50 text-amber-600',
-    emerald: 'bg-emerald-50 text-emerald-600',
+    red: 'bg-red-400/15 text-red-300',
+    amber: 'bg-amber-400/15 text-amber-300',
+    emerald: 'bg-emerald-400/15 text-emerald-300',
   }
   return (
-    <div className="flex items-center gap-3 rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-sm">
-      <span className={`flex h-9 w-9 items-center justify-center rounded-xl ${tones[tone]}`}>
+    <div className="on-dark flex items-center gap-3 rounded-[18px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-4 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
+      <span
+        className={`flex h-9 w-9 items-center justify-center rounded-xl ${tones[tone]}`}
+      >
         <Icon className="h-4 w-4" />
       </span>
       <div>
-        <p className="text-[10.5px] text-[#94a3b8]">{label}</p>
-        <p className="text-[16px] font-semibold tabular-nums text-[#0f172a]">{value}</p>
+        <p className="text-[10.5px] text-white/45">{label}</p>
+        <p className="text-[16px] font-semibold tabular-nums text-white">
+          {value}
+        </p>
       </div>
     </div>
   )
@@ -795,6 +810,8 @@ export function SettingsPage() {
         )}
       </div>
 
+      <AppearanceSettings />
+
       {user?.mustChangePassword && (
         <Card className="border border-status-delayed/40 space-y-3">
           <p className="font-semibold text-sm">Set a new password</p>
@@ -884,6 +901,38 @@ export function SettingsPage() {
 
       <CustomFieldsSettings />
     </div>
+  )
+}
+
+function AppearanceSettings() {
+  const theme = useUiStore((s) => s.theme)
+  const setTheme = useUiStore((s) => s.setTheme)
+
+  return (
+    <Card className="space-y-3">
+      <p className="text-sm font-semibold">Appearance</p>
+      <p className="text-xs text-secondary">
+        Switch between light and dark. Your choice is saved on this device.
+      </p>
+      <div className="flex gap-2">
+        <Button
+          variant={theme === 'light' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setTheme('light')}
+        >
+          <Sun className="mr-1.5 h-3.5 w-3.5" />
+          Light
+        </Button>
+        <Button
+          variant={theme === 'dark' ? 'primary' : 'secondary'}
+          size="sm"
+          onClick={() => setTheme('dark')}
+        >
+          <Moon className="mr-1.5 h-3.5 w-3.5" />
+          Dark
+        </Button>
+      </div>
+    </Card>
   )
 }
 

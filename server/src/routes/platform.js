@@ -10,6 +10,7 @@ import {
   assertSeatAvailable,
 } from '../middleware/tenant.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
+import { upload } from '../middleware/upload.js'
 import {
   normalizeTenantFeatures,
   sanitizeTenantFeatures,
@@ -253,6 +254,46 @@ router.patch(
 
     await tenant.save()
     res.json({ success: true, tenant: tenantPublicJSON(tenant) })
+  }),
+)
+
+router.post(
+  '/tenants/:id/logo',
+  upload.single('file'),
+  asyncHandler(async (req, res) => {
+    if (!req.file) throw new AppError('Image file is required', 400)
+    if (!String(req.file.mimetype || '').startsWith('image/')) {
+      throw new AppError('Only image files are allowed', 400)
+    }
+
+    const tenant = await Tenant.findById(req.params.id)
+    if (!tenant) throw new AppError('Tenant not found', 404)
+
+    tenant.logoUrl = `/uploads/${req.file.filename}`
+    await tenant.save()
+
+    res.json({
+      success: true,
+      logoUrl: tenant.logoUrl,
+      tenant: await tenantWithStats(tenant),
+    })
+  }),
+)
+
+router.delete(
+  '/tenants/:id/logo',
+  asyncHandler(async (req, res) => {
+    const tenant = await Tenant.findById(req.params.id)
+    if (!tenant) throw new AppError('Tenant not found', 404)
+
+    tenant.logoUrl = ''
+    await tenant.save()
+
+    res.json({
+      success: true,
+      logoUrl: '',
+      tenant: await tenantWithStats(tenant),
+    })
   }),
 )
 

@@ -416,21 +416,21 @@ export function TaskDetailPanel({
   const feed = mapActivityToFeed(activity, comments, task)
 
   return (
-    <div className="fixed inset-0 z-[80] flex items-stretch justify-center bg-[#0B1B2B]/45 backdrop-blur-[2px]">
-      <div className="relative m-0 flex h-full w-full max-w-[1180px] flex-col overflow-hidden border border-[#d6e4f5] bg-white shadow-2xl sm:m-3 sm:h-[calc(100%-1.5rem)] sm:rounded-2xl">
+    <div className="fixed inset-0 z-[80] flex items-stretch justify-center bg-[#1c1c1c]/45 backdrop-blur-[2px]">
+      <div className="relative m-0 flex h-full w-full max-w-[1180px] flex-col overflow-hidden border border-[#d6e4f5] bg-surface shadow-2xl sm:m-3 sm:h-[calc(100%-1.5rem)] sm:rounded-2xl">
         {/* Breadcrumb */}
-        <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[#e8eef4] bg-[#f8fafc] px-4 text-[12px] text-[#64748b]">
-          <span className="truncate font-semibold text-[#0f172a]">{crumb}</span>
-          <span className="text-[#cbd5e1]">/</span>
+        <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-surface-raised px-4 text-[12px] text-secondary">
+          <span className="truncate font-semibold text-primary">{crumb}</span>
+          <span className="text-[#c7c7c7]">/</span>
           <span>Task</span>
           {saving && (
-            <span className="text-[11px] text-[#94a3b8]">Saving…</span>
+            <span className="text-[11px] text-secondary">Saving…</span>
           )}
           <button
             type="button"
             onClick={onClose}
             title="Close"
-            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-[#64748b] hover:bg-[#e8eef4] hover:text-[#0f172a]"
+            className="ml-auto flex h-7 w-7 items-center justify-center rounded-lg text-secondary hover:bg-[#e8eef4] hover:text-primary"
           >
             <X className="h-4 w-4" />
           </button>
@@ -449,7 +449,7 @@ export function TaskDetailPanel({
                 canManageTask && !isCreate && form.title.trim() && save()
               }
               placeholder="Task name"
-              className="mb-5 w-full bg-transparent text-[24px] font-semibold tracking-tight text-[#0f172a] outline-none placeholder:text-[#cbd5e1]"
+              className="mb-5 w-full bg-transparent text-[24px] font-semibold tracking-tight text-primary outline-none placeholder:text-[#c7c7c7]"
             />
 
             {/* Property grid */}
@@ -471,7 +471,7 @@ export function TaskDetailPanel({
                         setForm({ ...form, status: 'done' })
                         if (!isCreate) save({ status: 'done' })
                       }}
-                      className="flex h-6 w-6 items-center justify-center rounded text-[#94a3b8] hover:bg-[#eff6ff] hover:text-[#2563eb]"
+                      className="flex h-6 w-6 items-center justify-center rounded text-secondary hover:bg-[#ecfdf5] hover:text-[#3ecf8e]"
                     >
                       <Check className="h-3.5 w-3.5" />
                     </button>
@@ -491,7 +491,7 @@ export function TaskDetailPanel({
                     }}
                   />
                 ) : (
-                  <span className="text-[13px] text-[#334155]">
+                  <span className="text-[13px] text-primary">
                     {task?.assignee?.name || 'Assigned to you'}
                   </span>
                 )}
@@ -500,7 +500,7 @@ export function TaskDetailPanel({
               <AttrRow label="Dates" icon={Calendar}>
                 <div className="relative flex min-w-0 items-center gap-1.5 text-[13px]">
                   {!form.startDate && !form.dueDate ? (
-                    <span className="pointer-events-none absolute left-0 text-[#94a3b8]">
+                    <span className="pointer-events-none absolute left-0 text-secondary">
                       Start → Due
                     </span>
                   ) : null}
@@ -513,11 +513,11 @@ export function TaskDetailPanel({
                     }
                     onBlur={() => !isCreate && save()}
                     className={cn(
-                      'w-[118px] rounded bg-transparent py-1 text-[13px] text-[#0f172a] outline-none',
+                      'w-[118px] rounded bg-transparent py-1 text-[13px] text-primary outline-none',
                       !form.startDate && 'text-transparent',
                     )}
                   />
-                  <span className="text-[#94a3b8]">→</span>
+                  <span className="text-secondary">→</span>
                   <input
                     type="date"
                     disabled={!canManageTask}
@@ -527,7 +527,7 @@ export function TaskDetailPanel({
                     }
                     onBlur={() => !isCreate && save()}
                     className={cn(
-                      'w-[118px] rounded bg-transparent py-1 text-[13px] text-[#0f172a] outline-none',
+                      'w-[118px] rounded bg-transparent py-1 text-[13px] text-primary outline-none',
                       !form.dueDate && 'text-transparent',
                     )}
                   />
@@ -545,7 +545,7 @@ export function TaskDetailPanel({
                     hideIcon
                   />
                 ) : (
-                  <span className="text-[13px] capitalize text-[#334155]">
+                  <span className="text-[13px] capitalize text-primary">
                     {form.priority}
                   </span>
                 )}
@@ -568,7 +568,7 @@ export function TaskDetailPanel({
                     }))
                     if (!isCreate) save({ timeEstimate: mins })
                   }}
-                  className="w-full max-w-[140px] bg-transparent py-1 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  className="w-full max-w-[140px] bg-transparent py-1 text-[13px] text-primary outline-none placeholder:text-secondary"
                 />
               </AttrRow>
 
@@ -577,7 +577,7 @@ export function TaskDetailPanel({
                   type="button"
                   disabled={timerBusy || isCreate}
                   onClick={toggleTrackTime}
-                  className="flex items-center gap-2 text-[13px] text-[#334155] disabled:opacity-50"
+                  className="flex items-center gap-2 text-[13px] text-primary disabled:opacity-50"
                   title={
                     timeTrackingStartedAt ? 'Stop timer' : 'Start timer'
                   }
@@ -587,14 +587,14 @@ export function TaskDetailPanel({
                       <Square className="h-2.5 w-2.5 fill-current" />
                     </span>
                   ) : (
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#dbeafe] text-[#2563eb]">
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-[#d1fae5] text-[#3ecf8e]">
                       <Play className="h-2.5 w-2.5 fill-current" />
                     </span>
                   )}
                   <span
                     className={cn(
                       'tabular-nums',
-                      timeTrackingStartedAt && 'font-semibold text-[#0f172a]',
+                      timeTrackingStartedAt && 'font-semibold text-primary',
                     )}
                   >
                     {formatTrackedSeconds(
@@ -616,7 +616,7 @@ export function TaskDetailPanel({
                   placeholder="Empty"
                   onChange={(e) => setForm({ ...form, tags: e.target.value })}
                   onBlur={() => !isCreate && save()}
-                  className="min-w-0 flex-1 bg-transparent py-1 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+                  className="min-w-0 flex-1 bg-transparent py-1 text-[13px] text-primary outline-none placeholder:text-secondary"
                 />
               </AttrRow>
 
@@ -634,7 +634,7 @@ export function TaskDetailPanel({
                       value={field.type}
                       onChange={(e) => updateFieldType(field, e.target.value)}
                       title="Field data type"
-                      className="h-7 shrink-0 rounded-md border border-[#e2e8f0] bg-[#f8fafc] px-1.5 text-[10px] font-medium uppercase tracking-wide text-[#64748b] outline-none hover:border-[#cbd5e1] hover:text-[#0f172a]"
+                      className="h-7 shrink-0 rounded-md border border-border bg-surface-raised px-1.5 text-[10px] font-medium uppercase tracking-wide text-secondary outline-none hover:border-[#c7c7c7] hover:text-primary"
                     >
                       <option value="text">Text</option>
                       <option value="user">Person</option>
@@ -647,8 +647,8 @@ export function TaskDetailPanel({
             </div>
 
             {/* Description */}
-            <div className="mt-5 border-t border-[#e8eef4] pt-4">
-              <p className="mb-1.5 text-[12px] font-semibold text-[#64748b]">
+            <div className="mt-5 border-t border-border pt-4">
+              <p className="mb-1.5 text-[12px] font-semibold text-secondary">
                 Description
               </p>
               <textarea
@@ -660,19 +660,19 @@ export function TaskDetailPanel({
                 onBlur={() => canManageTask && !isCreate && save()}
                 rows={4}
                 placeholder="Add more detail so anyone can pick this up…"
-                className="w-full resize-none rounded-xl border border-[#e2e8f0] bg-[#f8fafc] px-3 py-2.5 text-[14px] leading-relaxed text-[#334155] outline-none placeholder:text-[#94a3b8] focus:border-[#2563eb] focus:bg-white"
+                className="w-full resize-none rounded-xl border border-border bg-surface-raised px-3 py-2.5 text-[14px] leading-relaxed text-primary outline-none placeholder:text-secondary focus:border-[#3ecf8e] focus:bg-surface"
               />
             </div>
 
             {form.checklist?.length > 0 && (
               <div className="mb-3 mt-4 space-y-1">
-                <p className="mb-1 text-[12px] font-semibold text-[#64748b]">
+                <p className="mb-1 text-[12px] font-semibold text-secondary">
                   Checklist
                 </p>
                 {form.checklist.map((item, idx) => (
                   <label
                     key={item._id || idx}
-                    className="flex items-center gap-2 rounded-md px-1 py-1 text-[13px] text-[#334155] hover:bg-[#f1f5f9]"
+                    className="flex items-center gap-2 rounded-md px-1 py-1 text-[13px] text-primary hover:bg-surface-raised"
                   >
                     <input
                       type="checkbox"
@@ -684,10 +684,10 @@ export function TaskDetailPanel({
                         setForm({ ...form, checklist })
                         if (!isCreate) save({ checklist })
                       }}
-                      className="accent-[#2563eb]"
+                      className="accent-[#3ecf8e]"
                     />
                     <span
-                      className={cn(item.done && 'line-through text-[#94a3b8]')}
+                      className={cn(item.done && 'line-through text-secondary')}
                     >
                       {item.text}
                     </span>
@@ -721,8 +721,8 @@ export function TaskDetailPanel({
             </div>
 
             {addFieldOpen && (
-              <div className="mt-2 space-y-2 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-3">
-                <p className="text-[12px] text-[#64748b]">
+              <div className="mt-2 space-y-2 rounded-xl border border-border bg-surface-raised p-3">
+                <p className="text-[12px] text-secondary">
                   Adds this field to every task in the workspace.
                 </p>
                 <input
@@ -731,14 +731,14 @@ export function TaskDetailPanel({
                     setNewField({ ...newField, name: e.target.value })
                   }
                   placeholder="Field name (e.g. Site engineer)"
-                  className="w-full rounded-lg border border-[#e2e8f0] bg-white px-2.5 py-1.5 text-[13px] text-[#0f172a] outline-none focus:border-[#2563eb]"
+                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-primary outline-none focus:border-[#3ecf8e]"
                 />
                 <select
                   value={newField.type}
                   onChange={(e) =>
                     setNewField({ ...newField, type: e.target.value })
                   }
-                  className="w-full rounded-lg border border-[#e2e8f0] bg-white px-2.5 py-1.5 text-[13px] text-[#0f172a] outline-none focus:border-[#2563eb]"
+                  className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-primary outline-none focus:border-[#3ecf8e]"
                 >
                   <option value="user">Person (company members)</option>
                   <option value="text">Text</option>
@@ -752,21 +752,21 @@ export function TaskDetailPanel({
                       setNewField({ ...newField, options: e.target.value })
                     }
                     placeholder="Options, comma separated"
-                    className="w-full rounded-lg border border-[#e2e8f0] bg-white px-2.5 py-1.5 text-[13px] text-[#0f172a] outline-none focus:border-[#2563eb]"
+                    className="w-full rounded-lg border border-border bg-surface px-2.5 py-1.5 text-[13px] text-primary outline-none focus:border-[#3ecf8e]"
                   />
                 )}
                 <div className="flex gap-2">
                   <button
                     type="button"
                     onClick={createField}
-                    className="rounded-lg bg-[#2563eb] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
+                    className="rounded-lg bg-[#3ecf8e] px-3 py-1.5 text-[12px] font-semibold text-white hover:bg-[#24b47e]"
                   >
                     Create field
                   </button>
                   <button
                     type="button"
                     onClick={() => setAddFieldOpen(false)}
-                    className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-[#64748b] hover:bg-[#e8eef4]"
+                    className="rounded-lg px-3 py-1.5 text-[12px] font-medium text-secondary hover:bg-[#e8eef4]"
                   >
                     Cancel
                   </button>
@@ -780,14 +780,14 @@ export function TaskDetailPanel({
                   type="button"
                   disabled={saving || !form.title.trim()}
                   onClick={() => save()}
-                  className="rounded-lg bg-[#2563eb] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                  className="rounded-lg bg-[#3ecf8e] px-4 py-2 text-[13px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-50"
                 >
                   {saving ? 'Creating…' : 'Create task'}
                 </button>
                 <button
                   type="button"
                   onClick={onClose}
-                  className="rounded-lg px-4 py-2 text-[13px] font-medium text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                  className="rounded-lg px-4 py-2 text-[13px] font-medium text-secondary hover:bg-surface-raised hover:text-primary"
                 >
                   Cancel
                 </button>
@@ -796,21 +796,21 @@ export function TaskDetailPanel({
           </div>
 
           {/* ─── Activity ─── */}
-          <aside className="mt-4 flex w-full flex-col border-t border-[#e8eef4] bg-[#f8fafc] md:mt-0 md:min-h-0 md:w-[360px] md:shrink-0 md:border-l md:border-t-0">
-            <div className="flex h-11 shrink-0 items-center gap-2 border-b border-[#e8eef4] px-4">
-              <span className="text-[13px] font-semibold text-[#0f172a]">
+          <aside className="mt-4 flex w-full flex-col border-t border-border bg-surface-raised md:mt-0 md:min-h-0 md:w-[360px] md:shrink-0 md:border-l md:border-t-0">
+            <div className="flex h-11 shrink-0 items-center gap-2 border-b border-border px-4">
+              <span className="text-[13px] font-semibold text-primary">
                 Activity & comments
               </span>
             </div>
 
             <div className="min-h-[120px] flex-1 px-3 py-2 md:overflow-y-auto">
               {isCreate && (
-                <p className="px-2 py-6 text-center text-[12px] text-[#94a3b8]">
+                <p className="px-2 py-6 text-center text-[12px] text-secondary">
                   Activity appears after the task is created.
                 </p>
               )}
               {!isCreate && feed.length === 0 && (
-                <p className="px-2 py-6 text-center text-[12px] text-[#94a3b8]">
+                <p className="px-2 py-6 text-center text-[12px] text-secondary">
                   No activity yet.
                 </p>
               )}
@@ -823,10 +823,10 @@ export function TaskDetailPanel({
               ))}
             </div>
 
-            <div className="border-t border-[#e8eef4] p-3">
-              <div className="relative rounded-xl border border-[#e2e8f0] bg-white focus-within:border-[#2563eb]">
+            <div className="border-t border-border p-3">
+              <div className="relative rounded-xl border border-border bg-surface focus-within:border-[#3ecf8e]">
                 {mentionOpen && users.length > 0 && (
-                  <div className="absolute bottom-full left-0 right-0 z-20 mb-1 max-h-40 overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white py-1 shadow-xl">
+                  <div className="absolute bottom-full left-0 right-0 z-20 mb-1 max-h-40 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl">
                     {users.slice(0, 8).map((u) => (
                       <button
                         key={u._id}
@@ -844,7 +844,7 @@ export function TaskDetailPanel({
                           )
                           setMentionOpen(false)
                         }}
-                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-[#334155] hover:bg-[#f1f5f9]"
+                        className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-primary hover:bg-surface-raised"
                       >
                         <Avatar src={u.avatar} name={u.name} size="xs" />
                         {u.name}
@@ -862,7 +862,7 @@ export function TaskDetailPanel({
                       ? 'Save the task to comment…'
                       : 'Write a comment…'
                   }
-                  className="w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] disabled:opacity-50"
+                  className="w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] text-primary outline-none placeholder:text-secondary disabled:opacity-50"
                 />
                 <div className="flex items-center gap-1 px-2 pb-2">
                   <button
@@ -871,8 +871,8 @@ export function TaskDetailPanel({
                     title="Mention a teammate"
                     onClick={() => setMentionOpen((v) => !v)}
                     className={cn(
-                      'flex h-7 w-7 items-center justify-center rounded-md text-[#64748b] hover:bg-[#f1f5f9] hover:text-[#0f172a] disabled:opacity-40',
-                      mentionOpen && 'bg-[#eff6ff] text-[#2563eb]',
+                      'flex h-7 w-7 items-center justify-center rounded-md text-secondary hover:bg-surface-raised hover:text-primary disabled:opacity-40',
+                      mentionOpen && 'bg-[#ecfdf5] text-[#3ecf8e]',
                     )}
                   >
                     <AtSign className="h-3.5 w-3.5" />
@@ -881,7 +881,7 @@ export function TaskDetailPanel({
                     type="button"
                     disabled={isCreate || !comment.trim()}
                     onClick={() => postComment.mutate(comment.trim())}
-                    className="ml-auto flex h-7 w-7 items-center justify-center rounded-md bg-[#2563eb] text-white hover:bg-[#1d4ed8] disabled:opacity-40"
+                    className="ml-auto flex h-7 w-7 items-center justify-center rounded-md bg-[#3ecf8e] text-white hover:bg-[#24b47e] disabled:opacity-40"
                   >
                     <Send className="h-3.5 w-3.5" />
                   </button>
@@ -927,39 +927,39 @@ function PersonPicker({ value, users, loading, onChange, label = 'Person' }) {
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
-        className="flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-0.5 text-left hover:bg-[#f1f5f9]"
+        className="flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-0.5 text-left hover:bg-surface-raised"
         aria-label={label}
       >
         {selected ? (
           <>
             <Avatar src={selected.avatar} name={selected.name} size="xs" />
-            <span className="truncate text-[13px] text-[#0f172a]">
+            <span className="truncate text-[13px] text-primary">
               {selected.name}
             </span>
           </>
         ) : (
-          <span className="text-[13px] text-[#94a3b8]">Empty</span>
+          <span className="text-[13px] text-secondary">Empty</span>
         )}
-        <ChevronDown className="ml-auto h-3.5 w-3.5 shrink-0 text-[#94a3b8]" />
+        <ChevronDown className="ml-auto h-3.5 w-3.5 shrink-0 text-secondary" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+4px)] z-50 max-h-56 w-[min(280px,70vw)] overflow-y-auto rounded-lg border border-[#e2e8f0] bg-white py-1 shadow-xl">
+        <div className="absolute left-0 top-[calc(100%+4px)] z-50 max-h-56 w-[min(280px,70vw)] overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl">
           <button
             type="button"
             onClick={() => {
               onChange(null)
               setOpen(false)
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-[#64748b] hover:bg-[#f1f5f9]"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised"
           >
             Empty
           </button>
           {loading && (
-            <p className="px-3 py-2 text-[12px] text-[#94a3b8]">Loading…</p>
+            <p className="px-3 py-2 text-[12px] text-secondary">Loading…</p>
           )}
           {!loading && users.length === 0 && (
-            <p className="px-3 py-2 text-[12px] text-[#94a3b8]">
+            <p className="px-3 py-2 text-[12px] text-secondary">
               No company members found
             </p>
           )}
@@ -975,16 +975,16 @@ function PersonPicker({ value, users, loading, onChange, label = 'Person' }) {
                   setOpen(false)
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#f1f5f9]',
-                  active && 'bg-[#eff6ff]',
+                  'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-surface-raised',
+                  active && 'bg-[#ecfdf5]',
                 )}
               >
                 <Avatar src={u.avatar} name={u.name} size="xs" />
-                <span className="min-w-0 flex-1 truncate text-[13px] text-[#0f172a]">
+                <span className="min-w-0 flex-1 truncate text-[13px] text-primary">
                   {u.name}
                 </span>
                 {u.role ? (
-                  <span className="shrink-0 text-[10px] uppercase text-[#94a3b8]">
+                  <span className="shrink-0 text-[10px] uppercase text-secondary">
                     {String(u.role).replace(/_/g, ' ')}
                   </span>
                 ) : null}
@@ -1015,7 +1015,7 @@ function CustomFieldInput({ field, value, users, usersLoading, onChange }) {
       <select
         value={value || ''}
         onChange={(e) => onChange(e.target.value || null)}
-        className="w-full max-w-[180px] rounded-md border border-[#e2e8f0] bg-white px-2 py-1 text-[13px] text-[#0f172a] outline-none focus:border-[#2563eb]"
+        className="w-full max-w-[180px] rounded-md border border-border bg-surface px-2 py-1 text-[13px] text-primary outline-none focus:border-[#3ecf8e]"
       >
         <option value="">Empty</option>
         {(field.options || []).map((opt) => (
@@ -1036,7 +1036,7 @@ function CustomFieldInput({ field, value, users, usersLoading, onChange }) {
         onChange={(e) =>
           onChange(e.target.value === '' ? null : Number(e.target.value))
         }
-        className="w-full max-w-[120px] bg-transparent py-1 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+        className="w-full max-w-[120px] bg-transparent py-1 text-[13px] text-primary outline-none placeholder:text-secondary"
       />
     )
   }
@@ -1048,7 +1048,7 @@ function CustomFieldInput({ field, value, users, usersLoading, onChange }) {
       key={`${field.slug}-${value ?? ''}`}
       placeholder="Empty"
       onBlur={(e) => onChange(e.target.value || null)}
-      className="w-full max-w-[200px] bg-transparent py-1 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8]"
+      className="w-full max-w-[200px] bg-transparent py-1 text-[13px] text-primary outline-none placeholder:text-secondary"
     />
   )
 }
@@ -1058,7 +1058,7 @@ function ActionLink({ icon: Icon, label, onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="inline-flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-white px-3 py-1.5 text-[12px] font-medium text-[#475569] hover:border-[#bfdbfe] hover:bg-[#eff6ff] hover:text-[#1d4ed8]"
+      className="inline-flex items-center gap-2 rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] font-medium text-secondary hover:border-[#bfdbfe] hover:bg-[#ecfdf5] hover:text-[#24b47e]"
     >
       <Icon className="h-3.5 w-3.5" strokeWidth={1.75} />
       {label}

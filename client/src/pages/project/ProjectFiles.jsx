@@ -93,10 +93,10 @@ export function ProjectFiles() {
 
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h2 className="text-[18px] font-semibold text-[#0f172a]">
+          <h2 className="text-[18px] font-semibold text-primary">
             Drawings & files
           </h2>
-          <p className="text-[13px] text-[#64748b]">
+          <p className="text-[13px] text-secondary">
             Plans, concepts, renders, and site photos
           </p>
         </div>
@@ -117,8 +117,8 @@ export function ProjectFiles() {
             className={cn(
               'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
               folder === f.value
-                ? 'bg-[#2563eb] text-white shadow-sm'
-                : 'bg-white text-[#64748b] ring-1 ring-[#e2e8f0] hover:bg-[#f8fafc]',
+                ? 'bg-[#3ecf8e] text-white shadow-sm'
+                : 'bg-surface text-secondary ring-1 ring-[#dfdfdf] hover:bg-surface-raised',
             )}
           >
             {f.label}
@@ -146,14 +146,14 @@ export function ProjectFiles() {
           }
         }}
         className={cn(
-          'min-h-[280px] rounded-2xl border border-dashed bg-white p-4 shadow-sm transition',
+          'min-h-[280px] rounded-2xl border border-dashed bg-surface p-4 shadow-sm transition',
           dragging
-            ? 'border-[#2563eb] bg-[#eff6ff]'
+            ? 'border-[#3ecf8e] bg-[#ecfdf5]'
             : 'border-[#d6e4f5]',
         )}
       >
         {isLoading ? (
-          <div className="h-40 animate-pulse rounded-xl bg-[#f1f5f9]" />
+          <div className="h-40 animate-pulse rounded-xl bg-surface-raised" />
         ) : files.length === 0 ? (
           <EmptyState
             icon={FolderOpen}
@@ -173,7 +173,7 @@ export function ProjectFiles() {
               return (
                 <div
                   key={f._id}
-                  className="overflow-hidden rounded-xl border border-[#e8eef4] bg-[#f8fafc]"
+                  className="overflow-hidden rounded-xl border border-border bg-surface-raised"
                 >
                   <FileThumbnail
                     name={f.name}
@@ -197,8 +197,8 @@ export function ProjectFiles() {
                         className={cn(
                           'rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize',
                           f.status === s
-                            ? 'bg-[#2563eb] text-white'
-                            : 'bg-white text-[#64748b] ring-1 ring-[#e2e8f0]',
+                            ? 'bg-[#3ecf8e] text-white'
+                            : 'bg-surface text-secondary ring-1 ring-[#dfdfdf]',
                         )}
                       >
                         {s}
@@ -216,7 +216,7 @@ export function ProjectFiles() {
       </div>
 
       {dragging && (
-        <p className="text-center text-[12px] font-medium text-[#2563eb]">
+        <p className="text-center text-[12px] font-medium text-[#3ecf8e]">
           Drop to upload into {folderLabel}
         </p>
       )}

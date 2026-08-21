@@ -192,16 +192,16 @@ export function ProcurementPage() {
 
   return (
     <div className="min-w-0 space-y-5 sm:space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <p className="mb-1.5 inline-flex items-center gap-1.5 rounded-full bg-[#eef4ff] px-2.5 py-1 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#1d4ed8]">
+      <div className="on-dark flex flex-wrap items-end justify-between gap-4 rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] px-5 py-6 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.4)] sm:px-7">
+        <div className="min-w-0">
+          <p className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--create-fg)]">
             <Truck className="h-3 w-3" />
             Supply chain
           </p>
-          <h1 className="text-[24px] font-semibold leading-none tracking-tight sm:text-[32px]">
+          <h1 className="text-[24px] font-semibold leading-none tracking-tight text-white sm:text-[32px]">
             Materials & vendors
           </h1>
-          <p className="mt-1.5 text-sm text-secondary">
+          <p className="mt-2 text-[13.5px] text-white/55">
             Purchase orders and suppliers for all projects
           </p>
         </div>
@@ -244,44 +244,44 @@ export function ProcurementPage() {
       </div>
 
       <div className="grid min-w-0 gap-4 lg:grid-cols-3">
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e4eaf3] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-24px_rgba(16,24,40,0.18)] lg:col-span-2">
-          <div className="flex items-center justify-between gap-2 border-b border-[#eef2f7] bg-gradient-to-r from-[#f8fafc] to-white px-4 py-3.5 sm:px-5">
+        <section className="on-dark min-w-0 overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)] lg:col-span-2">
+          <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] bg-[var(--panel-dark-raised)] px-4 py-3.5 sm:px-5">
             <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#eff6ff] text-[#2563eb] ring-1 ring-inset ring-[#dbeafe]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)]/15 text-[var(--accent)] ring-1 ring-inset ring-[var(--accent)]/20">
                 <Package className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="text-[13.5px] font-bold text-[#0b1220]">
+                <p className="text-[13.5px] font-bold text-white">
                   Purchase orders
                 </p>
-                <p className="truncate text-[11px] text-[#94a3b8]">
+                <p className="truncate text-[11px] text-white/45">
                   Tap Send to WhatsApp the list to the vendor
                 </p>
               </div>
             </div>
-            <span className="shrink-0 rounded-full bg-[#f1f5f9] px-2.5 py-1 text-[11px] font-bold tabular-nums text-[#475569]">
+            <span className="shrink-0 rounded-full bg-white/[0.08] px-2.5 py-1 text-[11px] font-bold tabular-nums text-white/70">
               {purchaseOrders.length}
             </span>
           </div>
 
           {/* Mobile: stacked rows */}
-          <div className="divide-y divide-[#eef2f7] md:hidden">
+          <div className="divide-y divide-white/[0.06] md:hidden">
             {purchaseOrders.length === 0 ? (
-              <p className="px-4 py-8 text-center text-sm text-secondary">
+              <p className="px-4 py-8 text-center text-sm text-white/45">
                 No purchase orders yet.
               </p>
             ) : (
               purchaseOrders.map((po) => (
                 <div
                   key={po._id}
-                  className="space-y-2 px-4 py-3 transition hover:bg-[#fbfcfe]"
+                  className="space-y-2 px-4 py-3 transition hover:bg-white/[0.03]"
                 >
                   <div className="flex items-start justify-between gap-3">
                     <div className="min-w-0">
-                      <p className="truncate text-sm font-bold text-[#0b1220]">
+                      <p className="truncate text-sm font-bold text-white">
                         {po.poNumber}
                       </p>
-                      <p className="mt-0.5 truncate text-xs text-secondary">
+                      <p className="mt-0.5 truncate text-xs text-white/45">
                         {po.projectId?.name || '—'} · {po.vendor?.name || '—'}
                       </p>
                     </div>
@@ -289,7 +289,7 @@ export function ProcurementPage() {
                   </div>
                   <div className="flex items-center justify-between gap-2">
                     <SendPoButton po={po} />
-                    <p className="text-right text-sm font-bold tabular-nums text-[#0b1220]">
+                    <p className="text-right text-sm font-bold tabular-nums text-[var(--accent)]">
                       {formatInr(po.value)}
                     </p>
                   </div>
@@ -299,17 +299,17 @@ export function ProcurementPage() {
           </div>
 
           {/* Desktop table */}
-          <div className="hidden min-w-0 md:block">
+          <div className="hidden min-w-0 md:block [&_table]:bg-transparent [&_th]:border-white/[0.06] [&_th]:bg-transparent [&_th]:text-white/40 [&_td]:border-white/[0.06] [&_td]:text-white/70 [&_tr:hover]:bg-white/[0.03]">
             <DataTable
-              className="rounded-none border-0"
+              className="rounded-none border-0 bg-transparent"
               columns={[
                 {
                   key: 'poNumber',
                   label: 'PO #',
                   render: (v, row) => (
                     <div>
-                      <p className="font-bold text-[#0b1220]">{v}</p>
-                      <p className="mt-0.5 text-[11px] text-[#94a3b8]">
+                      <p className="font-bold text-white">{v}</p>
+                      <p className="mt-0.5 text-[11px] text-white/40">
                         {row.items?.length
                           ? `${row.items.length} line${row.items.length === 1 ? '' : 's'}`
                           : '—'}
@@ -321,7 +321,7 @@ export function ProcurementPage() {
                   key: 'project',
                   label: 'Project',
                   render: (_, row) => (
-                    <span className="text-[#475569]">
+                    <span className="text-white/55">
                       {row.projectId?.name || '—'}
                     </span>
                   ),
@@ -333,7 +333,9 @@ export function ProcurementPage() {
                     row.vendor?.name ? (
                       <span className="flex items-center gap-2">
                         <VendorAvatar name={row.vendor.name} size="sm" />
-                        <span className="font-medium">{row.vendor.name}</span>
+                        <span className="font-medium text-white">
+                          {row.vendor.name}
+                        </span>
                       </span>
                     ) : (
                       '—'
@@ -345,7 +347,7 @@ export function ProcurementPage() {
                   numeric: true,
                   align: 'right',
                   render: (v) => (
-                    <span className="font-bold text-[#0b1220]">
+                    <span className="font-bold text-[var(--accent)]">
                       {formatInr(v)}
                     </span>
                   ),
@@ -366,18 +368,19 @@ export function ProcurementPage() {
           </div>
         </section>
 
-        <section className="min-w-0 overflow-hidden rounded-2xl border border-[#e4eaf3] bg-white shadow-[0_1px_2px_rgba(16,24,40,0.04),0_12px_32px_-24px_rgba(16,24,40,0.18)]">
-          <div className="flex items-center justify-between gap-2 border-b border-[#eef2f7] bg-gradient-to-r from-[#f8fafc] to-white px-4 py-3.5 sm:px-5">
+        <section className="on-dark min-w-0 overflow-hidden rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]">
+          <div className="flex items-center justify-between gap-2 border-b border-white/[0.06] bg-[var(--panel-dark-raised)] px-4 py-3.5 sm:px-5">
             <div className="flex min-w-0 items-center gap-2.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#f5f3ff] text-[#7c3aed] ring-1 ring-inset ring-[#ede9fe]">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.08] text-white/70 ring-1 ring-inset ring-white/[0.08]">
                 <Store className="h-4 w-4" />
               </span>
               <div className="min-w-0">
-                <p className="text-[13.5px] font-bold text-[#0b1220]">
+                <p className="text-[13.5px] font-bold text-white">
                   Vendor directory
                 </p>
-                <p className="truncate text-[11px] text-[#94a3b8]">
-                  {vendorList.length} supplier{vendorList.length === 1 ? '' : 's'}
+                <p className="truncate text-[11px] text-white/45">
+                  {vendorList.length} supplier
+                  {vendorList.length === 1 ? '' : 's'}
                 </p>
               </div>
             </div>
@@ -386,7 +389,7 @@ export function ProcurementPage() {
                 <button
                   type="button"
                   onClick={() => setCompareOpen(true)}
-                  className="inline-flex items-center gap-1 rounded-lg border border-[#d7e5fc] bg-[#eef4ff] px-2 py-1 text-[11px] font-semibold text-[#1d4ed8] transition hover:bg-[#e0ebff]"
+                  className="inline-flex items-center gap-1 rounded-lg bg-[var(--accent)]/15 px-2 py-1 text-[11px] font-semibold text-[var(--accent)] transition hover:bg-[var(--accent)]/25"
                 >
                   <ArrowLeftRight className="h-3 w-3" />
                   Compare
@@ -395,21 +398,21 @@ export function ProcurementPage() {
               <button
                 type="button"
                 onClick={() => setAddVendorOpen(true)}
-                className="inline-flex items-center gap-1 rounded-lg border border-[#e2e8f0] px-2 py-1 text-[11px] font-semibold text-[#475569] transition hover:bg-[#f8fafc]"
+                className="inline-flex items-center gap-1 rounded-lg border border-white/[0.1] px-2 py-1 text-[11px] font-semibold text-white/60 transition hover:bg-white/[0.06] hover:text-white"
               >
                 <Plus className="h-3 w-3" />
                 New
               </button>
             </div>
           </div>
-          <div className="divide-y divide-[#eef2f7]">
+          <div className="divide-y divide-white/[0.06]">
             {vendorList.length === 0 ? (
               <div className="px-4 py-8 text-center">
-                <p className="text-sm text-secondary">No vendors yet.</p>
+                <p className="text-sm text-white/45">No vendors yet.</p>
                 <button
                   type="button"
                   onClick={() => setAddVendorOpen(true)}
-                  className="mt-2 text-[12px] font-semibold text-[#2563eb] hover:underline"
+                  className="mt-2 text-[12px] font-semibold text-[var(--accent)] hover:underline"
                 >
                   Add your first vendor
                 </button>
@@ -418,18 +421,18 @@ export function ProcurementPage() {
               vendorList.map((v) => (
                 <div
                   key={v._id}
-                  className="group px-4 py-3 transition hover:bg-[#fbfcfe] sm:px-5 sm:py-4"
+                  className="group px-4 py-3 transition hover:bg-white/[0.03] sm:px-5 sm:py-4"
                 >
                   <div className="flex items-start gap-3">
                     <VendorAvatar name={v.name} />
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
-                        <p className="truncate text-sm font-bold text-[#0b1220]">
+                        <p className="truncate text-sm font-bold text-white">
                           {v.name}
                         </p>
                         <span className="flex shrink-0 items-center gap-1 pt-0.5">
                           <Stars value={v.rating} />
-                          <span className="text-[11px] font-semibold text-[#94a3b8]">
+                          <span className="text-[11px] font-semibold text-white/50">
                             {v.rating}
                           </span>
                         </span>
@@ -441,42 +444,42 @@ export function ProcurementPage() {
                         ).map((c) => (
                           <span
                             key={c}
-                            className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[10.5px] font-semibold text-[#475569]"
+                            className="rounded-full bg-white/[0.08] px-2 py-0.5 text-[10.5px] font-semibold text-white/60"
                           >
                             {c}
                           </span>
                         ))}
-                        <span className="rounded-full bg-[#fefce8] px-2 py-0.5 text-[10.5px] font-semibold text-[#a16207] ring-1 ring-inset ring-[#fef08a]">
+                        <span className="rounded-full bg-amber-400/15 px-2 py-0.5 text-[10.5px] font-semibold text-amber-300 ring-1 ring-inset ring-amber-400/20">
                           {v.paymentTerms}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  <div className="mt-2.5 grid gap-x-4 gap-y-1 text-xs text-secondary sm:grid-cols-2">
+                  <div className="mt-2.5 grid gap-x-4 gap-y-1 text-xs text-white/45 sm:grid-cols-2">
                     {v.contact && (
                       <p className="flex items-center gap-1.5 truncate">
-                        <User2 className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        <User2 className="h-3 w-3 shrink-0 text-white/30" />
                         {v.contact}
                       </p>
                     )}
                     {v.phone && (
                       <p className="flex items-center gap-1.5 truncate tabular-nums">
-                        <PhoneIcon className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        <PhoneIcon className="h-3 w-3 shrink-0 text-white/30" />
                         {v.phone}
                       </p>
                     )}
                     {v.email && (
                       <p className="flex items-center gap-1.5 truncate">
-                        <Mail className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        <Mail className="h-3 w-3 shrink-0 text-white/30" />
                         {v.email}
                       </p>
                     )}
                     {v.gst && (
                       <p className="flex items-center gap-1.5 truncate">
-                        <BadgeCheck className="h-3 w-3 shrink-0 text-[#b4c0d0]" />
+                        <BadgeCheck className="h-3 w-3 shrink-0 text-white/30" />
                         GST:{' '}
-                        <span className="font-medium tabular-nums text-[#475569]">
+                        <span className="font-medium tabular-nums text-white/60">
                           {v.gst}
                         </span>
                       </p>
@@ -518,7 +521,7 @@ export function ProcurementPage() {
                       type="button"
                       title="Edit vendor details"
                       onClick={() => setEditVendor(v)}
-                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#e2e8f0] px-2 text-[11.5px] font-semibold text-[#475569] transition hover:bg-white"
+                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-white/[0.1] px-2 text-[11.5px] font-semibold text-white/55 transition hover:bg-white/[0.06] hover:text-white"
                     >
                       <Pencil className="h-3 w-3" />
                       Edit
@@ -571,17 +574,17 @@ export function ProcurementPage() {
 
 
 const STAT_TINTS = {
-  blue: 'bg-[#eff6ff] text-[#2563eb] ring-[#dbeafe]',
-  amber: 'bg-[#fffbeb] text-[#d97706] ring-[#fde68a]',
-  emerald: 'bg-[#ecfdf5] text-[#059669] ring-[#a7f3d0]',
-  violet: 'bg-[#f5f3ff] text-[#7c3aed] ring-[#ede9fe]',
+  blue: 'bg-[var(--accent)]/15 text-[var(--accent)] ring-[var(--accent)]/20',
+  amber: 'bg-amber-400/15 text-amber-300 ring-amber-400/20',
+  emerald: 'bg-emerald-400/15 text-emerald-300 ring-emerald-400/20',
+  violet: 'bg-violet-400/15 text-violet-300 ring-violet-400/20',
 }
 
 function StatCard({ icon: Icon, label, value, sub, tint = 'blue' }) {
   return (
-    <div className="rounded-2xl border border-[#e4eaf3] bg-white p-4 shadow-[0_1px_2px_rgba(16,24,40,0.04)] transition hover:-translate-y-0.5 hover:shadow-[0_12px_28px_-16px_rgba(16,24,40,0.22)]">
+    <div className="on-dark rounded-[18px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-4 shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)] transition hover:-translate-y-0.5 hover:bg-[var(--panel-dark-raised)]">
       <div className="flex items-center justify-between gap-2">
-        <p className="truncate text-[10.5px] font-bold uppercase tracking-[0.1em] text-[#8a98ac]">
+        <p className="truncate text-[10.5px] font-bold uppercase tracking-[0.1em] text-white/40">
           {label}
         </p>
         <span
@@ -593,10 +596,10 @@ function StatCard({ icon: Icon, label, value, sub, tint = 'blue' }) {
           <Icon className="h-4 w-4" />
         </span>
       </div>
-      <p className="mt-1.5 truncate text-[20px] font-bold tabular-nums tracking-tight text-[#0b1220] sm:text-[22px]">
+      <p className="mt-1.5 truncate text-[20px] font-bold tabular-nums tracking-tight text-white sm:text-[22px]">
         {value}
       </p>
-      <p className="mt-0.5 truncate text-[11.5px] text-[#94a3b8]">{sub}</p>
+      <p className="mt-0.5 truncate text-[11.5px] text-white/45">{sub}</p>
     </div>
   )
 }
@@ -820,8 +823,8 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
   }
 
   const rowLabel =
-    'sticky left-0 z-[1] bg-white py-2.5 pr-3 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-[#8a98ac]'
-  const cell = 'min-w-[160px] py-2.5 pr-4 align-top text-[13px] text-[#334155]'
+    'sticky left-0 z-[1] bg-surface py-2.5 pr-3 text-left text-[11px] font-bold uppercase tracking-[0.06em] text-[#8a98ac]'
+  const cell = 'min-w-[160px] py-2.5 pr-4 align-top text-[13px] text-primary'
 
   return (
     <Modal open={open} onClose={onClose} title="Compare vendors" size="xl">
@@ -841,8 +844,8 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
               className={cn(
                 'rounded-full px-3 py-1 text-[12px] font-semibold transition',
                 on
-                  ? 'bg-[#2563eb] text-white shadow-sm'
-                  : 'bg-[#f1f5f9] text-[#475569] hover:bg-[#e2e8f0]',
+                  ? 'bg-[#3ecf8e] text-white shadow-sm'
+                  : 'bg-surface-raised text-secondary hover:bg-[#dfdfdf]',
               )}
             >
               {v.name}
@@ -856,7 +859,7 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
           Select at least two vendors to compare.
         </p>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-xl border border-[#e8eef4]">
+        <div className="mt-4 overflow-x-auto rounded-xl border border-border">
           <table className="w-full border-separate border-spacing-0 px-1 text-left">
             <thead>
               <tr>
@@ -869,9 +872,9 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
                   return (
                     <th
                       key={v._id}
-                      className="min-w-[160px] border-b border-[#e8eef4] py-3 pr-4 align-top"
+                      className="min-w-[160px] border-b border-border py-3 pr-4 align-top"
                     >
-                      <p className="text-[14px] font-bold text-[#0f172a]">
+                      <p className="text-[14px] font-bold text-primary">
                         {v.name}
                       </p>
                       <div className="mt-1 flex flex-wrap gap-1">
@@ -898,7 +901,7 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
                   <td key={v._id} className={cell}>
                     <span className="flex items-center gap-1.5">
                       <Stars value={v.rating} />
-                      <span className="text-[12px] font-semibold text-[#64748b]">
+                      <span className="text-[12px] font-semibold text-secondary">
                         {v.rating}/5
                       </span>
                     </span>
@@ -946,7 +949,7 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
                         {v.categories.map((c) => (
                           <span
                             key={c}
-                            className="rounded-full bg-[#f1f5f9] px-2 py-0.5 text-[11px] font-medium text-[#475569]"
+                            className="rounded-full bg-surface-raised px-2 py-0.5 text-[11px] font-medium text-secondary"
                           >
                             {c}
                           </span>
@@ -986,7 +989,7 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
                         'font-semibold tabular-nums',
                         bestTotal > 0 && total === bestTotal
                           ? 'text-emerald-700'
-                          : 'text-[#0f172a]',
+                          : 'text-primary',
                       )}
                     >
                       {formatInr(total)}
@@ -1063,8 +1066,8 @@ function moneyMargin(value) {
 
 function FinanceMetric({ icon: Icon, label, value, hint, tone = 'blue' }) {
   const tones = {
-    blue: 'bg-[#eff6ff] text-[#2563eb]',
-    slate: 'bg-[#f1f5f9] text-[#475569]',
+    blue: 'bg-[#ecfdf5] text-[#3ecf8e]',
+    slate: 'bg-surface-raised text-secondary',
     green: 'bg-[#ecfdf5] text-[#059669]',
     red: 'bg-[#fef2f2] text-[#dc2626]',
     amber: 'bg-[#fffbeb] text-[#d97706]',
@@ -1077,13 +1080,13 @@ function FinanceMetric({ icon: Icon, label, value, hint, tone = 'blue' }) {
         <Icon className="h-5 w-5" />
       </span>
       <div className="min-w-0">
-        <p className="text-[11px] font-semibold uppercase tracking-wide text-[#64748b]">
+        <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">
           {label}
         </p>
-        <p className="mt-1 truncate text-[21px] font-semibold leading-none tabular-nums text-[#0f172a] sm:text-[24px]">
+        <p className="mt-1 truncate text-[21px] font-semibold leading-none tabular-nums text-primary sm:text-[24px]">
           {value}
         </p>
-        <p className="mt-1.5 truncate text-[11px] text-[#94a3b8]">{hint}</p>
+        <p className="mt-1.5 truncate text-[11px] text-secondary">{hint}</p>
       </div>
     </Card>
   )
@@ -1205,7 +1208,7 @@ export function FinancePage() {
           <h1 className="text-[24px] font-semibold leading-none tracking-tight sm:text-[32px]">
             Money
           </h1>
-          <p className="mt-2 text-[12px] text-[#64748b]">
+          <p className="mt-2 text-[12px] text-secondary">
             Approved expenses are included in actual spend. Purchase orders are
             shown separately as commitments.
           </p>
@@ -1286,7 +1289,7 @@ export function FinancePage() {
                 <Link
                   key={row.id}
                   to={`/projects/${row.id}/overview`}
-                  className="block space-y-2 px-4 py-3 hover:bg-[#f8fafc]"
+                  className="block space-y-2 px-4 py-3 hover:bg-surface-raised"
                 >
                   <div className="flex items-center justify-between gap-2">
                     <p className="truncate text-sm font-semibold text-on-light">
@@ -1326,7 +1329,7 @@ export function FinancePage() {
                   render: (v, row) => (
                     <Link
                       to={`/projects/${row.id}/overview`}
-                      className="inline-flex items-center gap-1 font-semibold text-[#0f172a] hover:text-[#2563eb]"
+                      className="inline-flex items-center gap-1 font-semibold text-primary hover:text-[#3ecf8e]"
                     >
                       {v} <ArrowUpRight className="h-3 w-3" />
                     </Link>
@@ -1389,7 +1392,7 @@ export function FinancePage() {
                   Submitted costs waiting for a decision
                 </p>
               </div>
-              <div className="flex rounded-lg bg-[#f1f5f9] p-0.5">
+              <div className="flex rounded-lg bg-surface-raised p-0.5">
                 {['pending', 'approved', 'rejected', 'all'].map((filter) => (
                   <button
                     key={filter}
@@ -1397,8 +1400,8 @@ export function FinancePage() {
                     onClick={() => setExpenseFilter(filter)}
                     className={`rounded-md px-2 py-1 text-[10px] font-semibold capitalize ${
                       expenseFilter === filter
-                        ? 'bg-white text-[#0f172a] shadow-sm'
-                        : 'text-[#64748b]'
+                        ? 'bg-surface text-primary shadow-sm'
+                        : 'text-secondary'
                     }`}
                   >
                     {filter}
@@ -1421,11 +1424,11 @@ export function FinancePage() {
               visibleExpenses.map((ex) => (
                 <div key={ex._id} className="space-y-2.5 px-4 py-3 sm:px-5">
                   <div className="flex items-start gap-3">
-                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[#f1f5f9] text-[#64748b]">
+                    <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-secondary">
                       <ReceiptIndianRupee className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-[#0f172a]">
+                      <p className="truncate text-sm font-semibold text-primary">
                         {ex.note || ex.category}
                       </p>
                       <p className="truncate text-[11px] text-secondary">
@@ -1433,7 +1436,7 @@ export function FinancePage() {
                         {ex.submittedBy?.name || 'Team member'}
                       </p>
                     </div>
-                    <span className="shrink-0 text-sm font-semibold tabular-nums text-[#0f172a]">
+                    <span className="shrink-0 text-sm font-semibold tabular-nums text-primary">
                       {formatInr(ex.amount)}
                     </span>
                   </div>
@@ -1445,7 +1448,7 @@ export function FinancePage() {
                         href={assetUrl(ex.receiptUrl)}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] font-semibold text-[#2563eb] hover:underline"
+                        className="text-[11px] font-semibold text-[#3ecf8e] hover:underline"
                       >
                         View receipt
                       </a>
@@ -1469,7 +1472,7 @@ export function FinancePage() {
                           onClick={() =>
                             review.mutate({ id: ex._id, status: 'approved' })
                           }
-                          className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#2563eb] px-2.5 text-[11px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                          className="inline-flex h-8 items-center gap-1 rounded-lg bg-[#3ecf8e] px-2.5 text-[11px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-50"
                         >
                           <CheckCircle2 className="h-3.5 w-3.5" />
                           Approve

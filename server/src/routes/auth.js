@@ -28,6 +28,7 @@ function serializeTenant(tenant) {
     subscriptionPlan: tenant.subscriptionPlan || 'pro',
     cancelledAt: tenant.cancelledAt || null,
     features: normalizeTenantFeatures(tenant.features),
+    logoUrl: tenant.logoUrl || '',
   }
 }
 
@@ -182,7 +183,7 @@ router.get(
     let tenant = null
     if (req.user.tenantId) {
       tenant = await Tenant.findById(req.user.tenantId).select(
-        'name slug status seatLimit subscriptionPlan cancelledAt features',
+        'name slug status seatLimit subscriptionPlan cancelledAt features logoUrl',
       )
     }
     res.json({

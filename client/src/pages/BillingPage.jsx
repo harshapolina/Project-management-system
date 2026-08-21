@@ -207,14 +207,14 @@ export function BillingPage() {
     <div className="mx-auto w-full max-w-[1500px] space-y-5 pb-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">
             <Receipt className="h-3.5 w-3.5 text-blue-600" />
             Vendor billing
           </div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-[#0f172a]">
+          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-primary">
             Billing
           </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-[#64748b]">
+          <p className="mt-1 max-w-2xl text-[13px] text-secondary">
             Store and track vendor invoices for material purchase orders — one
             place for every bill against your supplies.
           </p>
@@ -258,9 +258,9 @@ export function BillingPage() {
         />
       </section>
 
-      <section className="overflow-hidden rounded-2xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#eef2f7] px-5 py-4">
-          <div className="inline-flex rounded-xl border border-[#e2e8f0] bg-[#eef2f7] p-1">
+      <section className="overflow-hidden rounded-2xl border border-border bg-surface shadow-none">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-5 py-4">
+          <div className="inline-flex rounded-xl border border-border bg-surface-raised p-1">
             {STATUS_FILTERS.map((f) => (
               <button
                 key={f.key}
@@ -269,8 +269,8 @@ export function BillingPage() {
                 className={cn(
                   'rounded-lg px-3 py-1.5 text-[12px] font-semibold transition',
                   status === f.key
-                    ? 'bg-white text-[#0f172a] shadow-sm'
-                    : 'text-[#64748b] hover:text-[#0f172a]',
+                    ? 'bg-surface text-primary shadow-sm'
+                    : 'text-secondary hover:text-primary',
                 )}
               >
                 {f.label}
@@ -279,18 +279,18 @@ export function BillingPage() {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-secondary" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search invoice, vendor, PO…"
-                className="h-9 w-56 rounded-xl border border-[#dce4ee] bg-white pl-8 pr-3 text-[12px] outline-none focus:border-[#93b4ec]"
+                className="h-9 w-56 rounded-xl border border-border bg-surface pl-8 pr-3 text-[12px] outline-none focus:border-accent/40"
               />
             </div>
             <select
               value={vendorFilter}
               onChange={(e) => setVendorFilter(e.target.value)}
-              className="h-9 rounded-xl border border-[#dce4ee] bg-white px-3 text-[12px] font-medium text-[#475569] outline-none"
+              className="h-9 rounded-xl border border-border bg-surface px-3 text-[12px] font-medium text-secondary outline-none"
             >
               <option value="all">All vendors</option>
               {vendors.map((v) => (
@@ -304,7 +304,7 @@ export function BillingPage() {
 
         <div className="divide-y divide-[#edf1f6]">
           {listLoading && (
-            <p className="px-5 py-12 text-center text-[12px] text-[#94a3b8]">
+            <p className="px-5 py-12 text-center text-[12px] text-secondary">
               Loading invoices…
             </p>
           )}
@@ -324,7 +324,7 @@ export function BillingPage() {
             return (
               <article
                 key={inv._id}
-                className="group relative flex flex-col gap-4 px-5 py-4 transition hover:bg-[#fbfdff] sm:flex-row sm:items-center"
+                className="group relative flex flex-col gap-4 px-5 py-4 transition hover:bg-surface sm:flex-row sm:items-center"
               >
                 <span
                   className={cn(
@@ -338,8 +338,8 @@ export function BillingPage() {
                   className={cn(
                     'flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border',
                     inv.fileUrl
-                      ? 'border-[#dce4ee] bg-[#f8fafc] hover:border-[#93b4ec]'
-                      : 'border-dashed border-[#e2e8f0] bg-[#fafcfe]',
+                      ? 'border-border bg-surface-raised hover:border-accent/40'
+                      : 'border-dashed border-border bg-[#fafcfe]',
                   )}
                   title={inv.fileUrl ? 'Open invoice file' : 'No file attached'}
                 >
@@ -348,13 +348,13 @@ export function BillingPage() {
                   ) : inv.fileUrl ? (
                     <ImageIcon className="h-5 w-5 text-blue-500" />
                   ) : (
-                    <Upload className="h-4 w-4 text-[#94a3b8]" />
+                    <Upload className="h-4 w-4 text-secondary" />
                   )}
                 </button>
 
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="text-[14px] font-semibold text-[#0f172a]">
+                    <h3 className="text-[14px] font-semibold text-primary">
                       {inv.invoiceNumber}
                     </h3>
                     <span
@@ -366,13 +366,13 @@ export function BillingPage() {
                       {meta.label}
                     </span>
                   </div>
-                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-[#64748b]">
-                    <span className="inline-flex items-center gap-1 font-medium text-[#334155]">
-                      <Building2 className="h-3 w-3 text-[#94a3b8]" />
+                  <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11.5px] text-secondary">
+                    <span className="inline-flex items-center gap-1 font-medium text-primary">
+                      <Building2 className="h-3 w-3 text-secondary" />
                       {inv.vendor?.name || 'Vendor'}
                     </span>
                     {inv.purchaseOrder?.poNumber && (
-                      <span className="rounded-md bg-[#eff6ff] px-1.5 py-0.5 font-semibold text-[#2563eb]">
+                      <span className="rounded-md bg-[#ecfdf5] px-1.5 py-0.5 font-semibold text-[#3ecf8e]">
                         PO {inv.purchaseOrder.poNumber}
                       </span>
                     )}
@@ -383,14 +383,14 @@ export function BillingPage() {
                     {inv.dueDate && <span>Due {formatDate(inv.dueDate)}</span>}
                   </div>
                   {inv.notes && (
-                    <p className="mt-1 line-clamp-1 text-[11px] text-[#94a3b8]">
+                    <p className="mt-1 line-clamp-1 text-[11px] text-secondary">
                       {inv.notes}
                     </p>
                   )}
                 </div>
 
                 <div className="flex shrink-0 flex-wrap items-center gap-2 sm:flex-col sm:items-end sm:gap-2">
-                  <p className="text-[18px] font-semibold tabular-nums tracking-[-0.03em] text-[#0f172a]">
+                  <p className="text-[18px] font-semibold tabular-nums tracking-[-0.03em] text-primary">
                     {formatInr(inv.amount)}
                   </p>
                   <div className="flex items-center gap-1.5">
@@ -411,7 +411,7 @@ export function BillingPage() {
                         href={assetUrl(inv.fileUrl)}
                         target="_blank"
                         rel="noreferrer"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#e2e8f0] text-[#475569] hover:bg-[#f8fafc]"
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-secondary hover:bg-surface-raised"
                         title="Open file"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
@@ -428,7 +428,7 @@ export function BillingPage() {
                           deleteMutation.mutate(inv._id)
                         }
                       }}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[#e2e8f0] text-[#94a3b8] hover:border-red-200 hover:bg-red-50 hover:text-red-600"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-border text-secondary hover:border-red-200 hover:bg-red-50 hover:text-red-600"
                       title="Delete"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -472,15 +472,15 @@ export function BillingPage() {
               const f = e.dataTransfer.files?.[0]
               if (f) setFile(f)
             }}
-            className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#c7d7ef] bg-gradient-to-b from-[#f5f9ff] to-white px-4 py-8 text-center transition hover:border-[#93b4ec]"
+            className="flex cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-[#c7d7ef] bg-gradient-to-b from-[#f5f9ff] to-white px-4 py-8 text-center transition hover:border-accent/40"
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
               <Upload className="h-5 w-5" />
             </span>
-            <p className="mt-3 text-[13px] font-semibold text-[#0f172a]">
+            <p className="mt-3 text-[13px] font-semibold text-primary">
               {file ? file.name : 'Drop invoice PDF or photo'}
             </p>
-            <p className="mt-1 text-[11px] text-[#94a3b8]">
+            <p className="mt-1 text-[11px] text-secondary">
               PDF, JPG, or PNG · up to 40 MB
             </p>
             <input
@@ -591,30 +591,30 @@ export function BillingPage() {
 
       {preview && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/50 p-4 backdrop-blur-sm">
-          <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-[#eef2f7] px-5 py-3">
+          <div className="relative flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-surface shadow-2xl">
+            <div className="flex items-center justify-between border-b border-border px-5 py-3">
               <div className="min-w-0">
-                <p className="truncate text-[14px] font-semibold text-[#0f172a]">
+                <p className="truncate text-[14px] font-semibold text-primary">
                   {preview.invoiceNumber}
                 </p>
-                <p className="truncate text-[11px] text-[#94a3b8]">
+                <p className="truncate text-[11px] text-secondary">
                   {preview.fileName || 'Invoice file'}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setPreview(null)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-[#f1f5f9]"
+                className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-surface-raised"
               >
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="min-h-0 flex-1 bg-[#0f172a]/[0.03] p-3">
+            <div className="min-h-0 flex-1 bg-[#171717]/[0.03] p-3">
               {isPdf(preview.mimeType, preview.fileName) ? (
                 <iframe
                   title="Invoice PDF"
                   src={assetUrl(preview.fileUrl)}
-                  className="h-[70vh] w-full rounded-xl bg-white"
+                  className="h-[70vh] w-full rounded-xl bg-surface"
                 />
               ) : (
                 <img
@@ -639,13 +639,13 @@ function Kpi({ icon: Icon, label, value, tone }) {
     red: 'bg-red-50 text-red-600',
   }
   return (
-    <div className="rounded-2xl border border-[#e0e7f0] bg-white p-4 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
+    <div className="rounded-2xl border border-border bg-surface p-4 shadow-none">
       <div className="flex items-start justify-between gap-2">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-[#94a3b8]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.08em] text-secondary">
             {label}
           </p>
-          <p className="mt-2 text-[22px] font-semibold tabular-nums tracking-[-0.03em] text-[#0f172a]">
+          <p className="mt-2 text-[22px] font-semibold tabular-nums tracking-[-0.03em] text-primary">
             {value}
           </p>
         </div>

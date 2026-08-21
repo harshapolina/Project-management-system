@@ -448,13 +448,13 @@ export function HomePage() {
 
   if (isLoading) {
     return (
-      <div className="h-full space-y-5 overflow-y-auto bg-[#EEF2F7] p-4 sm:p-6">
-        <div className="h-10 w-56 animate-pulse rounded-xl bg-white/80" />
+      <div className="h-full space-y-5 overflow-y-auto bg-canvas p-4 sm:p-6">
+        <div className="h-10 w-56 animate-pulse rounded-xl bg-surface" />
         <div className="grid gap-4 lg:grid-cols-2">
           {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-[280px] animate-pulse rounded-2xl border border-[#e2e8f0] bg-white"
+              className="h-[280px] animate-pulse rounded-2xl bg-[var(--panel-dark)]"
             />
           ))}
         </div>
@@ -463,56 +463,35 @@ export function HomePage() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#EEF2F7]">
-      <header className="shrink-0 border-b border-[#e2e8f0]/bg-white/90 px-4 py-4 backdrop-blur-md sm:px-6">
-        <div className="mx-auto flex w-full max-w-6xl flex-wrap items-end justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#64748b]">
-              EPM · Home
-            </p>
-            <div className="mt-1.5 flex flex-wrap items-center gap-2.5">
-              <h1 className="text-[22px] font-semibold tracking-tight text-[#0f172a]">
-                My Tasks
-              </h1>
-              <span className="rounded-full border border-[#dbe4f0] bg-[#f8fafc] px-2.5 py-0.5 text-[11px] font-medium text-[#475569]">
-                {meta.title}
-              </span>
-            </div>
-            <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-[#64748b]">
-              {meta.hint}
-            </p>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-1 rounded-xl border border-[#e2e8f0] bg-[#f8fafc] p-1 shadow-sm">
-            {FILTER_PILLS.map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setParams({ view: f.id })}
-                className={cn(
-                  'rounded-lg px-3 py-1.5 text-[12px] font-medium transition-colors',
-                  view === f.id
-                    ? 'bg-[#0f172a] text-white shadow-sm'
-                    : 'text-[#64748b] hover:bg-white hover:text-[#0f172a]',
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </header>
-
+    <div className="flex h-full min-h-0 flex-col bg-canvas">
       <div className="min-h-0 flex-1 overflow-y-auto px-4 py-5 sm:px-6 sm:py-6">
         <div className="mx-auto w-full max-w-6xl">
-          <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
+          <div className="mb-5 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <p className="text-[26px] font-semibold tracking-tight text-[#0f172a] sm:text-[30px]">
+              <p className="text-[26px] font-semibold tracking-tight text-primary sm:text-[30px]">
                 {greeting}
               </p>
-              <p className="mt-1 text-[13px] text-[#64748b]">
+              <p className="mt-1 text-[13px] text-secondary">
                 Editco Project Management — your day, aligned.
               </p>
+            </div>
+
+            <div className="flex shrink-0 items-center gap-0.5 rounded-full bg-surface-raised p-1">
+              {FILTER_PILLS.map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setParams({ view: f.id })}
+                  className={cn(
+                    'rounded-full px-3.5 py-1.5 text-[12px] font-medium transition-colors',
+                    view === f.id
+                      ? 'bg-accent text-[#171717] shadow-sm'
+                      : 'text-secondary hover:text-primary',
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
             </div>
           </div>
 
@@ -606,7 +585,7 @@ function TodayFocus(props) {
       </Card>
       <Card
         title="Today"
-        accent="#2563eb"
+        accent="#3ecf8e"
         badge={(props.tasks.today || []).length}
         tall
       >
@@ -707,12 +686,12 @@ function AssignedCard({
         <div className="flex items-center gap-1.5">
           {!preview && (
             <div className="relative">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-[#6b6b70]" />
+              <Search className="pointer-events-none absolute left-2 top-1/2 h-3 w-3 -translate-y-1/2 text-white/40" />
               <input
                 value={assignedSearch}
                 onChange={(e) => setAssignedSearch(e.target.value)}
                 placeholder="Filter"
-                className="h-7 w-[120px] rounded-md border border-[#e2e8f0] bg-[#F4F7FB] pl-7 pr-2 text-[12px] outline-none focus:border-[#cbd5e1]"
+                className="h-7 w-[120px] rounded-md border border-white/10 bg-white/5 pl-7 pr-2 text-[12px] text-white outline-none placeholder:text-white/40 focus:border-white/20"
               />
             </div>
           )}
@@ -722,7 +701,7 @@ function AssignedCard({
     >
       {total === 0 ? (
         <EmptyArt
-          icon={<Circle className="h-7 w-7 text-[#8b8b90]" strokeWidth={1.4} />}
+          icon={<Circle className="h-7 w-7 text-white/40" strokeWidth={1.4} />}
           text="No open tasks assigned to you."
         />
       ) : (
@@ -738,7 +717,7 @@ function AssignedCard({
                   onClick={() =>
                     setCollapsed((c) => ({ ...c, [g.key]: !c[g.key] }))
                   }
-                  className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-[#eff6ff]"
+                  className="flex w-full items-center gap-2 rounded-md px-1 py-1.5 transition-colors hover:bg-[#ecfdf5]"
                 >
                   {open ? (
                     <ChevronDown className="h-3.5 w-3.5 text-[#6b6b70]" />
@@ -800,7 +779,7 @@ function PersonalCard({
 
   const composer = createPersonal ? (
     <form
-      className="mt-2 flex gap-2 border-t border-[#e2e8f0] pt-3"
+      className="mt-2 flex gap-2 border-t border-border pt-3"
       onSubmit={(e) => {
         e.preventDefault()
         onCreatePersonal()
@@ -811,12 +790,12 @@ function PersonalCard({
         value={personalDraft}
         onChange={(e) => setPersonalDraft(e.target.value)}
         placeholder="What do you need to do?"
-        className="h-9 flex-1 rounded-md border border-[#e2e8f0] bg-[#F4F7FB] px-3 text-[13px] outline-none focus:border-[#cbd5e1]"
+        className="h-9 flex-1 rounded-md border border-border bg-[#F4F7FB] px-3 text-[13px] outline-none focus:border-[#c7c7c7]"
       />
       <button
         type="submit"
         disabled={creating || !personalDraft.trim()}
-        className="h-9 rounded-md bg-[#2563eb] px-3 text-[12px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-40"
+        className="h-9 rounded-md bg-[#3ecf8e] px-3 text-[12px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-40"
       >
         Add
       </button>
@@ -826,7 +805,7 @@ function PersonalCard({
           setCreatePersonal(false)
           setPersonalDraft('')
         }}
-        className="h-9 rounded-md px-2 text-[#8b8b90] hover:bg-[#f1f5f9]"
+        className="h-9 rounded-md px-2 text-[#8b8b90] hover:bg-surface-raised"
       >
         <X className="h-4 w-4" />
       </button>
@@ -835,7 +814,7 @@ function PersonalCard({
     <button
       type="button"
       onClick={() => setCreatePersonal(true)}
-      className="mt-2 flex items-center gap-1.5 rounded-md px-1 py-2 text-[12px] text-[#8b8b90] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+      className="mt-2 flex items-center gap-1.5 rounded-md px-1 py-2 text-[12px] text-[#8b8b90] hover:bg-surface-raised hover:text-primary"
     >
       <Plus className="h-3.5 w-3.5" />
       Create a task
@@ -853,7 +832,7 @@ function PersonalCard({
           <button
             type="button"
             onClick={() => setCreatePersonal(true)}
-            className="mt-3 rounded-md bg-[#2563eb] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#1d4ed8]"
+            className="mt-3 rounded-md bg-[#3ecf8e] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#24b47e]"
           >
             + Create a task
           </button>
@@ -935,7 +914,7 @@ function HistoryCard({
                 value={historySearch}
                 onChange={(e) => setHistorySearch(e.target.value)}
                 placeholder="Search history"
-                className="h-7 w-[140px] rounded-md border border-[#e2e8f0] bg-[#f8fafc] pl-7 pr-2 text-[12px] outline-none focus:border-[#cbd5e1]"
+                className="h-7 w-[140px] rounded-md border border-border bg-surface-raised pl-7 pr-2 text-[12px] outline-none focus:border-[#c7c7c7]"
               />
             </div>
           )}
@@ -954,7 +933,7 @@ function HistoryCard({
               <button
                 type="button"
                 onClick={() => go('all')}
-                className="mt-3 text-[12px] text-[#2563eb] hover:underline"
+                className="mt-3 text-[12px] text-[#3ecf8e] hover:underline"
               >
                 Back to all my tasks
               </button>
@@ -966,7 +945,7 @@ function HistoryCard({
           {items.map((t) => (
             <li
               key={t._id}
-              className="group flex items-center gap-2 rounded-lg px-1.5 py-2 transition-colors hover:bg-[#eff6ff]"
+              className="group flex items-center gap-2 rounded-lg px-1.5 py-2 transition-colors hover:bg-[#ecfdf5]"
             >
               <button
                 type="button"
@@ -994,7 +973,7 @@ function HistoryCard({
                 </p>
               </button>
               {t.isPersonal && (
-                <span className="rounded bg-[#f1f5f9] px-1.5 py-0.5 text-[10px] text-[#8b8b90]">
+                <span className="rounded bg-surface-raised px-1.5 py-0.5 text-[10px] text-[#8b8b90]">
                   Personal
                 </span>
               )}
@@ -1016,7 +995,7 @@ function CommentsCard({ comments = [] }) {
       action={
         <Link
           to="/assigned-comments"
-          className="text-[11px] font-medium text-[#2563eb] hover:underline"
+          className="text-[11px] font-medium text-[#3ecf8e] hover:underline"
         >
           Open all
         </Link>
@@ -1048,7 +1027,7 @@ function CommentsCard({ comments = [] }) {
               <li key={c._id}>
                 <Link
                   to={href}
-                  className="block rounded-lg px-2 py-2 hover:bg-[#f1f5f9]"
+                  className="block rounded-lg px-2 py-2 hover:bg-surface-raised"
                 >
                   <div className="flex gap-2.5">
                     <Avatar
@@ -1058,7 +1037,7 @@ function CommentsCard({ comments = [] }) {
                     />
                     <div className="min-w-0">
                       <p className="truncate text-[12px] text-[#8b8b90]">
-                        <span className="font-medium text-[#0f172a]">
+                        <span className="font-medium text-primary">
                           {c.author?.name}
                         </span>
                         {task?.title ? ` · ${task.title}` : ''}
@@ -1130,14 +1109,14 @@ function AgendaCard({
             <button
               type="button"
               onClick={onRefresh}
-              className="text-[11px] text-[#8b8b90] hover:text-[#0f172a]"
+              className="text-[11px] text-[#8b8b90] hover:text-primary"
             >
               Refresh
             </button>
             <button
               type="button"
               onClick={onDisconnect}
-              className="text-[11px] text-[#8b8b90] hover:text-[#0f172a]"
+              className="text-[11px] text-[#8b8b90] hover:text-primary"
             >
               Disconnect
             </button>
@@ -1151,10 +1130,10 @@ function AgendaCard({
         </p>
       ) : !connected ? (
         <div className="flex flex-col items-center px-3 py-8 text-center">
-          <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-[#f1f5f9]">
+          <div className="mb-4 flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-surface-raised">
             <Calendar className="h-7 w-7 text-[#a855f7]" strokeWidth={1.5} />
           </div>
-          <p className="text-[14px] font-semibold text-[#0f172a]">
+          <p className="text-[14px] font-semibold text-primary">
             Connect your Google Calendar
           </p>
           <p className="mt-1.5 max-w-sm text-[13px] leading-relaxed text-[#8b8b90]">
@@ -1163,21 +1142,21 @@ function AgendaCard({
           </p>
 
           {showSetup ? (
-            <div className="mt-4 w-full rounded-xl border border-[#e2e8f0] bg-[#F4F7FB] p-4 text-left">
-              <p className="text-[13px] font-medium text-[#0f172a]">
+            <div className="mt-4 w-full rounded-xl border border-border bg-[#F4F7FB] p-4 text-left">
+              <p className="text-[13px] font-medium text-primary">
                 One-time workspace setup
               </p>
               <p className="mt-1 text-[12px] leading-relaxed text-[#8b8b90]">
                 Create an OAuth Client ID in Google Cloud (Web application),
                 add origin{' '}
-                <code className="text-[#64748b]">http://localhost:5173</code>,
+                <code className="text-secondary">http://localhost:5173</code>,
                 enable Calendar API, then paste the Client ID below.
               </p>
               <a
                 href="https://console.cloud.google.com/apis/credentials"
                 target="_blank"
                 rel="noreferrer"
-                className="mt-2 inline-block text-[12px] text-[#2563eb] hover:underline"
+                className="mt-2 inline-block text-[12px] text-[#3ecf8e] hover:underline"
               >
                 Open Google Cloud Credentials →
               </a>
@@ -1185,14 +1164,14 @@ function AgendaCard({
                 value={clientDraft}
                 onChange={(e) => setClientDraft(e.target.value)}
                 placeholder="xxxx.apps.googleusercontent.com"
-                className="mt-3 h-10 w-full rounded-md border border-[#e2e8f0] bg-white px-3 text-[13px] text-[#0f172a] outline-none placeholder:text-[#94a3b8] focus:border-[#93c5fd]"
+                className="mt-3 h-10 w-full rounded-md border border-border bg-surface px-3 text-[13px] text-primary outline-none placeholder:text-secondary focus:border-[#4ade80]"
               />
               <div className="mt-3 flex flex-wrap gap-2">
                 <button
                   type="button"
                   disabled={savingClientId || connecting}
                   onClick={onSaveAndConnect}
-                  className="rounded-md bg-[#2563eb] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#1d4ed8] disabled:opacity-50"
+                  className="rounded-md bg-[#3ecf8e] px-3 py-2 text-[12px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-50"
                 >
                   {savingClientId || connecting
                     ? 'Working…'
@@ -1201,7 +1180,7 @@ function AgendaCard({
                 <button
                   type="button"
                   onClick={() => setShowSetup(false)}
-                  className="rounded-md px-3 py-2 text-[12px] text-[#8b8b90] hover:bg-[#f1f5f9] hover:text-[#0f172a]"
+                  className="rounded-md px-3 py-2 text-[12px] text-[#8b8b90] hover:bg-surface-raised hover:text-primary"
                 >
                   Cancel
                 </button>
@@ -1212,7 +1191,7 @@ function AgendaCard({
               type="button"
               disabled={connecting}
               onClick={() => onConnectGoogle()}
-              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#F4F7FB] px-4 py-2.5 text-[13px] text-[#0f172a] hover:bg-[#f1f5f9] disabled:opacity-50"
+              className="mt-5 inline-flex items-center gap-2 rounded-lg border border-border bg-[#F4F7FB] px-4 py-2.5 text-[13px] text-primary hover:bg-surface-raised disabled:opacity-50"
             >
               <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden>
                 <path
@@ -1238,11 +1217,11 @@ function AgendaCard({
         </div>
       ) : (
         <div>
-          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-[#e2e8f0] bg-[#F4F7FB] px-3 py-2 text-[12px]">
+          <div className="mb-3 flex flex-wrap items-center gap-2 rounded-lg border border-border bg-[#F4F7FB] px-3 py-2 text-[12px]">
             <span className="h-2 w-2 rounded-full bg-emerald-400" />
-            <span className="text-[#64748b]">
+            <span className="text-secondary">
               Connected to{' '}
-              <strong className="text-[#0f172a]">Google Calendar</strong>
+              <strong className="text-primary">Google Calendar</strong>
               {email ? ` · ${email}` : ''}
             </span>
           </div>
@@ -1273,7 +1252,7 @@ function AgendaCard({
                       href={ev.htmlLink || '#'}
                       target="_blank"
                       rel="noreferrer"
-                      className="flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-[#f1f5f9]"
+                      className="flex w-full items-start gap-3 rounded-lg px-2 py-2.5 text-left hover:bg-surface-raised"
                     >
                       <div
                         className="mt-1 h-8 w-1 shrink-0 rounded-full"
@@ -1286,7 +1265,7 @@ function AgendaCard({
                         <p className="text-[11px] text-[#6b6b70]">{timeLabel}</p>
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="truncate text-[13px] text-[#0f172a]">
+                        <p className="truncate text-[13px] text-primary">
                           {ev.title}
                         </p>
                         <p className="truncate text-[11px] text-[#6b6b70]">
@@ -1302,7 +1281,7 @@ function AgendaCard({
           )}
 
           {cubicAgenda.length > 0 && (
-            <div className="mt-4 border-t border-[#e2e8f0] pt-3">
+            <div className="mt-4 border-t border-border pt-3">
               <p className="mb-2 px-1 text-[11px] font-semibold uppercase tracking-wide text-[#6b6b70]">
                 EPM due dates
               </p>
@@ -1313,12 +1292,12 @@ function AgendaCard({
                     key={t._id}
                     type="button"
                     onClick={() => onOpenTask(t)}
-                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-[#f1f5f9]"
+                    className="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-surface-raised"
                   >
-                    <span className="w-[88px] shrink-0 text-[12px] font-medium text-[#2563eb]">
+                    <span className="w-[88px] shrink-0 text-[12px] font-medium text-[#3ecf8e]">
                       {isToday(d) ? 'Today' : format(d, 'MMM d')}
                     </span>
-                    <span className="min-w-0 flex-1 truncate text-[13px] text-[#0f172a]">
+                    <span className="min-w-0 flex-1 truncate text-[13px] text-primary">
                       {t.title}
                     </span>
                   </button>
@@ -1349,12 +1328,12 @@ function Card({
   return (
     <section
       className={cn(
-        'flex flex-col overflow-hidden rounded-2xl border border-[#e2e8f0] bg-white shadow-[0_1px_2px_rgba(15,23,42,0.04)]',
+        'on-dark flex flex-col overflow-hidden rounded-2xl bg-[var(--panel-dark)] shadow-[0_8px_30px_rgba(0,0,0,0.08)]',
         tall ? 'min-h-[420px]' : 'min-h-[280px]',
         className,
       )}
     >
-      <div className="flex shrink-0 items-center gap-2 border-b border-[#eef2f7] bg-[#fafbfc] px-4 py-3">
+      <div className="flex shrink-0 items-center gap-2 border-b border-white/10 bg-[var(--panel-dark-raised)] px-4 py-3">
         {accent && (
           <span
             className="h-2 w-2 shrink-0 rounded-full"
@@ -1362,27 +1341,27 @@ function Card({
           />
         )}
         {titleIcon}
-        <h2 className="text-[13px] font-semibold text-[#0f172a]">{title}</h2>
+        <h2 className="text-[13px] font-semibold text-white">{title}</h2>
         {typeof badge === 'number' && (
           <span
             className={cn(
               'rounded-full px-1.5 py-0.5 text-[10px] font-semibold',
               badgeTone === 'danger'
-                ? 'bg-red-50 text-red-600'
-                : 'bg-[#eef2f7] text-[#64748b]',
+                ? 'bg-red-500/20 text-red-300'
+                : 'bg-white/10 text-white/70',
             )}
           >
             {badge}
           </span>
         )}
         {info && (
-          <span title={info} className="text-[#94a3b8]">
+          <span title={info} className="text-white/50">
             <Info className="h-3.5 w-3.5" />
           </span>
         )}
         <div className="ml-auto">{action}</div>
       </div>
-      <div className="min-h-0 flex-1 overflow-y-auto p-3.5">{children}</div>
+      <div className="min-h-0 flex-1 overflow-y-auto p-3.5 text-white/80">{children}</div>
     </section>
   )
 }
@@ -1392,7 +1371,7 @@ function SeeAll({ onClick }) {
     <button
       type="button"
       onClick={onClick}
-      className="text-[11px] font-medium text-[#2563eb] hover:underline"
+      className="text-[11px] font-medium text-[#3ecf8e] hover:underline"
     >
       See all
     </button>
@@ -1402,10 +1381,10 @@ function SeeAll({ onClick }) {
 function EmptyArt({ icon, text, action }) {
   return (
     <div className="flex h-full min-h-[160px] flex-col items-center justify-center px-4 text-center">
-      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-[#e2e8f0] bg-[#f8fafc]">
+      <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full border border-white/10 bg-white/5">
         {icon}
       </div>
-      <p className="max-w-[260px] text-[13px] leading-relaxed text-[#64748b]">
+      <p className="max-w-[260px] text-[13px] leading-relaxed text-white/55">
         {text}
       </p>
       {action}
@@ -1460,7 +1439,7 @@ function TaskLine({
           : 'Not started'
 
   return (
-    <div className="group flex items-center gap-2 rounded-lg px-1.5 py-2 transition-colors hover:bg-[#eff6ff]">
+    <div className="group flex items-center gap-2 rounded-lg px-1.5 py-2 transition-colors hover:bg-[#ecfdf5]">
       <button
         type="button"
         onClick={onToggle}
@@ -1487,7 +1466,7 @@ function TaskLine({
       <button type="button" onClick={onOpen} className="min-w-0 flex-1 text-left">
         <p
           className={cn(
-            'truncate text-[13px] text-[#0f172a]',
+            'truncate text-[13px] text-primary',
             done && 'text-[#6b6b70] line-through',
             tone === 'danger' && !done && 'text-red-600',
           )}

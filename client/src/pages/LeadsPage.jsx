@@ -144,14 +144,14 @@ export function LeadsPage() {
     <div className="mx-auto w-full max-w-[1600px] space-y-5 pb-10">
       <header className="flex flex-wrap items-end justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-[#94a3b8]">
+          <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-[0.14em] text-secondary">
             <Building2 className="h-3.5 w-3.5 text-blue-600" />
             CRM pipeline
           </div>
-          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-[#0f172a]">
+          <h1 className="mt-1 text-[28px] font-semibold tracking-[-0.03em] text-primary">
             New enquiries
           </h1>
-          <p className="mt-1 max-w-xl text-[13px] text-[#64748b]">
+          <p className="mt-1 max-w-xl text-[13px] text-secondary">
             Capture incoming work and assign an employee right from the card —
             no extra clicks.
           </p>
@@ -176,7 +176,7 @@ export function LeadsPage() {
       </section>
 
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <div className="inline-flex rounded-xl border border-[#e2e8f0] bg-[#eef2f7] p-1">
+        <div className="inline-flex rounded-xl border border-border bg-surface-raised p-1">
           {FILTERS.map((f) => (
             <button
               key={f.key}
@@ -185,13 +185,13 @@ export function LeadsPage() {
               className={cn(
                 'rounded-lg px-3 py-1.5 text-[12px] font-semibold transition',
                 filter === f.key
-                  ? 'bg-white text-[#0f172a] shadow-sm'
-                  : 'text-[#64748b] hover:text-[#0f172a]',
+                  ? 'bg-surface text-primary shadow-sm'
+                  : 'text-secondary hover:text-primary',
               )}
             >
               {f.label}
               {f.key === 'unassigned' && unassignedCount > 0 ? (
-                <span className="ml-1.5 rounded-md bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
+                <span className="ml-1.5 rounded-md bg-[var(--nav-active-bg)] px-1.5 py-0.5 text-[10px] font-bold text-amber-700">
                   {unassignedCount}
                 </span>
               ) : null}
@@ -199,18 +199,18 @@ export function LeadsPage() {
           ))}
         </div>
         <div className="relative">
-          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#94a3b8]" />
+          <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-secondary" />
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search client, contact, assignee…"
-            className="h-9 w-64 rounded-xl border border-[#dce4ee] bg-white pl-8 pr-3 text-[12px] outline-none focus:border-[#93b4ec]"
+            className="h-9 w-64 rounded-xl border border-border bg-surface pl-8 pr-3 text-[12px] outline-none focus:border-accent/40"
           />
         </div>
       </div>
 
       {isLoading ? (
-        <div className="h-64 animate-pulse rounded-2xl border border-[#e2e8f0] bg-white" />
+        <div className="h-64 animate-pulse rounded-2xl border border-border bg-surface" />
       ) : filtered.length === 0 ? (
         <EmptyState
           icon={Building2}
@@ -230,13 +230,13 @@ export function LeadsPage() {
             return (
               <div
                 key={stage}
-                className="w-[280px] shrink-0 overflow-hidden rounded-2xl border border-[#e0e7f0] bg-white shadow-[0_1px_3px_rgba(15,23,42,0.04)]"
+                className="w-[280px] shrink-0 overflow-hidden rounded-2xl border border-transparent bg-surface"
               >
-                <div className="flex items-center justify-between border-b border-[#eef2f7] px-3.5 py-3">
-                  <p className="text-[12px] font-semibold text-[#334155]">
+                <div className="flex items-center justify-between border-b border-border px-3.5 py-3">
+                  <p className="text-[12px] font-semibold text-primary">
                     {stageLabel(stage)}
                   </p>
-                  <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-[#64748b]">
+                  <span className="rounded-md bg-surface-raised px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-secondary">
                     {column.length}
                   </span>
                 </div>
@@ -279,7 +279,7 @@ export function LeadsPage() {
               onAssign={(owner) => assignLead(selected, owner)}
             />
 
-            <p className="text-sm text-[#64748b]">
+            <p className="text-sm text-secondary">
               {selected.notes || 'No notes yet.'}
             </p>
 
@@ -292,7 +292,7 @@ export function LeadsPage() {
                 accent
               />
               <div>
-                <p className="text-xs text-[#94a3b8]">Stage</p>
+                <p className="text-xs text-secondary">Stage</p>
                 <div className="mt-1">
                   <StatusChip
                     status={selected.stage}
@@ -303,7 +303,7 @@ export function LeadsPage() {
             </div>
 
             <div>
-              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-[#94a3b8]">
+              <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-secondary">
                 Move to stage
               </p>
               <div className="flex flex-wrap gap-1.5">
@@ -316,7 +316,7 @@ export function LeadsPage() {
                         ? 'rounded-lg bg-emerald-50 px-2.5 py-1.5 text-[11px] font-semibold text-emerald-700 hover:bg-emerald-100'
                         : s === 'lost'
                           ? 'rounded-lg bg-red-50 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 hover:bg-red-100'
-                          : 'rounded-lg border border-[#e2e8f0] bg-[#f8fafc] px-2.5 py-1.5 text-[11px] font-semibold text-[#0f172a] hover:border-[#93b4ec]'
+                          : 'rounded-lg border border-border bg-surface-raised px-2.5 py-1.5 text-[11px] font-semibold text-primary hover:border-accent/40'
                     }
                     onClick={() =>
                       patch.mutate(
@@ -368,14 +368,14 @@ export function LeadsPage() {
 
 function Stat({ label, value, tone = 'default' }) {
   return (
-    <div className="rounded-2xl border border-[#e0e7f0] bg-white px-4 py-3.5 shadow-[0_1px_3px_rgba(15,23,42,0.04)]">
-      <p className="text-[11px] font-semibold uppercase tracking-wide text-[#94a3b8]">
+    <div className="rounded-2xl border border-transparent bg-surface px-4 py-3.5">
+      <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">
         {label}
       </p>
       <p
         className={cn(
           'mt-1 text-[26px] font-semibold tracking-[-0.03em] tabular-nums',
-          tone === 'amber' ? 'text-amber-600' : 'text-[#0f172a]',
+          tone === 'amber' ? 'text-amber-600' : 'text-primary',
         )}
       >
         {value}
@@ -387,11 +387,11 @@ function Stat({ label, value, tone = 'default' }) {
 function Meta({ label, value, accent }) {
   return (
     <div>
-      <p className="text-xs text-[#94a3b8]">{label}</p>
+      <p className="text-xs text-secondary">{label}</p>
       <p
         className={cn(
           'mt-0.5 font-medium',
-          accent ? 'tabular-nums text-blue-600' : 'text-[#0f172a]',
+          accent ? 'tabular-nums text-blue-600' : 'text-primary',
         )}
       >
         {value}
@@ -427,22 +427,22 @@ function EnquiryCard({
         }
       }}
       className={cn(
-        'w-full rounded-xl border bg-[#fbfdff] p-3 text-left transition hover:border-[#93b4ec]/40',
+        'w-full rounded-xl border bg-surface-raised p-3 text-left transition hover:border-accent/30',
         needsOwner
-          ? 'border-amber-200 ring-1 ring-amber-100'
-          : 'border-[#e2e8f0]',
+          ? 'border-amber-200/70 ring-1 ring-amber-500/15'
+          : 'border-transparent',
       )}
     >
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
-          <p className="truncate text-[13px] font-semibold text-[#0f172a]">
+          <p className="truncate text-[13px] font-semibold text-primary">
             {lead.clientName}
           </p>
-          <p className="mt-0.5 truncate text-[11px] text-[#64748b]">
+          <p className="mt-0.5 truncate text-[11px] text-secondary">
             {lead.contactName || lead.source || '—'}
           </p>
         </div>
-        <p className="shrink-0 text-[12px] font-semibold tabular-nums text-blue-600">
+        <p className="shrink-0 text-[12px] font-semibold tabular-nums text-accent">
           {formatInr(lead.estimatedValue)}
         </p>
       </div>
@@ -469,7 +469,7 @@ function EnquiryCard({
         {next && next !== 'lost' && (
           <button
             type="button"
-            className="rounded-md bg-[#eff6ff] px-1.5 py-0.5 text-[10px] font-semibold text-[#2563eb] hover:bg-[#dbeafe]"
+            className="rounded-md bg-[#ecfdf5] px-1.5 py-0.5 text-[10px] font-semibold text-[#3ecf8e] hover:bg-[#d1fae5]"
             onClick={() => onStage(next)}
           >
             → {stageLabel(next).split(' ')[0]}
@@ -500,16 +500,16 @@ function EnquiryCard({
 
 function AssignPanel({ lead, users, usersLoading, onAssign }) {
   return (
-    <div className="rounded-2xl border border-[#dbeafe] bg-gradient-to-br from-[#eff6ff] to-white p-4">
+    <div className="rounded-2xl border border-transparent bg-[var(--nav-active-bg)] p-4">
       <div className="mb-2 flex items-center gap-2">
-        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white shadow-sm ring-1 ring-[#dbeafe]">
+        <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-surface shadow-sm ring-1 ring-[#d1fae5]">
           <UserPlus className="h-4 w-4 text-blue-600" />
         </div>
         <div>
-          <p className="text-[13px] font-semibold text-[#0f172a]">
+          <p className="text-[13px] font-semibold text-primary">
             Assign employee
           </p>
-          <p className="text-[11px] text-[#64748b]">
+          <p className="text-[11px] text-secondary">
             They get notified and own the follow-up.
           </p>
         </div>
@@ -556,13 +556,13 @@ function AssigneePicker({
           compact ? 'h-9' : 'h-11',
           highlightEmpty && !selected
             ? 'border-amber-300 bg-amber-50/80 hover:border-amber-400'
-            : 'border-[#e2e8f0] bg-white hover:border-[#93b4ec]',
+            : 'border-border bg-surface hover:border-accent/40',
         )}
       >
         {selected ? (
           <>
             <Avatar src={selected.avatar} name={selected.name} size="xs" />
-            <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#0f172a]">
+            <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-primary">
               {selected.name}
             </span>
           </>
@@ -571,46 +571,46 @@ function AssigneePicker({
             <span
               className={cn(
                 'flex h-6 w-6 items-center justify-center rounded-full',
-                highlightEmpty ? 'bg-amber-100' : 'bg-[#f1f5f9]',
+                highlightEmpty ? 'bg-[var(--nav-active-bg)]' : 'bg-surface-raised',
               )}
             >
               <Users
                 className={cn(
                   'h-3.5 w-3.5',
-                  highlightEmpty ? 'text-amber-700' : 'text-[#94a3b8]',
+                  highlightEmpty ? 'text-amber-700' : 'text-secondary',
                 )}
               />
             </span>
             <span
               className={cn(
                 'min-w-0 flex-1 truncate text-[12px] font-semibold',
-                highlightEmpty ? 'text-amber-800' : 'text-[#94a3b8]',
+                highlightEmpty ? 'text-amber-800' : 'text-secondary',
               )}
             >
               Assign employee…
             </span>
           </>
         )}
-        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-[#94a3b8]" />
+        <ChevronDown className="h-3.5 w-3.5 shrink-0 text-secondary" />
       </button>
 
       {open && (
-        <div className="absolute left-0 top-[calc(100%+4px)] z-50 max-h-56 w-full min-w-[220px] overflow-y-auto rounded-xl border border-[#e2e8f0] bg-white py-1 shadow-xl">
+        <div className="absolute left-0 top-[calc(100%+4px)] z-50 max-h-56 w-full min-w-[220px] overflow-y-auto rounded-xl border border-border bg-surface py-1 shadow-xl">
           <button
             type="button"
             onClick={() => {
               onChange(null)
               setOpen(false)
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-[#64748b] hover:bg-[#f8fafc]"
+            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[12px] text-secondary hover:bg-surface-raised"
           >
             Unassigned
           </button>
           {loading && (
-            <p className="px-3 py-2 text-[11px] text-[#94a3b8]">Loading…</p>
+            <p className="px-3 py-2 text-[11px] text-secondary">Loading…</p>
           )}
           {!loading && users.length === 0 && (
-            <p className="px-3 py-2 text-[11px] text-[#94a3b8]">
+            <p className="px-3 py-2 text-[11px] text-secondary">
               No employees found
             </p>
           )}
@@ -626,16 +626,16 @@ function AssigneePicker({
                   setOpen(false)
                 }}
                 className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-[#f8fafc]',
-                  active && 'bg-[#eff6ff]',
+                  'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-surface-raised',
+                  active && 'bg-[#ecfdf5]',
                 )}
               >
                 <Avatar src={u.avatar} name={u.name} size="xs" />
-                <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-[#0f172a]">
+                <span className="min-w-0 flex-1 truncate text-[12px] font-medium text-primary">
                   {u.name}
                 </span>
                 {u.role ? (
-                  <span className="shrink-0 text-[10px] uppercase text-[#94a3b8]">
+                  <span className="shrink-0 text-[10px] uppercase text-secondary">
                     {String(u.role).replace(/_/g, ' ')}
                   </span>
                 ) : null}
@@ -708,7 +708,7 @@ function LeadForm({ users, usersLoading, defaultOwner, onSubmit, loading }) {
       />
 
       <div>
-        <p className="mb-1.5 text-[12px] font-semibold text-[#475569]">
+        <p className="mb-1.5 text-[12px] font-semibold text-secondary">
           Assign to employee
         </p>
         <AssigneePicker
