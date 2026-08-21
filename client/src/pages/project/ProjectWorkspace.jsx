@@ -17,6 +17,11 @@ import {
 import { api, useAuthStore } from '../../lib/api'
 import { Button, Modal, Skeleton, toast } from '../../components/ui'
 import { cn } from '../../lib/utils'
+import {
+  PILL_ACTIVE,
+  PILL_IDLE,
+  PILL_TRACK,
+} from '../../components/layout/PageToolbar'
 import { stageLabel } from '../../lib/format'
 import { whatsappLink } from '../../lib/phone'
 import { capabilitiesForUser } from '../../lib/roles'
@@ -35,6 +40,7 @@ const MAIN_TABS = [
 export function ProjectWorkspace() {
   const { id } = useParams()
   const user = useAuthStore((s) => s.user)
+  const tenant = useAuthStore((s) => s.tenant)
   const navigate = useNavigate()
   const location = useLocation()
   const qc = useQueryClient()
@@ -96,11 +102,11 @@ export function ProjectWorkspace() {
   }, [isError, error?.status, id])
 
   const project = data?.project
-  const caps = capabilitiesForUser(user)
+  const caps = capabilitiesForUser(user, tenant)
   const visibleTabs = useMemo(
     () => MAIN_TABS.filter((tab) => caps.projectTabs[tab.capability]),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [user?.role, user?.isPlatformAdmin, user?.permissions],
+    [user?.role, user?.isPlatformAdmin, user?.permissions, tenant?.customRoles],
   )
   const canManageProject = caps.manageProjects
 
@@ -122,25 +128,23 @@ export function ProjectWorkspace() {
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-surface-raised print:h-auto print:overflow-visible">
-      {/* One dense project chrome — no stacked empty bars */}
-      <header className="shrink-0 border-b border-border bg-surface print:hidden">
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-3 py-2 sm:px-4">
+    <div className="flex h-full min-h-0 flex-col bg-[var(--bg-canvas)] print:h-auto print:overflow-visible">
+      <header className="shrink-0 border-b border-border/80 bg-surface/90 backdrop-blur-md print:hidden">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-4 py-3 sm:px-5">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1 text-[11px] text-secondary">
-              <Link to="/projects" className="hover:text-[#3ecf8e]">
+              <Link to="/projects" className="hover:text-primary">
                 All projects
               </Link>
-              <ChevronRight className="h-3 w-3 shrink-0 opacity-60" />
-              <span className="truncate text-secondary">{project.name}</span>
+              <ChevronRight className="h-3 w-3 shrink-0 opacity-50" />
+              <span className="truncate">{project.name}</span>
             </div>
-            <div className="mt-0.5 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
-              <h1 className="truncate text-[16px] font-semibold tracking-tight text-primary">
+            <div className="mt-1 flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+              <h1 className="truncate text-[20px] font-semibold tracking-tight text-primary">
                 {project.name}
               </h1>
-              <p className="truncate text-[11px] text-secondary">
+              <p className="truncate text-[12px] text-secondary">
                 {project.clientName}
-                {project.clientPhone ? ` · ${project.clientPhone}` : ''}
                 {project.location ? ` · ${project.location}` : ''}
                 {' · '}
                 <span className="font-medium text-primary">
@@ -150,13 +154,13 @@ export function ProjectWorkspace() {
             </div>
           </div>
 
-          <div className="flex shrink-0 items-center gap-1">
+          <div className="flex shrink-0 items-center gap-1.5">
             {canManageProject && (
               <button
                 type="button"
                 title="Delete project"
                 onClick={() => setConfirmDelete(true)}
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-secondary hover:bg-red-50 hover:text-red-600"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-secondary hover:bg-red-50 hover:text-red-600"
               >
                 <Trash2 className="h-3.5 w-3.5" />
               </button>
@@ -171,7 +175,7 @@ export function ProjectWorkspace() {
                   toast('Could not copy link', { type: 'error' })
                 }
               }}
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2.5 text-[12px] font-semibold text-secondary hover:bg-surface"
+              className="inline-flex h-8 items-center gap-1.5 rounded-full border border-border bg-surface px-3 text-[12px] font-semibold text-secondary hover:bg-black/[0.03] hover:text-primary"
             >
               <Share2 className="h-3.5 w-3.5" />
               Share
@@ -197,10 +201,10 @@ export function ProjectWorkspace() {
                 window.open(url, '_blank', 'noopener')
               }}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-lg px-2.5 text-[12px] font-semibold text-white shadow-sm transition',
+                'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-[#171717] shadow-sm transition',
                 project.clientPhone
-                  ? 'bg-[#25D366] hover:bg-[#1fb958]'
-                  : 'bg-[#9fd9b4] hover:bg-[#8ecfa6]',
+                  ? 'bg-[#3ecf8e] hover:bg-[#24b47e]'
+                  : 'bg-[#c7f0d8] hover:bg-[#b5e9cb]',
               )}
             >
               <Send className="h-3.5 w-3.5" />
@@ -209,24 +213,24 @@ export function ProjectWorkspace() {
           </div>
         </div>
 
-        <nav className="flex items-center gap-0.5 overflow-x-auto px-3 pb-2 sm:px-4">
-          {visibleTabs.map((tab) => (
-            <NavLink
-              key={tab.to}
-              to={tab.to}
-              className={({ isActive }) =>
-                cn(
-                  'flex shrink-0 items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-[12px] font-semibold transition',
-                  isActive
-                    ? 'bg-[#3ecf8e] text-white shadow-sm'
-                    : 'text-secondary hover:bg-surface-raised hover:text-primary',
-                )
-              }
-            >
-              <tab.icon className="h-3.5 w-3.5" strokeWidth={2} />
-              {tab.label}
-            </NavLink>
-          ))}
+        <nav className="px-4 pb-3 sm:px-5">
+          <div className={cn(PILL_TRACK, 'max-w-full overflow-x-auto')}>
+            {visibleTabs.map((tab) => (
+              <NavLink
+                key={tab.to}
+                to={tab.to}
+                className={({ isActive }) =>
+                  cn(
+                    'flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1.5 text-[12px] font-semibold transition',
+                    isActive ? PILL_ACTIVE : PILL_IDLE,
+                  )
+                }
+              >
+                <tab.icon className="h-3.5 w-3.5" strokeWidth={2} />
+                {tab.label}
+              </NavLink>
+            ))}
+          </div>
         </nav>
       </header>
 

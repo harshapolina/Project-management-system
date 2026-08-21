@@ -28,6 +28,7 @@ export function PlatformCompaniesPage() {
     name: '',
     slug: '',
     seatLimit: 30,
+    adminLimit: 3,
     adminName: '',
     adminEmail: '',
     adminPassword: '',
@@ -42,6 +43,7 @@ export function PlatformCompaniesPage() {
           name: form.name,
           slug: form.slug.trim().toLowerCase(),
           seatLimit: Number(form.seatLimit) || 30,
+          adminLimit: Number(form.adminLimit) || 3,
           adminName: form.adminName,
           adminEmail: form.adminEmail,
           ...(form.adminPassword.trim() ? { adminPassword: form.adminPassword.trim() } : {}),
@@ -58,7 +60,15 @@ export function PlatformCompaniesPage() {
         loginUrl: companyLoginUrl(res.tenant.slug),
         portal: 'admin',
       })
-      setForm({ name: '', slug: '', seatLimit: 30, adminName: '', adminEmail: '', adminPassword: '' })
+      setForm({
+        name: '',
+        slug: '',
+        seatLimit: 30,
+        adminLimit: 3,
+        adminName: '',
+        adminEmail: '',
+        adminPassword: '',
+      })
       setShowCreate(false)
       setExpandedId(res.tenant._id)
       qc.invalidateQueries({ queryKey: ['platform-tenants'] })
@@ -83,13 +93,7 @@ export function PlatformCompaniesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div className="flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[28px] font-semibold tracking-tight text-primary">Companies</h1>
-          <p className="mt-1 text-sm text-secondary">
-            Create and control every company workspace — Cubic and others you provision.
-          </p>
-        </div>
+      <div className="flex flex-wrap items-center justify-end gap-4">
         <Button onClick={() => setShowCreate((v) => !v)}>
           <Plus className="mr-1 h-4 w-4" />
           {showCreate ? 'Hide form' : 'New company'}
@@ -130,6 +134,8 @@ export function PlatformCompaniesPage() {
               onChange={(e) => setForm((s) => ({ ...s, slug: e.target.value.toLowerCase().replace(/[^a-z0-9-]/g, '') }))} />
             <Input label="Seat limit" type="number" light value={form.seatLimit}
               onChange={(e) => setForm((s) => ({ ...s, seatLimit: e.target.value }))} />
+            <Input label="Max company admins" type="number" light min={1} max={50} value={form.adminLimit}
+              onChange={(e) => setForm((s) => ({ ...s, adminLimit: e.target.value }))} />
             <Input label="First admin name" light value={form.adminName}
               onChange={(e) => setForm((s) => ({ ...s, adminName: e.target.value }))} />
             <Input label="First admin email" type="email" className="sm:col-span-2" light value={form.adminEmail}

@@ -18,6 +18,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { api, useAuthStore } from '../lib/api'
+import { syncSocketAuth } from '../lib/socket'
 import { Avatar, toast } from '../components/ui'
 import { cn } from '../lib/utils'
 
@@ -28,61 +29,12 @@ const TABS = [
   { id: 'cleared', label: 'Cleared', icon: CheckCheck },
 ]
 
-const LATER_KEY = 'cubic-inbox-later'
-const CLEARED_KEY = 'cubic-inbox-cleared'
-
-function readIds(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key) || '[]')
-  } catch {
-    return []
-  }
-}
-
-function writeIds(key, ids) {
-  localStorage.setItem(key, JSON.stringify(ids))
-}
-
-function useInboxBuckets() {
-  const [laterIds, setLaterIds] = useState(() => readIds(LATER_KEY))
-  const [clearedIds, setClearedIds] = useState(() => readIds(CLEARED_KEY))
-
-  const snooze = (id) => {
-    const next = [...new Set([id, ...laterIds])]
-    setLaterIds(next)
-    writeIds(LATER_KEY, next)
-    toast('Saved for later', { type: 'success' })
-  }
-
-  const clearOne = (id) => {
-    const next = [...new Set([id, ...clearedIds])]
-    setClearedIds(next)
-    writeIds(CLEARED_KEY, next)
-    const later = laterIds.filter((x) => x !== id)
-    setLaterIds(later)
-    writeIds(LATER_KEY, later)
-    toast('Cleared', { type: 'success' })
-  }
-
-  const restore = (id) => {
-    const later = laterIds.filter((x) => x !== id)
-    const cleared = clearedIds.filter((x) => x !== id)
-    setLaterIds(later)
-    setClearedIds(cleared)
-    writeIds(LATER_KEY, later)
-    writeIds(CLEARED_KEY, cleared)
-  }
-
-  return { laterIds, clearedIds, snooze, clearOne, restore }
-}
-
 export function InboxPage() {
   const [params, setParams] = useSearchParams()
   const navigate = useNavigate()
   const tab = params.get('tab') || 'primary'
   const withUser = params.get('with') || ''
   const compose = params.get('compose') === '1'
-  const buckets = useInboxBuckets()
 
   const setTab = (id) => {
     const next = new URLSearchParams(params)
@@ -159,7 +111,7 @@ export function InboxPage() {
       </div>
 
       <div className="min-h-0 flex-1 overflow-hidden">
-        {tab === 'primary' && <PrimaryNotifications buckets={buckets} />}
+        {tab === 'primary' && <PrimaryNotifications mode="primary" />}
         {tab === 'mail' && (
           <CompanyMail
             withUserId={withUser}
@@ -169,12 +121,8 @@ export function InboxPage() {
             onComposeClose={() => setCompose(false)}
           />
         )}
-        {tab === 'later' && (
-          <PrimaryNotifications buckets={buckets} mode="later" />
-        )}
-        {tab === 'cleared' && (
-          <PrimaryNotifications buckets={buckets} mode="cleared" />
-        )}
+        {tab === 'later' && <PrimaryNotifications mode="later" />}
+        {tab === 'cleared' && <PrimaryNotifications mode="cleared" />}
       </div>
     </div>
   )
@@ -201,7 +149,7 @@ function MarkAllReadButton() {
   )
 }
 
-function PrimaryNotifications({ buckets, mode = 'primary' }) {
+function PrimaryNotifications({ mode = 'primary' }) {
   const qc = useQueryClient()
   const navigate = useNavigate()
   const { data } = useQuery({
@@ -211,18 +159,53 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
 
   const all = useMemo(() => data?.notifications || [], [data?.notifications])
   const items = useMemo(() => {
-    if (mode === 'later') {
-      return all.filter((n) => buckets.laterIds.includes(n._id))
+    if (mode === 'later') return all.filter((n) => n.later && !n.cleared)
+    if (mode === 'cleared') return all.filter((n) => n.cleared)
+    return all.filter((n) => !n.later && !n.cleared)
+  }, [all, mode])
+
+  const snooze = async (id) => {
+    try {
+      await api(`/notifications/${id}/later`, {
+        method: 'PATCH',
+        body: JSON.stringify({ later: true }),
+      })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      toast('Saved for later', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
     }
-    if (mode === 'cleared') {
-      return all.filter((n) => buckets.clearedIds.includes(n._id))
+  }
+
+  const clearOne = async (id) => {
+    try {
+      await api(`/notifications/${id}/clear`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cleared: true }),
+      })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      toast('Cleared', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
     }
-    return all.filter(
-      (n) =>
-        !buckets.laterIds.includes(n._id) &&
-        !buckets.clearedIds.includes(n._id),
-    )
-  }, [all, buckets.laterIds, buckets.clearedIds, mode])
+  }
+
+  const restore = async (id) => {
+    try {
+      await api(`/notifications/${id}/later`, {
+        method: 'PATCH',
+        body: JSON.stringify({ later: false }),
+      })
+      await api(`/notifications/${id}/clear`, {
+        method: 'PATCH',
+        body: JSON.stringify({ cleared: false }),
+      })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+      toast('Restored to Primary', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
+    }
+  }
 
   if (!items.length) {
     return (
@@ -296,14 +279,14 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
               <div className="flex gap-1">
                 <button
                   type="button"
-                  onClick={() => buckets.snooze(n._id)}
+                  onClick={() => snooze(n._id)}
                   className="rounded px-1.5 py-0.5 text-[11px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
                 >
                   Later
                 </button>
                 <button
                   type="button"
-                  onClick={() => buckets.clearOne(n._id)}
+                  onClick={() => clearOne(n._id)}
                   className="rounded px-1.5 py-0.5 text-[11px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
                 >
                   Clear
@@ -313,7 +296,7 @@ function PrimaryNotifications({ buckets, mode = 'primary' }) {
             {(mode === 'later' || mode === 'cleared') && (
               <button
                 type="button"
-                onClick={() => buckets.restore(n._id)}
+                onClick={() => restore(n._id)}
                 className="rounded px-1.5 py-0.5 text-[11px] text-[#8b8b90] hover:bg-[#252528] hover:text-white"
               >
                 Restore
@@ -345,7 +328,7 @@ function CompanyMail({
   const { data: threadsData } = useQuery({
     queryKey: ['mail-threads'],
     queryFn: () => api('/mail/threads'),
-    refetchInterval: 15000,
+    refetchInterval: 20_000,
   })
 
   const people = useMemo(() => dirData?.users || [], [dirData?.users])
@@ -562,7 +545,7 @@ function MailThread({ other, me, onBack }) {
   const { data, isLoading } = useQuery({
     queryKey: ['mail-thread', other._id],
     queryFn: () => api(`/mail/with/${other._id}`),
-    refetchInterval: 8000,
+    refetchInterval: 20_000,
   })
 
   const messages = data?.messages || []
@@ -570,6 +553,21 @@ function MailThread({ other, me, onBack }) {
   useEffect(() => {
     qc.invalidateQueries({ queryKey: ['mail-threads'] })
   }, [messages.length, qc])
+
+  useEffect(() => {
+    const socket = syncSocketAuth()
+    if (!socket) return undefined
+    const onMail = () => {
+      qc.invalidateQueries({ queryKey: ['mail-thread', other._id] })
+      qc.invalidateQueries({ queryKey: ['mail-threads'] })
+    }
+    socket.on('mail:new', onMail)
+    socket.on('notification:new', onMail)
+    return () => {
+      socket.off('mail:new', onMail)
+      socket.off('notification:new', onMail)
+    }
+  }, [other._id, qc])
 
   const send = useMutation({
     mutationFn: () =>

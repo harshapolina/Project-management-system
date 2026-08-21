@@ -67,7 +67,7 @@ export function MeetingNotes({ projectId, project, user }) {
   }
 
   return (
-    <section className="rounded-2xl border border-[#d6e4f5] bg-surface shadow-sm">
+    <section className="rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
       <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div className="flex min-w-0 items-center gap-2.5">
           <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#fef3c7] text-[#b45309]">
@@ -236,7 +236,7 @@ export function ProjectNotes() {
   const user = useAuthStore((s) => s.user)
 
   return (
-    <div className="mx-auto w-full max-w-3xl p-4 md:p-5">
+    <div className="mx-auto w-full max-w-3xl min-h-full bg-[var(--bg-canvas)] p-4 md:p-5 lg:p-6">
       <MeetingNotes projectId={id} project={project} user={user} />
     </div>
   )

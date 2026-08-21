@@ -117,7 +117,20 @@ router.get(
         : Promise.resolve(0),
     ])
 
+    const posInRange = since
+      ? purchaseOrders.filter((po) => po.createdAt && new Date(po.createdAt) >= since)
+      : purchaseOrders
+    const quotesInRange = since
+      ? quotations.filter((q) => q.createdAt && new Date(q.createdAt) >= since)
+      : quotations
+    const leadsInRange = since
+      ? leads.filter((l) => l.createdAt && new Date(l.createdAt) >= since)
+      : leads
+
     const activeLeads = leads.filter((l) => !['won', 'lost'].includes(l.stage))
+    const activeLeadsInRange = leadsInRange.filter(
+      (l) => !['won', 'lost'].includes(l.stage),
+    )
     const projectCounts = {
       total: projects.length,
       active: projects.filter((p) =>
@@ -134,25 +147,25 @@ router.get(
         key: 'in_progress',
         label: 'In progress',
         value: projects.filter((p) => statusBucket(p) === 'in_progress').length,
-        color: '#2563eb',
+        color: 'var(--status-in-progress)',
       },
       {
         key: 'completed',
         label: 'Completed',
         value: projects.filter((p) => statusBucket(p) === 'completed').length,
-        color: '#16a34a',
+        color: 'var(--status-completed)',
       },
       {
         key: 'delayed',
         label: 'Delayed',
         value: projects.filter((p) => statusBucket(p) === 'delayed').length,
-        color: '#dc2626',
+        color: 'var(--status-delayed)',
       },
       {
         key: 'on_hold',
         label: 'On hold',
         value: projects.filter((p) => statusBucket(p) === 'on_hold').length,
-        color: '#f59e0b',
+        color: 'var(--status-on-hold)',
       },
       {
         key: 'planning',
@@ -161,7 +174,7 @@ router.get(
           const bucket = statusBucket(p)
           return !['in_progress', 'completed', 'delayed', 'on_hold'].includes(bucket)
         }).length,
-        color: '#64748b',
+        color: 'var(--status-not-started)',
       },
     ].filter((row) => row.value > 0)
 
@@ -186,12 +199,78 @@ router.get(
       )
     }
 
+    const approvedQuotes = quotations.filter((q) => q.status === 'approved')
+    const approvedQuotesScoped = (since ? quotesInRange : quotations).filter(
+      (q) => q.status === 'approved',
+    )
+    const boqLineCount = approvedQuotesScoped.reduce(
+      (sum, q) => sum + (q.items?.length || 0),
+      0,
+    )
+    const orderedLineCount = posInRange.reduce(
+      (sum, po) => sum + (po.items?.length || 0),
+      0,
+    )
+
+    const materials = {
+      approvedBoqLines: boqLineCount,
+      poLines: orderedLineCount,
+      coveragePct:
+        boqLineCount > 0
+          ? Math.min(100, Math.round((orderedLineCount / boqLineCount) * 100))
+          : null,
+      poStatus: [
+        { key: 'draft', label: 'Draft', value: posInRange.filter((p) => p.status === 'draft').length },
+        { key: 'approved', label: 'Approved', value: posInRange.filter((p) => p.status === 'approved').length },
+        { key: 'ordered', label: 'Ordered', value: posInRange.filter((p) => p.status === 'ordered').length },
+        { key: 'in_transit', label: 'In transit', value: posInRange.filter((p) => p.status === 'in_transit').length },
+        { key: 'delivered', label: 'Delivered', value: posInRange.filter((p) => p.status === 'delivered').length },
+      ],
+      totalPos: posInRange.length,
+      note: since
+        ? `PO & BOQ lines created in the selected period. Coverage = approved BOQ lines vs PO lines.`
+        : 'Coverage uses approved BOQ lines vs PO lines (all time).',
+    }
+
+    const vendorMap = new Map()
+    for (const po of posInRange) {
+      const vendorId =
+        typeof po.vendor === 'object' && po.vendor?._id
+          ? String(po.vendor._id)
+          : String(po.vendor || '')
+      if (!vendorId || vendorId === 'undefined' || vendorId === 'null') continue
+      const existing = vendorMap.get(vendorId) || {
+        id: vendorId,
+        name: po.vendor?.name || 'Unknown vendor',
+        rating: po.vendor?.rating || null,
+        categories: po.vendor?.categories || [],
+        poCount: 0,
+        value: 0,
+        delivered: 0,
+      }
+      existing.poCount += 1
+      existing.value += Number(po.value) || 0
+      if (po.status === 'delivered') existing.delivered += 1
+      vendorMap.set(vendorId, existing)
+    }
+
+    const topVendors = [...vendorMap.values()]
+      .filter((v) => v.poCount > 0)
+      .sort((a, b) => b.value - a.value || b.poCount - a.poCount)
+      .slice(0, 8)
+      .map((v) => ({
+        ...v,
+        deliveryRate: v.poCount > 0 ? Math.round((v.delivered / v.poCount) * 100) : null,
+      }))
+
+    // Spend = project.spent field when set; otherwise fall back to approved expenses
+    // (avoids double-counting if spent was already rolled up from expenses).
     const budgetRows = projects.map((p) => {
       const id = String(p._id)
       const budget = Number(p.budget) || 0
       const recorded = Number(p.spent) || 0
       const approved = approvedByProject.get(id) || 0
-      const spent = recorded + approved
+      const spent = recorded > 0 ? recorded : approved
       const committed = committedByProject.get(id) || 0
       return {
         id: p._id,
@@ -226,85 +305,12 @@ router.get(
       0,
     )
 
-    const approvedQuotes = quotations.filter((q) => q.status === 'approved')
-    const boqLineCount = approvedQuotes.reduce(
-      (sum, q) => sum + (q.items?.length || 0),
-      0,
-    )
-    const orderedLineCount = purchaseOrders.reduce(
-      (sum, po) => sum + (po.items?.length || 0),
-      0,
-    )
-
-    const materials = {
-      approvedBoqLines: boqLineCount,
-      poLines: orderedLineCount,
-      coveragePct:
-        boqLineCount > 0
-          ? Math.min(100, Math.round((orderedLineCount / boqLineCount) * 100))
-          : null,
-      poStatus: [
-        { key: 'draft', label: 'Draft', value: purchaseOrders.filter((p) => p.status === 'draft').length },
-        { key: 'approved', label: 'Approved', value: purchaseOrders.filter((p) => p.status === 'approved').length },
-        { key: 'ordered', label: 'Ordered', value: purchaseOrders.filter((p) => p.status === 'ordered').length },
-        { key: 'in_transit', label: 'In transit', value: purchaseOrders.filter((p) => p.status === 'in_transit').length },
-        { key: 'delivered', label: 'Delivered', value: purchaseOrders.filter((p) => p.status === 'delivered').length },
-      ],
-      totalPos: purchaseOrders.length,
-      note: 'Coverage uses approved BOQ lines vs PO lines (no warehouse stock model).',
-    }
-
-    const vendorMap = new Map()
-    for (const po of purchaseOrders) {
-      const vendorId =
-        typeof po.vendor === 'object' && po.vendor?._id
-          ? String(po.vendor._id)
-          : String(po.vendor || '')
-      if (!vendorId || vendorId === 'undefined' || vendorId === 'null') continue
-      const existing = vendorMap.get(vendorId) || {
-        id: vendorId,
-        name: po.vendor?.name || 'Unknown vendor',
-        rating: po.vendor?.rating || null,
-        categories: po.vendor?.categories || [],
-        poCount: 0,
-        value: 0,
-        delivered: 0,
-      }
-      existing.poCount += 1
-      existing.value += Number(po.value) || 0
-      if (po.status === 'delivered') existing.delivered += 1
-      vendorMap.set(vendorId, existing)
-    }
-
-    // Include vendors with zero POs at the end of the list only if we have few ranked ones
-    for (const vendor of vendors) {
-      const id = String(vendor._id)
-      if (!vendorMap.has(id)) {
-        vendorMap.set(id, {
-          id,
-          name: vendor.name,
-          rating: vendor.rating || null,
-          categories: vendor.categories || [],
-          poCount: 0,
-          value: 0,
-          delivered: 0,
-        })
-      }
-    }
-
-    const topVendors = [...vendorMap.values()]
-      .filter((v) => v.poCount > 0)
-      .sort((a, b) => b.value - a.value || b.poCount - a.poCount)
-      .slice(0, 8)
-      .map((v) => ({
-        ...v,
-        deliveryRate: v.poCount > 0 ? Math.round((v.delivered / v.poCount) * 100) : null,
-      }))
-
     const timeline = projects.map((p) => {
       const id = String(p._id)
       const budget = Number(p.budget) || 0
-      const spent = (Number(p.spent) || 0) + (approvedByProject.get(id) || 0)
+      const recorded = Number(p.spent) || 0
+      const approved = approvedByProject.get(id) || 0
+      const spent = recorded > 0 ? recorded : approved
       return {
         id: p._id,
         name: p.name,
@@ -329,6 +335,14 @@ router.get(
       success: true,
       data: {
         range,
+        rangeLabel:
+          range === 'all'
+            ? 'All time'
+            : range === '12m'
+              ? 'Last 12 months'
+              : range === '90d'
+                ? 'Last 90 days'
+                : 'Last 30 days',
         kpis: {
           totalProjects: projectCounts.total,
           projectDelta,
@@ -337,8 +351,10 @@ router.get(
             (s, l) => s + (Number(l.estimatedValue) || 0),
             0,
           ),
+          leadsInRange: activeLeadsInRange.length,
           totalBoqs: quotations.length,
           approvedBoqs: approvedQuotes.length,
+          boqsInRange: quotesInRange.length,
           budgetUtilization: utilization,
           totalBudget,
           totalSpent,

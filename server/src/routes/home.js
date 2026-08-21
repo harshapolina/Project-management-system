@@ -1,6 +1,6 @@
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
-import { asyncHandler } from '../middleware/errorHandler.js'
+import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import '../models/index.js'
 import { Task } from '../models/Task.js'
@@ -180,6 +180,18 @@ router.patch(
   asyncHandler(async (req, res) => {
     const task = await Task.findById(req.params.id)
     assertTenantDoc(task, req, 'Task')
+
+    const uid = String(req.user._id)
+    const assigneeId = task.assignee ? String(task.assignee) : ''
+    const creatorId = task.createdBy ? String(task.createdBy) : ''
+    const isMine =
+      assigneeId === uid ||
+      creatorId === uid ||
+      (task.isPersonal && (assigneeId === uid || creatorId === uid))
+    const isElevated = ['admin', 'owner', 'project_manager'].includes(req.user.role)
+    if (!isMine && !isElevated && !req.user.isPlatformAdmin) {
+      throw new AppError('You can only update tasks assigned to you', 403)
+    }
 
     const order = ['todo', 'in_progress', 'review', 'done']
     const progressMap = { todo: 0, in_progress: 40, review: 80, done: 100 }

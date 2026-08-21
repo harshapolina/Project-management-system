@@ -26,7 +26,7 @@ export const ACCESS_TOGGLES = [
   { key: 'procurement', label: 'Materials page + project Materials tab', group: 'Modules' },
   { key: 'site', label: 'Site updates page + project Site tab', group: 'Modules' },
   { key: 'files.manage', label: 'Upload drawings & files', group: 'Modules' },
-  { key: 'finance', label: 'Money / finance page', group: 'Modules' },
+  { key: 'finance', label: 'Revenue / finance page', group: 'Modules' },
   { key: 'leads', label: 'New enquiries page', group: 'Modules' },
   { key: 'portfolio', label: 'Dashboard + Reports pages', group: 'Modules' },
   { key: 'impact', label: 'Impact Points leaderboard', group: 'Modules' },
@@ -35,7 +35,7 @@ export const ACCESS_TOGGLES = [
 
 const ALL_PERMISSION_KEYS = ACCESS_TOGGLES.map((item) => item.key)
 
-export function defaultPermissionsForRole(role) {
+export function defaultPermissionsForRole(role, customRoles = []) {
   if (role === 'admin' || role === 'owner') {
     return Object.fromEntries(ALL_PERMISSION_KEYS.map((key) => [key, true]))
   }
@@ -52,16 +52,25 @@ export function defaultPermissionsForRole(role) {
   if (['project_manager', 'designer', 'site_supervisor'].includes(role)) {
     return { impact: true }
   }
+  const custom = (customRoles || []).find((r) => r.key === role)
+  if (custom) {
+    return {
+      ...defaultPermissionsForRole(custom.basedOn || 'designer'),
+      ...(custom.permissions && typeof custom.permissions === 'object'
+        ? custom.permissions
+        : {}),
+    }
+  }
   return {}
 }
 
-export function permissionsForUser(user) {
+export function permissionsForUser(user, tenant = null) {
   if (!user) return {}
   if (user.isPlatformAdmin) {
     return Object.fromEntries(ALL_PERMISSION_KEYS.map((key) => [key, true]))
   }
   return {
-    ...defaultPermissionsForRole(user.role),
+    ...defaultPermissionsForRole(user.role, tenant?.customRoles),
     ...(user.permissions || {}),
   }
 }
@@ -92,9 +101,9 @@ export function canInviteUsers(user) {
   return ['admin', 'owner', 'hr'].includes(user.role)
 }
 
-export function canCreateProjects(user) {
+export function canCreateProjects(user, tenant = null) {
   if (!user) return false
-  return !!permissionsForUser(user)['projects.create']
+  return !!permissionsForUser(user, tenant)['projects.create']
 }
 
 /** Capability map used by nav, route gates, and project tabs. */
@@ -131,7 +140,7 @@ export function capabilitiesForUser(user, tenant = null) {
 
   const role = user.role
   const companyAdmin = COMPANY_ADMIN_ROLES.includes(role)
-  const permissions = permissionsForUser(user)
+  const permissions = permissionsForUser(user, tenant)
   const employee = EMPLOYEE_ROLES.includes(role)
   const isClientOrVendor = role === 'client' || role === 'vendor'
 
@@ -211,6 +220,42 @@ export const INVITE_ROLE_OPTIONS = [
   { value: 'vendor', label: 'Vendor' },
 ]
 
+export const CUSTOM_ROLE_BASE_OPTIONS = [
+  { value: 'project_manager', label: 'Project manager' },
+  { value: 'designer', label: 'Designer' },
+  { value: 'site_supervisor', label: 'Site supervisor' },
+  { value: 'hr', label: 'HR' },
+  { value: 'client', label: 'Client' },
+  { value: 'vendor', label: 'Vendor' },
+]
+
+export const NEW_CUSTOM_ROLE_VALUE = '__new_custom_role__'
+
 export const ROLE_LABELS = Object.fromEntries(
   INVITE_ROLE_OPTIONS.map((o) => [o.value, o.label]),
 )
+
+export function roleLabelFor(role, customRoles = []) {
+  if (!role) return '—'
+  if (ROLE_LABELS[role]) return ROLE_LABELS[role]
+  const custom = (customRoles || []).find((r) => r.key === role)
+  if (custom?.label) return custom.label
+  return String(role)
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+export function inviteRoleOptions(customRoles = [], { allowCreate = true } = {}) {
+  const custom = (customRoles || []).map((r) => ({
+    value: r.key,
+    label: r.label,
+  }))
+  return [
+    ...INVITE_ROLE_OPTIONS,
+    ...custom,
+    ...(allowCreate
+      ? [{ value: NEW_CUSTOM_ROLE_VALUE, label: '+ New custom role' }]
+      : []),
+  ]
+}

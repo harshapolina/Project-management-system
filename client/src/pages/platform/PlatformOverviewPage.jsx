@@ -28,15 +28,6 @@ export function PlatformOverviewPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <p className="mb-1 text-sm font-medium text-secondary">Editco · Platform</p>
-        <h1 className="text-[28px] font-semibold tracking-tight text-primary">Overview</h1>
-        <p className="mt-1 text-sm text-secondary">
-          One platform admin controls all companies on EPM. Monitor health, subscriptions, and usage
-          from here.
-        </p>
-      </div>
-
       {overviewLoading ? (
         <p className="text-sm text-secondary">Loading overview…</p>
       ) : (

@@ -14,7 +14,6 @@ import {
   Save,
   Search,
   Send,
-  Sparkles,
   Trash2,
   Unlock,
   Upload,
@@ -23,6 +22,7 @@ import {
 import { api, assetUrl } from '../lib/api'
 import { formatInr } from '../lib/format'
 import { toast } from '../components/ui'
+import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
 import { cn } from '../lib/utils'
 
 const UNITS = [
@@ -392,43 +392,25 @@ function PortfolioView({
   return (
     <div className="h-full overflow-y-auto bg-[var(--bg-canvas)]">
       <div className="mx-auto w-full max-w-[1220px] px-5 py-6 sm:px-8 sm:py-8">
-        {/* Hero — dark elevated panel on light canvas */}
-        <section className="on-dark relative overflow-hidden rounded-[22px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] px-6 py-7 shadow-[0_12px_32px_-16px_rgba(0,0,0,0.4)] sm:px-8">
-          <div className="flex flex-wrap items-end justify-between gap-8">
-            <div className="min-w-0 max-w-xl">
-              <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent)] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em] text-[var(--create-fg)]">
-                <Sparkles className="h-3 w-3" />
-                Estimation
-              </span>
-              <h1 className="mt-3 text-[28px] font-semibold leading-[1.1] tracking-[-0.025em] text-white sm:text-[32px]">
-                Bill of Quantities
-              </h1>
-              <p className="mt-2 text-[13.5px] leading-relaxed text-white/55">
-                Every project&apos;s quote in one workspace. Import an Excel BOQ
-                and we&apos;ll lay it out into rows, attach reference images to
-                any line, then approve to set the project budget.
-              </p>
-            </div>
-
-            <div className="grid w-full grid-cols-3 gap-3 sm:w-auto">
-              <HeroStat label="Projects" value={projects.length} />
-              <HeroStat label="Sheets" value={sheetCount} />
-              <HeroStat label="Quoted" value={formatInr(portfolioTotal)} accent />
-            </div>
+        <section className="space-y-4">
+          <div className="grid grid-cols-3 gap-3 sm:max-w-md">
+            <HeroStat label="Projects" value={projects.length} />
+            <HeroStat label="Sheets" value={sheetCount} />
+            <HeroStat label="Quoted" value={formatInr(portfolioTotal)} accent />
           </div>
 
           {portfolioTotal > 0 && (
-            <div className="mt-7 border-t border-white/[0.08] pt-4">
-              <div className="flex items-center justify-between text-[11.5px] font-medium text-white/45">
+            <div className="rounded-xl border border-border bg-surface px-4 py-3">
+              <div className="flex items-center justify-between text-[11.5px] font-medium text-secondary">
                 <span>
                   Approved value{' '}
-                  <span className="font-semibold tabular-nums text-white">
+                  <span className="font-semibold tabular-nums text-primary">
                     {formatInr(approvedTotal)}
                   </span>
                 </span>
                 <span className="tabular-nums">{approvedShare}% of quoted</span>
               </div>
-              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-white/[0.08]">
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-border">
                 <div
                   className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
                   style={{ width: `${approvedShare}%` }}
@@ -438,46 +420,47 @@ function PortfolioView({
           )}
         </section>
 
-        {/* Toolbar — dark filter pills */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="on-dark inline-flex rounded-full border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] p-1">
-            {FILTERS.map((f) => (
-              <button
-                key={f.key}
-                type="button"
-                onClick={() => setFilter(f.key)}
-                className={cn(
-                  'rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition',
-                  filter === f.key
-                    ? 'bg-accent text-[#171717] shadow-sm'
-                    : 'text-secondary hover:text-primary',
-                )}
-              >
-                {f.label}
-              </button>
-            ))}
-          </div>
-
-          <div className="relative w-full sm:w-72">
-            <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-secondary" />
-            <input
-              value={search}
-              onChange={(e) => onSearch(e.target.value)}
-              placeholder="Search projects or clients"
-              className="h-[40px] w-full rounded-full border border-border bg-surface pl-10 pr-9 text-[12.5px] text-primary outline-none transition placeholder:text-secondary focus:border-accent/40 focus:ring-4 focus:ring-accent/10"
-            />
-            {search && (
-              <button
-                type="button"
-                onClick={() => onSearch('')}
-                title="Clear search"
-                className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-white/40 transition hover:bg-white/10 hover:text-white"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
+        <PageToolbar
+          className="mt-6"
+          left={
+            <div className={cn(PILL_TRACK, 'on-dark')}>
+              {FILTERS.map((f) => (
+                <button
+                  key={f.key}
+                  type="button"
+                  onClick={() => setFilter(f.key)}
+                  className={cn(
+                    'rounded-full px-3.5 py-1.5 text-[12.5px] font-semibold transition',
+                    filter === f.key ? PILL_ACTIVE : PILL_IDLE,
+                  )}
+                >
+                  {f.label}
+                </button>
+              ))}
+            </div>
+          }
+          right={
+            <div className="relative w-full sm:w-72">
+              <Search className="pointer-events-none absolute left-3.5 top-1/2 h-[15px] w-[15px] -translate-y-1/2 text-secondary" />
+              <input
+                value={search}
+                onChange={(e) => onSearch(e.target.value)}
+                placeholder="Search projects or clients"
+                className="h-[40px] w-full rounded-full border border-border bg-surface pl-10 pr-9 text-[12.5px] text-primary outline-none transition placeholder:text-secondary focus:border-accent/40 focus:ring-4 focus:ring-accent/10"
+              />
+              {search && (
+                <button
+                  type="button"
+                  onClick={() => onSearch('')}
+                  title="Clear search"
+                  className="absolute right-3 top-1/2 flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-md text-white/40 transition hover:bg-white/10 hover:text-white"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          }
+        />
 
         {/* Cards */}
         <div className="mt-4 pb-10">

@@ -42,13 +42,6 @@ export function PlatformSubscriptionsPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-primary">Subscriptions</h1>
-        <p className="mt-1 text-sm text-secondary">
-          Cancel, reactivate, and review billing status for every company on the platform.
-        </p>
-      </div>
-
       {isLoading && <p className="text-sm text-secondary">Loading…</p>}
 
       {['active', 'trial', 'suspended', 'cancelled'].map((status) => (

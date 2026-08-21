@@ -142,7 +142,7 @@ export function ProjectProcurement() {
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
+    <div className="space-y-4 p-4 md:p-5 lg:p-6 bg-[var(--bg-canvas)] min-h-full">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="text-[18px] font-semibold text-primary">
@@ -913,7 +913,7 @@ export function ProjectSite() {
   }
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
+    <div className="space-y-4 p-4 md:p-5 lg:p-6 bg-[var(--bg-canvas)] min-h-full">
       <div className="grid gap-3 sm:grid-cols-3">
         <SiteStat
           icon={Camera}
@@ -1284,7 +1284,7 @@ export function ProjectTeam() {
   })
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
+    <div className="space-y-4 p-4 md:p-5 lg:p-6 bg-[var(--bg-canvas)] min-h-full">
       <div>
         <h2 className="text-[18px] font-semibold text-primary">Team</h2>
         <p className="text-[13px] text-secondary">

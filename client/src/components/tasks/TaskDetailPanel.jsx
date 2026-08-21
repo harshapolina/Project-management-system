@@ -48,7 +48,8 @@ export function TaskDetailPanel({
   initialDueDate = '',
 }) {
   const user = useAuthStore((s) => s.user)
-  const caps = capabilitiesForUser(user)
+  const tenant = useAuthStore((s) => s.tenant)
+  const caps = capabilitiesForUser(user, tenant)
   const qc = useQueryClient()
   const [createdId, setCreatedId] = useState(null)
 

@@ -1,5 +1,5 @@
 import { io } from 'socket.io-client'
-import { apiOrigin } from './api'
+import { apiOrigin, useAuthStore } from './api'
 
 let socket = null
 
@@ -13,7 +13,18 @@ function socketUrl() {
   return apiOrigin() || undefined
 }
 
+function currentToken() {
+  return useAuthStore.getState().accessToken || null
+}
+
+/**
+ * Singleton Socket.IO client — JWT auth on every connect.
+ * Server auto-joins `user:{id}`; never emit join:user with a client-chosen id.
+ */
 export function getSocket() {
+  const token = currentToken()
+  if (!token) return null
+
   if (!socket) {
     socket = io(socketUrl(), {
       transports: ['websocket', 'polling'],
@@ -21,8 +32,38 @@ export function getSocket() {
       reconnection: true,
       reconnectionDelay: 800,
       reconnectionAttempts: Infinity,
+      auth: { token },
     })
+
+    socket.on('connect_error', (err) => {
+      // Token expired — try once with the latest store token
+      const next = currentToken()
+      if (next && next !== socket.auth?.token) {
+        socket.auth = { token: next }
+        socket.connect()
+      } else if (import.meta.env.DEV) {
+        console.warn('[socket]', err?.message || err)
+      }
+    })
+  } else {
+    // Keep auth in sync after token refresh
+    socket.auth = { token }
+    if (!socket.connected) socket.connect()
   }
+
+  return socket
+}
+
+/** Call after login / token refresh so the next connect uses a fresh JWT. */
+export function syncSocketAuth() {
+  const token = currentToken()
+  if (!token) {
+    disconnectSocket()
+    return null
+  }
+  if (!socket) return getSocket()
+  socket.auth = { token }
+  if (!socket.connected) socket.connect()
   return socket
 }
 

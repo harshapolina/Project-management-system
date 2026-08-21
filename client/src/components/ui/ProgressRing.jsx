@@ -8,6 +8,7 @@ export function ProgressRing({
   color = 'var(--accent)',
   trackColor = 'var(--border-subtle)',
   showValue = true,
+  valueClassName,
 }) {
   const pct = Math.min(100, Math.max(0, value))
   const radius = (size - stroke) / 2
@@ -42,7 +43,12 @@ export function ProgressRing({
         />
       </svg>
       {showValue && (
-        <span className="absolute text-[11px] font-semibold tabular-nums text-primary">
+        <span
+          className={cn(
+            'absolute text-[11px] font-semibold tabular-nums text-primary',
+            valueClassName,
+          )}
+        >
           {Math.round(pct)}%
         </span>
       )}

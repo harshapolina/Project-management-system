@@ -77,24 +77,105 @@ router.get(
   requireAuth,
   requirePermission('portfolio'),
   asyncHandler(async (req, res) => {
-    const projects = await Project.find(tenantFilter(req, scopeProjects(req.user)))
-      .populate('projectManager', 'name avatar')
-      .populate('members.user', 'name avatar')
+    const scope = scopeProjects(req.user)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 86400000)
+    const sixtyDaysAgo = new Date(Date.now() - 60 * 86400000)
+
+    const [projects, upcomingDeadlines, openTaskAgg, createdRecent, createdPrior] =
+      await Promise.all([
+        Project.find(tenantFilter(req, scope))
+          .select(
+            'name clientName status isDelayed progress currentStage location coverImage endDate startDate budget spent members projectManager updatedAt createdAt',
+          )
+          .populate('projectManager', 'name avatar')
+          .populate('members.user', 'name avatar')
+          .sort({ updatedAt: -1 })
+          .lean(),
+        Task.find(
+          tenantFilter(req, {
+            status: { $ne: 'done' },
+            dueDate: {
+              $gte: new Date(),
+              $lte: new Date(Date.now() + 14 * 86400000),
+            },
+          }),
+        )
+          .populate('projectId', 'name')
+          .populate('assignee', 'name avatar')
+          .sort({ dueDate: 1 })
+          .limit(8)
+          .lean(),
+        Task.aggregate([
+          {
+            $match: {
+              ...tenantFilter(req, {
+                status: { $ne: 'done' },
+                assignee: { $ne: null },
+              }),
+            },
+          },
+          { $group: { _id: '$assignee', openTasks: { $sum: 1 } } },
+        ]),
+        Project.countDocuments(
+          tenantFilter(req, { ...scope, createdAt: { $gte: thirtyDaysAgo } }),
+        ),
+        Project.countDocuments(
+          tenantFilter(req, {
+            ...scope,
+            createdAt: { $gte: sixtyDaysAgo, $lt: thirtyDaysAgo },
+          }),
+        ),
+      ])
+
+    const bucket = (p) => {
+      if (p.status === 'completed') return 'completed'
+      if (p.status === 'on_hold') return 'onHold'
+      if (p.status === 'delayed' || p.isDelayed) return 'delayed'
+      if (p.status === 'in_progress') return 'ongoing'
+      return 'planning'
+    }
 
     const counts = {
       total: projects.length,
-      ongoing: projects.filter((p) => p.status === 'in_progress').length,
-      completed: projects.filter((p) => p.status === 'completed').length,
-      delayed: projects.filter((p) => p.status === 'delayed' || p.isDelayed).length,
-      onHold: projects.filter((p) => p.status === 'on_hold').length,
+      ongoing: projects.filter((p) => bucket(p) === 'ongoing').length,
+      completed: projects.filter((p) => bucket(p) === 'completed').length,
+      delayed: projects.filter((p) => bucket(p) === 'delayed').length,
+      onHold: projects.filter((p) => bucket(p) === 'onHold').length,
+      planning: projects.filter((p) => bucket(p) === 'planning').length,
     }
 
     const health = [
-      { key: 'completed', label: 'Completed', value: counts.completed, color: 'var(--status-completed)' },
-      { key: 'ongoing', label: 'Ongoing', value: counts.ongoing, color: 'var(--status-in-progress)' },
-      { key: 'delayed', label: 'Delayed', value: counts.delayed, color: 'var(--status-delayed)' },
-      { key: 'onHold', label: 'On hold', value: counts.onHold, color: 'var(--status-on-hold)' },
-    ]
+      {
+        key: 'completed',
+        label: 'Completed',
+        value: counts.completed,
+        color: 'var(--status-completed)',
+      },
+      {
+        key: 'ongoing',
+        label: 'Ongoing',
+        value: counts.ongoing,
+        color: 'var(--status-in-progress)',
+      },
+      {
+        key: 'delayed',
+        label: 'Delayed',
+        value: counts.delayed,
+        color: 'var(--status-delayed)',
+      },
+      {
+        key: 'onHold',
+        label: 'On hold',
+        value: counts.onHold,
+        color: 'var(--status-on-hold)',
+      },
+      {
+        key: 'planning',
+        label: 'Planning',
+        value: counts.planning,
+        color: 'var(--status-not-started)',
+      },
+    ].filter((row) => row.value > 0)
 
     const delayAlerts = projects
       .filter((p) => p.isDelayed || p.status === 'delayed')
@@ -106,40 +187,71 @@ router.get(
         endDate: p.endDate,
       }))
 
-    const upcomingDeadlines = await Task.find(
-      tenantFilter(req, {
-        status: { $ne: 'done' },
-        dueDate: { $gte: new Date(), $lte: new Date(Date.now() + 14 * 86400000) },
-      }),
+    const openByUser = new Map(
+      openTaskAgg.map((row) => [String(row._id), row.openTasks]),
     )
-      .populate('projectId', 'name')
-      .populate('assignee', 'name avatar')
-      .sort({ dueDate: 1 })
-      .limit(8)
+    const assigneeIds = [...openByUser.keys()]
+    const users =
+      assigneeIds.length > 0
+        ? await User.find(
+            tenantFilter(req, {
+              _id: { $in: assigneeIds },
+              isActive: { $ne: false },
+              isPlatformAdmin: { $ne: true },
+            }),
+          )
+            .select('name avatar role')
+            .lean()
+        : []
 
-    const users = await User.find(
-      tenantFilter(req, {
-        role: { $in: ['project_manager', 'designer', 'site_supervisor'] },
-        isActive: true,
-        isPlatformAdmin: { $ne: true },
-      }),
-    ).select('name avatar role')
+    const maxOpen = Math.max(8, ...[...openByUser.values()], 1)
+    const workload = users
+      .map((u) => {
+        const openTasks = openByUser.get(String(u._id)) || 0
+        return {
+          user: u,
+          openTasks,
+          load: Math.min(100, Math.round((openTasks / maxOpen) * 100)),
+        }
+      })
+      .filter((w) => w.openTasks > 0)
+      .sort((a, b) => b.openTasks - a.openTasks)
+      .slice(0, 10)
 
-    const workload = await Promise.all(
-      users.map(async (u) => {
-        const open = await Task.countDocuments(
-          tenantFilter(req, {
-            assignee: u._id,
-            status: { $ne: 'done' },
-          }),
-        )
-        return { user: u, openTasks: open, load: Math.min(100, open * 12) }
-      }),
-    )
+    const projectCards = projects.map((p) => ({
+      _id: p._id,
+      name: p.name,
+      clientName: p.clientName,
+      status: p.status,
+      isDelayed: !!p.isDelayed || p.status === 'delayed',
+      progress: p.progress || 0,
+      currentStage: p.currentStage,
+      location: p.location,
+      coverImage: p.coverImage || '',
+      endDate: p.endDate,
+      startDate: p.startDate,
+      budget: p.budget,
+      spent: p.spent,
+      projectManager: p.projectManager,
+      members: (p.members || []).slice(0, 5),
+    }))
 
     res.json({
       success: true,
-      data: { counts, health, projects, delayAlerts, upcomingDeadlines, workload },
+      data: {
+        counts,
+        trends: {
+          projectsCreated30d: createdRecent,
+          projectsCreatedPrior30d: createdPrior,
+          projectDelta: createdRecent - createdPrior,
+        },
+        health,
+        projects: projectCards,
+        delayAlerts,
+        upcomingDeadlines,
+        workload,
+        activeCount: counts.ongoing + counts.delayed + counts.planning,
+      },
     })
   }),
 )

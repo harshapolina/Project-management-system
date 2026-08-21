@@ -33,13 +33,6 @@ export function PlatformFeaturesPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-primary">Feature plans</h1>
-        <p className="mt-1 text-sm text-secondary">
-          Define what each subscription tier includes, then apply a plan to any company in one click.
-        </p>
-      </div>
-
       <div className="grid gap-6 lg:grid-cols-3">
         {(['starter', 'pro', 'enterprise']).map((plan) => (
           <Card key={plan} variant="light" className="space-y-3">

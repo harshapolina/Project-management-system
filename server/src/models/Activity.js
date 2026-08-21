@@ -39,6 +39,10 @@ const notificationSchema = new mongoose.Schema(
     projectId: { type: mongoose.Schema.Types.ObjectId, ref: 'Project' },
     meta: { type: mongoose.Schema.Types.Mixed, default: {} },
     read: { type: Boolean, default: false },
+    /** Inbox “Later” — parked for follow-up (synced across devices). */
+    later: { type: Boolean, default: false, index: true },
+    /** Inbox “Cleared” — archived from Primary (synced across devices). */
+    cleared: { type: Boolean, default: false, index: true },
   },
   { timestamps: true },
 )

@@ -17,6 +17,12 @@ import { toast } from '../../components/ui'
 import { TaskDetailPanel } from './TaskDetailPanel'
 import { cn } from '../../lib/utils'
 import {
+  PILL_ACTIVE,
+  PILL_IDLE,
+  PILL_TRACK,
+} from '../../components/layout/PageToolbar'
+import { ProjectTabBar } from './ProjectPageShell'
+import {
   getTaskStatus,
   nextTaskStatus,
 } from '../../lib/taskStatus'
@@ -26,48 +32,44 @@ const GROUPS = [
     key: 'todo',
     label: 'Not started',
     hint: 'Waiting to begin',
-    dot: 'bg-slate-400',
-    tint: 'bg-slate-50',
-    ring: 'ring-slate-200',
+    dot: 'bg-[#aeaeb2]',
+    tint: 'bg-black/[0.02]',
   },
   {
     key: 'in_progress',
     label: 'Working on it',
     hint: 'Happening now',
-    dot: 'bg-blue-500',
-    tint: 'bg-blue-50',
-    ring: 'ring-blue-100',
+    dot: 'bg-[#3ecf8e]',
+    tint: 'bg-black/[0.02]',
   },
   {
     key: 'review',
     label: 'Needs check',
     hint: 'Ready for review',
     dot: 'bg-amber-500',
-    tint: 'bg-amber-50',
-    ring: 'ring-amber-100',
+    tint: 'bg-black/[0.02]',
   },
   {
     key: 'done',
     label: 'Finished',
     hint: 'Done',
-    dot: 'bg-emerald-500',
-    tint: 'bg-emerald-50',
-    ring: 'ring-emerald-100',
+    dot: 'bg-[#34c759]',
+    tint: 'bg-black/[0.02]',
   },
 ]
 
 const PRIORITY = {
-  urgent: { label: 'Urgent', className: 'bg-red-100 text-red-700' },
-  high: { label: 'High', className: 'bg-orange-100 text-orange-700' },
-  medium: { label: 'Normal', className: 'bg-slate-100 text-slate-600' },
-  low: { label: 'Low', className: 'bg-slate-50 text-slate-500' },
+  urgent: { label: 'Urgent', className: 'bg-red-50 text-red-700' },
+  high: { label: 'High', className: 'bg-orange-50 text-orange-700' },
+  medium: { label: 'Normal', className: 'bg-black/[0.04] text-secondary' },
+  low: { label: 'Low', className: 'bg-transparent text-secondary' },
 }
 
 function dueLabel(dueDate) {
   if (!dueDate) return { text: 'No date', className: 'text-secondary' }
   const d = new Date(dueDate)
   const text = format(d, 'dd MMM')
-  if (isToday(d)) return { text: `Today`, className: 'text-blue-700 font-bold' }
+  if (isToday(d)) return { text: `Today`, className: 'text-[#0d7a4f] font-bold' }
   if (isPast(d)) return { text: `Late · ${text}`, className: 'text-red-600 font-bold' }
   return { text, className: 'text-secondary' }
 }
@@ -84,7 +86,8 @@ export function ProjectTasks() {
   const [filter, setFilter] = useState('open')
   const qc = useQueryClient()
   const user = useAuthStore((s) => s.user)
-  const caps = capabilitiesForUser(user)
+  const tenant = useAuthStore((s) => s.tenant)
+  const caps = capabilitiesForUser(user, tenant)
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
@@ -156,7 +159,11 @@ export function ProjectTasks() {
   }
 
   if (isLoading) {
-    return <div className="m-3 h-40 animate-pulse rounded-xl bg-[#dfdfdf]" />
+    return (
+      <div className="flex h-full min-h-0 flex-col bg-[var(--bg-canvas)] p-4">
+        <div className="h-40 animate-pulse rounded-2xl bg-black/[0.06]" />
+      </div>
+    )
   }
 
   const visibleGroups =
@@ -174,58 +181,56 @@ export function ProjectTasks() {
         : 'grid-cols-1 lg:grid-cols-3'
 
   return (
-    <div className="flex h-full min-h-0 flex-col bg-[#E8EEF5]">
-      {/* Single packed toolbar — filters sit with actions, no empty stretch */}
-      <div className="shrink-0 border-b border-[#d0dbe8] bg-surface px-3 py-2 sm:px-4">
-        <div className="flex flex-wrap items-center gap-2">
-          <h2 className="shrink-0 text-[13px] font-semibold text-primary">
-            Who does what
-          </h2>
-
-          <div className="inline-flex rounded-lg bg-surface-raised p-0.5">
-            {[
-              { id: 'open', label: 'Active', count: counts.open },
-              { id: 'done', label: 'Finished', count: counts.done },
-              { id: 'all', label: 'All', count: allTasks.length },
-            ].map((f) => (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-2 py-1 text-[11px] font-semibold transition',
-                  filter === f.id
-                    ? 'bg-surface text-primary shadow-sm'
-                    : 'text-secondary hover:text-primary',
-                )}
-              >
-                {f.label}
-                <span
+    <div className="flex h-full min-h-0 flex-col bg-[var(--bg-canvas)]">
+      <ProjectTabBar
+        left={
+          <>
+            <h2 className="shrink-0 text-[13px] font-semibold tracking-tight text-primary">
+              Tasks
+            </h2>
+            <div className={PILL_TRACK}>
+              {[
+                { id: 'open', label: 'Active', count: counts.open },
+                { id: 'done', label: 'Finished', count: counts.done },
+                { id: 'all', label: 'All', count: allTasks.length },
+              ].map((f) => (
+                <button
+                  key={f.id}
+                  type="button"
+                  onClick={() => setFilter(f.id)}
                   className={cn(
-                    'tabular-nums',
-                    filter === f.id ? 'text-[#3ecf8e]' : 'text-secondary',
+                    'inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-[11px] font-semibold transition',
+                    filter === f.id ? PILL_ACTIVE : PILL_IDLE,
                   )}
                 >
-                  {f.count}
-                </span>
-              </button>
-            ))}
-          </div>
-
-          {counts.late > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-md bg-red-50 px-2 py-1 text-[11px] font-bold text-red-700 ring-1 ring-red-100">
-              Late {counts.late}
-            </span>
-          )}
-
-          <div className="flex flex-1 items-center justify-end gap-1.5 min-w-[140px]">
-            <div className="relative min-w-0 flex-1 max-w-[200px]">
-              <Search className="pointer-events-none absolute left-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-secondary" />
+                  {f.label}
+                  <span
+                    className={cn(
+                      'tabular-nums',
+                      filter === f.id ? 'text-primary' : 'text-secondary',
+                    )}
+                  >
+                    {f.count}
+                  </span>
+                </button>
+              ))}
+            </div>
+            {counts.late > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-[11px] font-bold text-red-700">
+                Late {counts.late}
+              </span>
+            )}
+          </>
+        }
+        right={
+          <>
+            <div className="relative min-w-[140px] max-w-[200px] flex-1">
+              <Search className="pointer-events-none absolute left-2.5 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-secondary" />
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Find…"
-                className="h-8 w-full rounded-lg border border-border bg-surface-raised pl-7 pr-2 text-[12px] outline-none focus:border-[#4ade80] focus:bg-surface"
+                className="h-8 w-full rounded-full border border-border bg-surface-raised pl-8 pr-3 text-[12px] outline-none focus:border-[#3ecf8e]/50 focus:bg-surface"
               />
             </div>
             {caps.createTask && (
@@ -235,18 +240,18 @@ export function ProjectTasks() {
                   setCreateStatus('todo')
                   setCreateOpen(true)
                 }}
-                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-lg bg-[#3ecf8e] px-2.5 text-[12px] font-semibold text-white hover:bg-[#24b47e]"
+                className="inline-flex h-8 shrink-0 items-center gap-1 rounded-full bg-[#3ecf8e] px-3 text-[12px] font-semibold text-[#171717] hover:bg-[#24b47e]"
               >
                 <Plus className="h-3.5 w-3.5" />
                 New
               </button>
             )}
-          </div>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      <div className="min-h-0 flex-1 overflow-auto p-2.5 sm:p-3">
-        <div className={cn('grid gap-2.5', gridClass)}>
+      <div className="min-h-0 flex-1 overflow-auto p-3 sm:p-4">
+        <div className={cn('grid gap-3', gridClass)}>
           {visibleGroups.map((g) => {
             const list = byStatus[g.key] || []
             const closed = collapsed[g.key]
@@ -254,8 +259,7 @@ export function ProjectTasks() {
               <section
                 key={g.key}
                 className={cn(
-                  'flex min-h-0 flex-col overflow-hidden rounded-xl border border-[#cfdceb] bg-surface shadow-sm ring-1',
-                  g.ring,
+                  'flex min-h-0 flex-col overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_1px_2px_rgba(0,0,0,0.04)]',
                   filter === 'all' && 'min-h-[180px]',
                 )}
               >
@@ -265,7 +269,7 @@ export function ProjectTasks() {
                     setCollapsed((s) => ({ ...s, [g.key]: !s[g.key] }))
                   }
                   className={cn(
-                    'flex w-full items-center gap-2 px-3 py-2 text-left',
+                    'flex w-full items-center gap-2 px-3.5 py-2.5 text-left',
                     g.tint,
                   )}
                 >
@@ -277,12 +281,12 @@ export function ProjectTasks() {
                   />
                   <span className={cn('h-2 w-2 shrink-0 rounded-full', g.dot)} />
                   <div className="min-w-0 flex-1">
-                    <p className="text-[12px] font-bold text-primary">
+                    <p className="text-[12px] font-semibold text-primary">
                       {g.label}
                     </p>
                     <p className="text-[10px] text-secondary">{g.hint}</p>
                   </div>
-                  <span className="rounded-md bg-surface px-1.5 py-0.5 text-[11px] font-bold tabular-nums text-primary ring-1 ring-[#dfdfdf]">
+                  <span className="rounded-full bg-black/[0.04] px-2 py-0.5 text-[11px] font-bold tabular-nums text-primary">
                     {list.length}
                   </span>
                 </button>
@@ -290,7 +294,7 @@ export function ProjectTasks() {
                 {!closed && (
                   <div className="flex flex-1 flex-col divide-y divide-border">
                     {list.length === 0 && (
-                      <p className="px-3 py-6 text-center text-[11px] text-secondary">
+                      <p className="px-3 py-8 text-center text-[11px] text-secondary">
                         Nothing here yet
                       </p>
                     )}
@@ -313,7 +317,7 @@ export function ProjectTasks() {
                           setCreateStatus(g.key === 'done' ? 'todo' : g.key)
                           setCreateOpen(true)
                         }}
-                        className="mt-auto flex w-full items-center justify-center gap-1 py-2 text-[11px] font-semibold text-[#3ecf8e] hover:bg-surface-raised"
+                        className="mt-auto flex w-full items-center justify-center gap-1 py-2.5 text-[11px] font-semibold text-[#0d7a4f] hover:bg-black/[0.02]"
                       >
                         <Plus className="h-3 w-3" />
                         Add task
@@ -361,9 +365,12 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
   const assigneeId = task.assignee?._id || task.assignee || ''
   const due = dueLabel(task.dueDate)
   const pri = PRIORITY[task.priority] || PRIORITY.medium
+  const assigneeName =
+    users.find((u) => String(u._id) === String(assigneeId))?.name?.split(' ')[0] ||
+    'Anyone'
 
   return (
-    <div className="px-2.5 py-2 hover:bg-surface-raised">
+    <div className="px-2.5 py-2 hover:bg-black/[0.02]">
       <div className="flex items-start gap-2">
         <button
           type="button"
@@ -376,7 +383,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
           ) : status === 'in_progress' ? (
             <Circle
-              className="h-4 w-4 fill-blue-500/25 text-blue-500"
+              className="h-4 w-4 fill-[#3ecf8e]/25 text-[#3ecf8e]"
               strokeWidth={2.5}
             />
           ) : status === 'review' ? (
@@ -389,28 +396,32 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
           )}
         </button>
 
-        <div className="min-w-0 flex-1">
+        <div className="min-w-0 flex-1 overflow-hidden">
           <button
             type="button"
             onClick={onOpen}
             className={cn(
-              'block w-full text-left text-[13px] font-semibold leading-snug text-primary hover:text-[#3ecf8e]',
+              'block w-full truncate text-left text-[13px] font-semibold leading-snug text-primary hover:text-[#0d7a4f]',
               done && 'font-medium text-secondary line-through',
             )}
           >
             {task.title}
           </button>
 
-          <div className="mt-1.5 flex flex-nowrap items-center gap-1 overflow-x-auto">
-            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-surface-raised px-1.5 py-0.5">
-              <User className="h-3 w-3 shrink-0 text-secondary" />
+          {/* One compact row — no horizontal scroll */}
+          <div className="mt-1.5 grid grid-cols-[minmax(0,1.1fr)_minmax(0,1fr)_minmax(0,0.85fr)] gap-1">
+            <label
+              className="relative flex min-w-0 items-center gap-0.5 overflow-hidden rounded-md bg-black/[0.04] px-1 py-0.5"
+              title={assigneeName}
+            >
+              <User className="h-2.5 w-2.5 shrink-0 text-secondary" />
               <select
                 value={assigneeId}
                 disabled={!canManage}
                 onChange={(e) =>
                   onPatch({ assignee: e.target.value || null })
                 }
-                className="max-w-[72px] truncate bg-transparent text-[10px] font-semibold text-primary outline-none"
+                className="min-w-0 flex-1 appearance-none truncate bg-transparent text-[9px] font-semibold text-primary outline-none"
               >
                 <option value="">Anyone</option>
                 {users.map((u) => (
@@ -421,8 +432,21 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
               </select>
             </label>
 
-            <label className="inline-flex shrink-0 items-center gap-0.5 rounded-md bg-surface-raised px-1.5 py-0.5">
-              <Calendar className="h-3 w-3 shrink-0 text-secondary" />
+            <label
+              className="relative flex min-w-0 cursor-pointer items-center gap-0.5 overflow-hidden rounded-md bg-black/[0.04] px-1 py-0.5"
+              title={due.text}
+            >
+              <Calendar className="pointer-events-none h-2.5 w-2.5 shrink-0 text-secondary" />
+              <span
+                className={cn(
+                  'pointer-events-none min-w-0 flex-1 truncate text-[9px] font-semibold',
+                  due.className,
+                )}
+              >
+                {task.dueDate
+                  ? format(new Date(task.dueDate), 'dd MMM')
+                  : 'Date'}
+              </span>
               <input
                 type="date"
                 disabled={!canManage}
@@ -438,11 +462,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
                       : null,
                   })
                 }
-                className={cn(
-                  'w-[78px] bg-transparent text-[10px] font-semibold outline-none',
-                  due.className,
-                )}
-                title={due.text}
+                className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
               />
             </label>
 
@@ -450,26 +470,15 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
               value={task.priority || 'medium'}
               disabled={!canManage}
               onChange={(e) => onPatch({ priority: e.target.value })}
+              title="Priority"
               className={cn(
-                'shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-bold outline-none',
+                'min-w-0 truncate rounded-md px-1 py-0.5 text-[9px] font-bold outline-none',
                 pri.className,
               )}
             >
               {Object.entries(PRIORITY).map(([k, v]) => (
                 <option key={k} value={k}>
                   {v.label}
-                </option>
-              ))}
-            </select>
-
-            <select
-              value={task.status || 'todo'}
-              onChange={(e) => onPatch({ status: e.target.value })}
-              className="shrink-0 rounded-md bg-[#ecfdf5] px-1.5 py-0.5 text-[10px] font-bold text-[#24b47e] outline-none"
-            >
-              {GROUPS.map((g) => (
-                <option key={g.key} value={g.key}>
-                  {g.label}
                 </option>
               ))}
             </select>

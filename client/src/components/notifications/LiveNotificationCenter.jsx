@@ -13,7 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { api, useAuthStore } from '../../lib/api'
-import { getSocket } from '../../lib/socket'
+import { syncSocketAuth } from '../../lib/socket'
 import { cn } from '../../lib/utils'
 
 const TYPES = {
@@ -179,7 +179,7 @@ function AlertRow({ item, onDismiss, onReview }) {
             <button
               type="button"
               onClick={onReview}
-              className="inline-flex h-8 items-center rounded-lg bg-[#3ecf8e] px-3.5 text-[12px] font-semibold text-white transition hover:bg-[#24b47e]"
+              className="inline-flex h-8 items-center rounded-lg bg-[#3ecf8e] px-3.5 text-[12px] font-semibold text-[#171717] transition hover:bg-[#24b47e]"
             >
               {config.cta}
             </button>
@@ -215,6 +215,14 @@ export function LiveNotificationCenter() {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['home'] })
       qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['mail-threads'] })
+      if (payload.type === 'mail') {
+        qc.invalidateQueries({ queryKey: ['mail-thread'] })
+      }
+      if (payload.meta?.channelId || payload.link?.includes('/channels/')) {
+        qc.invalidateQueries({ queryKey: ['channel-messages'] })
+        qc.invalidateQueries({ queryKey: ['channels'] })
+      }
 
       if (typeof navigator !== 'undefined' && navigator.vibrate) {
         navigator.vibrate([12, 60, 12])
@@ -226,20 +234,25 @@ export function LiveNotificationCenter() {
   useEffect(() => {
     if (!userId) return undefined
 
-    const socket = getSocket()
-    const join = () => socket.emit('join:user', String(userId))
-    const onNotification = (payload) => enqueue(payload)
+    const socket = syncSocketAuth()
+    if (!socket) return undefined
 
-    if (socket.connected) join()
-    else socket.connect()
-    socket.on('connect', join)
+    const onNotification = (payload) => enqueue(payload)
+    const onMail = () => {
+      qc.invalidateQueries({ queryKey: ['mail-threads'] })
+      qc.invalidateQueries({ queryKey: ['mail-thread'] })
+      qc.invalidateQueries({ queryKey: ['notifications'] })
+    }
+
+    if (!socket.connected) socket.connect()
     socket.on('notification:new', onNotification)
+    socket.on('mail:new', onMail)
 
     return () => {
-      socket.off('connect', join)
       socket.off('notification:new', onNotification)
+      socket.off('mail:new', onMail)
     }
-  }, [userId, enqueue])
+  }, [userId, enqueue, qc])
 
   // Polling fallback so alerts still surface if the socket drops
   useEffect(() => {
@@ -321,7 +334,7 @@ export function LiveNotificationCenter() {
       {alerts.length > 0 && (
         <div className="fixed inset-0 z-[120] flex items-center justify-center p-4">
           <motion.div
-            className="absolute inset-0 bg-[#1c1c1c]/45 backdrop-blur-[2px]"
+            className="absolute inset-0 bg-black/45 backdrop-blur-[2px]"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -338,8 +351,8 @@ export function LiveNotificationCenter() {
             className="relative flex max-h-[82vh] w-full max-w-[520px] flex-col overflow-hidden rounded-[20px] bg-surface shadow-[0_30px_90px_rgba(9,20,38,0.35)]"
           >
             <div className="flex items-start gap-3 border-b border-border px-5 py-4">
-              <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[#ecfdf5]">
-                <AlertCircle className="h-4 w-4 text-[#3ecf8e]" />
+              <span className="mt-0.5 flex h-7 w-7 items-center justify-center rounded-full bg-[var(--nav-active-bg)]">
+                <AlertCircle className="h-4 w-4 text-accent" />
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-semibold text-primary">

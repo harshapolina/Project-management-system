@@ -49,6 +49,7 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
     name: tenant.name,
     status: tenant.status,
     seatLimit: tenant.seatLimit,
+    adminLimit: tenant.adminLimit ?? 3,
     subscriptionPlan: tenant.subscriptionPlan || 'pro',
     notes: tenant.notes || '',
     features: normalizeTenantFeatures(tenant.features),
@@ -68,6 +69,7 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
       name: tenant.name,
       status: tenant.status,
       seatLimit: tenant.seatLimit,
+      adminLimit: tenant.adminLimit ?? 3,
       subscriptionPlan: tenant.subscriptionPlan || 'pro',
       notes: tenant.notes || '',
       features: normalizeTenantFeatures(tenant.features),
@@ -95,6 +97,7 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
           name: draft.name.trim(),
           status: draft.status,
           seatLimit: Number(draft.seatLimit) || 30,
+          adminLimit: Number(draft.adminLimit) || 3,
           subscriptionPlan: draft.subscriptionPlan,
           notes: draft.notes.trim(),
           features: draft.features,
@@ -291,6 +294,8 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
             {' · '}
             {tenant.seatsUsed ?? 0}/{tenant.seatLimit} active seats
             {' · '}
+            {tenant.adminsUsed ?? 0}/{tenant.adminLimit ?? 3} admins
+            {' · '}
             {tenant.userCount ?? users.length} users
             {' · '}
             {tenant.projectCount ?? 0} projects
@@ -442,13 +447,33 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
                   label="Seat limit"
                   type="number"
                   light
-                  className="sm:col-span-2"
                   value={draft.seatLimit}
                   onChange={(e) =>
                     setDraft((s) => ({ ...s, seatLimit: e.target.value }))
                   }
                 />
+                <Input
+                  label="Max company admins"
+                  type="number"
+                  light
+                  min={1}
+                  max={50}
+                  value={draft.adminLimit}
+                  onChange={(e) =>
+                    setDraft((s) => ({ ...s, adminLimit: e.target.value }))
+                  }
+                />
               </div>
+              <p className="text-[11px] leading-relaxed text-secondary">
+                Admins used:{' '}
+                <span className="font-semibold text-primary">
+                  {tenant.adminsUsed ?? '—'}
+                </span>
+                {' / '}
+                {draft.adminLimit || tenant.adminLimit || 3}
+                . Counts Owner + Admin roles. Company invites cannot exceed this
+                cap.
+              </p>
               <Input
                 label="Internal notes"
                 light

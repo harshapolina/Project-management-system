@@ -42,7 +42,8 @@ export function RoleGate({ roles, children }) {
 
 export function CapabilityGate({ capability, children }) {
   const user = useAuthStore((s) => s.user)
-  const caps = capabilitiesForUser(user)
+  const tenant = useAuthStore((s) => s.tenant)
+  const caps = capabilitiesForUser(user, tenant)
   if (!caps[capability]) {
     return <Navigate to={homePathForUser(user) || '/projects'} replace />
   }

@@ -19,6 +19,7 @@ import { formatInr, stageLabel } from '../../lib/format'
 import { Avatar, toast } from '../../components/ui'
 import { cn } from '../../lib/utils'
 import { MeetingNotes } from './MeetingNotes'
+import { ProjectPageShell, ProjectPanel } from './ProjectPageShell'
 
 const STAGE_HELP = {
   design: {
@@ -69,56 +70,48 @@ const QUICK = [
     title: 'Tasks',
     desc: 'Assign work',
     icon: CheckSquare,
-    tint: 'from-blue-500/15 to-blue-500/5 text-blue-700',
-    iconBg: 'bg-blue-600',
   },
   {
     to: 'boq',
     title: 'BOQ',
     desc: 'Quote & rates',
     icon: FileSpreadsheet,
-    tint: 'from-violet-500/15 to-violet-500/5 text-violet-700',
-    iconBg: 'bg-violet-600',
   },
   {
     to: 'procurement',
     title: 'Materials',
     desc: 'POs & vendors',
     icon: Truck,
-    tint: 'from-amber-500/15 to-amber-500/5 text-amber-800',
-    iconBg: 'bg-amber-600',
   },
   {
     to: 'site?compose=1',
     title: 'Site',
     desc: 'Daily update',
     icon: Camera,
-    tint: 'from-emerald-500/15 to-emerald-500/5 text-emerald-800',
-    iconBg: 'bg-emerald-600',
   },
   {
     to: 'files',
     title: 'Drawings',
     desc: 'Plans & PDFs',
     icon: FileImage,
-    tint: 'from-slate-500/15 to-slate-500/5 text-slate-700',
-    iconBg: 'bg-slate-700',
   },
   {
     to: 'team',
     title: 'Team',
     desc: 'Who is on this',
     icon: Users,
-    tint: 'from-sky-500/15 to-sky-500/5 text-sky-800',
-    iconBg: 'bg-sky-600',
   },
 ]
 
 const STAGE_ORDER = ['design', 'planning', 'procurement', 'execution', 'handover']
 
 function stageState(s, current) {
+  const currentIdx = STAGE_ORDER.indexOf(current)
+  const stageIdx = STAGE_ORDER.indexOf(s.key)
   if (s.status === 'completed' || s.progress >= 100) return 'done'
-  if (s.key === current || s.status === 'in_progress') return 'now'
+  // Stages before the active one are complete in the journey
+  if (currentIdx >= 0 && stageIdx >= 0 && stageIdx < currentIdx) return 'done'
+  if (s.key === current) return 'now'
   return 'todo'
 }
 
@@ -187,9 +180,9 @@ export function ProjectOverview() {
   const stageProgress = ((currentStageIndex + 1) / STAGE_ORDER.length) * 100
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
+    <ProjectPageShell className="space-y-4">
       {delayed && (
-        <div className="flex items-center gap-3 rounded-xl border border-red-200 bg-red-50 px-4 py-2.5 text-sm text-red-800">
+        <div className="flex items-center gap-3 rounded-2xl border border-red-200/80 bg-red-50 px-4 py-2.5 text-sm text-red-800">
           <AlertTriangle className="h-4 w-4 shrink-0" />
           <span className="font-medium">This project is behind schedule</span>
           <Link to={tab('tasks')} className="ml-auto font-semibold underline">
@@ -198,13 +191,12 @@ export function ProjectOverview() {
         </div>
       )}
 
-      {/* Hero + KPIs — fills width, less empty space */}
       <div className="grid gap-4 xl:grid-cols-12">
-        <section className="flex flex-col rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm sm:p-5 xl:col-span-7">
+        <ProjectPanel className="flex flex-col xl:col-span-7">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div className="min-w-0">
               <div className="mb-2 flex items-center gap-2">
-                <span className="rounded-full bg-[#d1fae5] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-[#24b47e]">
+                <span className="rounded-full bg-black/[0.04] px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] text-secondary">
                   Current phase
                 </span>
                 <span className="text-[11px] font-medium text-secondary">
@@ -224,11 +216,11 @@ export function ProjectOverview() {
           <div className="mt-4">
             <div className="mb-1.5 flex items-center justify-between text-[11px]">
               <span className="font-medium text-secondary">Project journey</span>
-              <span className="font-semibold text-[#3ecf8e]">
+              <span className="font-semibold text-primary">
                 {Math.round(stageProgress)}%
               </span>
             </div>
-            <div className="h-2 overflow-hidden rounded-full bg-[#e8eef4]">
+            <div className="h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
               <div
                 className="h-full rounded-full bg-[#3ecf8e] transition-all"
                 style={{ width: `${stageProgress}%` }}
@@ -236,8 +228,8 @@ export function ProjectOverview() {
             </div>
           </div>
 
-          <div className="mt-4 rounded-xl border border-[#d1fae5] bg-[#f8fbff] px-3.5 py-3">
-            <p className="text-[11px] font-semibold uppercase tracking-wide text-[#3ecf8e]">
+          <div className="mt-4 rounded-xl bg-black/[0.03] px-3.5 py-3">
+            <p className="text-[11px] font-semibold uppercase tracking-wide text-secondary">
               Next priority
             </p>
             <p className="mt-1 text-[13px] font-medium leading-snug text-primary">
@@ -251,7 +243,14 @@ export function ProjectOverview() {
                 key={item}
                 className="flex items-center gap-2 rounded-xl border border-border bg-surface-raised px-3 py-2.5"
               >
-                <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-surface text-[10px] font-bold text-[#3ecf8e] ring-1 ring-[#bfdbfe]">
+                <span
+                  className={cn(
+                    'flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[10px] font-bold ring-1',
+                    index === 1
+                      ? 'bg-[#3ecf8e] text-white ring-[#3ecf8e]'
+                      : 'bg-surface text-secondary ring-border',
+                  )}
+                >
                   {index + 1}
                 </span>
                 <span className="text-[11px] font-medium leading-tight text-secondary">
@@ -264,14 +263,14 @@ export function ProjectOverview() {
           <div className="mt-auto flex flex-wrap gap-2 pt-4">
             <Link
               to={tab(help.cta.to)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#3ecf8e] px-4 text-[13px] font-semibold text-white shadow-sm hover:bg-[#24b47e]"
+              className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#3ecf8e] px-4 text-[13px] font-semibold text-[#171717] shadow-sm hover:bg-[#24b47e]"
             >
               {help.cta.label}
               <ArrowRight className="h-3.5 w-3.5" />
             </Link>
             <Link
               to={tab(help.secondary.to)}
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#d6e4f5] bg-surface px-4 text-[13px] font-semibold text-primary hover:bg-surface-raised"
+              className="inline-flex h-10 items-center gap-2 rounded-xl border border-border bg-surface px-4 text-[13px] font-semibold text-primary hover:bg-surface-raised"
             >
               {help.secondary.label}
             </Link>
@@ -280,20 +279,17 @@ export function ProjectOverview() {
                 type="button"
                 disabled={setStage.isPending}
                 onClick={() => setStage.mutate(nextStageKey)}
-                className="inline-flex h-10 items-center gap-2 rounded-xl border border-[#bbf7d0] bg-[#f0fdf4] px-4 text-[13px] font-semibold text-[#15803d] hover:bg-[#dcfce7]"
+                className="inline-flex h-10 items-center gap-2 rounded-xl bg-[#ecfdf5] px-4 text-[13px] font-semibold text-[#15803d] hover:bg-[#dcfce7]"
               >
                 Mark done → {stageLabel(nextStageKey)}
               </button>
             )}
           </div>
-        </section>
+        </ProjectPanel>
 
         <div className="grid gap-3 sm:grid-cols-3 xl:col-span-5 xl:grid-cols-1">
-          <div
-            className={cn(
-              'rounded-2xl border bg-surface p-4 shadow-sm',
-              isOverBudget ? 'border-[#fecaca]' : 'border-[#d6e4f5]',
-            )}
+          <ProjectPanel
+            className={cn(isOverBudget && 'border-red-200')}
           >
             <div className="flex items-center justify-between">
               <p className="text-[12px] font-medium text-secondary">
@@ -302,7 +298,7 @@ export function ProjectOverview() {
               <Wallet
                 className={cn(
                   'h-4 w-4',
-                  isOverBudget ? 'text-[#dc2626]' : 'text-[#3ecf8e]',
+                  isOverBudget ? 'text-[#dc2626]' : 'text-secondary',
                 )}
               />
             </div>
@@ -324,7 +320,7 @@ export function ProjectOverview() {
                 </p>
               </div>
             </div>
-            <div className="mt-2.5 h-2 overflow-hidden rounded-full bg-[#e8eef4]">
+            <div className="mt-2.5 h-1.5 overflow-hidden rounded-full bg-black/[0.06]">
               <div
                 className={cn(
                   'h-full rounded-full',
@@ -337,7 +333,7 @@ export function ProjectOverview() {
               <span
                 className={cn(
                   'font-semibold',
-                  isOverBudget ? 'text-[#dc2626]' : 'text-[#3ecf8e]',
+                  isOverBudget ? 'text-[#dc2626]' : 'text-secondary',
                 )}
               >
                 {exactPct == null ? 'Budget not set' : `${exactPct}% used`}
@@ -355,34 +351,34 @@ export function ProjectOverview() {
                 </span>
               )}
             </div>
-          </div>
+          </ProjectPanel>
 
-          <div className="rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm">
+          <ProjectPanel>
             <div className="flex items-center justify-between">
               <p className="text-[12px] font-medium text-secondary">Open work</p>
-              <CheckSquare className="h-4 w-4 text-[#3ecf8e]" />
+              <CheckSquare className="h-4 w-4 text-secondary" />
             </div>
             <p className="mt-1 text-[28px] font-semibold tabular-nums leading-none text-primary">
               {stats?.openTasks ?? openTasks.length}
             </p>
             <Link
               to={tab('tasks')}
-              className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#3ecf8e]"
+              className="mt-2 inline-flex items-center gap-1 text-[12px] font-semibold text-[#0d7a4f]"
             >
               Manage tasks <ArrowRight className="h-3 w-3" />
             </Link>
-          </div>
+          </ProjectPanel>
 
-          <div className="rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm">
+          <ProjectPanel>
             <div className="flex items-center justify-between">
               <p className="text-[12px] font-medium text-secondary">Timeline</p>
-              <CalendarDays className="h-4 w-4 text-[#3ecf8e]" />
+              <CalendarDays className="h-4 w-4 text-secondary" />
             </div>
             <p className="mt-2 text-[13px] font-semibold leading-snug text-primary">
               {project.startDate
                 ? format(new Date(project.startDate), 'dd MMM yyyy')
                 : 'Start TBD'}
-              <span className="font-normal text-secondary"> → </span>
+              <span className="font-normal text-secondary"> — </span>
               {project.endDate
                 ? format(new Date(project.endDate), 'dd MMM yyyy')
                 : 'End TBD'}
@@ -392,18 +388,19 @@ export function ProjectOverview() {
                 {stats.pendingApprovals} approvals waiting
               </p>
             )}
-          </div>
+          </ProjectPanel>
         </div>
       </div>
 
-      {/* Steps — compact, clickable */}
-      <section className="rounded-2xl border border-[#d6e4f5] bg-surface p-4 shadow-sm">
+      <ProjectPanel>
         <div className="mb-3 flex items-center justify-between gap-2">
           <p className="text-[13px] font-semibold text-primary">
             Project journey
           </p>
           <p className="text-[11px] text-secondary">
-            {canManage ? 'Click a step to jump there · use “Mark done” to advance' : 'Click a step to open that area'}
+            {canManage
+              ? 'Click a step to jump · use Mark done to advance'
+              : 'Click a step to open that area'}
           </p>
         </div>
         <ol className="grid grid-cols-2 gap-2 md:grid-cols-5">
@@ -422,30 +419,26 @@ export function ProjectOverview() {
                 <Link
                   to={tab(dest)}
                   className={cn(
-                    'flex h-full items-center gap-2.5 rounded-xl border px-3 py-2.5 transition hover:shadow-sm',
+                    'flex h-full items-center gap-2.5 rounded-xl border px-3 py-2.5 transition',
                     state === 'now'
-                      ? 'border-[#3ecf8e] bg-[#ecfdf5]'
-                      : 'border-border bg-surface-raised hover:border-[#bfdbfe]',
+                      ? 'border-border bg-white shadow-[0_1px_2px_rgba(0,0,0,0.06)] ring-1 ring-black/[0.04]'
+                      : 'border-transparent bg-black/[0.03] hover:bg-black/[0.05]',
                   )}
                 >
                   <span
                     className={cn(
                       'flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[12px] font-bold',
-                      state === 'done' && 'bg-emerald-500 text-white',
-                      state === 'now' && 'bg-[#3ecf8e] text-white',
+                      state === 'done' && 'bg-[#3ecf8e] text-[#171717]',
+                      state === 'now' &&
+                        'bg-[#1d1d1f] text-[#f5f5f7]',
                       state === 'todo' &&
-                        'bg-surface text-secondary ring-1 ring-[#c7c7c7]',
+                        'bg-surface text-secondary ring-1 ring-border',
                     )}
                   >
                     {state === 'done' ? <Check className="h-3.5 w-3.5" /> : i + 1}
                   </span>
                   <div className="min-w-0">
-                    <p
-                      className={cn(
-                        'truncate text-[12px] font-semibold',
-                        state === 'now' ? 'text-[#24b47e]' : 'text-primary',
-                      )}
-                    >
+                    <p className="truncate text-[12px] font-semibold text-primary">
                       {s.label || stageLabel(s.key)}
                     </p>
                     <p className="text-[10px] text-secondary">
@@ -453,7 +446,7 @@ export function ProjectOverview() {
                         ? 'Done'
                         : state === 'now'
                           ? 'Current'
-                          : 'Next'}
+                          : 'Up next'}
                     </p>
                   </div>
                 </Link>
@@ -461,9 +454,8 @@ export function ProjectOverview() {
             )
           })}
         </ol>
-      </section>
+      </ProjectPanel>
 
-      {/* Quick actions — one dense row */}
       <section>
         <p className="mb-2 text-[13px] font-semibold text-primary">
           Quick actions
@@ -475,17 +467,9 @@ export function ProjectOverview() {
               <Link
                 key={a.to}
                 to={tab(a.to)}
-                className={cn(
-                  'group flex flex-col gap-3 rounded-2xl border border-[#d6e4f5] bg-gradient-to-b p-3.5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md',
-                  a.tint,
-                )}
+                className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-3.5 shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition hover:bg-black/[0.02]"
               >
-                <span
-                  className={cn(
-                    'flex h-9 w-9 items-center justify-center rounded-xl text-white shadow-sm',
-                    a.iconBg,
-                  )}
-                >
+                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-black/[0.04] text-primary">
                   <Icon className="h-4 w-4" />
                 </span>
                 <div>
@@ -500,19 +484,17 @@ export function ProjectOverview() {
         </div>
       </section>
 
-      {/* Client meeting notes */}
       <MeetingNotes projectId={id} project={project} user={user} />
 
-      {/* Live lists — fill the page */}
       <div className="grid gap-4 lg:grid-cols-2">
-        <section className="rounded-2xl border border-[#d6e4f5] bg-surface shadow-sm">
+        <ProjectPanel padding={false}>
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-[13px] font-semibold text-primary">
               Open tasks
             </p>
             <Link
               to={tab('tasks')}
-              className="text-[12px] font-semibold text-[#3ecf8e]"
+              className="text-[12px] font-semibold text-[#0d7a4f]"
             >
               All tasks
             </Link>
@@ -521,7 +503,7 @@ export function ProjectOverview() {
             {openTasks.length === 0 && (
               <li className="px-4 py-8 text-center text-[13px] text-secondary">
                 No open tasks.{' '}
-                <Link to={tab('tasks')} className="font-semibold text-[#3ecf8e]">
+                <Link to={tab('tasks')} className="font-semibold text-[#0d7a4f]">
                   Add one
                 </Link>
               </li>
@@ -530,7 +512,7 @@ export function ProjectOverview() {
               <li key={t._id}>
                 <Link
                   to={tab(`tasks?task=${t._id}`)}
-                  className="flex items-center gap-3 px-4 py-3 hover:bg-surface-raised"
+                  className="flex items-center gap-3 px-4 py-3 hover:bg-black/[0.02]"
                 >
                   <span className="h-2 w-2 shrink-0 rounded-full bg-[#3ecf8e]" />
                   <div className="min-w-0 flex-1">
@@ -549,16 +531,16 @@ export function ProjectOverview() {
               </li>
             ))}
           </ul>
-        </section>
+        </ProjectPanel>
 
-        <section className="rounded-2xl border border-[#d6e4f5] bg-surface shadow-sm">
+        <ProjectPanel padding={false}>
           <div className="flex items-center justify-between border-b border-border px-4 py-3">
             <p className="text-[13px] font-semibold text-primary">
               Recent site updates
             </p>
             <Link
               to={tab('site')}
-              className="text-[12px] font-semibold text-[#3ecf8e]"
+              className="text-[12px] font-semibold text-[#0d7a4f]"
             >
               Site tab
             </Link>
@@ -569,7 +551,7 @@ export function ProjectOverview() {
                 No updates yet.{' '}
                 <Link
                   to={tab('site?compose=1')}
-                  className="font-semibold text-[#3ecf8e]"
+                  className="font-semibold text-[#0d7a4f]"
                 >
                   Post one
                 </Link>
@@ -596,8 +578,8 @@ export function ProjectOverview() {
               </li>
             ))}
           </ul>
-        </section>
+        </ProjectPanel>
       </div>
-    </div>
+    </ProjectPageShell>
   )
 }

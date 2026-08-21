@@ -18,10 +18,16 @@ npm run install:all
 ```
 
 1. Copy `.env.example` → `server/.env` and set `MONGODB_URI`
-2. Seed demo data:
+2. Seed demo data (wipes DB — local only):
 
 ```bash
-npm run seed
+cd server && npm run seed
+```
+
+Or **upsert mock credentials + sample data** without wiping (safe for Atlas):
+
+```bash
+cd server && npm run seed:mocks
 ```
 
 3. Start both apps:
@@ -36,15 +42,18 @@ npm run dev
 
 ## Demo logins
 
-Password for all: `demo1234`
+Workspace slug: `cubic`
 
-| Role | Email |
-|------|-------|
-| Admin | aanya@cubic.studio |
-| Project Manager | rohan@cubic.studio |
-| Designer | maya@cubic.studio |
-| Site Supervisor | vikram@cubic.studio |
-| Client | priya@client.com |
+| Role | Email | Password |
+|------|-------|----------|
+| Company Admin (login page) | admin@cubic.demo | Company@Admin123 |
+| Employee / PM (login page) | employee@cubic.demo | Employee@Demo123 |
+| Owner | owner@cubic.demo | Company@Owner123 |
+| HR | hr@cubic.demo | Company@HR123 |
+| Designer | maya@cubic.studio | demo1234 |
+| Site Supervisor | vikram@cubic.studio | demo1234 |
+| Client | priya@client.com | demo1234 |
+| Platform Admin | editcomedia@gmail.com | DTH@editco |
 
 ## Deploy (Vercel)
 

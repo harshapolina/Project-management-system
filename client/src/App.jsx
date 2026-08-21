@@ -36,10 +36,11 @@ import {
   ProjectTeam,
 } from './pages/project/ProjectModules'
 import { LeadsPage } from './pages/LeadsPage'
-import { ProcurementPage, FinancePage } from './pages/OpsPages'
+import { FinancePage } from './pages/MoneyPage'
+import { MaterialsPage } from './pages/MaterialsPage'
 import { BillingPage } from './pages/BillingPage'
+import { ReportsPage } from './pages/ReportsPage'
 import {
-  ReportsPage,
   SettingsPage,
   MobileSupervisorPage,
 } from './pages/MorePages'
@@ -50,6 +51,7 @@ import { PlatformUsersPage } from './pages/platform/PlatformUsersPage'
 import { PlatformFeaturesPage } from './pages/platform/PlatformFeaturesPage'
 import { PlatformSettingsPage } from './pages/platform/PlatformSettingsPage'
 import { InboxPage } from './pages/InboxPage'
+import { AssignedCommentsPage } from './pages/AssignedCommentsPage'
 import { AdminPeoplePage } from './pages/AdminPeoplePage'
 import { SiteFeedPage } from './pages/SiteFeedPage'
 import { ImpactPointsPage } from './pages/ImpactPointsPage'
@@ -126,7 +128,14 @@ export default function App() {
           <Route path="/onboarding" element={<OnboardingRoute />} />
 
           <Route element={<RequireAuth />}>
-            <Route path="/" element={<HomePage />} />
+            <Route
+              path="/"
+              element={
+                <PagePad>
+                  <HomePage />
+                </PagePad>
+              }
+            />
             <Route path="/home" element={<Navigate to="/portfolio" replace />} />
             <Route
               path="/my-tasks"
@@ -284,7 +293,7 @@ export default function App() {
               element={
                 <CapabilityGate capability="procurement">
                   <PagePad>
-                    <ProcurementPage />
+                    <MaterialsPage />
                   </PagePad>
                 </CapabilityGate>
               }
@@ -357,7 +366,11 @@ export default function App() {
             />
             <Route
               path="/assigned-comments"
-              element={<Navigate to="/inbox" replace />}
+              element={
+                <PagePad>
+                  <AssignedCommentsPage />
+                </PagePad>
+              }
             />
             <Route path="/quotations" element={<Navigate to="/boq" replace />} />
             <Route path="/ui-kit" element={<Navigate to="/projects" replace />} />

@@ -16,7 +16,7 @@ export const ACCESS_TOGGLES: { key: string; label: string; group: string }[] = [
   { key: 'procurement', label: 'Materials', group: 'Modules' },
   { key: 'site', label: 'Site updates', group: 'Modules' },
   { key: 'files.manage', label: 'Upload drawings & files', group: 'Modules' },
-  { key: 'finance', label: 'Money / billing', group: 'Modules' },
+  { key: 'finance', label: 'Revenue / billing', group: 'Modules' },
   { key: 'leads', label: 'New enquiries', group: 'Modules' },
   { key: 'portfolio', label: 'Dashboard + Reports', group: 'Modules' },
   { key: 'impact', label: 'Impact Points', group: 'Modules' },

@@ -18,8 +18,12 @@ import {
 import { api } from '../lib/api'
 import { formatInr, stageLabel } from '../lib/format'
 import {
+  PageToolbar,
+  ToolbarLink,
+  ToolbarPills,
+} from '../components/layout/PageToolbar'
+import {
   Avatar,
-  Button,
   EmptyState,
   ProgressBar,
   SkeletonCard,
@@ -68,7 +72,7 @@ function statusTone(row) {
 export function CompanyAdminDashboard() {
   const [range, setRange] = useState('30d')
 
-  const { data, isLoading, isError, error, refetch } = useQuery({
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['company-admin-dashboard', range],
     queryFn: () => api(`/company-admin/dashboard?range=${range}`),
   })
@@ -129,50 +133,29 @@ export function CompanyAdminDashboard() {
   )
 
   return (
-    <div className="mx-auto w-full max-w-[1500px] space-y-4 pb-10">
-      <header className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 text-[11px] font-medium uppercase tracking-[0.12em] text-secondary">
-            <Building2 className="h-3.5 w-3.5 text-accent" />
-            Company overview
-          </div>
-          <h1 className="mt-1 text-[28px] font-medium tracking-tight text-primary">
-            Company Admin
-          </h1>
-          <p className="mt-1 max-w-2xl text-[13px] text-secondary">
-            Projects, pipeline, spend, and vendors — the whole company at a
-            glance.
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="inline-flex rounded-[8px] border border-border bg-canvas p-1">
-            {RANGES.map((r) => (
-              <button
-                key={r.key}
-                type="button"
-                onClick={() => setRange(r.key)}
-                className={cn(
-                  'rounded-[6px] px-3 py-1.5 text-[12px] font-medium transition',
-                  range === r.key
-                    ? 'bg-accent text-[#171717] shadow-sm'
-                    : 'text-secondary hover:text-primary',
-                )}
-              >
-                {r.label}
-              </button>
-            ))}
-          </div>
-          <Link to="/projects">
-            <Button variant="secondary">All projects</Button>
-          </Link>
-        </div>
-      </header>
+    <div
+      className={cn(
+        'mx-auto w-full max-w-[1500px] space-y-4 pb-10 transition-opacity',
+        isFetching && 'opacity-90',
+      )}
+    >
+      <PageToolbar
+        left={<ToolbarLink to="/projects">All projects</ToolbarLink>}
+        right={
+          <>
+            <ToolbarPills items={RANGES} value={range} onChange={setRange} />
+            {d?.rangeLabel ? (
+              <span className="text-[12px] text-secondary">{d.rangeLabel}</span>
+            ) : null}
+          </>
+        }
+      />
 
       <section className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           to="/projects"
           icon={FolderKanban}
-          tone="blue"
+          tone="emerald"
           label="Total projects"
           value={kpis?.totalProjects ?? 0}
           delta={projectTrend}
@@ -185,18 +168,26 @@ export function CompanyAdminDashboard() {
         <StatCard
           to="/leads"
           icon={TrendingUp}
-          tone="violet"
+          tone="emerald"
           label="Active leads"
           value={kpis?.activeLeads ?? 0}
-          foot={`Pipeline ${formatInr(kpis?.pipelineValue || 0)}`}
+          foot={`Pipeline ${formatInr(kpis?.pipelineValue || 0)}${
+            range !== 'all' && kpis?.leadsInRange != null
+              ? ` · ${kpis.leadsInRange} in period`
+              : ''
+          }`}
         />
         <StatCard
-          to="/projects"
+          to="/boq"
           icon={ClipboardList}
-          tone="amber"
+          tone="emerald"
           label="BOQs / quotes"
           value={kpis?.totalBoqs ?? 0}
-          foot={`${kpis?.approvedBoqs ?? 0} approved`}
+          foot={`${kpis?.approvedBoqs ?? 0} approved${
+            range !== 'all' && kpis?.boqsInRange != null
+              ? ` · ${kpis.boqsInRange} in period`
+              : ''
+          }`}
         />
         <StatCard
           to="/finance"
@@ -221,7 +212,7 @@ export function CompanyAdminDashboard() {
               to="/portfolio"
               className="text-[12px] font-medium text-accent hover:underline"
             >
-              Portfolio
+              Dashboard
             </Link>
           }
         >
@@ -231,6 +222,10 @@ export function CompanyAdminDashboard() {
               icon={FolderKanban}
               title="No projects yet"
               description="Create a project to see status distribution."
+              actionLabel="Open projects"
+              onAction={() => {
+                window.location.assign('/projects')
+              }}
             />
           ) : (
             <div className="flex h-full min-h-0 flex-col gap-4">
@@ -301,12 +296,12 @@ export function CompanyAdminDashboard() {
               to="/finance"
               className="text-[12px] font-medium text-accent hover:underline"
             >
-              Money
+              Revenue
             </Link>
           }
         >
           <div className="flex h-full min-h-0 flex-col">
-            <div className="mb-4 grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-4">
+            <div className="mb-4 grid shrink-0 grid-cols-2 gap-3 xl:grid-cols-5">
               <BudgetTile
                 label="Approved budget"
                 value={formatInr(budget?.totalBudget || 0)}
@@ -319,6 +314,11 @@ export function CompanyAdminDashboard() {
                 label="Committed POs"
                 value={formatInr(budget?.committedAmount || 0)}
                 tone="blue"
+              />
+              <BudgetTile
+                label="Pending expenses"
+                value={formatInr(budget?.pendingAmount || 0)}
+                tone="amber"
               />
               <BudgetTile
                 label="Variance"
@@ -430,6 +430,16 @@ export function CompanyAdminDashboard() {
           }
         >
           <div className="flex min-h-0 flex-1 flex-col gap-3">
+            {(d?.materials?.totalPos || 0) === 0 &&
+            (d?.materials?.approvedBoqLines || 0) === 0 ? (
+              <EmptyState
+                className="!border-0 !bg-transparent !py-6"
+                icon={Truck}
+                title="No materials activity"
+                description="Approve a BOQ and raise POs to track coverage."
+              />
+            ) : (
+              <>
             <div className="grid shrink-0 grid-cols-2 gap-3">
               <div className="rounded-[8px] bg-canvas p-3">
                 <p className="text-[11px] font-medium text-secondary">
@@ -475,6 +485,8 @@ export function CompanyAdminDashboard() {
                 {d.materials.note}
               </p>
             )}
+              </>
+            )}
           </div>
         </Panel>
 
@@ -482,7 +494,11 @@ export function CompanyAdminDashboard() {
           className="flex h-[360px] flex-col"
           icon={Store}
           title="Top vendors"
-          subtitle="Ranked by PO value in range"
+          subtitle={
+            range === 'all'
+              ? 'Ranked by PO value (all time)'
+              : 'Ranked by PO value in selected period'
+          }
           action={
             <Link
               to="/procurement"
@@ -741,8 +757,8 @@ export function CompanyAdminDashboard() {
 function StatCard({ to, icon: Icon, tone, label, value, delta, foot }) {
   const tones = {
     blue: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
-    violet: 'bg-violet-50 text-violet-600 dark:bg-violet-500/15 dark:text-violet-300',
-    amber: 'bg-amber-50 text-amber-600 dark:bg-amber-500/15 dark:text-amber-300',
+    violet: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
+    amber: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
     emerald: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
   }
   return (
@@ -788,6 +804,7 @@ function StatCard({ to, icon: Icon, tone, label, value, delta, foot }) {
 function BudgetTile({ label, value, tone }) {
   const tones = {
     blue: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
+    amber: 'bg-amber-50 text-amber-700 dark:bg-amber-500/15 dark:text-amber-300',
     red: 'bg-red-50 text-red-600',
     green: 'bg-[var(--accent)]/12 text-[var(--accent-hover)]',
   }

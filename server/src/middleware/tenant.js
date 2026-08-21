@@ -105,7 +105,11 @@ export async function ensureDefaultTenant({ skipBackfill = false } = {}) {
       slug,
       status: 'active',
       seatLimit: Number(process.env.DEFAULT_TENANT_SEATS) || 100,
+      adminLimit: Number(process.env.DEFAULT_ADMIN_LIMIT) || 3,
     })
+  } else if (tenant.adminLimit == null) {
+    tenant.adminLimit = Number(process.env.DEFAULT_ADMIN_LIMIT) || 3
+    await tenant.save()
   }
 
   if (skipBackfill) return tenant
@@ -210,6 +214,51 @@ export async function assertSeatAvailable(tenantId) {
     )
   }
   return { tenant, count }
+}
+
+/** Company management seats: admin + owner roles (not HR / staff). */
+export const COMPANY_ADMIN_ROLES = ['admin', 'owner']
+
+export function isCompanyAdminRole(role) {
+  return COMPANY_ADMIN_ROLES.includes(String(role || ''))
+}
+
+export async function countCompanyAdmins(tenantId) {
+  return User.countDocuments({
+    tenantId,
+    isActive: true,
+    isPlatformAdmin: { $ne: true },
+    role: { $in: COMPANY_ADMIN_ROLES },
+  })
+}
+
+/**
+ * Enforce platform-set max admins when inviting / promoting to admin|owner.
+ * Pass `{ excludeUserId }` when changing an existing user's role so they
+ * are not double-counted.
+ */
+export async function assertAdminSlotAvailable(
+  tenantId,
+  { excludeUserId = null } = {},
+) {
+  const tenant = await Tenant.findById(tenantId)
+  if (!tenant) throw new AppError('Workspace not found', 404)
+  const limit = Math.max(1, Number(tenant.adminLimit) || 3)
+  const filter = {
+    tenantId,
+    isActive: true,
+    isPlatformAdmin: { $ne: true },
+    role: { $in: COMPANY_ADMIN_ROLES },
+  }
+  if (excludeUserId) filter._id = { $ne: excludeUserId }
+  const count = await User.countDocuments(filter)
+  if (count >= limit) {
+    throw new AppError(
+      `Admin limit reached (${count}/${limit}). Ask Editco platform to raise the company admin cap.`,
+      403,
+    )
+  }
+  return { tenant, count, limit }
 }
 
 export function requirePlatformAdmin(req, _res, next) {

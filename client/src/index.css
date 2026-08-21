@@ -432,6 +432,7 @@ body {
 }
 
 /* ── Dark mode: soft elevation UI (match product screenshots) ── */
+/* Cards / panels (Apple light rebuilds → dark surfaces) */
 [data-theme="dark"] .bg-white,
 [data-theme="dark"] .bg-white\/90,
 [data-theme="dark"] .bg-white\/95 {
@@ -439,18 +440,34 @@ body {
 }
 [data-theme="dark"] .bg-\[\#fafafa\],
 [data-theme="dark"] .bg-\[\#F5F5F4\],
+[data-theme="dark"] .bg-\[\#f5f5f7\],
+[data-theme="dark"] .bg-\[\#fbfbfd\],
 [data-theme="dark"] .bg-\[\#f8fafc\],
 [data-theme="dark"] .bg-\[\#eef2f7\],
 [data-theme="dark"] .bg-\[\#f1f5f9\],
 [data-theme="dark"] .bg-\[\#fbfdff\],
 [data-theme="dark"] .bg-\[\#eff6ff\],
 [data-theme="dark"] .bg-\[\#fef2f2\],
-[data-theme="dark"] .hover\:bg-\[\#fafafa\]:hover {
+[data-theme="dark"] .bg-\[\#ebebed\],
+[data-theme="dark"] .bg-\[\#f5f5f7\]\/60,
+[data-theme="dark"] .hover\:bg-\[\#fafafa\]:hover,
+[data-theme="dark"] .hover\:bg-\[\#f5f5f7\]:hover,
+[data-theme="dark"] .hover\:bg-\[\#ebebed\]:hover,
+[data-theme="dark"] .hover\:bg-\[\#fbfbfd\]:hover,
+[data-theme="dark"] .focus\:bg-white:focus {
   background-color: var(--bg-surface-raised) !important;
+}
+/* Soft cream / warm callouts (restock banners, etc.) */
+[data-theme="dark"] .bg-\[\#fffbf5\],
+[data-theme="dark"] .bg-\[\#fff8ef\],
+[data-theme="dark"] .bg-\[\#fff7ed\],
+[data-theme="dark"] .bg-\[\#fffbeb\] {
+  background-color: rgba(245, 158, 11, 0.1) !important;
 }
 [data-theme="dark"] .bg-\[\#ecfdf5\],
 [data-theme="dark"] .hover\:bg-\[\#ecfdf5\]:hover,
 [data-theme="dark"] .bg-emerald-50,
+[data-theme="dark"] .hover\:bg-emerald-50:hover,
 [data-theme="dark"] .hover\:bg-emerald-100:hover {
   background-color: var(--nav-active-bg) !important;
 }
@@ -472,12 +489,42 @@ body {
 [data-theme="dark"] .bg-slate-100 {
   background-color: var(--bg-surface-raised) !important;
 }
+[data-theme="dark"] .bg-blue-50,
+[data-theme="dark"] .bg-blue-50\/70,
+[data-theme="dark"] .bg-slate-50\/80 {
+  background-color: var(--bg-active) !important;
+}
+[data-theme="dark"] .bg-amber-50,
+[data-theme="dark"] .bg-amber-50\/70,
+[data-theme="dark"] .bg-amber-50\/80,
+[data-theme="dark"] .bg-amber-100,
+[data-theme="dark"] .bg-amber-100\/80,
+[data-theme="dark"] .bg-amber-500\/15 {
+  background-color: rgba(245, 158, 11, 0.14) !important;
+}
+[data-theme="dark"] .text-amber-600,
+[data-theme="dark"] .text-amber-700,
+[data-theme="dark"] .text-amber-800,
+[data-theme="dark"] .text-amber-800\/70,
+[data-theme="dark"] .text-amber-800\/80,
+[data-theme="dark"] .text-amber-900,
+[data-theme="dark"] .dark\:text-amber-300,
+[data-theme="dark"] .dark\:text-amber-400 {
+  color: #fbbf24 !important;
+}
+[data-theme="dark"] .border-amber-500\/35,
+[data-theme="dark"] .border-amber-500\/40,
+[data-theme="dark"] .border-amber-500\/60 {
+  border-color: rgba(245, 158, 11, 0.4) !important;
+}
 [data-theme="dark"] .from-\[\#ecfdf5\],
 [data-theme="dark"] .to-white {
   --tw-gradient-from: var(--nav-active-bg) !important;
   --tw-gradient-to: var(--bg-surface) !important;
 }
-[data-theme="dark"] .text-emerald-700 {
+[data-theme="dark"] .text-emerald-700,
+[data-theme="dark"] .text-emerald-800,
+[data-theme="dark"] .text-\[\#0d7a4f\] {
   color: #6ee7b7 !important;
 }
 
@@ -496,42 +543,84 @@ body {
 [data-theme="dark"] .focus\:border-\[\#93b4ec\]:focus,
 [data-theme="dark"] .border-slate-100,
 [data-theme="dark"] .border-slate-200,
+[data-theme="dark"] .border-black\/\[0\.04\],
+[data-theme="dark"] .border-black\/\[0\.06\],
+[data-theme="dark"] .border-black\/\[0\.08\],
+[data-theme="dark"] .border-black\/10,
 [data-theme="dark"] .divide-border > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-black\/\[0\.04\] > :not([hidden]) ~ :not([hidden]),
+[data-theme="dark"] .divide-black\/\[0\.05\] > :not([hidden]) ~ :not([hidden]),
 [data-theme="dark"] .border-b,
 [data-theme="dark"] .border-t,
 [data-theme="dark"] .border-r,
 [data-theme="dark"] .border-l {
   border-color: var(--border-subtle) !important;
 }
+/* Keep warm / status callouts after the catch-all */
+[data-theme="dark"] .border-amber-100,
+[data-theme="dark"] .border-amber-200,
+[data-theme="dark"] .border-amber-200\/50,
+[data-theme="dark"] .border-amber-200\/60,
+[data-theme="dark"] .border-amber-200\/70,
+[data-theme="dark"] .border-amber-300,
+[data-theme="dark"] .divide-amber-100\/80 > :not([hidden]) ~ :not([hidden]) {
+  border-color: rgba(245, 158, 11, 0.28) !important;
+}
 [data-theme="dark"] .ring-1,
-[data-theme="dark"] .ring-amber-100 {
+[data-theme="dark"] .ring-amber-100,
+[data-theme="dark"] .ring-black\/\[0\.04\],
+[data-theme="dark"] .ring-black\/\[0\.05\],
+[data-theme="dark"] .ring-black\/\[0\.06\],
+[data-theme="dark"] .ring-black\/\[0\.08\],
+[data-theme="dark"] .ring-2.ring-white {
   --tw-ring-color: rgba(255, 255, 255, 0.06) !important;
+}
+[data-theme="dark"] .ring-amber-200\/60,
+[data-theme="dark"] .ring-amber-200\/70,
+[data-theme="dark"] .ring-1.ring-amber-200\/60,
+[data-theme="dark"] .ring-1.ring-amber-200\/70 {
+  --tw-ring-color: rgba(245, 158, 11, 0.28) !important;
 }
 [data-theme="dark"] .shadow-sm,
 [data-theme="dark"] .shadow-xl,
 [data-theme="dark"] .shadow-\[0_1px_3px_rgba\(15\,23\,42\,0\.04\)\],
 [data-theme="dark"] .shadow-\[0_1px_3px_rgba\(0\,0\,0\,0\.06\)\],
+[data-theme="dark"] .shadow-\[0_8px_24px_rgba\(0\,0\,0\,0\.04\)\],
 [data-theme="dark"] .shadow-\[0_8px_24px_rgba\(0\,0\,0\,0\.08\)\],
-[data-theme="dark"] .shadow-\[0_16px_48px_rgba\(0\,0\,0\,0\.12\)\] {
+[data-theme="dark"] .shadow-\[0_8px_30px_rgba\(0\,0\,0\,0\.04\)\],
+[data-theme="dark"] .shadow-\[0_12px_40px_rgba\(0\,0\,0\,0\.12\)\],
+[data-theme="dark"] .shadow-\[0_16px_48px_rgba\(0\,0\,0\,0\.12\)\],
+[data-theme="dark"] .hover\:shadow-\[0_8px_24px_rgba\(0\,0\,0\,0\.04\)\]:hover,
+[data-theme="dark"] .hover\:shadow-\[0_8px_30px_rgba\(0\,0\,0\,0\.04\)\]:hover {
   box-shadow: none !important;
 }
 
+/* Primary / secondary text hardcodes from light rebuilds */
 [data-theme="dark"] .text-\[\#171717\],
 [data-theme="dark"] .text-\[\#0E0E10\],
+[data-theme="dark"] .text-\[\#0d0d0d\],
+[data-theme="dark"] .text-\[\#1d1d1f\],
+[data-theme="dark"] .text-\[\#1d1d1f\]\/90,
 [data-theme="dark"] .text-\[\#212121\],
-[data-theme="dark"] .text-\[\#0f172a\] {
+[data-theme="dark"] .text-\[\#0f172a\],
+[data-theme="dark"] .hover\:text-\[\#1d1d1f\]:hover {
   color: var(--text-primary) !important;
 }
 [data-theme="dark"] .text-\[\#707070\],
+[data-theme="dark"] .text-\[\#6e6e73\],
 [data-theme="dark"] .text-\[\#8b8b90\],
+[data-theme="dark"] .text-\[\#86868b\],
 [data-theme="dark"] .text-\[\#64748b\],
 [data-theme="dark"] .text-\[\#94a3b8\],
-[data-theme="dark"] .text-slate-500 {
+[data-theme="dark"] .text-slate-500,
+[data-theme="dark"] .hover\:text-\[\#6e6e73\]:hover {
   color: var(--text-secondary) !important;
 }
 [data-theme="dark"] .text-\[\#9a9a9a\],
 [data-theme="dark"] .text-\[\#6b6b70\],
-[data-theme="dark"] .placeholder\:text-\[\#9a9a9a\]::placeholder {
+[data-theme="dark"] .text-\[\#c7c7cc\],
+[data-theme="dark"] .placeholder\:text-\[\#9a9a9a\]::placeholder,
+[data-theme="dark"] .placeholder\:text-\[\#86868b\]::placeholder {
   color: var(--text-muted) !important;
 }
 [data-theme="dark"] .bg-\[\#1c1c1c\],
@@ -546,24 +635,29 @@ body {
 [data-theme="dark"] .text-\[\#3ecf8e\] {
   color: var(--accent) !important;
 }
-[data-theme="dark"] .bg-red-50,
-[data-theme="dark"] .bg-amber-50,
-[data-theme="dark"] .bg-amber-50\/80 {
-  background-color: rgba(248, 113, 113, 0.1) !important;
+[data-theme="dark"] .bg-red-50 {
+  background-color: rgba(248, 113, 113, 0.12) !important;
 }
-[data-theme="dark"] .border-red-200,
-[data-theme="dark"] .border-amber-200,
-[data-theme="dark"] .border-amber-300 {
+[data-theme="dark"] .border-red-200 {
   border-color: rgba(248, 113, 113, 0.22) !important;
 }
 [data-theme="dark"] .text-red-500,
 [data-theme="dark"] .text-red-600,
-[data-theme="dark"] .text-red-700,
-[data-theme="dark"] .text-amber-700 {
+[data-theme="dark"] .text-red-700 {
   color: #f87171 !important;
 }
 [data-theme="dark"] .hover\:bg-red-100:hover {
   background-color: rgba(248, 113, 113, 0.16) !important;
+}
+[data-theme="dark"] .bg-blue-50 .text-blue-700,
+[data-theme="dark"] .text-blue-700,
+[data-theme="dark"] .text-\[\#0071e3\] {
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .hover\:bg-black\/5:hover,
+[data-theme="dark"] .hover\:bg-black\/\[0\.04\]:hover,
+[data-theme="dark"] .hover\:bg-black\/\[0\.05\]:hover {
+  background-color: rgba(255, 255, 255, 0.06) !important;
 }
 [data-theme="dark"] input,
 [data-theme="dark"] textarea,

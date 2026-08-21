@@ -16,14 +16,17 @@ import {
   canInviteUsers,
   capabilitiesForUser,
   ACCESS_TOGGLES,
-  INVITE_ROLE_OPTIONS,
-  ROLE_LABELS,
+  CUSTOM_ROLE_BASE_OPTIONS,
+  NEW_CUSTOM_ROLE_VALUE,
+  inviteRoleOptions,
+  roleLabelFor,
 } from '../lib/roles'
 import { formatTrackedSeconds } from '../lib/taskStatus'
 import {
   Avatar,
   Button,
   Input,
+  Modal,
   Select,
   Skeleton,
   toast,
@@ -34,6 +37,7 @@ import { cn } from '../lib/utils'
 export function AdminPeoplePage() {
   const user = useAuthStore((s) => s.user)
   const tenant = useAuthStore((s) => s.tenant)
+  const setTenant = useAuthStore((s) => s.setTenant)
   const qc = useQueryClient()
   const [invite, setInvite] = useState({
     name: '',
@@ -45,12 +49,38 @@ export function AdminPeoplePage() {
   const [selectedId, setSelectedId] = useState('')
   const [permissionDraft, setPermissionDraft] = useState({})
   const [search, setSearch] = useState('')
-  const caps = capabilitiesForUser(user)
+  const [customRoleOpen, setCustomRoleOpen] = useState(false)
+  const [customRoleForm, setCustomRoleForm] = useState({
+    label: '',
+    basedOn: 'designer',
+  })
+  const caps = capabilitiesForUser(user, tenant)
   const canResetPasswords = ['admin', 'owner'].includes(user?.role)
+  const customRoles = tenant?.customRoles || []
+  const canCreateCustomRoles =
+    !!user?.isPlatformAdmin || ['admin', 'owner'].includes(user?.role)
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-team-summary'],
     queryFn: () => api('/admin/team-summary'),
+  })
+
+  const summary = data?.data
+  const members = summary?.members || data?.members || []
+  const adminsUsed = members.filter(
+    (m) =>
+      m.user?.isActive !== false &&
+      ['admin', 'owner'].includes(m.user?.role),
+  ).length
+  const adminLimit = tenant?.adminLimit ?? 3
+  const adminSlotsFull = adminsUsed >= adminLimit
+
+  const roleOptions = inviteRoleOptions(customRoles, {
+    allowCreate: canCreateCustomRoles,
+  }).filter((opt) => {
+    if (!adminSlotsFull) return true
+    if (opt.value === '__create_custom__') return true
+    return !['admin', 'owner'].includes(opt.value)
   })
 
   const { data: projectsData } = useQuery({
@@ -76,15 +106,41 @@ export function AdminPeoplePage() {
     onError: (e) => toast(e.message, { type: 'error' }),
   })
 
-  const summary = data?.data
-  const members = summary?.members || []
+  const createCustomRole = useMutation({
+    mutationFn: (body) =>
+      api('/admin/custom-roles', {
+        method: 'POST',
+        body: JSON.stringify(body),
+      }),
+    onSuccess: (res) => {
+      const nextRoles = res.customRoles || [
+        ...(customRoles || []),
+        res.role,
+      ].filter(Boolean)
+      if (tenant) {
+        setTenant({ ...tenant, customRoles: nextRoles })
+      }
+      setInvite((s) => ({ ...s, role: res.role?.key || s.role }))
+      setCustomRoleOpen(false)
+      setCustomRoleForm({ label: '', basedOn: 'designer' })
+      toast(`Role “${res.role?.label}” created`, { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
   const selected = members.find(
     (member) => String(member.user._id) === String(selectedId),
   )
   const filteredMembers = members.filter((member) => {
     const q = search.trim().toLowerCase()
     if (!q) return true
-    return [member.user.name, member.user.email, member.user.role, member.user.title]
+    return [
+      member.user.name,
+      member.user.email,
+      member.user.role,
+      roleLabelFor(member.user.role, customRoles),
+      member.user.title,
+    ]
       .filter(Boolean)
       .some((value) => String(value).toLowerCase().includes(q))
   })
@@ -104,19 +160,50 @@ export function AdminPeoplePage() {
 
   useEffect(() => {
     if (!selected) return
-    setPermissionDraft(selected.user.effectivePermissions || {})
+    const effective = selected.user.effectivePermissions || {}
+    setPermissionDraft(
+      Object.fromEntries(
+        ACCESS_TOGGLES.map((item) => [item.key, !!effective[item.key]]),
+      ),
+    )
   }, [selected])
 
   const savePermissions = useMutation({
-    mutationFn: () =>
-      api(`/admin/users/${selectedId}/permissions`, {
+    mutationFn: () => {
+      const permissions = Object.fromEntries(
+        ACCESS_TOGGLES.map((item) => [item.key, !!permissionDraft[item.key]]),
+      )
+      return api(`/admin/users/${selectedId}/permissions`, {
         method: 'PATCH',
-        body: JSON.stringify({ permissions: permissionDraft }),
-      }),
-    onSuccess: () => {
+        body: JSON.stringify({ permissions }),
+      })
+    },
+    onSuccess: (res) => {
+      qc.setQueryData(['admin-team-summary'], (prev) => {
+        if (!prev?.data?.members) return prev
+        return {
+          ...prev,
+          data: {
+            ...prev.data,
+            members: prev.data.members.map((member) => {
+              if (String(member.user._id) !== String(selectedId)) return member
+              return {
+                ...member,
+                user: {
+                  ...member.user,
+                  permissions: res?.user?.permissions || member.user.permissions,
+                  effectivePermissions:
+                    res?.user?.effectivePermissions ||
+                    member.user.effectivePermissions,
+                },
+              }
+            }),
+          },
+        }
+      })
       qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
       toast(
-        'Access saved. Employee sidebar updates within a few seconds (or after refresh).',
+        `Access updated for ${selected?.user?.name || 'employee'}. Their menu updates instantly if they’re online.`,
         { type: 'success' },
       )
     },
@@ -144,52 +231,36 @@ export function AdminPeoplePage() {
   return (
     <div className="min-h-full bg-[var(--bg-canvas)]">
       <div className="mx-auto max-w-[1440px] space-y-5 p-4 md:p-6 lg:p-8">
-        <section className="rounded-[12px] border border-border bg-surface px-5 py-5 md:px-6">
-          <div className="flex flex-col justify-between gap-5 xl:flex-row xl:items-end">
-            <div>
-              <p className="text-[11px] font-medium uppercase tracking-[0.12em] text-secondary">
-                People
+        <section className="grid grid-cols-3 gap-3 sm:max-w-md">
+          {[
+            {
+              label: 'People',
+              value: summary?.totalMembers ?? '—',
+            },
+            {
+              label: 'Active',
+              value: summary?.activeMembers ?? '—',
+            },
+            {
+              label: 'Open work',
+              value: members.reduce(
+                (sum, member) => sum + (member.open || 0),
+                0,
+              ),
+            },
+          ].map((metric) => (
+            <div
+              key={metric.label}
+              className="rounded-[8px] border border-border bg-surface px-4 py-3"
+            >
+              <p className="text-[20px] font-medium tabular-nums leading-none text-primary">
+                {metric.value}
               </p>
-              <h1 className="mt-1 text-[24px] font-medium tracking-tight text-primary md:text-[28px]">
-                Team & access
-              </h1>
-              <p className="mt-1.5 max-w-xl text-[13px] text-secondary">
-                Manage who can access projects, tasks, and modules.
+              <p className="mt-1.5 text-[11px] text-secondary">
+                {metric.label}
               </p>
             </div>
-
-            <div className="grid grid-cols-3 gap-px overflow-hidden rounded-[8px] border border-border bg-border">
-              {[
-                {
-                  label: 'People',
-                  value: summary?.totalMembers ?? '—',
-                },
-                {
-                  label: 'Active',
-                  value: summary?.activeMembers ?? '—',
-                },
-                {
-                  label: 'Open work',
-                  value: members.reduce(
-                    (sum, member) => sum + (member.open || 0),
-                    0,
-                  ),
-                },
-              ].map((metric) => (
-                <div
-                  key={metric.label}
-                  className="min-w-[88px] bg-surface px-4 py-3 sm:min-w-[110px]"
-                >
-                  <p className="text-[20px] font-medium tabular-nums leading-none text-primary">
-                    {metric.value}
-                  </p>
-                  <p className="mt-1.5 text-[11px] text-secondary">
-                    {metric.label}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
+          ))}
         </section>
 
         <div className="grid items-start gap-5 xl:grid-cols-[minmax(0,1fr)_360px]">
@@ -259,7 +330,7 @@ export function AdminPeoplePage() {
                           </p>
                           <div className="mt-0.5 flex min-w-0 items-center gap-1.5">
                             <span className="shrink-0 rounded-[4px] bg-canvas px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-secondary ring-1 ring-border">
-                              {ROLE_LABELS[member.user.role] || member.user.role}
+                              {roleLabelFor(member.user.role, customRoles)}
                             </span>
                             <span className="truncate text-[11px] text-secondary">
                               {member.user.title || member.user.email}
@@ -348,7 +419,7 @@ export function AdminPeoplePage() {
                         {selected.user.name}
                       </p>
                       <p className="mt-0.5 truncate text-[11px] text-secondary">
-                        {ROLE_LABELS[selected.user.role] || selected.user.role}
+                        {roleLabelFor(selected.user.role, customRoles)}
                         {selected.user.title ? ` · ${selected.user.title}` : ''}
                       </p>
                     </div>
@@ -525,14 +596,26 @@ export function AdminPeoplePage() {
                   <Select
                     label="Role"
                     value={invite.role}
-                    onChange={(event) =>
+                    onChange={(event) => {
+                      const next = event.target.value
+                      if (next === NEW_CUSTOM_ROLE_VALUE) {
+                        setCustomRoleForm({ label: '', basedOn: 'designer' })
+                        setCustomRoleOpen(true)
+                        return
+                      }
                       setInvite((current) => ({
                         ...current,
-                        role: event.target.value,
+                        role: next,
                       }))
-                    }
-                    options={INVITE_ROLE_OPTIONS}
+                    }}
+                    options={roleOptions}
                   />
+                  <p className="mt-1.5 text-[11px] text-secondary">
+                    Company admins: {adminsUsed}/{adminLimit}
+                    {adminSlotsFull
+                      ? ' — admin slots full (platform sets this limit).'
+                      : ''}
+                  </p>
                 </div>
               </div>
               <Button
@@ -591,6 +674,61 @@ export function AdminPeoplePage() {
         details={inviteResult}
         onClose={() => setInviteResult(null)}
       />
+
+      <Modal
+        open={customRoleOpen}
+        onClose={() => setCustomRoleOpen(false)}
+        title="New custom role"
+      >
+        <form
+          className="space-y-4"
+          onSubmit={(e) => {
+            e.preventDefault()
+            if (!customRoleForm.label.trim()) {
+              toast('Enter a role name', { type: 'error' })
+              return
+            }
+            createCustomRole.mutate({
+              label: customRoleForm.label.trim(),
+              basedOn: customRoleForm.basedOn,
+            })
+          }}
+        >
+          <p className="text-[13px] leading-relaxed text-secondary">
+            Create a company role for invites. Access starts from a base
+            template — you can fine-tune permissions after inviting.
+          </p>
+          <Input
+            label="Role name"
+            autoFocus
+            placeholder="e.g. Quantity surveyor, Site engineer"
+            value={customRoleForm.label}
+            onChange={(e) =>
+              setCustomRoleForm((s) => ({ ...s, label: e.target.value }))
+            }
+          />
+          <Select
+            label="Based on"
+            value={customRoleForm.basedOn}
+            onChange={(e) =>
+              setCustomRoleForm((s) => ({ ...s, basedOn: e.target.value }))
+            }
+            options={CUSTOM_ROLE_BASE_OPTIONS}
+          />
+          <div className="flex justify-end gap-2 border-t border-border pt-4">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setCustomRoleOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button type="submit" disabled={createCustomRole.isPending}>
+              {createCustomRole.isPending ? 'Creating…' : 'Create role'}
+            </Button>
+          </div>
+        </form>
+      </Modal>
     </div>
   )
 }

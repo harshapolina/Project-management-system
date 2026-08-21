@@ -23,6 +23,9 @@ import companyAdminRoutes from './routes/companyAdmin.js'
 import impactRoutes from './routes/impact.js'
 import inventoryRoutes from './routes/inventory.js'
 import billingRoutes from './routes/billing.js'
+import mediaRoutes from './routes/media.js'
+
+import { registerSocketAuth, registerSocketHandlers } from './lib/socketAuth.js'
 
 dotenv.config()
 
@@ -53,7 +56,15 @@ export function corsOrigin(origin, callback) {
       }
       if (
         host.endsWith('.editcomedia.com') ||
-        host === 'editcomedia.com' ||
+        host === 'editcomedia.com'
+      ) {
+        callback(null, true)
+        return
+      }
+      // Vercel SPA + API split — set CLIENT_URL to your exact frontend origin in prod.
+      // Set ALLOW_VERCEL_PREVIEWS=false to lock down to CLIENT_URL only.
+      if (
+        process.env.ALLOW_VERCEL_PREVIEWS !== 'false' &&
         host.endsWith('.vercel.app')
       ) {
         callback(null, true)
@@ -95,17 +106,8 @@ export function createApp({ enableSockets = true } = {}) {
         credentials: true,
       },
     })
-    io.on('connection', (socket) => {
-      socket.on('join:project', (projectId) => {
-        if (projectId) socket.join(`project:${projectId}`)
-      })
-      socket.on('join:user', (userId) => {
-        if (userId) socket.join(`user:${userId}`)
-      })
-      socket.on('join:channel', (channelId) => {
-        if (channelId) socket.join(`channel:${channelId}`)
-      })
-    })
+    registerSocketAuth(io)
+    registerSocketHandlers(io)
   } else {
     io = createNoopIo()
   }
@@ -121,6 +123,7 @@ export function createApp({ enableSockets = true } = {}) {
   app.use(express.json({ limit: '10mb' }))
   app.use(cookieParser())
   app.use('/uploads', express.static(UPLOADS_DIR))
+  app.use('/api/media', mediaRoutes)
 
   app.get('/api/health', (_req, res) => {
     res.json({

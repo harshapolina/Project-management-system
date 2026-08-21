@@ -9,7 +9,8 @@
     "build": "echo \"API needs no build step\"",
     "start": "node src/index.js",
     "seed": "node src/seed/seed.js",
-    "seed:roles": "node src/seed/seedRoleAccounts.js"
+    "seed:roles": "node src/seed/seedRoleAccounts.js",
+    "seed:mocks": "node src/seed/ensureAtlasMocks.js"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",

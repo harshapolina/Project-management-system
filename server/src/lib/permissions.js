@@ -46,8 +46,24 @@ function overridesFor(user) {
   return user.permissions
 }
 
-export function defaultPermissionsForRole(role) {
-  return { ...(ROLE_DEFAULTS[role] || {}) }
+export function defaultPermissionsForRole(role, customRoles = []) {
+  if (ROLE_DEFAULTS[role]) return { ...ROLE_DEFAULTS[role] }
+  const custom = (customRoles || []).find((r) => r.key === role)
+  if (!custom) return {}
+  const base = ROLE_DEFAULTS[custom.basedOn] || {}
+  const extras =
+    custom.permissions && typeof custom.permissions === 'object'
+      ? custom.permissions
+      : {}
+  return { ...base, ...extras }
+}
+
+/** Full true/false map for every permission key (People page saves this). */
+export function normalizePermissionMap(value = {}) {
+  const input = value && typeof value === 'object' ? value : {}
+  return Object.fromEntries(
+    PERMISSION_KEYS.map((key) => [key, !!input[key]]),
+  )
 }
 
 export function resolvePermissions(user, tenant = null) {
@@ -57,7 +73,7 @@ export function resolvePermissions(user, tenant = null) {
     perms = { ...ALL_ENABLED }
   } else {
     perms = {
-      ...defaultPermissionsForRole(user.role),
+      ...defaultPermissionsForRole(user.role, tenant?.customRoles),
       ...overridesFor(user),
     }
   }
@@ -84,12 +100,12 @@ export function requirePermission(key) {
   }
 }
 
+/** Keep only explicit boolean overrides (partial maps OK). */
 export function sanitizePermissionOverrides(value) {
   const input = value && typeof value === 'object' ? value : {}
   return Object.fromEntries(
-    PERMISSION_KEYS.filter((key) => typeof input[key] === 'boolean').map((key) => [
-      key,
-      input[key],
-    ]),
+    PERMISSION_KEYS.filter((key) => typeof input[key] === 'boolean').map(
+      (key) => [key, !!input[key]],
+    ),
   )
 }

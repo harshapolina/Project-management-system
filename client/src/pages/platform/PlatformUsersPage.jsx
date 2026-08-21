@@ -30,13 +30,6 @@ export function PlatformUsersPage() {
 
   return (
     <div className="mx-auto max-w-5xl space-y-6">
-      <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-primary">All users</h1>
-        <p className="mt-1 text-sm text-secondary">
-          Every user across all company workspaces — search by name, email, or company.
-        </p>
-      </div>
-
       <div className="relative">
         <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-secondary" />
         <input

@@ -1,204 +1,388 @@
+import { Link, useNavigate } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
-import { Link } from 'react-router-dom'
-import { AlertTriangle, CalendarClock } from 'lucide-react'
-import { api } from '../lib/api'
+import { format } from 'date-fns'
+import {
+  AlertCircle,
+  AlertTriangle,
+  CalendarClock,
+  FolderKanban,
+  Users,
+} from 'lucide-react'
+import { api, assetUrl } from '../lib/api'
 import { stageLabel } from '../lib/format'
+import { PageToolbar, ToolbarLink } from '../components/layout/PageToolbar'
 import {
   Avatar,
-  Button,
-  Card,
-  KpiCard,
+  EmptyState,
   ProgressBar,
   ProgressRing,
   SkeletonCard,
   StatusChip,
 } from '../components/ui'
+import { cn } from '../lib/utils'
+
+function formatDue(value) {
+  if (!value) return ''
+  try {
+    return format(new Date(value), 'd MMM')
+  } catch {
+    return ''
+  }
+}
+
+function trendLabel(delta) {
+  if (delta == null) return null
+  const up = delta >= 0
+  return {
+    text: `${up ? '+' : ''}${delta} vs prior 30d`,
+    up,
+  }
+}
 
 export function PortfolioPage() {
-  const { data, isLoading } = useQuery({
+  const navigate = useNavigate()
+  const { data, isLoading, isError, error, refetch, isFetching } = useQuery({
     queryKey: ['portfolio'],
     queryFn: () => api('/projects/portfolio'),
   })
 
   if (isLoading) {
     return (
-      <div className="grid gap-4 md:grid-cols-3 xl:grid-cols-5">
-        {Array.from({ length: 5 }).map((_, i) => (
-          <SkeletonCard key={i} />
-        ))}
+      <div className="mx-auto w-full max-w-[1500px] space-y-4 pb-10">
+        <SkeletonCard className="h-16" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
+          {Array.from({ length: 5 }).map((_, i) => (
+            <SkeletonCard key={i} className="h-28" />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-3">
+          <SkeletonCard className="h-72 lg:col-span-2" />
+          <SkeletonCard className="h-72" />
+        </div>
       </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <EmptyState
+        icon={AlertCircle}
+        title="Could not load dashboard"
+        description={error?.message || 'Check your connection and try again.'}
+        actionLabel="Retry"
+        onAction={() => refetch()}
+      />
     )
   }
 
   const d = data?.data
   const counts = d?.counts || {}
-  const healthTotal =
-    (d?.health || []).reduce((s, h) => s + h.value, 0) || 1
+  const health = d?.health || []
+  const healthTotal = health.reduce((s, h) => s + (h.value || 0), 0) || 1
+  const projects = d?.projects || []
+  const projectTrend = trendLabel(d?.trends?.projectDelta)
+  const activeLabel = d?.activeCount ?? counts.ongoing ?? 0
 
   return (
-    <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-secondary mb-1">Real-time visibility across all interior projects</p>
-          <h1 className="text-[28px] font-semibold tracking-tight leading-none text-primary md:text-[32px]">
-            Project Dashboard
-          </h1>
-        </div>
-        <Link to="/projects">
-          <Button>View all projects</Button>
-        </Link>
-      </div>
+    <div
+      className={cn(
+        'mx-auto w-full max-w-[1500px] space-y-4 pb-10 transition-opacity',
+        isFetching && 'opacity-90',
+      )}
+    >
+      <PageToolbar
+        left={<ToolbarLink to="/projects">All projects</ToolbarLink>}
+      />
 
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-5">
-        <KpiCard label="Total projects" value={counts.total ?? 0} trend="4%" trendUp />
-        <KpiCard label="Ongoing" value={counts.ongoing ?? 0} trend="2%" trendUp accentValue />
-        <KpiCard label="Completed" value={counts.completed ?? 0} trend="6%" trendUp />
-        <KpiCard
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <DashKpi
+          label="Total projects"
+          value={counts.total ?? 0}
+          foot={projectTrend?.text}
+          footUp={projectTrend?.up}
+        />
+        <DashKpi
+          label="Ongoing"
+          value={counts.ongoing ?? 0}
+          accent
+          foot={`${activeLabel} in active delivery`}
+        />
+        <DashKpi label="Completed" value={counts.completed ?? 0} />
+        <DashKpi
           label="Delayed"
           value={counts.delayed ?? 0}
-          trend="1"
-          trendUp={false}
+          danger={(counts.delayed ?? 0) > 0}
+          foot={
+            (counts.delayed ?? 0) > 0 ? 'Needs attention' : 'None delayed'
+          }
         />
-        <KpiCard label="On hold" value={counts.onHold ?? 0} />
-      </div>
+        <DashKpi label="On hold" value={counts.onHold ?? 0} />
+      </section>
 
-      <Card>
-        <div className="mb-3 flex items-center justify-between">
-          <h2 className="text-sm font-semibold">Project health</h2>
-          <span className="text-xs text-secondary tabular-nums">
-            {d?.projects?.length || 0} active
+      <section className="rounded-[12px] border border-border bg-surface p-5">
+        <div className="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h2 className="text-[13.5px] font-medium text-primary">
+              Project health
+            </h2>
+            <p className="mt-0.5 text-[11px] text-secondary">
+              Status mix across the full portfolio
+            </p>
+          </div>
+          <span className="text-[12px] tabular-nums text-secondary">
+            {counts.total ?? 0} projects
           </span>
         </div>
-        <div className="flex h-3 overflow-hidden rounded-full bg-border">
-          {(d?.health || []).map((h) => (
-            <div
-              key={h.key}
-              title={`${h.label}: ${h.value}`}
-              style={{
-                width: `${(h.value / healthTotal) * 100}%`,
-                backgroundColor: h.color,
-              }}
-            />
-          ))}
-        </div>
-        <div className="mt-3 flex flex-wrap gap-4 text-xs text-secondary">
-          {(d?.health || []).map((h) => (
-            <span key={h.key} className="inline-flex items-center gap-1.5">
-              <span
-                className="h-2 w-2 rounded-full"
-                style={{ backgroundColor: h.color }}
-              />
-              {h.label} ({h.value})
-            </span>
-          ))}
-        </div>
-      </Card>
+        {health.length === 0 ? (
+          <p className="py-6 text-center text-sm text-secondary">
+            No projects yet — create one to see health.
+          </p>
+        ) : (
+          <>
+            <div className="flex h-2.5 overflow-hidden rounded-full bg-border">
+              {health.map((h) => (
+                <div
+                  key={h.key}
+                  title={`${h.label}: ${h.value}`}
+                  style={{
+                    width: `${(h.value / healthTotal) * 100}%`,
+                    backgroundColor: h.color,
+                  }}
+                />
+              ))}
+            </div>
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-2 text-[12px] text-secondary">
+              {health.map((h) => (
+                <span key={h.key} className="inline-flex items-center gap-1.5">
+                  <span
+                    className="h-2 w-2 rounded-full"
+                    style={{ backgroundColor: h.color }}
+                  />
+                  {h.label}{' '}
+                  <span className="font-semibold tabular-nums text-primary">
+                    {h.value}
+                  </span>
+                </span>
+              ))}
+            </div>
+          </>
+        )}
+      </section>
 
       <div className="grid gap-4 lg:grid-cols-3">
-        <div className="lg:col-span-2 grid gap-4 sm:grid-cols-2">
-          {(d?.projects || []).map((p) => (
-            <Link key={p._id} to={`/projects/${p._id}`}>
-              <Card
-                padding={false}
-                hover
-                className="overflow-hidden h-full group"
-              >
-                <div
-                  className="relative h-36 bg-cover bg-center"
-                  style={{
-                    backgroundImage: `linear-gradient(to top, rgba(14,14,16,.92), transparent), url(${p.coverImage})`,
-                  }}
-                >
-                  <div className="on-dark absolute bottom-3 left-3 right-3 flex items-end justify-between gap-2">
-                    <div>
-                      <p className="text-sm font-semibold text-white">{p.name}</p>
-                      <p className="text-xs text-white/70">{p.clientName}</p>
-                    </div>
-                    <ProgressRing
-                      value={p.progress}
-                      size={44}
-                      stroke={3}
-                      trackColor="rgba(255,255,255,0.35)"
-                      color="#ffffff"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between gap-2 p-4">
-                  <StatusChip status={p.status} />
-                  <span className="text-xs text-secondary capitalize">
-                    {stageLabel(p.currentStage)}
-                  </span>
-                </div>
-              </Card>
+        <div className="space-y-3 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[13.5px] font-medium text-primary">Projects</h2>
+            <Link
+              to="/projects"
+              className="text-[12px] font-medium text-accent hover:underline"
+            >
+              View all
             </Link>
-          ))}
+          </div>
+          {projects.length === 0 ? (
+            <EmptyState
+              icon={FolderKanban}
+              title="No projects yet"
+              description="Create a project to start tracking delivery."
+              actionLabel="Go to projects"
+              onAction={() => navigate('/projects')}
+            />
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2">
+              {projects.slice(0, 8).map((p) => (
+                <ProjectCard key={p._id} project={p} />
+              ))}
+            </div>
+          )}
         </div>
 
         <div className="space-y-4">
-          <Card padding={false}>
-            <div className="border-b border-border px-4 py-3 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-status-delayed" />
-              <h3 className="text-sm font-semibold">Alerts & risks</h3>
-            </div>
-            <div className="divide-y divide-border">
-              {(d?.delayAlerts || []).length === 0 && (
-                <p className="px-4 py-6 text-sm text-secondary text-center">
-                  No delays — portfolio looks healthy.
-                </p>
-              )}
-              {(d?.delayAlerts || []).map((a) => (
+          <SidePanel
+            icon={AlertTriangle}
+            title="Alerts & risks"
+            iconClass="text-status-delayed"
+          >
+            {(d?.delayAlerts || []).length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-secondary">
+                No delays — portfolio looks healthy.
+              </p>
+            ) : (
+              (d?.delayAlerts || []).map((a) => (
                 <Link
                   key={a.id}
-                  to={`/projects/${a.id}`}
-                  className="block px-4 py-3 hover:bg-surface-raised transition-colors"
+                  to={`/projects/${a.id}/overview`}
+                  className="block px-4 py-3 transition hover:bg-canvas"
                 >
-                  <p className="text-sm font-medium">{a.name}</p>
-                  <p className="text-xs text-secondary mt-0.5">
-                    {a.location} · {stageLabel(a.stage)}
+                  <p className="text-[13px] font-medium text-primary">{a.name}</p>
+                  <p className="mt-0.5 text-[11px] text-secondary">
+                    {[a.location, stageLabel(a.stage)].filter(Boolean).join(' · ')}
+                    {a.endDate ? ` · due ${formatDue(a.endDate)}` : ''}
                   </p>
                 </Link>
-              ))}
-            </div>
-          </Card>
+              ))
+            )}
+          </SidePanel>
 
-          <Card padding={false}>
-            <div className="border-b border-border px-4 py-3 flex items-center gap-2">
-              <CalendarClock className="h-4 w-4 text-accent" />
-              <h3 className="text-sm font-semibold">Upcoming deadlines</h3>
-            </div>
-            <div className="divide-y divide-border">
-              {(d?.upcomingDeadlines || []).map((t) => (
-                <div key={t._id} className="px-4 py-3">
-                  <p className="text-sm font-medium truncate">{t.title}</p>
-                  <p className="text-xs text-secondary mt-0.5">
-                    {t.projectId?.name}
-                  </p>
-                </div>
-              ))}
-            </div>
-          </Card>
-
-          <Card>
-            <h3 className="text-sm font-semibold mb-3">Team workload</h3>
-            <div className="space-y-3">
-              {(d?.workload || []).map((w) => (
-                <div key={w.user._id}>
-                  <div className="mb-1 flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <Avatar src={w.user.avatar} name={w.user.name} size="xs" />
-                      <span className="text-xs font-medium">{w.user.name}</span>
-                    </div>
-                    <span className="text-[11px] text-secondary tabular-nums">
-                      {w.openTasks} open
-                    </span>
+          <SidePanel icon={CalendarClock} title="Upcoming deadlines">
+            {(d?.upcomingDeadlines || []).length === 0 ? (
+              <p className="px-4 py-6 text-center text-sm text-secondary">
+                No deadlines in the next 14 days.
+              </p>
+            ) : (
+              (d?.upcomingDeadlines || []).map((t) => (
+                <div key={t._id} className="flex items-start gap-2.5 px-4 py-3">
+                  <Avatar
+                    name={t.assignee?.name || '?'}
+                    src={t.assignee?.avatar}
+                    size="xs"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-[13px] font-medium text-primary">
+                      {t.title}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-secondary">
+                      {t.projectId?.name || 'Project'}
+                      {t.dueDate ? ` · ${formatDue(t.dueDate)}` : ''}
+                    </p>
                   </div>
-                  <ProgressBar value={w.load} />
                 </div>
-              ))}
-            </div>
-          </Card>
+              ))
+            )}
+          </SidePanel>
+
+          <SidePanel icon={Users} title="Team workload" padded>
+            {(d?.workload || []).length === 0 ? (
+              <p className="py-4 text-center text-sm text-secondary">
+                No open assigned tasks.
+              </p>
+            ) : (
+              <div className="space-y-3">
+                {(d?.workload || []).map((w) => (
+                  <div key={w.user._id}>
+                    <div className="mb-1 flex items-center justify-between gap-2">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <Avatar
+                          src={w.user.avatar}
+                          name={w.user.name}
+                          size="xs"
+                        />
+                        <span className="truncate text-[12px] font-medium text-primary">
+                          {w.user.name}
+                        </span>
+                      </div>
+                      <span className="shrink-0 text-[11px] tabular-nums text-secondary">
+                        {w.openTasks} open
+                      </span>
+                    </div>
+                    <ProgressBar value={w.load} />
+                  </div>
+                ))}
+              </div>
+            )}
+          </SidePanel>
         </div>
       </div>
     </div>
+  )
+}
+
+function DashKpi({ label, value, foot, footUp, accent, danger }) {
+  return (
+    <div className="rounded-[12px] border border-border bg-surface p-4">
+      <p className="text-[11px] font-medium uppercase tracking-[0.08em] text-secondary">
+        {label}
+      </p>
+      <p
+        className={cn(
+          'mt-1.5 text-[26px] font-semibold tabular-nums tracking-tight',
+          danger
+            ? 'text-status-delayed'
+            : accent
+              ? 'text-accent'
+              : 'text-primary',
+        )}
+      >
+        {value}
+      </p>
+      {foot ? (
+        <p
+          className={cn(
+            'mt-1.5 text-[11px]',
+            footUp === true
+              ? 'text-[var(--accent-hover)]'
+              : footUp === false
+                ? 'text-status-delayed'
+                : 'text-secondary',
+          )}
+        >
+          {foot}
+        </p>
+      ) : (
+        <p className="mt-1.5 text-[11px] text-transparent">—</p>
+      )}
+    </div>
+  )
+}
+
+function ProjectCard({ project: p }) {
+  const cover = p.coverImage ? assetUrl(p.coverImage) : null
+  return (
+    <Link to={`/projects/${p._id}/overview`} className="group block">
+      <article className="overflow-hidden rounded-[12px] border border-border bg-surface transition hover:bg-canvas">
+        <div
+          className="relative h-36 overflow-hidden bg-cover bg-center"
+          style={
+            cover
+              ? { backgroundImage: `url(${cover})` }
+              : undefined
+          }
+        >
+          {!cover && (
+            <div className="absolute inset-0 bg-gradient-to-br from-[var(--accent)]/35 via-[#1a1a1a] to-[#0f0f0f]" />
+          )}
+          {/* Scrim so white type stays readable on any photo */}
+          <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/45 to-black/20" />
+          <div className="absolute inset-x-0 bottom-0 flex items-end justify-between gap-2 p-3">
+            <div className="min-w-0">
+              <p className="truncate text-[13px] font-semibold text-white [text-shadow:0_1px_2px_rgba(0,0,0,0.6)]">
+                {p.name}
+              </p>
+              <p className="truncate text-[11px] font-medium text-white/90 [text-shadow:0_1px_2px_rgba(0,0,0,0.5)]">
+                {p.clientName || '—'}
+              </p>
+            </div>
+            <ProgressRing
+              value={p.progress}
+              size={42}
+              stroke={3}
+              trackColor="rgba(255,255,255,0.35)"
+              color="#ffffff"
+              valueClassName="text-white text-[10px] font-bold [text-shadow:0_1px_2px_rgba(0,0,0,0.7)]"
+            />
+          </div>
+        </div>
+        <div className="flex items-center justify-between gap-2 px-3 py-2.5">
+          <StatusChip status={p.isDelayed ? 'delayed' : p.status} />
+          <span className="truncate text-[11px] capitalize text-secondary">
+            {stageLabel(p.currentStage)}
+          </span>
+        </div>
+      </article>
+    </Link>
+  )
+}
+
+function SidePanel({ icon: Icon, title, children, padded, iconClass }) {
+  return (
+    <section className="overflow-hidden rounded-[12px] border border-border bg-surface">
+      <div className="flex items-center gap-2 border-b border-border px-4 py-3">
+        <Icon className={cn('h-4 w-4 text-accent', iconClass)} />
+        <h3 className="text-[13px] font-medium text-primary">{title}</h3>
+      </div>
+      <div className={cn(padded ? 'p-4' : 'divide-y divide-border')}>
+        {children}
+      </div>
+    </section>
   )
 }

@@ -9,6 +9,7 @@ import {
   User,
 } from '../models/index.js'
 import { CustomFieldDefinition } from '../models/CustomField.js'
+import { parseMentionsFromBody } from '../lib/mentions.js'
 import { notifyUser, actorSummary } from '../lib/notify.js'
 import { hasPermission } from '../lib/permissions.js'
 import { assertProjectAccess } from '../lib/projectScope.js'
@@ -646,21 +647,7 @@ router.post(
       const users = await User.find(
         tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
       ).select('name')
-      const found = []
-      const body = String(req.body.body || '')
-      for (const u of users) {
-        const escape = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
-        const first = u.name.split(/\s+/)[0]
-        const full = u.name.trim()
-        const compact = full.replace(/\s+/g, '')
-        const patterns = [
-          new RegExp(`@${escape(full)}\\b`, 'i'),
-          new RegExp(`@${escape(compact)}\\b`, 'i'),
-          first ? new RegExp(`@${escape(first)}\\b`, 'i') : null,
-        ].filter(Boolean)
-        if (patterns.some((re) => re.test(body))) found.push(u._id)
-      }
-      mentions = found
+      mentions = parseMentionsFromBody(req.body.body, users)
     }
 
     const assignedTo =

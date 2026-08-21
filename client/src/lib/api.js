@@ -66,14 +66,21 @@ export function apiOrigin() {
 }
 
 /**
- * Resolve asset URLs stored as /uploads/... so they hit the API host
- * when the SPA is on a different Vercel project.
+ * Resolve asset URLs so they hit the API host when the SPA is on another origin.
+ * Supports MongoDB media links (/api/media/:id) and legacy /uploads/...
  */
 export function assetUrl(url) {
   if (!url) return ''
   if (/^https?:\/\//i.test(url) || url.startsWith('data:')) return url
   const path = url.startsWith('/') ? url : `/${url}`
   const origin = apiOrigin()
+  // /api/media is already under the API — when VITE_API_URL is absolute, prefix origin
+  if (path.startsWith('/api/media')) {
+    if (origin && !API_URL.startsWith('/')) {
+      return `${origin}${path}`
+    }
+    return path
+  }
   return origin ? `${origin}${path}` : path
 }
 
@@ -93,13 +100,20 @@ export const useAuthStore = create(
         }),
       setUser: (user) => set({ user }),
       setTenant: (tenant) => set({ tenant }),
-      logout: () =>
+      logout: () => {
+        try {
+          // Dynamic to avoid circular import at module load
+          import('./socket.js').then((m) => m.disconnectSocket()).catch(() => {})
+        } catch {
+          /* ignore */
+        }
         set({
           user: null,
           accessToken: null,
           refreshToken: null,
           tenant: null,
-        }),
+        })
+      },
       getAccessToken: () => get().accessToken,
     }),
     { name: 'cubic-auth' },
@@ -141,6 +155,12 @@ function refreshAccessToken() {
           refreshToken: data.refreshToken,
           tenant: useAuthStore.getState().tenant,
         })
+        try {
+          const { syncSocketAuth } = await import('./socket.js')
+          syncSocketAuth()
+        } catch {
+          /* ignore */
+        }
         return data.accessToken
       }
       // Only end the session when the server explicitly rejects the token.

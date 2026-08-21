@@ -4,7 +4,7 @@ export const TENANT_FEATURE_KEYS = [
   { key: 'boq', label: 'BOQ / Quotes', group: 'Modules' },
   { key: 'procurement', label: 'Materials / procurement', group: 'Modules' },
   { key: 'site', label: 'Site updates', group: 'Modules' },
-  { key: 'finance', label: 'Finance / money', group: 'Modules' },
+  { key: 'finance', label: 'Finance / revenue', group: 'Modules' },
   { key: 'leads', label: 'New enquiries / CRM', group: 'Modules' },
   { key: 'portfolio', label: 'Dashboard & reports', group: 'Modules' },
   { key: 'people', label: 'People & invites', group: 'Company' },

@@ -98,7 +98,7 @@ export function MoreMainScreen({ navigation }: Props) {
               <>
                 <NavRow
                   icon="wallet-outline"
-                  label="Money"
+                  label="Revenue"
                   hint="Expenses and payments"
                   tone={5}
                   onPress={() => navigation.navigate('Finance')}

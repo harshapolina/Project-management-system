@@ -173,7 +173,7 @@ export function CreateChannelModal({ open, onClose }) {
       toast('Channel created', { type: 'success' })
       setName('')
       onClose?.()
-      if (res?.channel?._id) navigate(`/channels/${res.channel._id}`)
+      if (res?.channel?._id) navigate('/inbox?tab=mail')
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })

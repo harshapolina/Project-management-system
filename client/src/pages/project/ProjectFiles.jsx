@@ -12,6 +12,11 @@ import {
   toast,
 } from '../../components/ui'
 import { cn } from '../../lib/utils'
+import {
+  PILL_ACTIVE,
+  PILL_IDLE,
+  PILL_TRACK,
+} from '../../components/layout/PageToolbar'
 
 const FOLDERS = [
   { value: 'concepts', label: 'Concepts' },
@@ -28,7 +33,8 @@ export function ProjectFiles() {
   const inputRef = useRef(null)
   const qc = useQueryClient()
   const user = useAuthStore((s) => s.user)
-  const canManage = capabilitiesForUser(user).manageFiles
+  const tenant = useAuthStore((s) => s.tenant)
+  const canManage = capabilitiesForUser(user, tenant).manageFiles
 
   const { data, isLoading } = useQuery({
     queryKey: ['files', id, folder],
@@ -82,7 +88,7 @@ export function ProjectFiles() {
   const folderLabel = FOLDERS.find((f) => f.value === folder)?.label
 
   return (
-    <div className="space-y-4 p-4 md:p-5">
+    <div className="space-y-4 min-h-full bg-[var(--bg-canvas)] p-4 md:p-5 lg:p-6">
       <input
         ref={inputRef}
         type="file"
@@ -108,7 +114,7 @@ export function ProjectFiles() {
         )}
       </div>
 
-      <div className="flex flex-wrap gap-1.5">
+      <div className={PILL_TRACK}>
         {FOLDERS.map((f) => (
           <button
             key={f.value}
@@ -116,9 +122,7 @@ export function ProjectFiles() {
             onClick={() => setFolder(f.value)}
             className={cn(
               'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
-              folder === f.value
-                ? 'bg-[#3ecf8e] text-white shadow-sm'
-                : 'bg-surface text-secondary ring-1 ring-[#dfdfdf] hover:bg-surface-raised',
+              folder === f.value ? PILL_ACTIVE : PILL_IDLE,
             )}
           >
             {f.label}
@@ -149,7 +153,7 @@ export function ProjectFiles() {
           'min-h-[280px] rounded-2xl border border-dashed bg-surface p-4 shadow-sm transition',
           dragging
             ? 'border-[#3ecf8e] bg-[#ecfdf5]'
-            : 'border-[#d6e4f5]',
+            : 'border-border',
         )}
       >
         {isLoading ? (
@@ -195,10 +199,10 @@ export function ProjectFiles() {
                           updateStatus.mutate({ fileId: f._id, status: s })
                         }
                         className={cn(
-                          'rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize',
+                          'rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize transition',
                           f.status === s
-                            ? 'bg-[#3ecf8e] text-white'
-                            : 'bg-surface text-secondary ring-1 ring-[#dfdfdf]',
+                            ? PILL_ACTIVE
+                            : 'bg-[#ebebed] text-[#6e6e73]',
                         )}
                       >
                         {s}

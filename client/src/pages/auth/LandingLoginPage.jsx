@@ -254,8 +254,8 @@ const DEMO_CREDENTIALS = {
   },
   admin: {
     workspace: 'cubic',
-    email: 'owner@cubic.demo',
-    password: 'Company@Owner123',
+    email: 'admin@cubic.demo',
+    password: 'Company@Admin123',
   },
 }
 
@@ -886,7 +886,7 @@ export function LoginPage() {
               </p>
               <h2 className="mt-3 text-[clamp(1.5rem,3vw,2.1rem)] font-medium leading-tight tracking-tight">
                 {portal === 'admin'
-                  ? 'Company owner sign-in'
+                  ? 'Company admin sign-in'
                   : 'Staff sign-in'}
               </h2>
               <p className="mt-4 text-[14px] leading-relaxed text-[#9a9a9a]">
@@ -896,7 +896,7 @@ export function LoginPage() {
               </p>
               <p className="mt-8 text-[11px] text-[#707070]">
                 {portal === 'admin'
-                  ? 'Demo owner · cubic · owner@cubic.demo · Company@Owner123'
+                  ? 'Demo admin · cubic · admin@cubic.demo · Company@Admin123'
                   : 'Demo employee · cubic · employee@cubic.demo · Employee@Demo123'}
               </p>
             </div>
@@ -966,15 +966,6 @@ export function LoginPage() {
             >
               Sign in
             </Button>
-            <p className="pt-1 text-center text-[11px] text-[#6b6b70]">
-              Editco platform admin?{' '}
-              <Link
-                to="/platform/login"
-                className="font-medium text-[#8b8b90] underline-offset-2 hover:text-[#171717] hover:underline"
-              >
-                Sign in here
-              </Link>
-            </p>
           </form>
         </div>
       </section>

@@ -1,27 +1,25 @@
 import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
-import multer from 'multer'
 import os from 'os'
+import multer from 'multer'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
-// Vercel serverless filesystem is read-only except /tmp
+/** Legacy disk folder (old /uploads/* links only). New uploads use MongoDB GridFS. */
 export const UPLOADS_DIR = process.env.VERCEL
   ? path.join(os.tmpdir(), 'cubic-uploads')
   : path.join(__dirname, '../../uploads')
 
-fs.mkdirSync(UPLOADS_DIR, { recursive: true })
+try {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true })
+} catch {
+  /* ignore */
+}
 
-const storage = multer.diskStorage({
-  destination: (_req, _file, cb) => cb(null, UPLOADS_DIR),
-  filename: (_req, file, cb) => {
-    const safe = String(file.originalname || 'file').replace(/[^a-zA-Z0-9._-]/g, '_')
-    cb(null, `${Date.now()}-${safe}`)
-  },
-})
+const storage = multer.memoryStorage()
 
 export const upload = multer({
   storage,
-  limits: { fileSize: 40 * 1024 * 1024 }, // 40MB
+  limits: { fileSize: 12 * 1024 * 1024 }, // 12MB — Atlas free-tier friendly
 })

@@ -4,6 +4,7 @@ import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { upload } from '../middleware/upload.js'
+import { storeFileBuffer } from '../lib/mediaStore.js'
 import {
   assertProjectAccess,
   isOpsUser,
@@ -15,6 +16,7 @@ import {
   requirePermission,
   resolvePermissions,
   sanitizePermissionOverrides,
+  normalizePermissionMap,
 } from '../lib/permissions.js'
 import {
   Lead,
@@ -33,6 +35,8 @@ import {
   Notification,
   User,
 } from '../models/index.js'
+import { Tenant } from '../models/Tenant.js'
+import { ROLES } from '../models/User.js'
 
 const router = express.Router()
 
@@ -117,6 +121,50 @@ async function createEnquiryFollowUpTask(req, lead, assigneeId) {
   return task
 }
 
+const LEAD_STAGES = [
+  'new_enquiry',
+  'site_visit',
+  'quotation_sent',
+  'negotiation',
+  'won',
+  'lost',
+]
+
+function sanitizeLeadPayload(body, { partial = false } = {}) {
+  const out = {}
+  if (!partial || body.clientName !== undefined) {
+    const name = String(body.clientName || '').trim()
+    if (!name) throw new AppError('Client / company name is required', 400)
+    out.clientName = name
+  }
+  if (body.contactName !== undefined) out.contactName = String(body.contactName || '').trim()
+  if (body.email !== undefined) out.email = String(body.email || '').trim()
+  if (body.phone !== undefined) out.phone = String(body.phone || '').trim()
+  if (body.source !== undefined) out.source = String(body.source || 'Website').trim() || 'Website'
+  if (body.notes !== undefined) out.notes = String(body.notes || '').trim()
+  if (body.estimatedValue !== undefined) {
+    const n = Number(body.estimatedValue)
+    if (Number.isNaN(n) || n < 0) throw new AppError('Estimated value must be a positive number', 400)
+    out.estimatedValue = n
+  }
+  if (body.stage !== undefined) {
+    if (!LEAD_STAGES.includes(body.stage)) {
+      throw new AppError('Invalid enquiry stage', 400)
+    }
+    out.stage = body.stage
+  }
+  if (body.nextFollowUp !== undefined) {
+    out.nextFollowUp = body.nextFollowUp ? new Date(body.nextFollowUp) : null
+    if (body.nextFollowUp && Number.isNaN(out.nextFollowUp?.getTime())) {
+      throw new AppError('Invalid follow-up date', 400)
+    }
+  }
+  if (body.owner !== undefined) {
+    out.owner = body.owner === '' || body.owner == null ? null : body.owner
+  }
+  return out
+}
+
 /* ─── Leads ─── */
 router.get(
   '/leads',
@@ -135,18 +183,23 @@ router.post(
   requireAuth,
   requirePermission('leads'),
   asyncHandler(async (req, res) => {
-    const ownerId = req.body.owner || req.user._id
+    const payload = sanitizeLeadPayload(
+      {
+        ...req.body,
+        stage: req.body.stage || 'new_enquiry',
+        estimatedValue: req.body.estimatedValue ?? 0,
+        contactName: req.body.contactName ?? '',
+        email: req.body.email ?? '',
+        phone: req.body.phone ?? '',
+        source: req.body.source ?? 'Website',
+        notes: req.body.notes ?? '',
+      },
+      { partial: false },
+    )
+    const ownerId = payload.owner || req.user._id
     const lead = await Lead.create(
       withTenant(req, {
-        clientName: req.body.clientName,
-        contactName: req.body.contactName || '',
-        email: req.body.email || '',
-        phone: req.body.phone || '',
-        source: req.body.source || 'Website',
-        estimatedValue: Number(req.body.estimatedValue) || 0,
-        stage: req.body.stage || 'new_enquiry',
-        notes: req.body.notes || '',
-        nextFollowUp: req.body.nextFollowUp || undefined,
+        ...payload,
         owner: ownerId,
       }),
     )
@@ -167,23 +220,8 @@ router.patch(
     assertTenantDoc(lead, req, 'Lead')
 
     const prevOwner = lead.owner ? String(lead.owner) : ''
-    const allowed = [
-      'clientName',
-      'contactName',
-      'email',
-      'phone',
-      'source',
-      'estimatedValue',
-      'stage',
-      'notes',
-      'nextFollowUp',
-      'owner',
-    ]
-    for (const key of allowed) {
-      if (req.body[key] !== undefined) {
-        lead[key] = req.body[key] === '' && key === 'owner' ? null : req.body[key]
-      }
-    }
+    const updates = sanitizeLeadPayload(req.body, { partial: true })
+    Object.assign(lead, updates)
     await lead.save()
     await lead.populate('owner', 'name avatar role title')
 
@@ -200,6 +238,34 @@ router.patch(
   }),
 )
 
+router.delete(
+  '/leads/:id',
+  requireAuth,
+  requirePermission('leads'),
+  asyncHandler(async (req, res) => {
+    const lead = await Lead.findById(req.params.id)
+    assertTenantDoc(lead, req, 'Lead')
+
+    if (lead.convertedProjectId) {
+      throw new AppError(
+        'This enquiry was converted to a project — archive the project instead of deleting the enquiry.',
+        400,
+      )
+    }
+
+    const leadId = String(lead._id)
+    await Task.deleteMany(
+      tenantFilter(req, {
+        isPersonal: true,
+        'customFields.leadId': leadId,
+      }),
+    )
+    await lead.deleteOne()
+
+    res.json({ success: true, deleted: true })
+  }),
+)
+
 router.post(
   '/leads/:id/convert',
   requireAuth,
@@ -207,6 +273,23 @@ router.post(
   asyncHandler(async (req, res) => {
     const lead = await Lead.findById(req.params.id)
     assertTenantDoc(lead, req, 'Lead')
+
+    if (lead.convertedProjectId) {
+      return res.json({
+        success: true,
+        project: { _id: lead.convertedProjectId },
+        alreadyConverted: true,
+      })
+    }
+    if (lead.stage === 'lost') {
+      throw new AppError('Lost enquiries cannot be converted to a project', 400)
+    }
+
+    const ownerId = lead.owner || req.user._id
+    const members = [{ user: req.user._id, role: req.user.role }]
+    if (String(ownerId) !== String(req.user._id)) {
+      members.push({ user: ownerId, role: 'project_manager' })
+    }
 
     const project = await Project.create(
       withTenant(req, {
@@ -223,10 +306,10 @@ router.post(
         coverImage:
           'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&q=80',
         budget: lead.estimatedValue || 0,
-        projectManager: req.user._id,
-        members: [{ user: req.user._id, role: req.user.role }],
+        projectManager: ownerId,
+        members,
         leadId: lead._id,
-        code: `CUB-${Math.floor(100 + Math.random() * 900)}`,
+        code: `EPM-${Math.floor(100 + Math.random() * 900)}`,
       }),
     )
 
@@ -423,11 +506,16 @@ router.post(
     if (!String(req.file.mimetype || '').startsWith('image/')) {
       throw new AppError('Only image files are allowed here', 400)
     }
+    const saved = await storeFileBuffer(req.file, {
+      tenantId: req.tenantId || req.user.tenantId,
+      uploadedBy: req.user._id,
+      kind: 'boq-image',
+    })
     res.status(201).json({
       success: true,
-      url: `/uploads/${req.file.filename}`,
-      name: req.file.originalname || 'Reference image',
-      mime: req.file.mimetype,
+      url: saved.url,
+      name: saved.name,
+      mime: saved.mime,
     })
   }),
 )
@@ -451,6 +539,7 @@ router.get(
 router.post(
   '/files',
   requireAuth,
+  requirePermission('files.manage'),
   upload.single('file'),
   asyncHandler(async (req, res) => {
     const projectId = req.body.projectId
@@ -465,7 +554,12 @@ router.post(
     if (req.file) {
       name = name || req.file.originalname
       mime = req.file.mimetype || mime
-      url = `/uploads/${req.file.filename}`
+      const saved = await storeFileBuffer(req.file, {
+        tenantId: req.tenantId || req.user.tenantId,
+        uploadedBy: req.user._id,
+        kind: 'project-file',
+      })
+      url = saved.url
     }
 
     if (!projectId || !name || !url) {
@@ -533,7 +627,10 @@ router.patch(
   asyncHandler(async (req, res) => {
     const file = await ProjectFile.findById(req.params.id)
     assertTenantDoc(file, req, 'File')
-    Object.assign(file, req.body)
+    const allowed = ['name', 'folder', 'status', 'clientVisible', 'mime']
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) file[key] = req.body[key]
+    }
     await file.save()
 
     if (req.body.status === 'sent' || req.body.status === 'approved') {
@@ -566,7 +663,23 @@ router.post(
   requireAuth,
   requirePermission('procurement'),
   asyncHandler(async (req, res) => {
-    const vendor = await Vendor.create(withTenant(req, req.body))
+    const name = String(req.body.name || '').trim()
+    if (!name) throw new AppError('Vendor name is required', 400)
+    const vendor = await Vendor.create(
+      withTenant(req, {
+        name,
+        contact: String(req.body.contact || '').trim(),
+        email: String(req.body.email || '').trim(),
+        phone: String(req.body.phone || '').trim(),
+        gst: String(req.body.gst || '').trim(),
+        categories: Array.isArray(req.body.categories)
+          ? req.body.categories
+          : [],
+        rating:
+          req.body.rating != null ? Number(req.body.rating) : undefined,
+        paymentTerms: String(req.body.paymentTerms || 'Net 30').trim(),
+      }),
+    )
     res.status(201).json({ success: true, vendor })
   }),
 )
@@ -632,10 +745,25 @@ router.post(
   requireAuth,
   requirePermission('procurement'),
   asyncHandler(async (req, res) => {
-    if (req.body.projectId) await assertProjectAccess(req, req.body.projectId)
+    if (!req.body.projectId) {
+      throw new AppError('projectId is required', 400)
+    }
+    await assertProjectAccess(req, req.body.projectId)
+    const items = Array.isArray(req.body.items) ? req.body.items : []
+    const value =
+      req.body.value != null
+        ? Number(req.body.value)
+        : items.reduce((s, i) => s + (Number(i.amount) || 0), 0)
     const po = await PurchaseOrder.create(
       withTenant(req, {
-        ...req.body,
+        projectId: req.body.projectId,
+        vendor: req.body.vendor || undefined,
+        items,
+        value: Number.isFinite(value) ? value : 0,
+        status: req.body.status || 'draft',
+        deliveryPhotos: Array.isArray(req.body.deliveryPhotos)
+          ? req.body.deliveryPhotos
+          : [],
         createdBy: req.user._id,
         poNumber:
           req.body.poNumber || `PO-${Math.floor(1000 + Math.random() * 9000)}`,
@@ -653,7 +781,21 @@ router.patch(
   asyncHandler(async (req, res) => {
     const po = await PurchaseOrder.findById(req.params.id)
     assertTenantDoc(po, req, 'PO')
-    Object.assign(po, req.body)
+    const allowed = [
+      'vendor',
+      'items',
+      'value',
+      'status',
+      'deliveryPhotos',
+      'poNumber',
+      'projectId',
+    ]
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) po[key] = req.body[key]
+    }
+    if (req.body.projectId) {
+      await assertProjectAccess(req, req.body.projectId)
+    }
     await po.save()
     await po.populate('vendor', 'name contact phone gst')
     res.json({ success: true, purchaseOrder: po })
@@ -765,14 +907,17 @@ router.get(
             status: { $in: ['approved', 'ordered', 'in_transit', 'delivered'] },
           }),
         )
-          .select('projectId value')
+          .select('projectId value status poNumber vendor updatedAt createdAt')
+          .populate('projectId', 'name')
+          .populate('vendor', 'name')
+          .sort({ updatedAt: -1 })
           .lean(),
       ])
 
     const sumByProject = (rows, amountKey) => {
       const totals = new Map()
       for (const row of rows) {
-        const key = String(row.projectId || '')
+        const key = String(row.projectId?._id || row.projectId || '')
         totals.set(key, (totals.get(key) || 0) + (Number(row[amountKey]) || 0))
       }
       return totals
@@ -825,6 +970,7 @@ router.get(
         pendingExpenseCount: pendingExpenses.length,
         pendingAmount,
         committedAmount,
+        committedOrders,
         pnl,
       },
     })
@@ -849,8 +995,9 @@ router.get(
     }
     const updates = await SiteUpdate.find(filter)
       .populate('author', 'name avatar')
-      .populate('projectId', 'name')
+      .populate('projectId', 'name location coverImage clientName status')
       .sort({ createdAt: -1 })
+      .limit(Math.min(200, Math.max(1, Number(req.query.limit) || 100)))
     res.json({ success: true, updates })
   }),
 )
@@ -985,6 +1132,41 @@ router.patch(
       { read: true },
       { new: true },
     )
+    res.json({ success: true, notification: n })
+  }),
+)
+
+router.patch(
+  '/notifications/:id/later',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const later = req.body?.later !== false
+    const n = await Notification.findOneAndUpdate(
+      tenantFilter(req, { _id: req.params.id, userId: req.user._id }),
+      { $set: { later: !!later, ...(later ? { cleared: false } : {}) } },
+      { new: true },
+    )
+    if (!n) throw new AppError('Notification not found', 404)
+    res.json({ success: true, notification: n })
+  }),
+)
+
+router.patch(
+  '/notifications/:id/clear',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const cleared = req.body?.cleared !== false
+    const n = await Notification.findOneAndUpdate(
+      tenantFilter(req, { _id: req.params.id, userId: req.user._id }),
+      {
+        $set: {
+          cleared: !!cleared,
+          ...(cleared ? { later: false, read: true } : {}),
+        },
+      },
+      { new: true },
+    )
+    if (!n) throw new AppError('Notification not found', 404)
     res.json({ success: true, notification: n })
   }),
 )
@@ -1290,6 +1472,100 @@ router.get(
 )
 
 /* ─── Admin team summary (People hub) ─── */
+
+function slugifyRoleKey(label) {
+  return String(label || '')
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .slice(0, 40)
+}
+
+const CUSTOM_ROLE_BASES = [
+  'hr',
+  'project_manager',
+  'designer',
+  'site_supervisor',
+  'vendor',
+  'client',
+]
+
+router.get(
+  '/admin/custom-roles',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (
+      !['admin', 'owner', 'hr'].includes(req.user.role) &&
+      !req.user.isPlatformAdmin
+    ) {
+      throw new AppError('Admin / HR only', 403)
+    }
+    const tenantId = req.user.tenantId || req.tenantId
+    const tenant = await Tenant.findById(tenantId).select('customRoles')
+    res.json({
+      success: true,
+      customRoles: tenant?.customRoles || [],
+    })
+  }),
+)
+
+router.post(
+  '/admin/custom-roles',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (!canManageEmployeeAccess(req.user)) {
+      throw new AppError('Only an Admin or Owner can create custom roles', 403)
+    }
+
+    const label = String(req.body.label || '').trim()
+    if (label.length < 2) throw new AppError('Role name is required', 400)
+
+    const basedOn = String(req.body.basedOn || 'designer').trim()
+    if (!CUSTOM_ROLE_BASES.includes(basedOn)) {
+      throw new AppError('Pick a valid base role template', 400)
+    }
+
+    let key = slugifyRoleKey(req.body.key || label)
+    if (!key) throw new AppError('Invalid role name', 400)
+    if (ROLES.includes(key) || key === 'custom') {
+      key = `custom_${key}`
+    }
+
+    const tenantId = req.user.tenantId || req.tenantId
+    const tenant = await Tenant.findById(tenantId)
+    if (!tenant) throw new AppError('Workspace not found', 404)
+
+    if ((tenant.customRoles || []).some((r) => r.key === key)) {
+      throw new AppError('A role with this name already exists', 409)
+    }
+
+    const permissions = sanitizePermissionOverrides(req.body.permissions)
+    tenant.customRoles = tenant.customRoles || []
+    tenant.customRoles.push({
+      key,
+      label,
+      basedOn,
+      permissions,
+      createdAt: new Date(),
+    })
+    await tenant.save()
+
+    const created = tenant.customRoles[tenant.customRoles.length - 1]
+    res.status(201).json({
+      success: true,
+      role: {
+        key: created.key,
+        label: created.label,
+        basedOn: created.basedOn,
+        permissions: created.permissions || {},
+        createdAt: created.createdAt,
+      },
+      customRoles: tenant.customRoles,
+    })
+  }),
+)
+
 router.get(
   '/admin/team-summary',
   requireAuth,
@@ -1300,6 +1576,11 @@ router.get(
     ) {
       throw new AppError('Admin / HR only', 403)
     }
+
+    const tenantId = req.user.tenantId || req.tenantId
+    const tenant =
+      req.tenant ||
+      (tenantId ? await Tenant.findById(tenantId) : null)
 
     const users = await User.find(
       tenantFilter(req, { isPlatformAdmin: { $ne: true } }),
@@ -1336,6 +1617,7 @@ router.get(
             },
           ]),
         ])
+        const effectivePermissions = resolvePermissions(u, tenant)
         return {
           user: {
             ...u,
@@ -1343,7 +1625,7 @@ router.get(
               u.permissions && typeof u.permissions === 'object'
                 ? { ...u.permissions }
                 : {},
-            effectivePermissions: resolvePermissions(u),
+            effectivePermissions,
           },
           open,
           overdue,
@@ -1381,7 +1663,8 @@ router.patch(
     if (!target) throw new AppError('Employee not found', 404)
 
     if (req.body.permissions !== undefined) {
-      target.permissions = sanitizePermissionOverrides(req.body.permissions)
+      // Full ACL from People page — every key true/false so toggles stick.
+      target.permissions = normalizePermissionMap(req.body.permissions)
       target.markModified('permissions')
     }
     if (typeof req.body.isActive === 'boolean') {
@@ -1392,8 +1675,11 @@ router.patch(
     }
     await target.save()
 
+    const tenant =
+      req.tenant ||
+      (target.tenantId ? await Tenant.findById(target.tenantId) : null)
     const safeUser = target.toSafeJSON()
-    const effectivePermissions = resolvePermissions(target)
+    const effectivePermissions = resolvePermissions(target, tenant)
     const io = req.app.get('io')
     if (io) {
       io.to(`user:${String(target._id)}`).emit('permissions:updated', {

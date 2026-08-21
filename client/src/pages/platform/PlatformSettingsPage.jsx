@@ -6,13 +6,6 @@ export function PlatformSettingsPage() {
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
-      <div>
-        <h1 className="text-[28px] font-semibold tracking-tight text-primary">Settings</h1>
-        <p className="mt-1 text-sm text-secondary">
-          Platform administrator account and system information.
-        </p>
-      </div>
-
       <Card variant="light" className="space-y-3">
         <p className="font-semibold text-primary">Your platform account</p>
         <dl className="grid gap-2 text-sm sm:grid-cols-2">

@@ -11,9 +11,24 @@ import {
 } from '../middleware/auth.js'
 import {
   assertSeatAvailable,
+  assertAdminSlotAvailable,
+  isCompanyAdminRole,
+  countCompanyAdmins,
   withTenant,
 } from '../middleware/tenant.js'
 import { normalizeTenantFeatures } from '../lib/tenantFeatures.js'
+import { defaultPermissionsForRole } from '../lib/permissions.js'
+
+const BUILTIN_INVITE_ROLES = [
+  'admin',
+  'owner',
+  'hr',
+  'project_manager',
+  'designer',
+  'site_supervisor',
+  'vendor',
+  'client',
+]
 
 const router = express.Router()
 
@@ -25,10 +40,21 @@ function serializeTenant(tenant) {
     slug: tenant.slug,
     status: tenant.status,
     seatLimit: tenant.seatLimit,
+    adminLimit: tenant.adminLimit ?? 3,
     subscriptionPlan: tenant.subscriptionPlan || 'pro',
     cancelledAt: tenant.cancelledAt || null,
     features: normalizeTenantFeatures(tenant.features),
     logoUrl: tenant.logoUrl || '',
+    customRoles: (tenant.customRoles || []).map((role) => ({
+      key: role.key,
+      label: role.label,
+      basedOn: role.basedOn || 'designer',
+      permissions:
+        role.permissions && typeof role.permissions === 'object'
+          ? role.permissions
+          : {},
+      createdAt: role.createdAt || null,
+    })),
   }
 }
 
@@ -183,7 +209,7 @@ router.get(
     let tenant = null
     if (req.user.tenantId) {
       tenant = await Tenant.findById(req.user.tenantId).select(
-        'name slug status seatLimit subscriptionPlan cancelledAt features logoUrl',
+        'name slug status seatLimit adminLimit subscriptionPlan cancelledAt features logoUrl customRoles',
       )
     }
     res.json({
@@ -306,18 +332,20 @@ router.post(
     const schema = z.object({
       email: z.string().email(),
       name: z.string().min(2),
-      role: z.enum([
-        'admin',
-        'owner',
-        'hr',
-        'project_manager',
-        'designer',
-        'site_supervisor',
-        'vendor',
-        'client',
-      ]),
+      role: z.string().min(2).max(48),
     })
     const data = schema.parse(req.body)
+    const tenantId = req.user.tenantId || req.tenantId
+    const tenant =
+      req.tenant ||
+      (tenantId ? await Tenant.findById(tenantId) : null)
+
+    const customKeys = (tenant?.customRoles || []).map((r) => r.key)
+    const allowedRoles = [...BUILTIN_INVITE_ROLES, ...customKeys]
+    if (!allowedRoles.includes(data.role)) {
+      throw new AppError('Invalid role for this workspace', 400)
+    }
+
     if (
       req.user.role === 'hr' &&
       ['admin', 'owner', 'hr'].includes(data.role) &&
@@ -326,23 +354,36 @@ router.post(
       throw new AppError('Only an Admin or Owner can invite management users', 403)
     }
     const email = data.email.toLowerCase()
-    const tenantId = req.user.tenantId || req.tenantId
 
     await assertSeatAvailable(tenantId)
+    if (isCompanyAdminRole(data.role)) {
+      await assertAdminSlotAvailable(tenantId)
+    }
 
     const exists = await User.findOne({ tenantId, email })
     if (exists) throw new AppError('User already exists in this workspace', 409)
 
     const inviteToken = crypto.randomBytes(24).toString('hex')
     const tempPassword = crypto.randomBytes(8).toString('hex')
+    const customRole = (tenant?.customRoles || []).find(
+      (r) => r.key === data.role,
+    )
+    const seedPermissions = customRole
+      ? defaultPermissionsForRole(data.role, tenant.customRoles)
+      : {}
+
     const user = await User.create({
-      ...data,
+      name: data.name,
       email,
+      role: data.role,
       tenantId,
       password: tempPassword,
       inviteToken,
       mustChangePassword: true,
       onboardingCompleted: false,
+      ...(Object.keys(seedPermissions).length
+        ? { permissions: seedPermissions }
+        : {}),
     })
 
     res.status(201).json({

@@ -5,6 +5,8 @@ import { LayoutGrid, List, Plus, Trash2 } from 'lucide-react'
 import { api } from '../lib/api'
 import { formatInr, stageLabel, COVER_FALLBACK } from '../lib/format'
 import { COUNTRY_CODES, buildPhone } from '../lib/phone'
+import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
+import { cn } from '../lib/utils'
 import {
   Button,
   Card,
@@ -102,60 +104,62 @@ export function ProjectsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-4">
-        <div>
-          <p className="text-sm text-secondary mb-1">All studio work</p>
-          <h1 className="text-[28px] font-semibold tracking-tight leading-none text-primary md:text-[32px]">
-            Projects
-          </h1>
-          <p className="mt-2 text-sm text-secondary">
-            Open a project for overview, tasks, quotation, materials, site, and team.
-          </p>
-        </div>
-        <Button onClick={() => setOpen(true)}>
-          <Plus className="h-4 w-4" />
-          New project
-        </Button>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="w-64">
-          <Input
-            placeholder="Search projects…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-        </div>
-        <div className="w-44">
-          <Select
-            value={status}
-            onChange={(e) => setStatus(e.target.value)}
-            options={[
-              { value: '', label: 'All statuses' },
-              { value: 'in_progress', label: 'In progress' },
-              { value: 'delayed', label: 'Delayed' },
-              { value: 'on_hold', label: 'On hold' },
-              { value: 'completed', label: 'Completed' },
-            ]}
-          />
-        </div>
-        <div className="ml-auto inline-flex rounded-full border border-border bg-surface p-1">
-          <button
-            type="button"
-            onClick={() => setView('grid')}
-            className={`rounded-full p-2 ${view === 'grid' ? 'bg-accent text-[#0E0E10]' : 'text-secondary'}`}
-          >
-            <LayoutGrid className="h-4 w-4" />
-          </button>
-          <button
-            type="button"
-            onClick={() => setView('list')}
-            className={`rounded-full p-2 ${view === 'list' ? 'bg-accent text-[#0E0E10]' : 'text-secondary'}`}
-          >
-            <List className="h-4 w-4" />
-          </button>
-        </div>
-      </div>
+      <PageToolbar
+        left={
+          <>
+            <div className="w-64">
+              <Input
+                placeholder="Search projects…"
+                value={q}
+                onChange={(e) => setQ(e.target.value)}
+              />
+            </div>
+            <div className="w-44">
+              <Select
+                value={status}
+                onChange={(e) => setStatus(e.target.value)}
+                options={[
+                  { value: '', label: 'All statuses' },
+                  { value: 'in_progress', label: 'In progress' },
+                  { value: 'delayed', label: 'Delayed' },
+                  { value: 'on_hold', label: 'On hold' },
+                  { value: 'completed', label: 'Completed' },
+                ]}
+              />
+            </div>
+          </>
+        }
+        right={
+          <>
+            <div className={PILL_TRACK}>
+              <button
+                type="button"
+                onClick={() => setView('grid')}
+                className={cn(
+                  'rounded-full p-2 transition',
+                  view === 'grid' ? PILL_ACTIVE : PILL_IDLE,
+                )}
+              >
+                <LayoutGrid className="h-4 w-4" />
+              </button>
+              <button
+                type="button"
+                onClick={() => setView('list')}
+                className={cn(
+                  'rounded-full p-2 transition',
+                  view === 'list' ? PILL_ACTIVE : PILL_IDLE,
+                )}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+            <Button onClick={() => setOpen(true)}>
+              <Plus className="h-4 w-4" />
+              New project
+            </Button>
+          </>
+        }
+      />
 
       {isLoading ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
@@ -188,6 +192,7 @@ export function ProjectsPage() {
                       size={48}
                       trackColor="rgba(255,255,255,0.35)"
                       color="#ffffff"
+                      valueClassName="text-white font-bold [text-shadow:0_1px_2px_rgba(0,0,0,0.7)]"
                     />
                   </div>
                 </div>

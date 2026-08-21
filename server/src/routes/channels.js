@@ -4,8 +4,14 @@ import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
 import { Channel, ChannelMessage } from '../models/Channel.js'
 import { User } from '../models/User.js'
+import { parseMentionsFromBody } from '../lib/mentions.js'
+import { notifyUser, actorSummary } from '../lib/notify.js'
 
 const router = express.Router()
+
+function isChannelMember(channel, userId) {
+  return (channel.members || []).some((m) => String(m) === String(userId))
+}
 
 async function ensureGeneral(userId, tenantId) {
   let general = await Channel.findOne({ name: 'general', tenantId })
@@ -22,7 +28,7 @@ async function ensureGeneral(userId, tenantId) {
       createdBy: userId,
       members: users.map((u) => u._id),
     })
-  } else if (!general.members.some((m) => String(m) === String(userId))) {
+  } else if (!isChannelMember(general, userId)) {
     general.members.push(userId)
     await general.save()
   }
@@ -88,10 +94,21 @@ router.get(
     const channel = await Channel.findById(req.params.id)
     assertTenantDoc(channel, req, 'Channel')
 
+    if (channel.isPrivate && !isChannelMember(channel, req.user._id)) {
+      throw new AppError('You are not a member of this channel', 403)
+    }
+
+    // Public channels: auto-join so membership stays current
+    if (!channel.isPrivate && !isChannelMember(channel, req.user._id)) {
+      channel.members.push(req.user._id)
+      await channel.save()
+    }
+
     const messages = await ChannelMessage.find(
       tenantFilter(req, { channelId: channel._id }),
     )
       .populate('author', 'name avatar email')
+      .populate('mentions', 'name avatar')
       .sort({ createdAt: 1 })
       .limit(200)
 
@@ -108,25 +125,57 @@ router.post(
     const body = String(req.body.body || '').trim()
     if (!body) throw new AppError('Message required', 400)
 
-    if (!channel.members.some((m) => String(m) === String(req.user._id))) {
+    if (channel.isPrivate && !isChannelMember(channel, req.user._id)) {
+      throw new AppError('You are not a member of this channel', 403)
+    }
+
+    if (!isChannelMember(channel, req.user._id)) {
       channel.members.push(req.user._id)
       await channel.save()
     }
+
+    const directory = await User.find(
+      tenantFilter(req, { isActive: true, isPlatformAdmin: { $ne: true } }),
+    ).select('name')
+    const explicit = Array.isArray(req.body.mentions) ? req.body.mentions : []
+    const parsed = parseMentionsFromBody(body, directory)
+    const mentionIds = [
+      ...new Set([...explicit.map(String), ...parsed.map(String)]),
+    ].filter((id) => id && id !== String(req.user._id))
 
     const message = await ChannelMessage.create(
       withTenant(req, {
         channelId: channel._id,
         author: req.user._id,
         body,
+        mentions: mentionIds,
       }),
     )
     await message.populate('author', 'name avatar email')
+    await message.populate('mentions', 'name avatar')
 
     const io = req.app.get('io')
     if (io) {
       io.to(`channel:${channel._id}`).emit('channel:message', {
         channelId: String(channel._id),
         message,
+      })
+    }
+
+    // Notify mentioned teammates (persist + live popup)
+    for (const uid of mentionIds) {
+      await notifyUser(req, {
+        userId: uid,
+        type: 'mention',
+        title: `${req.user.name} mentioned you in #${channel.name}`,
+        body: body.slice(0, 200),
+        link: `/channels/${channel._id}`,
+        meta: {
+          channelId: String(channel._id),
+          channelName: channel.name,
+          commentBody: body.slice(0, 280),
+          actor: actorSummary(req.user),
+        },
       })
     }
 

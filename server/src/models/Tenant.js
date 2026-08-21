@@ -18,6 +18,8 @@ const tenantSchema = new mongoose.Schema(
       default: 'active',
     },
     seatLimit: { type: Number, default: 30, min: 1 },
+    /** Max company admins (role admin + owner). Set by platform admin only. */
+    adminLimit: { type: Number, default: 3, min: 1, max: 50 },
     trialEndsAt: { type: Date, default: null },
     /** Subscription plan label (Editco billing tier). */
     subscriptionPlan: {
@@ -35,6 +37,23 @@ const tenantSchema = new mongoose.Schema(
     notes: { type: String, default: '' },
     /** Company brand mark shown in the workspace sidebar. */
     logoUrl: { type: String, default: '' },
+    /** Tenant-defined roles for invites (key is stored on User.role). */
+    customRoles: [
+      {
+        key: { type: String, required: true, trim: true },
+        label: { type: String, required: true, trim: true },
+        basedOn: {
+          type: String,
+          default: 'designer',
+          trim: true,
+        },
+        permissions: {
+          type: mongoose.Schema.Types.Mixed,
+          default: {},
+        },
+        createdAt: { type: Date, default: Date.now },
+      },
+    ],
   },
   { timestamps: true },
 )

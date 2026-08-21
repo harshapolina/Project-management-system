@@ -8,9 +8,13 @@ import { requireAuth } from '../middleware/auth.js'
 import {
   requirePlatformAdmin,
   assertSeatAvailable,
+  assertAdminSlotAvailable,
+  isCompanyAdminRole,
+  countCompanyAdmins,
 } from '../middleware/tenant.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
 import { upload } from '../middleware/upload.js'
+import { storeFileBuffer, mediaIdFromUrl, deleteMediaFile } from '../lib/mediaStore.js'
 import {
   normalizeTenantFeatures,
   sanitizeTenantFeatures,
@@ -29,7 +33,7 @@ function tenantPublicJSON(tenant) {
 }
 
 async function tenantWithStats(tenant) {
-  const [seatsUsed, userCount, projectCount] = await Promise.all([
+  const [seatsUsed, userCount, projectCount, adminsUsed] = await Promise.all([
     User.countDocuments({
       tenantId: tenant._id,
       isActive: true,
@@ -40,12 +44,15 @@ async function tenantWithStats(tenant) {
       isPlatformAdmin: { $ne: true },
     }),
     Project.countDocuments({ tenantId: tenant._id }),
+    countCompanyAdmins(tenant._id),
   ])
   return tenantPublicJSON({
     ...(tenant.toObject?.() ?? tenant),
     seatsUsed,
     userCount,
     projectCount,
+    adminsUsed,
+    adminLimit: tenant.adminLimit ?? 3,
   })
 }
 
@@ -167,6 +174,7 @@ router.post(
         .max(40)
         .regex(/^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/),
       seatLimit: z.number().int().min(1).max(500).optional(),
+      adminLimit: z.number().int().min(1).max(50).optional(),
       status: z.enum(['trial', 'active', 'suspended']).optional(),
       notes: z.string().optional(),
       adminName: z.string().min(2),
@@ -179,10 +187,12 @@ router.post(
     const exists = await Tenant.findOne({ slug })
     if (exists) throw new AppError('Slug already in use', 409)
 
+    const adminLimit = data.adminLimit ?? 3
     const tenant = await Tenant.create({
       name: data.name,
       slug,
       seatLimit: data.seatLimit ?? 30,
+      adminLimit,
       status: data.status || 'active',
       notes: data.notes || '',
       trialEndsAt:
@@ -221,6 +231,7 @@ router.patch(
     const schema = z.object({
       name: z.string().min(2).optional(),
       seatLimit: z.number().int().min(1).max(500).optional(),
+      adminLimit: z.number().int().min(1).max(50).optional(),
       status: z.enum(['trial', 'active', 'suspended', 'cancelled']).optional(),
       subscriptionPlan: z.enum(['starter', 'pro', 'enterprise']).optional(),
       features: z.record(z.boolean()).optional(),
@@ -232,6 +243,16 @@ router.patch(
 
     if (data.name !== undefined) tenant.name = data.name
     if (data.seatLimit !== undefined) tenant.seatLimit = data.seatLimit
+    if (data.adminLimit !== undefined) {
+      const currentAdmins = await countCompanyAdmins(tenant._id)
+      if (data.adminLimit < currentAdmins) {
+        throw new AppError(
+          `Cannot set admin limit to ${data.adminLimit}: company already has ${currentAdmins} admin(s). Demote or deactivate an admin first.`,
+          400,
+        )
+      }
+      tenant.adminLimit = data.adminLimit
+    }
     if (data.notes !== undefined) tenant.notes = data.notes
     if (data.subscriptionPlan !== undefined) {
       tenant.subscriptionPlan = data.subscriptionPlan
@@ -269,8 +290,16 @@ router.post(
     const tenant = await Tenant.findById(req.params.id)
     if (!tenant) throw new AppError('Tenant not found', 404)
 
-    tenant.logoUrl = `/uploads/${req.file.filename}`
+    const saved = await storeFileBuffer(req.file, {
+      tenantId: tenant._id,
+      uploadedBy: req.user._id,
+      kind: 'logo',
+    })
+
+    const prevId = mediaIdFromUrl(tenant.logoUrl)
+    tenant.logoUrl = saved.url
     await tenant.save()
+    if (prevId) await deleteMediaFile(prevId)
 
     res.json({
       success: true,
@@ -286,8 +315,10 @@ router.delete(
     const tenant = await Tenant.findById(req.params.id)
     if (!tenant) throw new AppError('Tenant not found', 404)
 
+    const prevId = mediaIdFromUrl(tenant.logoUrl)
     tenant.logoUrl = ''
     await tenant.save()
+    if (prevId) await deleteMediaFile(prevId)
 
     res.json({
       success: true,
@@ -344,6 +375,8 @@ router.get(
       success: true,
       users: users.map((u) => u.toSafeJSON()),
       seatLimit: tenant.seatLimit,
+      adminLimit: tenant.adminLimit ?? 3,
+      adminsUsed: await countCompanyAdmins(tenant._id),
     })
   }),
 )
@@ -371,6 +404,9 @@ router.post(
     if (!tenant) throw new AppError('Tenant not found', 404)
 
     await assertSeatAvailable(tenant._id)
+    if (isCompanyAdminRole(data.role)) {
+      await assertAdminSlotAvailable(tenant._id)
+    }
 
     const email = data.email.toLowerCase()
     const exists = await User.findOne({ tenantId: tenant._id, email })
@@ -413,7 +449,16 @@ router.patch(
     })
     if (!user) throw new AppError('User not found in this workspace', 404)
 
-    if (data.role !== undefined) user.role = data.role
+    if (data.role !== undefined) {
+      const promoting =
+        isCompanyAdminRole(data.role) && !isCompanyAdminRole(user.role)
+      if (promoting) {
+        await assertAdminSlotAvailable(tenant._id, {
+          excludeUserId: user._id,
+        })
+      }
+      user.role = data.role
+    }
     if (data.isActive !== undefined) {
       if (data.isActive === false) {
         user.refreshTokens = []

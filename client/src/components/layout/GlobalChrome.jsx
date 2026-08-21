@@ -19,7 +19,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { api, getTenantSlug, useAuthStore } from '../../lib/api'
-import { canInviteUsers, INVITE_ROLE_OPTIONS } from '../../lib/roles'
+import { canInviteUsers, inviteRoleOptions, NEW_CUSTOM_ROLE_VALUE, CUSTOM_ROLE_BASE_OPTIONS } from '../../lib/roles'
 import { Modal, Drawer, toast, Button, Input, Select } from '../ui'
 import { cn } from '../../lib/utils'
 
@@ -411,14 +411,24 @@ export function InviteDetailsModal({ open, onClose, details }) {
 
 export function InviteModal({ open, onClose }) {
   const tenant = useAuthStore((s) => s.tenant)
+  const setTenant = useAuthStore((s) => s.setTenant)
   const user = useAuthStore((s) => s.user)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('project_manager')
   const [loading, setLoading] = useState(false)
   const [details, setDetails] = useState(null)
+  const [customRoleOpen, setCustomRoleOpen] = useState(false)
+  const [customLabel, setCustomLabel] = useState('')
+  const [customBasedOn, setCustomBasedOn] = useState('designer')
+  const [creatingRole, setCreatingRole] = useState(false)
 
   const canInvite = canInviteUsers(user)
+  const canCreateCustomRoles =
+    !!user?.isPlatformAdmin || ['admin', 'owner'].includes(user?.role)
+  const roleOptions = inviteRoleOptions(tenant?.customRoles || [], {
+    allowCreate: canCreateCustomRoles,
+  })
 
   const { data: usersData } = useQuery({
     queryKey: ['users'],
@@ -433,6 +443,7 @@ export function InviteModal({ open, onClose }) {
       setEmail('')
       setRole('project_manager')
       setDetails(null)
+      setCustomRoleOpen(false)
     }
   }, [open])
 
@@ -471,6 +482,37 @@ export function InviteModal({ open, onClose }) {
     }
   }
 
+  const createCustomRole = async () => {
+    if (!customLabel.trim()) {
+      toast('Enter a role name', { type: 'error' })
+      return
+    }
+    setCreatingRole(true)
+    try {
+      const res = await api('/admin/custom-roles', {
+        method: 'POST',
+        body: JSON.stringify({
+          label: customLabel.trim(),
+          basedOn: customBasedOn,
+        }),
+      })
+      if (tenant) {
+        setTenant({
+          ...tenant,
+          customRoles: res.customRoles || tenant.customRoles,
+        })
+      }
+      if (res.role?.key) setRole(res.role.key)
+      setCustomRoleOpen(false)
+      setCustomLabel('')
+      toast(`Role “${res.role?.label}” created`, { type: 'success' })
+    } catch (e) {
+      toast(e.message || 'Could not create role', { type: 'error' })
+    } finally {
+      setCreatingRole(false)
+    }
+  }
+
   return (
     <>
       <Modal
@@ -503,9 +545,18 @@ export function InviteModal({ open, onClose }) {
           <Select
             label="Role"
             value={role}
-            onChange={(e) => setRole(e.target.value)}
+            onChange={(e) => {
+              const next = e.target.value
+              if (next === NEW_CUSTOM_ROLE_VALUE) {
+                setCustomLabel('')
+                setCustomBasedOn('designer')
+                setCustomRoleOpen(true)
+                return
+              }
+              setRole(next)
+            }}
             disabled={!canInvite}
-            options={INVITE_ROLE_OPTIONS}
+            options={roleOptions}
           />
 
           <Button
@@ -547,6 +598,48 @@ export function InviteModal({ open, onClose }) {
                 </div>
               ))}
             </div>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={customRoleOpen}
+        onClose={() => setCustomRoleOpen(false)}
+        title="New custom role"
+        size="sm"
+      >
+        <div className="space-y-4">
+          <p className="text-[13px] text-secondary">
+            Name the role and pick a base template for starting permissions.
+          </p>
+          <Input
+            label="Role name"
+            value={customLabel}
+            onChange={(e) => setCustomLabel(e.target.value)}
+            placeholder="e.g. Quantity surveyor"
+            autoFocus
+          />
+          <Select
+            label="Based on"
+            value={customBasedOn}
+            onChange={(e) => setCustomBasedOn(e.target.value)}
+            options={CUSTOM_ROLE_BASE_OPTIONS}
+          />
+          <div className="flex justify-end gap-2">
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={() => setCustomRoleOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              loading={creatingRole}
+              onClick={createCustomRole}
+            >
+              Create role
+            </Button>
           </div>
         </div>
       </Modal>

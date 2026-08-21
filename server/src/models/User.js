@@ -22,7 +22,7 @@ const userSchema = new mongoose.Schema(
     name: { type: String, required: true, trim: true },
     email: { type: String, required: true, lowercase: true, trim: true },
     password: { type: String, required: true, select: false },
-    role: { type: String, enum: ROLES, default: 'project_manager' },
+    role: { type: String, default: 'project_manager', trim: true, index: true },
     /** Platform owner (Editco) — can manage all tenants */
     isPlatformAdmin: { type: Boolean, default: false, index: true },
     /** Per-user overrides layered over role defaults (plain object; keys may contain dots). */

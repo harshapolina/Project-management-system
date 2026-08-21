@@ -27,7 +27,6 @@ import {
   FileSpreadsheet,
   Trophy,
   Package,
-  History,
   Receipt,
   ChevronLeft,
   ChevronRight,
@@ -57,7 +56,7 @@ import {
   CreateProjectModal,
 } from '../CreateModals'
 import { LiveNotificationCenter } from '../notifications/LiveNotificationCenter'
-import { getSocket } from '../../lib/socket'
+import { syncSocketAuth, disconnectSocket } from '../../lib/socket'
 
 const ALL_PRIMARY_NAV = [
   {
@@ -104,7 +103,7 @@ const ALL_PRIMARY_NAV = [
   },
   {
     to: '/finance',
-    label: 'Money',
+    label: 'Revenue',
     icon: Wallet,
     capability: 'finance',
   },
@@ -118,12 +117,6 @@ const ALL_PRIMARY_NAV = [
     to: '/inventory',
     label: 'Inventory',
     icon: Package,
-    capability: 'inventory',
-  },
-  {
-    to: '/inventory/movements',
-    label: 'Stock log',
-    icon: History,
     capability: 'inventory',
   },
   {
@@ -154,10 +147,9 @@ function navActive(pathname, search, to) {
   if (to === '/portfolio') return pathname.startsWith('/portfolio')
   if (to === '/company-admin') return pathname.startsWith('/company-admin')
   if (to === '/inventory') {
-    return pathname === '/inventory'
-  }
-  if (to === '/inventory/movements') {
-    return pathname.startsWith('/inventory/movements')
+    return (
+      pathname === '/inventory' || pathname.startsWith('/inventory/')
+    )
   }
   return pathname === to || pathname.startsWith(`${to}/`)
 }
@@ -262,10 +254,14 @@ export function AppShell({ children }) {
 
   useEffect(() => {
     const userId = user?.id || user?._id
-    if (!userId) return undefined
+    if (!userId) {
+      disconnectSocket()
+      return undefined
+    }
 
-    const socket = getSocket()
-    const join = () => socket.emit('join:user', String(userId))
+    const socket = syncSocketAuth()
+    if (!socket) return undefined
+
     const onPermissions = (payload) => {
       const current = useAuthStore.getState().user
       if (current) {
@@ -275,20 +271,20 @@ export function AppShell({ children }) {
         })
       }
       api('/auth/me')
-        .then((result) => result?.user && setUser(result.user))
+        .then((result) => {
+          if (result?.user) setUser(result.user)
+          if (result?.tenant) setTenant(result.tenant)
+        })
         .catch(() => {})
     }
 
-    if (socket.connected) join()
-    else socket.connect()
-    socket.on('connect', join)
+    if (!socket.connected) socket.connect()
     socket.on('permissions:updated', onPermissions)
 
     return () => {
-      socket.off('connect', join)
       socket.off('permissions:updated', onPermissions)
     }
-  }, [user?.id, user?._id, setUser])
+  }, [user?.id, user?._id, setUser, setTenant])
 
   useEffect(() => {
     const onKeyDown = (e) => {
