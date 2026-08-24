@@ -19,21 +19,24 @@ const BRANDS = [
   'Sainik 710',
 ]
 
-const THICKNESSES = ['6 mm', '9 mm', '12 mm', '16 mm', '18 mm', '19 mm', '25 mm']
+const THICKNESSES = ['4 mm', '6 mm', '9 mm', '12 mm', '16 mm', '18 mm', '19 mm', '25 mm']
 const SIZES = ["8' × 4'", "7' × 4'", "8' × 3'", "7' × 3'"]
+
+const GRADE_NOTE =
+  'Note: Final grade, thickness and make to approved BOQ/specification'
 
 const SECTIONS = [
   {
     boqType: 'commercial',
-    section: 'BWP – 710 GRADE',
-    materialName: 'Plywood BWP',
-    grade: 'BWP 710 Grade BWP',
+    section: 'INTERIOR / JOINERY',
+    materialName: 'Plywood',
+    grade: `BWP / Boiling Waterproof – 710 Grade\nApplication: Kitchen, toilet, wet-area furniture, commercial joinery\n${GRADE_NOTE}`,
   },
   {
     boqType: 'residential',
-    section: 'BWR – IS 303 GRADE',
-    materialName: 'Plywood BWR',
-    grade: 'BWR – IS 303',
+    section: 'INTERIOR / JOINERY',
+    materialName: 'Plywood',
+    grade: `BWR / Boiling Water Resistant – IS 303\nApplication: Interior furniture, wardrobes, dry-area joinery\n${GRADE_NOTE}`,
   },
 ]
 
@@ -55,7 +58,7 @@ function buildCatalog() {
             brand,
             dimensions,
             unit: 'Sheet',
-            description: `${section.materialName} · ${section.grade} · ${thickness} · ${brand} · ${dimensions}`,
+            description: `Plywood · ${thickness} · ${brand} · ${dimensions}`,
           })
         }
       }
@@ -105,7 +108,7 @@ export function listMaterialCatalog({ boqType, q, brand, thickness, page = 1, li
 }
 
 /** Turn catalog rows into BOQ line items (qty/rate left for user). */
-export function catalogRowsToBoqItems(rows, room = 'Materials') {
+export function catalogRowsToBoqItems(rows, room = 'INTERIOR / JOINERY') {
   return rows.map((row) => ({
     materialFamily: row.materialFamily,
     materialName: row.materialName,
@@ -123,7 +126,7 @@ export function catalogRowsToBoqItems(rows, room = 'Materials') {
   }))
 }
 
-export function templateItemsForType(boqType, room = 'Materials') {
+export function templateItemsForType(boqType, room = 'INTERIOR / JOINERY') {
   const { items } = listMaterialCatalog({ boqType, limit: 9999 })
   return catalogRowsToBoqItems(items, room)
 }
@@ -131,12 +134,14 @@ export function templateItemsForType(boqType, room = 'Materials') {
 export const BOQ_TYPE_META = {
   residential: {
     label: 'Residential',
-    section: 'BWR – IS 303 GRADE',
-    roomSuggestions: ['General', 'Living', 'Bedroom', 'Kitchen', 'Bathroom', 'Dining', 'Balcony'],
+    section: 'INTERIOR / JOINERY',
+    gradeLabel: 'BWR – IS 303',
+    roomSuggestions: ['INTERIOR / JOINERY', 'Living', 'Bedroom', 'Kitchen', 'Bathroom', 'Dining', 'Balcony'],
   },
   commercial: {
     label: 'Commercial',
-    section: 'BWP – 710 GRADE',
-    roomSuggestions: ['General', 'Lobby', 'Office', 'Corridor', 'Reception', 'Conference', 'Pantry'],
+    section: 'INTERIOR / JOINERY',
+    gradeLabel: 'BWP – 710 GRADE',
+    roomSuggestions: ['INTERIOR / JOINERY', 'Lobby', 'Office', 'Corridor', 'Reception', 'Conference', 'Pantry'],
   },
 }

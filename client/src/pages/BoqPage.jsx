@@ -21,6 +21,12 @@ import {
 } from 'lucide-react'
 import { api, assetUrl } from '../lib/api'
 import { formatInr } from '../lib/format'
+import {
+  BOQ_UNITS as UNITS,
+  materialMasterAoa,
+  rowsToBoqLines,
+  unitLabel,
+} from '../lib/boqImport'
 import { toast } from '../components/ui'
 import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
 import {
@@ -34,34 +40,7 @@ import {
 } from '../components/boq/MaterialCatalogPicker'
 import { cn } from '../lib/utils'
 
-const UNITS = [
-  { value: 'sheet', label: 'Sheet' },
-  { value: 'sft', label: 'Sq.ft' },
-  { value: 'rft', label: 'Rft' },
-  { value: 'nos', label: "No's" },
-  { value: 'ls', label: 'LS' },
-  { value: 'sqm', label: 'Sq.mtr' },
-  { value: 'rmt', label: 'Rmtr' },
-]
 const UNIT_VALUES = UNITS.map((u) => u.value)
-
-function unitLabel(unit) {
-  return UNITS.find((u) => u.value === unit)?.label || unit
-}
-
-/** Match Excel unit cells like "sq.ft", "SQFT", "no's", "rmt" to a known unit. */
-function matchUnit(raw) {
-  const key = String(raw || '')
-    .toLowerCase()
-    .replace(/[^a-z]/g, '')
-  if (!key) return null
-  return (
-    UNITS.find(
-      (u) =>
-        u.value === key || u.label.toLowerCase().replace(/[^a-z]/g, '') === key,
-    )?.value || null
-  )
-}
 
 const STATUS_META = {
   draft: {
@@ -98,16 +77,22 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-function blankLine(room = 'General') {
+function blankLine(room = 'INTERIOR / JOINERY', { material = true } = {}) {
   return {
     _key: uid(),
     description: '',
-    unit: 'nos',
-    qty: 1,
+    unit: material ? 'sheet' : 'nos',
+    qty: material ? 0 : 1,
     rate: 0,
     amount: 0,
     room,
     image: '',
+    materialFamily: '',
+    materialName: '',
+    grade: '',
+    thickness: '',
+    brand: '',
+    dimensions: '',
   }
 }
 
@@ -145,122 +130,6 @@ function initialsOf(name = '') {
       .join('')
       .toUpperCase() || '—'
   )
-}
-
-/* ─────────────── Excel parsing ─────────────── */
-
-const HEADER_ALIASES = {
-  room: ['room', 'area', 'space', 'location', 'zone', 'category', 'section'],
-  description: [
-    'description',
-    'item',
-    'items',
-    'particulars',
-    'particular',
-    'work',
-    'scope',
-    'details',
-    'detail',
-    'name',
-    'specification',
-  ],
-  unit: ['unit', 'units', 'uom'],
-  qty: ['qty', 'quantity', 'quantities', 'nos', 'no', 'count'],
-  rate: ['rate', 'price', 'unitrate', 'unitprice', 'cost'],
-  amount: ['amount', 'total', 'value', 'totalamount', 'lineamount'],
-}
-
-function normalizeHeader(value) {
-  return String(value ?? '')
-    .toLowerCase()
-    .replace(/[^a-z]/g, '')
-}
-
-function matchHeader(value) {
-  const key = normalizeHeader(value)
-  if (!key) return null
-  for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
-    if (aliases.includes(key)) return field
-  }
-  for (const [field, aliases] of Object.entries(HEADER_ALIASES)) {
-    if (aliases.some((alias) => key.includes(alias))) return field
-  }
-  return null
-}
-
-function toNumber(value) {
-  if (typeof value === 'number') return Number.isFinite(value) ? value : 0
-  const cleaned = String(value ?? '').replace(/[^0-9.-]/g, '')
-  const n = Number.parseFloat(cleaned)
-  return Number.isFinite(n) ? n : 0
-}
-
-/**
- * Turn a raw `sheet_to_json(..., { header: 1 })` grid into BOQ lines.
- * Detects the header row, otherwise falls back to column order.
- */
-function rowsToBoqLines(grid) {
-  let headerRow = -1
-  let columnMap = {}
-
-  for (let r = 0; r < Math.min(grid.length, 25); r += 1) {
-    const map = {}
-    ;(grid[r] || []).forEach((cell, c) => {
-      const field = matchHeader(cell)
-      if (field && map[field] === undefined) map[field] = c
-    })
-    if (
-      Object.keys(map).length >= 2 &&
-      (map.description !== undefined || map.qty !== undefined)
-    ) {
-      headerRow = r
-      columnMap = map
-      break
-    }
-  }
-
-  if (headerRow === -1) {
-    columnMap = { room: 0, description: 1, unit: 2, qty: 3, rate: 4 }
-  }
-
-  const lines = []
-  let lastRoom = 'General'
-
-  for (let r = headerRow + 1; r < grid.length; r += 1) {
-    const row = grid[r] || []
-    if (!row.some((cell) => String(cell ?? '').trim())) continue
-
-    const description = String(row[columnMap.description] ?? '').trim()
-    const qty = toNumber(row[columnMap.qty])
-    const rate = toNumber(row[columnMap.rate])
-    const amount =
-      columnMap.amount !== undefined ? toNumber(row[columnMap.amount]) : 0
-    const roomCell = String(row[columnMap.room] ?? '').trim()
-
-    // A row with only a label and no numbers is a room / section heading
-    if (description && !qty && !rate && !amount && !roomCell) {
-      lastRoom = description
-      continue
-    }
-    if (!description && !qty && !rate && !amount) {
-      if (roomCell) lastRoom = roomCell
-      continue
-    }
-    if (roomCell) lastRoom = roomCell
-
-    lines.push({
-      _key: uid(),
-      room: lastRoom || 'General',
-      description: description || 'Imported line',
-      unit: matchUnit(row[columnMap.unit]) || 'nos',
-      qty: qty || (amount && rate ? amount / rate : 0),
-      rate: rate || (amount && qty ? amount / qty : 0),
-      amount: amount || qty * rate,
-      image: '',
-    })
-  }
-
-  return lines
 }
 
 /* ─────────────── Page shell ─────────────── */
@@ -768,11 +637,12 @@ function EmptyProject({ onCreate }) {
           <FileSpreadsheet className="h-6 w-6" />
         </div>
         <p className="mt-4 text-[17px] font-semibold tracking-[-0.02em] text-[#0b1220]">
-          No BOQ for this project yet
+          No material master for this project yet
         </p>
         <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-[#8a98ac]">
-          Start a blank sheet and type your lines, or drop in an existing Excel
-          BOQ — we&apos;ll detect the columns and arrange everything into rows.
+          Choose Residential or Commercial (same columns either way), then load
+          the pack or import Excel rows — Family, Name, Grade, Thickness, Brand,
+          Size, Unit, Qty.
         </p>
         <button
           type="button"
@@ -780,7 +650,7 @@ function EmptyProject({ onCreate }) {
           className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#3ecf8e] px-5 text-[13.5px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(37,99,235,0.6)] transition hover:bg-[#24b47e]"
         >
           <Plus className="h-4 w-4" />
-          Create BOQ
+          Create material master
         </button>
       </div>
     </div>
@@ -810,11 +680,11 @@ function BoqSheet({
       ? quotation.boqType
       : draftBoqType || (project?.type === 'commercial' ? 'commercial' : 'residential')
 
-  const [boqType, setBoqType] = useState(initialBoqType)
+  const [boqType] = useState(initialBoqType)
   const [catalogOpen, setCatalogOpen] = useState(false)
   const [title, setTitle] = useState(
     quotation?.title ||
-      `${project?.name || 'Project'} — ${BOQ_TYPE_META[initialBoqType]?.label || ''} BOQ`.trim(),
+      `${BOQ_TYPE_META[initialBoqType]?.label?.toUpperCase() || ''} MATERIAL MASTER`.trim(),
   )
   const [versionLabel, setVersionLabel] = useState(
     quotation?.versionLabel || BOQ_TYPE_META[initialBoqType]?.label || 'Standard',
@@ -853,7 +723,7 @@ function BoqSheet({
   const groups = useMemo(() => {
     const out = []
     items.forEach((it, idx) => {
-      const room = it.room?.trim() || 'General'
+      const room = it.room?.trim() || 'INTERIOR / JOINERY'
       const last = out[out.length - 1]
       if (last && last.room === room) {
         last.endIdx = idx
@@ -868,7 +738,7 @@ function BoqSheet({
   const byRoom = useMemo(() => {
     const map = {}
     for (const it of items) {
-      const room = it.room?.trim() || 'General'
+      const room = it.room?.trim() || 'INTERIOR / JOINERY'
       map[room] = (map[room] || 0) + lineAmount(it)
     }
     return Object.entries(map).sort((a, b) => b[1] - a[1])
@@ -886,6 +756,26 @@ function BoqSheet({
         if (i !== idx) return it
         const next = { ...it, [key]: value }
         next.amount = lineAmount(next)
+        if (
+          [
+            'materialFamily',
+            'materialName',
+            'grade',
+            'thickness',
+            'brand',
+            'dimensions',
+          ].includes(key)
+        ) {
+          next.description = [
+            next.materialName,
+            next.grade,
+            next.thickness,
+            next.brand,
+            next.dimensions,
+          ]
+            .filter(Boolean)
+            .join(' · ')
+        }
         return next
       }),
     )
@@ -897,8 +787,8 @@ function BoqSheet({
     setItems((prev) => {
       const next = [...prev]
       const insertAt = afterIdx == null ? next.length : afterIdx + 1
-      const r = room || next[afterIdx]?.room || 'General'
-      next.splice(insertAt, 0, blankLine(r))
+      const r = room || next[afterIdx]?.room || 'INTERIOR / JOINERY'
+      next.splice(insertAt, 0, blankLine(r, { material: materialMode }))
       return next
     })
     setFocusIdx(afterIdx == null ? items.length : afterIdx + 1)
@@ -908,7 +798,7 @@ function BoqSheet({
     if (locked) return
     markDirty()
     setItems((prev) =>
-      prev.length <= 1 ? [blankLine()] : prev.filter((_, i) => i !== idx),
+      prev.length <= 1 ? [blankLine('INTERIOR / JOINERY', { material: materialMode })] : prev.filter((_, i) => i !== idx),
     )
   }
 
@@ -932,7 +822,7 @@ function BoqSheet({
       qty: Number(i.qty) || 0,
       rate: Number(i.rate) || 0,
       amount: lineAmount(i),
-      room: i.room?.trim() || 'General',
+      room: i.room?.trim() || 'INTERIOR / JOINERY',
       description:
         i.description?.trim() ||
         [i.materialName, i.grade, i.thickness, i.brand, i.dimensions]
@@ -1038,11 +928,21 @@ function BoqSheet({
   useEffect(() => {
     if (focusIdx == null) return
     const row = tableRef.current?.querySelector(`[data-row="${focusIdx}"]`)
-    row?.querySelector('input[data-field="description"]')?.focus()
+    row?.querySelector('[data-field="materialName"], input[data-field="description"]')?.focus()
     setFocusIdx(null)
   }, [focusIdx, items.length])
 
-  /* ── Excel import ── */
+  /* ── Excel import / export ── */
+  const lineHasContent = (it) =>
+    Boolean(
+      it.description?.trim() ||
+        it.materialFamily ||
+        it.materialName ||
+        it.grade ||
+        it.brand ||
+        lineAmount(it) > 0,
+    )
+
   const importExcel = async (file) => {
     if (!file) return
     setImporting(true)
@@ -1056,26 +956,74 @@ function BoqSheet({
         header: 1,
         blankrows: false,
         defval: '',
+        raw: false,
       })
-      const lines = rowsToBoqLines(grid)
+      const lines = rowsToBoqLines(grid, {
+        uid,
+        defaultRoom: BOQ_TYPE_META[boqType]?.section || 'INTERIOR / JOINERY',
+      }).map((line) => ({ ...line, ...normalizeMaterialFields(line) }))
       if (!lines.length) {
-        toast('No BOQ rows found in that sheet', { type: 'error' })
+        toast('No material rows found in that sheet', { type: 'error' })
         return
       }
       markDirty()
       setItems((prev) => {
-        const keep = prev.filter(
-          (it) => it.description?.trim() || lineAmount(it) > 0,
-        )
-        return [...keep, ...lines]
+        const keep = prev.filter(lineHasContent)
+        return keep.length ? [...keep, ...lines] : lines
       })
-      toast(`Imported ${lines.length} lines from ${file.name}`, {
+      toast(`Imported ${lines.length} rows into the material master`, {
         type: 'success',
       })
     } catch (e) {
       toast(e.message || 'Could not read that Excel file', { type: 'error' })
     } finally {
       setImporting(false)
+    }
+  }
+
+  const exportTemplate = async () => {
+    try {
+      const XLSX = await import('xlsx')
+      const aoa = materialMasterAoa(
+        items.filter(lineHasContent).length
+          ? items
+          : [
+              {
+                materialFamily: 'Plywood',
+                materialName: 'Plywood',
+                grade:
+                  BOQ_TYPE_META[boqType]?.label === 'Commercial'
+                    ? 'BWP / Boiling Waterproof – 710 Grade'
+                    : 'BWR / Boiling Water Resistant – IS 303',
+                thickness: '18 mm',
+                brand: 'Approved make / equivalent',
+                dimensions: "8' × 4'",
+                unit: 'sheet',
+                qty: 0,
+                room: 'INTERIOR / JOINERY',
+              },
+            ],
+      )
+      const ws = XLSX.utils.aoa_to_sheet(aoa)
+      ws['!cols'] = [
+        { wch: 8 },
+        { wch: 16 },
+        { wch: 16 },
+        { wch: 52 },
+        { wch: 12 },
+        { wch: 22 },
+        { wch: 14 },
+        { wch: 10 },
+        { wch: 8 },
+      ]
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Material Master')
+      XLSX.writeFile(
+        wb,
+        `${(title || 'material-master').replace(/[^\w\- ]+/g, '')}.xlsx`,
+      )
+    } catch (e) {
+      toast(e.message || 'Could not export Excel', { type: 'error' })
     }
   }
 
@@ -1147,9 +1095,7 @@ function BoqSheet({
   const cell =
     'w-full rounded-lg border border-transparent bg-transparent px-2 py-1.5 text-[12.5px] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-surface focus:ring-2 focus:ring-[#3ecf8e]/10 disabled:cursor-not-allowed disabled:opacity-60'
 
-  const filledLines = items.filter(
-    (it) => it.description?.trim() || lineAmount(it) > 0,
-  ).length
+  const filledLines = items.filter(lineHasContent).length
 
   return (
     <>
@@ -1193,15 +1139,18 @@ function BoqSheet({
             {materialMode && !locked ? (
               <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-[#dbe7fb] bg-[#f5f9ff] px-3 py-2 text-[12px] text-[#3b6fd4]">
                 <span className="font-semibold text-[#24b47e]">
-                  {BOQ_TYPE_META[boqType]?.section}
+                  {BOQ_TYPE_META[boqType]?.label}
                 </span>
-                <span>· Plywood material specification template</span>
+                <span>
+                  · Same columns as commercial &amp; residential · import data
+                  rows only, headers optional
+                </span>
                 <button
                   type="button"
                   onClick={loadMaterialTemplate}
                   className="ml-auto rounded-lg bg-[#3ecf8e] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#24b47e]"
                 >
-                  Load full template
+                  Load {BOQ_TYPE_META[boqType]?.gradeLabel} pack
                 </button>
               </div>
             ) : null}
@@ -1267,6 +1216,14 @@ function BoqSheet({
                 <Upload className="h-3.5 w-3.5" />
                 {importing ? 'Reading…' : 'Import Excel'}
               </button>
+              <button
+                type="button"
+                onClick={exportTemplate}
+                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-surface px-3 text-[12px] font-semibold text-secondary transition hover:border-[#c7dbfb] hover:text-[#24b47e]"
+              >
+                <FileSpreadsheet className="h-3.5 w-3.5" />
+                Excel template
+              </button>
               {materialMode ? (
                 <button
                   type="button"
@@ -1319,29 +1276,60 @@ function BoqSheet({
                 e.target.value = ''
               }}
             />
-            <table className="w-full min-w-[860px] border-separate border-spacing-0 text-[13px]">
+            {materialMode ? (
+              <div className="border-b border-[#e4eaf3] bg-white px-5 py-4">
+                <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-[#64748b]">
+                  {BOQ_TYPE_META[boqType]?.label} &amp;{' '}
+                  {boqType === 'residential' ? 'commercial' : 'residential'} material master
+                </p>
+                <h3 className="mt-1 text-[15px] font-semibold tracking-[-0.02em] text-[#0b1220]">
+                  Clarity edition — complete interior hardware included
+                </h3>
+                <p className="mt-1.5 max-w-3xl text-[11.5px] leading-relaxed text-[#8a98ac]">
+                  Qty = 0 intentionally: enter project-specific quantity after
+                  BOQ / drawing take-off. Brands are reference makes and must be
+                  checked against the project&apos;s approved make list. Import
+                  the same 9 columns (or data rows only) — Family, Name, Grade,
+                  Thickness, Brand, Size, Unit, Qty.
+                </p>
+              </div>
+            ) : null}
+            <table
+              className={cn(
+                'w-full border-separate border-spacing-0 text-[13px]',
+                materialMode ? 'min-w-[1180px] table-fixed' : 'min-w-[860px]',
+              )}
+            >
               <thead className="sticky top-0 z-10">
-                <tr className="[&>th]:h-9 [&>th]:border-b [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:px-2 [&>th]:backdrop-blur-md [&>th]:text-[10px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.1em] [&>th]:text-[#8a98ac]">
-                  <th className="w-12 text-left">S.no</th>
+                <tr
+                  className={cn(
+                    '[&>th]:border-b [&>th]:px-2 [&>th]:text-left [&>th]:text-[10px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.06em]',
+                    materialMode
+                      ? '[&>th]:h-10 [&>th]:border-[#d7dee8] [&>th]:bg-[#eef1f5] [&>th]:text-[#5b6b7c]'
+                      : '[&>th]:h-9 [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:backdrop-blur-md [&>th]:text-[#8a98ac]',
+                  )}
+                >
+                  <th className="w-12">S.No.</th>
                   {!materialMode ? (
-                    <th className="w-[76px] text-left">Location</th>
+                    <th className="w-[76px]">Location</th>
                   ) : null}
                   {materialMode ? (
                     <>
-                      <th className="min-w-[88px] text-left">Family</th>
-                      <th className="min-w-[96px] text-left">Name</th>
-                      <th className="min-w-[120px] text-left">Grade</th>
-                      <th className="w-[72px] text-left">Thick.</th>
-                      <th className="min-w-[96px] text-left">Brand</th>
-                      <th className="min-w-[80px] text-left">Size</th>
+                      <th className="w-[108px]">Material Family</th>
+                      <th className="w-[108px]">Material Name</th>
+                      <th className="w-[280px]">Grade / Specification</th>
+                      <th className="w-[84px]">Thickness</th>
+                      <th className="w-[140px]">Brand / Make</th>
+                      <th className="w-[100px]">Size / Dimensions</th>
                     </>
-                  ) : null}
-                  <th className="text-left">Description</th>
-                  <th className="w-[84px] text-left">Unit</th>
-                  <th className="w-[88px] text-right">Qty</th>
-                  <th className="w-[112px] text-right">Rate</th>
-                  <th className="w-[124px] text-right">Amount</th>
-                  <th className="w-[68px]" />
+                  ) : (
+                    <th>Description</th>
+                  )}
+                  <th className="w-[84px]">Unit</th>
+                  <th className="w-[72px] text-right">Qty</th>
+                  <th className="w-[100px] text-right">Rate</th>
+                  <th className="w-[112px] text-right">Amount</th>
+                  <th className="w-[56px]" />
                 </tr>
               </thead>
               <tbody>
@@ -1349,8 +1337,8 @@ function BoqSheet({
                   <Fragment key={`${g.room}-${g.startIdx}`}>
                     <tr>
                       <td
-                        colSpan={materialMode ? 13 : 8}
-                        className="sticky top-[35px] z-[5] border-b border-[#edf1f7] bg-[#f7f9fc] px-3 py-1.5"
+                        colSpan={materialMode ? 12 : 8}
+                        className="sticky top-[40px] z-[5] border-b border-[#d7dee8] bg-[#f3f5f8] px-3 py-2"
                       >
                         <div className="flex items-center gap-2">
                           <span className="h-3.5 w-[3px] rounded-full bg-[#3ecf8e]" />
@@ -1370,11 +1358,11 @@ function BoqSheet({
                                 ),
                               )
                             }}
-                            className="w-40 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[11px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-surface focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
+                            className="min-w-[180px] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[12px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-surface focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
                           />
                           <span className="rounded-full bg-surface px-2 py-[2px] text-[10px] font-semibold tabular-nums text-[#8a98ac] ring-1 ring-inset ring-[#e4eaf3]">
                             {g.endIdx - g.startIdx + 1}{' '}
-                            {g.endIdx - g.startIdx === 0 ? 'line' : 'lines'}
+                            {g.endIdx - g.startIdx === 0 ? 'row' : 'rows'}
                           </span>
                           <span className="ml-auto text-[12px] font-bold tabular-nums text-primary">
                             {formatInr(g.total)}
@@ -1399,13 +1387,13 @@ function BoqSheet({
                         <tr
                           key={it._key}
                           data-row={idx}
-                          className="group/row transition-colors [&>td]:border-b [&>td]:border-[#f1f5f9] hover:[&>td]:bg-[#fbfcfe]"
+                          className="group/row align-top transition-colors [&>td]:border-b [&>td]:border-[#e8eef5] [&>td]:align-top hover:[&>td]:bg-[#fbfcfe]"
                         >
-                          <td className="px-2 py-1.5 text-[11px] tabular-nums text-[#b4c0d0]">
+                          <td className="px-2 py-2 text-[11px] tabular-nums text-[#94a3b8]">
                             {idx + 1}
                           </td>
                           {!materialMode ? (
-                            <td className="px-1.5 py-1.5">
+                            <td className="px-1.5 py-2">
                               {it.image ? (
                                 <div className="relative h-9 w-9">
                                   <img
@@ -1443,39 +1431,111 @@ function BoqSheet({
                           ) : null}
                           {materialMode ? (
                             <>
-                              <td className="px-1.5 py-1.5 text-[12px] text-secondary">{it.materialFamily || '—'}</td>
-                              <td className="px-1.5 py-1.5 text-[12px]">{it.materialName || '—'}</td>
-                              <td className="px-1.5 py-1.5 text-[12px]">{it.grade || '—'}</td>
-                              <td className="px-1.5 py-1.5 text-[12px]">{it.thickness || '—'}</td>
-                              <td className="px-1.5 py-1.5 text-[12px] font-medium">{it.brand || '—'}</td>
-                              <td className="px-1.5 py-1.5 text-[12px]">{it.dimensions || '—'}</td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  disabled={locked}
+                                  value={it.materialFamily || ''}
+                                  placeholder="Plywood"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'materialFamily', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-[#334155]')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  data-field="materialName"
+                                  disabled={locked}
+                                  value={it.materialName || ''}
+                                  placeholder="Plywood"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'materialName', e.target.value)
+                                  }
+                                  className={cn(cell, 'font-medium text-[#0b1220]')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <textarea
+                                  disabled={locked}
+                                  rows={3}
+                                  value={it.grade || ''}
+                                  placeholder="Grade / specification"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'grade', e.target.value)
+                                  }
+                                  className={cn(
+                                    cell,
+                                    'min-h-[72px] resize-none whitespace-pre-wrap leading-snug text-[#334155]',
+                                  )}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  disabled={locked}
+                                  value={it.thickness || ''}
+                                  placeholder="18 mm"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'thickness', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-[#334155]')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  disabled={locked}
+                                  value={it.brand || ''}
+                                  placeholder="Approved make / equivalent"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'brand', e.target.value)
+                                  }
+                                  className={cn(cell, 'font-medium text-[#0b1220]')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  disabled={locked}
+                                  value={it.dimensions || ''}
+                                  placeholder={"8' × 4'"}
+                                  onChange={(e) =>
+                                    updateItem(idx, 'dimensions', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-[#334155]')}
+                                />
+                              </td>
                             </>
-                          ) : null}
-                          <td className="px-1.5 py-1.5">
-                            <input
-                              data-field="description"
-                              disabled={locked}
-                              value={it.description || ''}
-                              placeholder="Work / item description"
-                              onChange={(e) =>
-                                updateItem(idx, 'description', e.target.value)
-                              }
-                              onKeyDown={(e) => {
-                                if (e.key === 'Enter') {
-                                  e.preventDefault()
-                                  addLine(idx)
+                          ) : (
+                            <td className="px-1.5 py-1.5">
+                              <input
+                                data-field="description"
+                                disabled={locked}
+                                value={it.description || ''}
+                                placeholder="Work / item description"
+                                onChange={(e) =>
+                                  updateItem(idx, 'description', e.target.value)
                                 }
-                              }}
-                              className={cn(
-                                cell,
-                                'font-medium text-[#0b1220] placeholder:font-normal placeholder:text-[#c3ccd9]',
-                              )}
-                            />
-                          </td>
-                          <td className="px-1.5 py-1.5">
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter') {
+                                    e.preventDefault()
+                                    addLine(idx)
+                                  }
+                                }}
+                                className={cn(
+                                  cell,
+                                  'font-medium text-[#0b1220] placeholder:font-normal placeholder:text-[#c3ccd9]',
+                                )}
+                              />
+                            </td>
+                          )}
+                          <td className="px-1 py-1.5">
                             <select
                               disabled={locked}
-                              value={UNIT_VALUES.includes(it.unit) ? it.unit : 'nos'}
+                              value={
+                                UNIT_VALUES.includes(it.unit)
+                                  ? it.unit
+                                  : materialMode
+                                    ? 'sheet'
+                                    : 'nos'
+                              }
                               onChange={(e) =>
                                 updateItem(idx, 'unit', e.target.value)
                               }
@@ -1488,7 +1548,7 @@ function BoqSheet({
                               ))}
                             </select>
                           </td>
-                          <td className="px-1.5 py-1.5">
+                          <td className="px-1 py-1.5">
                             <input
                               type="number"
                               min="0"
@@ -1501,7 +1561,7 @@ function BoqSheet({
                               className={cn(cell, 'text-right tabular-nums text-primary')}
                             />
                           </td>
-                          <td className="px-1.5 py-1.5">
+                          <td className="px-1 py-1.5">
                             <input
                               type="number"
                               min="0"
@@ -1514,10 +1574,10 @@ function BoqSheet({
                               className={cn(cell, 'text-right tabular-nums text-primary')}
                             />
                           </td>
-                          <td className="px-3 py-1.5 text-right text-[12.5px] font-semibold tabular-nums text-[#0b1220]">
+                          <td className="px-3 py-2 text-right text-[12.5px] font-semibold tabular-nums text-[#0b1220]">
                             {formatInr(lineAmount(it))}
                           </td>
-                          <td className="px-1.5 py-1.5">
+                          <td className="px-1 py-1.5">
                             <div className="flex justify-end gap-0.5 opacity-0 transition group-hover/row:opacity-100">
                               <button
                                 type="button"
@@ -1562,9 +1622,9 @@ function BoqSheet({
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#eef4ff]">
                   <Plus className="h-3.5 w-3.5" />
                 </span>
-                Add line
+                Add row
                 <span className="font-normal text-[#b4c0d0]">
-                  · press Enter in a description to insert below
+                  · import Excel/CSV with the same columns (headers optional)
                 </span>
               </button>
             )}
@@ -1582,7 +1642,7 @@ function BoqSheet({
               <span className="font-semibold tabular-nums text-secondary">
                 {byRoom.length}
               </span>{' '}
-              {byRoom.length === 1 ? 'room' : 'rooms'}
+              {byRoom.length === 1 ? 'section' : 'sections'}
             </span>
             <span className="ml-auto">
               Subtotal{' '}
@@ -1931,6 +1991,8 @@ function BoqSheet({
         discount={discount}
         grand={grand}
         byRoom={byRoom}
+        materialMode={materialMode}
+        boqType={boqType}
       />
     </>
   )
@@ -2001,13 +2063,21 @@ function BoqPrintView({
   discount,
   grand,
   byRoom,
+  materialMode,
+  boqType,
 }) {
   const printDate = new Date().toLocaleDateString('en-IN', {
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   })
-  const rows = items.filter((it) => it.description?.trim() || lineAmount(it) > 0)
+  const rows = items.filter(
+    (it) =>
+      it.description?.trim() ||
+      it.materialName ||
+      it.materialFamily ||
+      lineAmount(it) > 0,
+  )
 
   return (
     <div className="hidden print:block">
@@ -2017,12 +2087,15 @@ function BoqPrintView({
             EPM — Editco Project Management
           </p>
           <h1 className="mt-1 text-[22px] font-semibold tracking-tight text-[#0b1220]">
-            {title || 'Bill of Quantities'}
+            {title || 'Material Master / Bill of Quantities'}
           </h1>
           <p className="mt-1 text-[12px] text-secondary">
             {project?.name || 'Project'}
             {project?.clientName ? ` · ${project.clientName}` : ''}
             {project?.location ? ` · ${project.location}` : ''}
+            {boqType && BOQ_TYPE_META[boqType]
+              ? ` · ${BOQ_TYPE_META[boqType].label} · ${BOQ_TYPE_META[boqType].gradeLabel}`
+              : ''}
           </p>
         </div>
         <div className="text-right text-[11px] text-secondary">
@@ -2039,47 +2112,59 @@ function BoqPrintView({
         </div>
       </header>
 
-      <table className="w-full border-collapse text-[11px]">
+      <table className="w-full border-collapse text-[10px]">
         <thead>
-          <tr className="border-b border-[#c7c7c7] text-left text-[10px] font-bold uppercase tracking-wide text-secondary">
-            <th className="w-10 py-2 pr-2">S.no</th>
-            <th className="w-14 py-2 pr-2">Location</th>
-            <th className="w-24 py-2 pr-2">Room</th>
-            <th className="py-2 pr-2">Description</th>
-            <th className="w-14 py-2 pr-2">Unit</th>
-            <th className="w-14 py-2 pr-2 text-right">Qty</th>
-            <th className="w-20 py-2 pr-2 text-right">Rate</th>
-            <th className="w-24 py-2 text-right">Amount</th>
+          <tr className="border-b border-[#c7c7c7] bg-[#eef1f5] text-left text-[9px] font-bold uppercase tracking-wide text-secondary">
+            <th className="w-8 py-2 pr-1">S.No.</th>
+            {materialMode ? (
+              <>
+                <th className="w-20 py-2 pr-1">Family</th>
+                <th className="w-20 py-2 pr-1">Name</th>
+                <th className="py-2 pr-1">Grade / Specification</th>
+                <th className="w-14 py-2 pr-1">Thick.</th>
+                <th className="w-20 py-2 pr-1">Brand</th>
+                <th className="w-16 py-2 pr-1">Size</th>
+              </>
+            ) : (
+              <>
+                <th className="w-20 py-2 pr-1">Section</th>
+                <th className="py-2 pr-1">Description</th>
+              </>
+            )}
+            <th className="w-12 py-2 pr-1">Unit</th>
+            <th className="w-12 py-2 pr-1 text-right">Qty</th>
+            <th className="w-16 py-2 pr-1 text-right">Rate</th>
+            <th className="w-18 py-2 text-right">Amount</th>
           </tr>
         </thead>
         <tbody>
           {rows.map((it, idx) => (
-            <tr key={it._key} className="border-b border-border">
-              <td className="py-1.5 pr-2 tabular-nums text-secondary">
-                {idx + 1}
-              </td>
-              <td className="py-1.5 pr-2">
-                {it.image ? (
-                  <img
-                    src={assetUrl(it.image)}
-                    alt=""
-                    className="h-10 w-10 rounded object-cover"
-                  />
-                ) : null}
-              </td>
-              <td className="py-1.5 pr-2 text-primary">
-                {it.room || 'General'}
-              </td>
-              <td className="py-1.5 pr-2 text-[#0b1220]">
-                {it.description ||
-                  [it.materialName, it.grade, it.thickness, it.brand, it.dimensions]
-                    .filter(Boolean)
-                    .join(' · ') ||
-                  '—'}
-              </td>
-              <td className="py-1.5 pr-2 text-secondary">{unitLabel(it.unit)}</td>
-              <td className="py-1.5 pr-2 text-right tabular-nums">{it.qty}</td>
-              <td className="py-1.5 pr-2 text-right tabular-nums">
+            <tr key={it._key} className="align-top border-b border-border">
+              <td className="py-1.5 pr-1 tabular-nums text-secondary">{idx + 1}</td>
+              {materialMode ? (
+                <>
+                  <td className="py-1.5 pr-1">{it.materialFamily || '—'}</td>
+                  <td className="py-1.5 pr-1 font-medium">{it.materialName || '—'}</td>
+                  <td className="whitespace-pre-line py-1.5 pr-1 leading-snug text-[#0b1220]">
+                    {it.grade || '—'}
+                  </td>
+                  <td className="py-1.5 pr-1">{it.thickness || '—'}</td>
+                  <td className="py-1.5 pr-1">{it.brand || '—'}</td>
+                  <td className="py-1.5 pr-1">{it.dimensions || '—'}</td>
+                </>
+              ) : (
+                <>
+                  <td className="py-1.5 pr-1 text-primary">
+                    {it.room || 'INTERIOR / JOINERY'}
+                  </td>
+                  <td className="py-1.5 pr-1 text-[#0b1220]">
+                    {it.description || '—'}
+                  </td>
+                </>
+              )}
+              <td className="py-1.5 pr-1 text-secondary">{unitLabel(it.unit)}</td>
+              <td className="py-1.5 pr-1 text-right tabular-nums">{it.qty}</td>
+              <td className="py-1.5 pr-1 text-right tabular-nums">
                 {formatInr(it.rate)}
               </td>
               <td className="py-1.5 text-right font-semibold tabular-nums">
@@ -2116,7 +2201,7 @@ function BoqPrintView({
       {byRoom.length > 1 && (
         <div className="mt-8 border-t border-border pt-4">
           <p className="mb-2 text-[10px] font-bold uppercase tracking-wide text-secondary">
-            Summary by room
+            Summary by section
           </p>
           <div className="grid grid-cols-2 gap-x-8 gap-y-1 text-[11px]">
             {byRoom.map(([room, amount]) => (
