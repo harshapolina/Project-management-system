@@ -34,6 +34,10 @@ export interface BoqItem {
   amount: number
   room?: string
   image?: string
+  category?: string
+  measureNo?: number
+  width?: number
+  height?: number
 }
 
 export type QuotationStatus = 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected'

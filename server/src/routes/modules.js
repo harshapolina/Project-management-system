@@ -23,6 +23,7 @@ import {
   templateItemsForType,
   BOQ_TYPE_META,
 } from '../data/plywoodMaterialCatalog.js'
+import { interiorCatalogItems, INTERIOR_BOQ_META } from '../data/quotationCatalog.js'
 import {
   Lead,
   Quotation,
@@ -385,6 +386,26 @@ router.get(
   }),
 )
 
+router.get(
+  '/boq-catalog/:boqType',
+  requireAuth,
+  requirePermission('boq'),
+  asyncHandler(async (req, res) => {
+    const boqType = req.params.boqType
+    if (!['residential', 'commercial'].includes(boqType)) {
+      throw new AppError('boqType must be residential or commercial', 400)
+    }
+    const items = interiorCatalogItems(boqType)
+    res.json({
+      success: true,
+      boqType,
+      count: items.length,
+      meta: INTERIOR_BOQ_META[boqType],
+      items,
+    })
+  }),
+)
+
 /* ─── Quotations / BOQ ─── */
 router.get(
   '/quotations',
@@ -405,7 +426,7 @@ router.get(
     }
     const quotations = await Quotation.find(filter)
       .populate('createdBy', 'name avatar')
-      .populate('projectId', 'name clientName')
+      .populate('projectId', 'name clientName location type')
       .populate('leadId', 'clientName')
       .sort({ updatedAt: -1 })
     res.json({ success: true, quotations })
@@ -419,7 +440,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const quotation = await Quotation.findById(req.params.id)
       .populate('createdBy', 'name')
-      .populate('projectId', 'name clientName')
+      .populate('projectId', 'name clientName location type')
     assertTenantDoc(quotation, req, 'Quotation')
     res.json({ success: true, quotation })
   }),
@@ -430,7 +451,14 @@ router.post(
   requireAuth,
   requirePermission('boq'),
   asyncHandler(async (req, res) => {
-    const items = req.body.items || []
+    let items = req.body.items || []
+    const boqType = req.body.boqType || 'general'
+    if (
+      (!items.length || req.body.seedCatalog) &&
+      (boqType === 'residential' || boqType === 'commercial')
+    ) {
+      items = interiorCatalogItems(boqType)
+    }
     if (req.body.projectId) await assertProjectAccess(req, req.body.projectId)
     const subtotal = items.reduce((s, i) => s + (i.amount || i.qty * i.rate || 0), 0)
     const gstPercent = req.body.gstPercent ?? 18

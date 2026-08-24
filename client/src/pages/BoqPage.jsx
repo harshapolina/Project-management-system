@@ -19,7 +19,7 @@ import {
   Upload,
   X,
 } from 'lucide-react'
-import { api, assetUrl } from '../lib/api'
+import { api, assetUrl, useAuthStore } from '../lib/api'
 import { formatInr } from '../lib/format'
 import {
   BOQ_UNITS as UNITS,
@@ -27,6 +27,7 @@ import {
   rowsToBoqLines,
   unitLabel,
 } from '../lib/boqImport'
+import { CubicQuoteDocument, lineQty } from '../components/boq/CubicQuoteDocument'
 import { toast } from '../components/ui'
 import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
 import {
@@ -77,16 +78,20 @@ function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
 
-function blankLine(room = 'INTERIOR / JOINERY', { material = true } = {}) {
+function blankLine(room = 'General', { material = false } = {}) {
   return {
     _key: uid(),
     description: '',
-    unit: material ? 'sheet' : 'nos',
-    qty: material ? 0 : 1,
+    unit: material ? 'sheet' : 'sft',
+    qty: 0,
     rate: 0,
     amount: 0,
     room,
     image: '',
+    category: '',
+    measureNo: 0,
+    width: 1,
+    height: 1,
     materialFamily: '',
     materialName: '',
     grade: '',
@@ -97,21 +102,30 @@ function blankLine(room = 'INTERIOR / JOINERY', { material = true } = {}) {
 }
 
 function normalizeItems(items = []) {
-  return items.map((it, i) => ({
-    _key: it._id || it._key || `row-${i}`,
-    description: it.description || '',
-    unit: it.unit || 'nos',
-    qty: Number(it.qty) || 0,
-    rate: Number(it.rate) || 0,
-    amount: Number(it.amount) || (Number(it.qty) || 0) * (Number(it.rate) || 0),
-    room: it.room || 'General',
-    image: it.image || '',
-    ...normalizeMaterialFields(it),
-  }))
+  return items.map((it, i) => {
+    const row = {
+      _key: it._id || it._key || `row-${i}`,
+      description: it.description || '',
+      unit: it.unit || 'sft',
+      qty: Number(it.qty) || 0,
+      rate: Number(it.rate) || 0,
+      amount: Number(it.amount) || 0,
+      room: it.room || 'General',
+      image: it.image || '',
+      category: it.category || '',
+      measureNo: Number(it.measureNo) || 0,
+      width: Number(it.width) || 0,
+      height: Number(it.height) || 0,
+      ...normalizeMaterialFields(it),
+    }
+    if (!row.qty) row.qty = lineQty(row)
+    row.amount = (Number(row.qty) || 0) * (Number(row.rate) || 0)
+    return row
+  })
 }
 
 function lineAmount(it) {
-  return (Number(it.qty) || 0) * (Number(it.rate) || 0)
+  return lineQty(it) * (Number(it.rate) || 0)
 }
 
 function projectIdOf(quote) {
@@ -499,7 +513,13 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
   )
 
   const startDraft = (boqType) => {
-    setDraftType(boqType)
+    const type =
+      boqType === 'commercial' || boqType === 'residential'
+        ? boqType
+        : project?.type === 'commercial'
+          ? 'commercial'
+          : 'residential'
+    setDraftType(type)
     setDraft(true)
     setActiveId(null)
     setTypeModalOpen(false)
@@ -541,7 +561,9 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
 
           <button
             type="button"
-            onClick={() => setTypeModalOpen(true)}
+            onClick={() =>
+              project?.type === 'blank' ? setTypeModalOpen(true) : startDraft()
+            }
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#3ecf8e] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(37,99,235,0.75)] transition hover:bg-[#24b47e]"
           >
             <Plus className="h-4 w-4" />
@@ -603,7 +625,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
         {loading ? (
           <div className="m-5 h-64 animate-pulse rounded-2xl bg-surface" />
         ) : !activeQuote && !draft ? (
-          <EmptyProject onCreate={() => setTypeModalOpen(true)} />
+          <EmptyProject onCreate={() => startDraft()} />
         ) : (
           <BoqSheet
             key={activeQuote?._id || `draft-${draftType}`}
@@ -637,12 +659,12 @@ function EmptyProject({ onCreate }) {
           <FileSpreadsheet className="h-6 w-6" />
         </div>
         <p className="mt-4 text-[17px] font-semibold tracking-[-0.02em] text-[#0b1220]">
-          No material master for this project yet
+          No quotation for this project yet
         </p>
         <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-[#8a98ac]">
-          Choose Residential or Commercial (same columns either way), then load
-          the pack or import Excel rows — Family, Name, Grade, Thickness, Brand,
-          Size, Unit, Qty.
+          We&apos;ll load the full {''}
+          {''} interior schedule — every row from the Cubic quotation template —
+          so you can take off quantities and approve the budget.
         </p>
         <button
           type="button"
@@ -650,7 +672,7 @@ function EmptyProject({ onCreate }) {
           className="mt-5 inline-flex h-10 items-center gap-2 rounded-xl bg-[#3ecf8e] px-5 text-[13.5px] font-semibold text-white shadow-[0_6px_16px_-6px_rgba(37,99,235,0.6)] transition hover:bg-[#24b47e]"
         >
           <Plus className="h-4 w-4" />
-          Create material master
+          Open quotation BOQ
         </button>
       </div>
     </div>
@@ -675,6 +697,7 @@ function BoqSheet({
   const rowImageInputRef = useRef(null)
   const rowImageTarget = useRef(null)
 
+  const tenant = useAuthStore((s) => s.tenant)
   const initialBoqType =
     quotation?.boqType && quotation.boqType !== 'general'
       ? quotation.boqType
@@ -682,17 +705,15 @@ function BoqSheet({
 
   const [boqType] = useState(initialBoqType)
   const [catalogOpen, setCatalogOpen] = useState(false)
+  const [quoteView, setQuoteView] = useState(quotation?.status === 'approved')
   const [title, setTitle] = useState(
-    quotation?.title ||
-      `${BOQ_TYPE_META[initialBoqType]?.label?.toUpperCase() || ''} MATERIAL MASTER`.trim(),
+    quotation?.title || 'QUOTATION FOR INTERIOR & EXECUTION',
   )
   const [versionLabel, setVersionLabel] = useState(
     quotation?.versionLabel || BOQ_TYPE_META[initialBoqType]?.label || 'Standard',
   )
   const [items, setItems] = useState(() =>
-    quotation?.items?.length
-      ? normalizeItems(quotation.items)
-      : [blankLine(), blankLine(), blankLine()],
+    quotation?.items?.length ? normalizeItems(quotation.items) : [],
   )
   const [attachments, setAttachments] = useState(
     () => quotation?.attachments?.map((a) => ({ ...a })) || [],
@@ -706,10 +727,11 @@ function BoqSheet({
   const [dragOver, setDragOver] = useState(false)
   const [preview, setPreview] = useState(null)
 
-  const locked = quotation?.status === 'approved'
+  const locked = false
   const status = quotation?.status || 'draft'
   const statusMeta = STATUS_META[status] || STATUS_META.draft
-  const materialMode = isMaterialSpecSheet(boqType, items)
+  const interiorMode = boqType === 'residential' || boqType === 'commercial'
+  const materialMode = !interiorMode && isMaterialSpecSheet(boqType, items)
   const roomSuggestions = roomSuggestionsForType(boqType)
 
   const subtotal = useMemo(
@@ -755,26 +777,9 @@ function BoqSheet({
       prev.map((it, i) => {
         if (i !== idx) return it
         const next = { ...it, [key]: value }
-        next.amount = lineAmount(next)
-        if (
-          [
-            'materialFamily',
-            'materialName',
-            'grade',
-            'thickness',
-            'brand',
-            'dimensions',
-          ].includes(key)
-        ) {
-          next.description = [
-            next.materialName,
-            next.grade,
-            next.thickness,
-            next.brand,
-            next.dimensions,
-          ]
-            .filter(Boolean)
-            .join(' · ')
+        if (['measureNo', 'width', 'height', 'qty', 'rate'].includes(key)) {
+          if (key !== 'qty') next.qty = lineQty(next)
+          next.amount = lineAmount(next)
         }
         return next
       }),
@@ -819,10 +824,14 @@ function BoqSheet({
     items: items.map(({ _key, ...i }) => ({
       ...i,
       ...normalizeMaterialFields(i),
-      qty: Number(i.qty) || 0,
+      qty: lineQty(i),
       rate: Number(i.rate) || 0,
       amount: lineAmount(i),
-      room: i.room?.trim() || 'INTERIOR / JOINERY',
+      room: i.room?.trim() || 'General',
+      category: i.category || '',
+      measureNo: Number(i.measureNo) || 0,
+      width: Number(i.width) || 0,
+      height: Number(i.height) || 0,
       description:
         i.description?.trim() ||
         [i.materialName, i.grade, i.thickness, i.brand, i.dimensions]
@@ -839,6 +848,36 @@ function BoqSheet({
     grandTotal: grand,
     ...extra,
   })
+
+  const loadInteriorCatalog = async ({ silent } = {}) => {
+    try {
+      const res = await api(`/boq-catalog/${boqType}`)
+      const lines = (res.items || []).map((row, i) => ({
+        _key: uid(),
+        ...row,
+        qty: lineQty(row),
+        amount: lineAmount(row),
+        _id: undefined,
+      }))
+      if (!lines.length) return
+      setItems(lines)
+      if (!quotation?._id) markDirty()
+      if (!silent) {
+        toast(`Loaded ${lines.length} ${BOQ_TYPE_META[boqType]?.label} quotation lines`, {
+          type: 'success',
+        })
+      }
+    } catch (e) {
+      if (!silent) toast(e.message || 'Could not load quotation template', { type: 'error' })
+    }
+  }
+
+  useEffect(() => {
+    if (quotation?.items?.length) return
+    if (!interiorMode) return
+    loadInteriorCatalog({ silent: true })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [boqType])
 
   const loadMaterialTemplate = async () => {
     if (locked) return
@@ -894,8 +933,10 @@ function BoqSheet({
       const next = vars?.status
       if (next === 'sent')
         toast('Marked as sent to the client', { type: 'success' })
-      else if (next === 'approved')
-        toast('Approved — project budget updated', { type: 'success' })
+      else if (next === 'approved') {
+        setQuoteView(true)
+        toast('Approved — budget set. Opening quotation.', { type: 'success' })
+      }
       else if (next === 'draft')
         toast('Sheet reopened as draft', { type: 'success' })
       else toast('BOQ saved', { type: 'success' })
@@ -1136,7 +1177,23 @@ function BoqSheet({
         <div className="flex min-h-[480px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2eaf5] bg-surface shadow-[0_2px_4px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.25)] lg:min-h-0">
           {/* Action bar */}
           <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#edf1f7] px-4 py-3 sm:px-5">
-            {materialMode && !locked ? (
+            {interiorMode ? (
+              <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-[#eadfce] bg-[#fbf8f4] px-3 py-2 text-[12px] text-[#5c5148]">
+                <span className="font-semibold text-[#1c1917]">
+                  {BOQ_TYPE_META[boqType]?.label} quotation
+                </span>
+                <span>
+                  · Cubic interior schedule preloaded · edit No / W / H / Rate, then approve
+                </span>
+                <button
+                  type="button"
+                  onClick={() => loadInteriorCatalog()}
+                  className="ml-auto rounded-lg bg-[#1c1917] px-2.5 py-1 text-[11px] font-semibold text-[#f4efe6] hover:bg-black"
+                >
+                  Reload template
+                </button>
+              </div>
+            ) : materialMode && !locked ? (
               <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-[#dbe7fb] bg-[#f5f9ff] px-3 py-2 text-[12px] text-[#3b6fd4]">
                 <span className="font-semibold text-[#24b47e]">
                   {BOQ_TYPE_META[boqType]?.label}
@@ -1235,6 +1292,18 @@ function BoqSheet({
                   Materials
                 </button>
               ) : null}
+              <button
+                type="button"
+                onClick={() => setQuoteView((v) => !v)}
+                className={cn(
+                  'inline-flex h-[34px] items-center gap-1.5 rounded-xl px-3 text-[12px] font-semibold transition',
+                  quoteView
+                    ? 'bg-[#1c1917] text-[#f4efe6]'
+                    : 'border border-[#eadfce] bg-[#fbf8f4] text-[#5c5148] hover:border-[#c47a62]',
+                )}
+              >
+                {quoteView ? 'Hide quotation' : 'Quotation preview'}
+              </button>
               <div className="flex h-[34px] items-center rounded-xl border border-[#e4eaf3] bg-surface px-0.5">
                 <ToolButton
                   label="Add line"
@@ -1297,33 +1366,51 @@ function BoqSheet({
             <table
               className={cn(
                 'w-full border-separate border-spacing-0 text-[13px]',
-                materialMode ? 'min-w-[1180px] table-fixed' : 'min-w-[860px]',
+                interiorMode
+                  ? 'min-w-[1100px]'
+                  : materialMode
+                    ? 'min-w-[1180px] table-fixed'
+                    : 'min-w-[860px]',
               )}
             >
               <thead className="sticky top-0 z-10">
                 <tr
                   className={cn(
                     '[&>th]:border-b [&>th]:px-2 [&>th]:text-left [&>th]:text-[10px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.06em]',
-                    materialMode
-                      ? '[&>th]:h-10 [&>th]:border-[#d7dee8] [&>th]:bg-[#eef1f5] [&>th]:text-[#5b6b7c]'
-                      : '[&>th]:h-9 [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:backdrop-blur-md [&>th]:text-[#8a98ac]',
+                    interiorMode
+                      ? '[&>th]:h-10 [&>th]:border-[#eadfce] [&>th]:bg-[#c47a62] [&>th]:text-white'
+                      : materialMode
+                        ? '[&>th]:h-10 [&>th]:border-[#d7dee8] [&>th]:bg-[#eef1f5] [&>th]:text-[#5b6b7c]'
+                        : '[&>th]:h-9 [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:backdrop-blur-md [&>th]:text-[#8a98ac]',
                   )}
                 >
-                  <th className="w-12">S.No.</th>
-                  {!materialMode ? (
-                    <th className="w-[76px]">Location</th>
-                  ) : null}
-                  {materialMode ? (
+                  <th className="w-10">Sl.</th>
+                  {interiorMode ? (
                     <>
-                      <th className="w-[108px]">Material Family</th>
-                      <th className="w-[108px]">Material Name</th>
-                      <th className="w-[280px]">Grade / Specification</th>
-                      <th className="w-[84px]">Thickness</th>
-                      <th className="w-[140px]">Brand / Make</th>
-                      <th className="w-[100px]">Size / Dimensions</th>
+                      <th>Description of item</th>
+                      <th className="w-[90px]">Category</th>
+                      <th className="w-[64px] text-right">No</th>
+                      <th className="w-[64px] text-right">Width</th>
+                      <th className="w-[64px] text-right">Height</th>
                     </>
                   ) : (
-                    <th>Description</th>
+                    <>
+                      {!materialMode ? (
+                        <th className="w-[76px]">Location</th>
+                      ) : null}
+                      {materialMode ? (
+                        <>
+                          <th className="w-[108px]">Material Family</th>
+                          <th className="w-[108px]">Material Name</th>
+                          <th className="w-[280px]">Grade / Specification</th>
+                          <th className="w-[84px]">Thickness</th>
+                          <th className="w-[140px]">Brand / Make</th>
+                          <th className="w-[100px]">Size / Dimensions</th>
+                        </>
+                      ) : (
+                        <th>Description</th>
+                      )}
+                    </>
                   )}
                   <th className="w-[84px]">Unit</th>
                   <th className="w-[72px] text-right">Qty</th>
@@ -1337,8 +1424,13 @@ function BoqSheet({
                   <Fragment key={`${g.room}-${g.startIdx}`}>
                     <tr>
                       <td
-                        colSpan={materialMode ? 12 : 8}
-                        className="sticky top-[40px] z-[5] border-b border-[#d7dee8] bg-[#f3f5f8] px-3 py-2"
+                        colSpan={interiorMode ? 11 : materialMode ? 12 : 8}
+                        className={cn(
+                          'sticky top-[40px] z-[5] border-b px-3 py-2',
+                          interiorMode
+                            ? 'border-[#eadfce] bg-[#efe6d8]'
+                            : 'border-[#d7dee8] bg-[#f3f5f8]',
+                        )}
                       >
                         <div className="flex items-center gap-2">
                           <span className="h-3.5 w-[3px] rounded-full bg-[#3ecf8e]" />
@@ -1392,7 +1484,76 @@ function BoqSheet({
                           <td className="px-2 py-2 text-[11px] tabular-nums text-[#94a3b8]">
                             {idx + 1}
                           </td>
-                          {!materialMode ? (
+                          {interiorMode ? (
+                            <>
+                              <td className="px-1 py-1.5">
+                                <textarea
+                                  data-field="description"
+                                  disabled={locked}
+                                  rows={3}
+                                  value={it.description || ''}
+                                  placeholder="Description of item"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'description', e.target.value)
+                                  }
+                                  className={cn(
+                                    cell,
+                                    'min-h-[64px] resize-none whitespace-pre-wrap leading-snug font-medium text-[#0b1220]',
+                                  )}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  disabled={locked}
+                                  value={it.category || ''}
+                                  placeholder="Category"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'category', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-[#334155]')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  disabled={locked}
+                                  value={it.measureNo}
+                                  onChange={(e) =>
+                                    updateItem(idx, 'measureNo', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-right tabular-nums')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  disabled={locked}
+                                  value={it.width}
+                                  onChange={(e) =>
+                                    updateItem(idx, 'width', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-right tabular-nums')}
+                                />
+                              </td>
+                              <td className="px-1 py-1.5">
+                                <input
+                                  type="number"
+                                  min="0"
+                                  step="any"
+                                  disabled={locked}
+                                  value={it.height}
+                                  onChange={(e) =>
+                                    updateItem(idx, 'height', e.target.value)
+                                  }
+                                  className={cn(cell, 'text-right tabular-nums')}
+                                />
+                              </td>
+                            </>
+                          ) : !materialMode ? (
                             <td className="px-1.5 py-2">
                               {it.image ? (
                                 <div className="relative h-9 w-9">
@@ -1429,7 +1590,7 @@ function BoqSheet({
                               )}
                             </td>
                           ) : null}
-                          {materialMode ? (
+                          {interiorMode ? null : materialMode ? (
                             <>
                               <td className="px-1 py-1.5">
                                 <input
@@ -1532,9 +1693,11 @@ function BoqSheet({
                               value={
                                 UNIT_VALUES.includes(it.unit)
                                   ? it.unit
-                                  : materialMode
-                                    ? 'sheet'
-                                    : 'nos'
+                                  : interiorMode
+                                    ? 'sft'
+                                    : materialMode
+                                      ? 'sheet'
+                                      : 'nos'
                               }
                               onChange={(e) =>
                                 updateItem(idx, 'unit', e.target.value)
@@ -1549,17 +1712,23 @@ function BoqSheet({
                             </select>
                           </td>
                           <td className="px-1 py-1.5">
-                            <input
-                              type="number"
-                              min="0"
-                              step="any"
-                              disabled={locked}
-                              value={it.qty}
-                              onChange={(e) =>
-                                updateItem(idx, 'qty', e.target.value)
-                              }
-                              className={cn(cell, 'text-right tabular-nums text-primary')}
-                            />
+                            {interiorMode ? (
+                              <div className={cn(cell, 'text-right tabular-nums text-primary')}>
+                                {lineQty(it)}
+                              </div>
+                            ) : (
+                              <input
+                                type="number"
+                                min="0"
+                                step="any"
+                                disabled={locked}
+                                value={it.qty}
+                                onChange={(e) =>
+                                  updateItem(idx, 'qty', e.target.value)
+                                }
+                                className={cn(cell, 'text-right tabular-nums text-primary')}
+                              />
+                            )}
                           </td>
                           <td className="px-1 py-1.5">
                             <input
@@ -1653,8 +1822,65 @@ function BoqSheet({
           </div>
         </div>
 
+        {quoteView && interiorMode ? (
+          <div className="min-h-[420px] min-w-0 overflow-y-auto rounded-2xl bg-[#ebe4d8] p-3 sm:p-5 lg:w-[52%] lg:min-h-0">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
+              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8a7d70]">
+                Quotation · page wise
+              </p>
+              <div className="flex items-center gap-2">
+                <span className="text-[13px] font-semibold tabular-nums text-[#1c1917]">
+                  {formatInr(grand)}
+                </span>
+                <button
+                  type="button"
+                  disabled={save.isPending}
+                  onClick={() => save.mutate(payload())}
+                  className="h-8 rounded-lg bg-[#1c1917] px-3 text-[11px] font-semibold text-[#f4efe6]"
+                >
+                  Save
+                </button>
+                {status !== 'approved' ? (
+                  <button
+                    type="button"
+                    disabled={save.isPending}
+                    onClick={() => {
+                      if (
+                        !window.confirm(
+                          `Approve this BOQ?\n\nProject budget will be set to ${formatInr(grand)}.`,
+                        )
+                      )
+                        return
+                      save.mutate(payload({ status: 'approved' }))
+                      setQuoteView(true)
+                    }}
+                    className="h-8 rounded-lg bg-[#3ecf8e] px-3 text-[11px] font-semibold text-white"
+                  >
+                    Approve &amp; set budget
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            <CubicQuoteDocument
+              title={title}
+              project={project}
+              tenant={tenant}
+              boqType={boqType}
+              items={items}
+              gst={gst}
+              discount={discount}
+              status={status}
+            />
+          </div>
+        ) : null}
+
         {/* Right panel */}
-        <aside className="flex w-full shrink-0 flex-col gap-3 overflow-y-auto lg:w-[324px] [&>section]:shrink-0">
+        <aside
+          className={cn(
+            'flex w-full shrink-0 flex-col gap-3 overflow-y-auto lg:w-[324px] [&>section]:shrink-0',
+            quoteView && interiorMode && 'hidden',
+          )}
+        >
           {/* Totals */}
           <section
             className={cn(CARD, 'overflow-hidden p-4')}
@@ -1806,6 +2032,7 @@ function BoqSheet({
                       )
                         return
                       save.mutate(payload({ status: 'approved' }))
+                      setQuoteView(true)
                     }}
                     className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40"
                   >

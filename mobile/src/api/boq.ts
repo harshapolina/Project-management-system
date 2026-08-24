@@ -6,9 +6,11 @@ export interface CreateQuotationPayload {
   projectId?: string
   leadId?: string
   versionLabel?: string
+  boqType?: 'residential' | 'commercial' | 'general'
   items?: BoqItem[]
   gstPercent?: number
   discount?: number
+  seedCatalog?: boolean
 }
 
 export const boqApi = {
@@ -25,6 +27,11 @@ export const boqApi = {
     http.patch<{ success: true; quotation: Quotation }>(`/quotations/${id}`, payload).then((r) => r.data.quotation),
 
   remove: (id: string) => http.delete<{ success: true }>(`/quotations/${id}`).then((r) => r.data),
+
+  catalog: (boqType: 'residential' | 'commercial') =>
+    http
+      .get<{ success: true; items: BoqItem[] }>(`/boq-catalog/${boqType}`)
+      .then((r) => r.data.items),
 
   uploadImage: (file: { uri: string; name: string; mimeType?: string }) => {
     const form = new FormData()

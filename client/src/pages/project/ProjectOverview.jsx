@@ -207,6 +207,33 @@ export function ProjectOverview() {
                 {help.title}
               </h2>
               <p className="mt-0.5 text-[14px] text-secondary">{help.plain}</p>
+              {canManage ? (
+                <label className="mt-3 flex items-center gap-2 text-[12px] text-secondary">
+                  Property type
+                  <select
+                    value={project.type === 'commercial' ? 'commercial' : 'residential'}
+                    onChange={(e) =>
+                      api(`/projects/${id}`, {
+                        method: 'PATCH',
+                        body: JSON.stringify({ type: e.target.value }),
+                      })
+                        .then(() => {
+                          qc.invalidateQueries({ queryKey: ['project', id] })
+                          toast('Property type updated', { type: 'success' })
+                        })
+                        .catch((err) => toast(err.message, { type: 'error' }))
+                    }
+                    className="h-8 rounded-lg border border-border bg-surface px-2 text-[12px] font-semibold text-primary"
+                  >
+                    <option value="residential">Residential</option>
+                    <option value="commercial">Commercial</option>
+                  </select>
+                </label>
+              ) : (
+                <p className="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-secondary">
+                  {project.type === 'commercial' ? 'Commercial' : 'Residential'}
+                </p>
+              )}
             </div>
             <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#ecfdf5] text-[#3ecf8e]">
               <CalendarDays className="h-5 w-5" />

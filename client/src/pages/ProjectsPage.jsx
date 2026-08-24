@@ -383,13 +383,12 @@ function NewProjectModal({ open, onClose, onSubmit, loading }) {
           </div>
         </div>
         <Select
-          label="Template"
+          label="Property type"
           value={form.type}
           onChange={(e) => setForm({ ...form, type: e.target.value })}
           options={[
-            { value: 'residential', label: 'Residential' },
-            { value: 'commercial', label: 'Commercial' },
-            { value: 'blank', label: 'Blank' },
+            { value: 'residential', label: 'Residential — home interior BOQ' },
+            { value: 'commercial', label: 'Commercial — office renovation BOQ' },
           ]}
         />
         <Input

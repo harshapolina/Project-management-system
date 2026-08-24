@@ -406,6 +406,7 @@ router.patch(
       'startDate',
       'endDate',
       'budget',
+      'type',
       'spent',
       'progress',
       'isDelayed',

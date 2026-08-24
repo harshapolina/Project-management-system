@@ -13,6 +13,7 @@ const UNITS = [
   { value: 'rft', label: 'Rft' },
   { value: 'nos', label: "No's" },
   { value: 'ls', label: 'LS' },
+  { value: 'load', label: 'Load' },
   { value: 'sqm', label: 'Sq.mtr' },
   { value: 'rmt', label: 'Rmtr' },
 ]

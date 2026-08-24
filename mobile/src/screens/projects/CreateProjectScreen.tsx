@@ -13,10 +13,9 @@ import type { ProjectStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'CreateProject'>
 
-const TYPES: { value: 'residential' | 'commercial' | 'blank'; label: string }[] = [
+const TYPES: { value: 'residential' | 'commercial'; label: string }[] = [
   { value: 'residential', label: 'Residential' },
   { value: 'commercial', label: 'Commercial' },
-  { value: 'blank', label: 'Blank' },
 ]
 
 export function CreateProjectScreen({ navigation }: Props) {
@@ -28,7 +27,7 @@ export function CreateProjectScreen({ navigation }: Props) {
   const [clientPhone, setClientPhone] = useState('')
   const [location, setLocation] = useState('')
   const [budget, setBudget] = useState('')
-  const [type, setType] = useState<'residential' | 'commercial' | 'blank'>('residential')
+  const [type, setType] = useState<'residential' | 'commercial'>('residential')
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const mutation = useMutation({
@@ -65,7 +64,7 @@ export function CreateProjectScreen({ navigation }: Props) {
       footer={<Button title="Create project" onPress={onSubmit} loading={mutation.isPending} fullWidth />}
     >
       <View>
-        <Text style={styles.label}>Project type</Text>
+        <Text style={styles.label}>Property type</Text>
         <View style={styles.typeRow}>
           {TYPES.map((t) => (
             <Pressable

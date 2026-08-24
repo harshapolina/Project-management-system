@@ -58,6 +58,7 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
   const [phoneCode, setPhoneCode] = useState('+91')
   const [phone, setPhone] = useState('')
   const [spaceId, setSpaceId] = useState(defaultSpaceId || '')
+  const [type, setType] = useState('residential')
 
   const { data: spacesData } = useQuery({
     queryKey: ['spaces'],
@@ -126,6 +127,28 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
             />
           </div>
         </Field>
+        <Field label="Property type">
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: 'residential', label: 'Residential', hint: 'Home interior schedule' },
+              { value: 'commercial', label: 'Commercial', hint: 'Office renovation schedule' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setType(opt.value)}
+                className={
+                  type === opt.value
+                    ? 'rounded-lg border border-[#3ecf8e] bg-[#3ecf8e]/10 px-3 py-2.5 text-left'
+                    : 'rounded-lg border border-[#2e2e32] bg-[#121214] px-3 py-2.5 text-left'
+                }
+              >
+                <p className="text-[13px] font-semibold text-white">{opt.label}</p>
+                <p className="mt-0.5 text-[11px] text-[#8b8b90]">{opt.hint}</p>
+              </button>
+            ))}
+          </div>
+        </Field>
         <Field label="Space (optional)">
           <select
             value={spaceId}
@@ -150,7 +173,7 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
             clientName: clientName.trim(),
             clientPhone: buildPhone(phoneCode, phone),
             spaceId: spaceId || undefined,
-            type: 'residential',
+            type,
           })
         }
         className="mt-4 w-full rounded-lg bg-accent py-2.5 text-[13px] font-semibold text-[#0E0E10] disabled:opacity-50"

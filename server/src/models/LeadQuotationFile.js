@@ -44,6 +44,10 @@ const boqItemSchema = new mongoose.Schema(
     amount: { type: Number, default: 0 },
     room: { type: String, default: 'General' },
     image: { type: String, default: '' },
+    category: { type: String, default: '' },
+    measureNo: { type: Number, default: 0 },
+    width: { type: Number, default: 0 },
+    height: { type: Number, default: 0 },
     /** Material specification (plywood master template) */
     materialFamily: { type: String, default: '' },
     materialName: { type: String, default: '' },
