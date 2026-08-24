@@ -30,6 +30,7 @@ import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 import { ROLE_LABELS, capabilitiesForUser } from '../../utils/roles'
+import { goBackOrHome } from '../../navigation/openProject'
 import type { Role } from '../../types/models'
 import type { ProjectStackParamList, RootTabParamList } from '../../navigation/types'
 
@@ -104,7 +105,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
         title="Team"
         subtitle={projectName || 'Project team'}
         subtitleIcon="people-outline"
-        onBack={() => navigation.goBack()}
+        onBack={() => goBackOrHome(navigation, route)}
         right={
           caps.manageProjects ? (
             <IconButton icon="person-add-outline" label="Add member" tone="ghost" onPress={openAdd} />

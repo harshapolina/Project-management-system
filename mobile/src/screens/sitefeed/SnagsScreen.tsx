@@ -17,6 +17,7 @@ import { isApiError } from '../../api/client'
 import type { SnagStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { MoreStackParamList } from '../../navigation/types'
+import { goBackOrHome } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Snags'>
 
@@ -55,7 +56,7 @@ export function SnagsScreen({ route, navigation }: Props) {
       title="Snags"
       subtitle="Issues to fix"
       subtitleIcon="alert-circle-outline"
-      onBack={() => navigation.goBack()}
+      onBack={() => goBackOrHome(navigation, route)}
     />
     </>
   )

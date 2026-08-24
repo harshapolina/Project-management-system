@@ -22,6 +22,7 @@ import { capabilitiesForUser, ROLE_LABELS } from '../../utils/roles'
 import type { Role } from '../../types/models'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { ProjectStackParamList, RootTabParamList } from '../../navigation/types'
+import { goBackOrHome } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectOverview'>
 type Nav = CompositeNavigationProp<Props['navigation'], BottomTabNavigationProp<RootTabParamList>>
@@ -60,7 +61,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
       title={title}
       subtitle={subtitle}
       subtitleIcon="folder-outline"
-      onBack={() => navigation.goBack()}
+      onBack={() => goBackOrHome(navigation, route)}
     />
     </>
   )
@@ -96,7 +97,18 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   const members = project.members || []
   const stages = project.stages || []
 
-  const goTasks = () => navigation.navigate('ProjectTasks', { projectId, projectName: nameForNav })
+  /** Open a project leaf with a clean stack so Back always returns here (not a prior leaf). */
+  const openLeaf = (screen: TabKey) => {
+    navigation.reset({
+      index: 2,
+      routes: [
+        { name: 'ProjectsList' },
+        { name: 'ProjectOverview', params: { projectId, projectName: nameForNav } },
+        { name: screen, params: { projectId, projectName: nameForNav || project.name } },
+      ],
+    })
+  }
+  const goTasks = () => openLeaf('ProjectTasks')
   const openMember = (memberId: string, memberName: string) => {
     tabNav.navigate('Inbox', {
       screen: 'Conversation',
@@ -129,7 +141,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
             <Pressable
               key={t.key}
               style={styles.tabButton}
-              onPress={() => navigation.navigate(t.key, { projectId, projectName: project.name })}
+              onPress={() => openLeaf(t.key)}
               accessibilityRole="button"
             >
               <Ionicons name={t.icon} size={20} color={colors.accent} />

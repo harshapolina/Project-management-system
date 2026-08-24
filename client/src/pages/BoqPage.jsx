@@ -23,9 +23,19 @@ import { api, assetUrl } from '../lib/api'
 import { formatInr } from '../lib/format'
 import { toast } from '../components/ui'
 import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
+import {
+  BOQ_TYPE_META,
+  MaterialCatalogPicker,
+  NewBoqTypeModal,
+  catalogRowToBoqLine,
+  isMaterialSpecSheet,
+  normalizeMaterialFields,
+  roomSuggestionsForType,
+} from '../components/boq/MaterialCatalogPicker'
 import { cn } from '../lib/utils'
 
 const UNITS = [
+  { value: 'sheet', label: 'Sheet' },
   { value: 'sft', label: 'Sq.ft' },
   { value: 'rft', label: 'Rft' },
   { value: 'nos', label: "No's" },
@@ -52,18 +62,6 @@ function matchUnit(raw) {
     )?.value || null
   )
 }
-const ROOM_SUGGESTIONS = [
-  'General',
-  'Living',
-  'Bedroom',
-  'Kitchen',
-  'Bathroom',
-  'Dining',
-  'Lobby',
-  'Balcony',
-  'Office',
-  'Corridor',
-]
 
 const STATUS_META = {
   draft: {
@@ -123,6 +121,7 @@ function normalizeItems(items = []) {
     amount: Number(it.amount) || (Number(it.qty) || 0) * (Number(it.rate) || 0),
     room: it.room || 'General',
     image: it.image || '',
+    ...normalizeMaterialFields(it),
   }))
 }
 
@@ -607,6 +606,8 @@ function Chip({ children, tone = 'neutral' }) {
 function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
   const [activeId, setActiveId] = useState(null)
   const [draft, setDraft] = useState(false)
+  const [draftType, setDraftType] = useState(null)
+  const [typeModalOpen, setTypeModalOpen] = useState(false)
 
   useEffect(() => {
     if (draft) return
@@ -628,8 +629,21 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
     0,
   )
 
+  const startDraft = (boqType) => {
+    setDraftType(boqType)
+    setDraft(true)
+    setActiveId(null)
+    setTypeModalOpen(false)
+  }
+
   return (
     <div className="flex h-full min-h-0 flex-col print:block print:h-auto">
+      <NewBoqTypeModal
+        open={typeModalOpen}
+        onClose={() => setTypeModalOpen(false)}
+        onPick={startDraft}
+        projectType={project?.type}
+      />
       <header className="shrink-0 border-b border-[#e1e8f1] bg-surface px-4 pt-4 print:hidden sm:px-6">
         <button
           type="button"
@@ -658,10 +672,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
 
           <button
             type="button"
-            onClick={() => {
-              setDraft(true)
-              setActiveId(null)
-            }}
+            onClick={() => setTypeModalOpen(true)}
             className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#3ecf8e] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(37,99,235,0.75)] transition hover:bg-[#24b47e]"
           >
             <Plus className="h-4 w-4" />
@@ -702,17 +713,17 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
                       {q.title}
                     </span>
                     <span className="mt-[1px] block text-[10.5px] tabular-nums text-[#8a98ac]">
-                      {q.versionLabel || 'Standard'} ·{' '}
+                      {BOQ_TYPE_META[q.boqType]?.label || q.versionLabel || 'Standard'} ·{' '}
                       {formatInr(q.grandTotal || 0)}
                     </span>
                   </span>
                 </button>
               )
             })}
-            {draft && (
+            {draft && draftType && (
               <span className="flex shrink-0 items-center gap-2 rounded-xl border border-dashed border-[#b6cef7] bg-[#f5f9ff] px-3 py-2 text-[12px] font-semibold text-[#24b47e]">
                 <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3ecf8e]" />
-                New sheet · unsaved
+                New {BOQ_TYPE_META[draftType]?.label} sheet · unsaved
               </span>
             )}
           </div>
@@ -723,22 +734,25 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
         {loading ? (
           <div className="m-5 h-64 animate-pulse rounded-2xl bg-surface" />
         ) : !activeQuote && !draft ? (
-          <EmptyProject onCreate={() => setDraft(true)} />
+          <EmptyProject onCreate={() => setTypeModalOpen(true)} />
         ) : (
           <BoqSheet
-            key={activeQuote?._id || 'draft'}
+            key={activeQuote?._id || `draft-${draftType}`}
             quotation={activeQuote}
             project={project}
             projectId={projectId}
+            draftBoqType={draft ? draftType : null}
             onCreated={(id) => {
               setDraft(false)
+              setDraftType(null)
               setActiveId(String(id))
             }}
             onDeleted={() => {
               setDraft(false)
+              setDraftType(null)
               setActiveId(null)
             }}
-            onCancelDraft={draft ? () => setDraft(false) : null}
+            onCancelDraft={draft ? () => { setDraft(false); setDraftType(null) } : null}
           />
         )}
       </div>
@@ -779,6 +793,7 @@ function BoqSheet({
   quotation,
   project,
   projectId,
+  draftBoqType,
   onCreated,
   onDeleted,
   onCancelDraft,
@@ -790,11 +805,19 @@ function BoqSheet({
   const rowImageInputRef = useRef(null)
   const rowImageTarget = useRef(null)
 
+  const initialBoqType =
+    quotation?.boqType && quotation.boqType !== 'general'
+      ? quotation.boqType
+      : draftBoqType || (project?.type === 'commercial' ? 'commercial' : 'residential')
+
+  const [boqType, setBoqType] = useState(initialBoqType)
+  const [catalogOpen, setCatalogOpen] = useState(false)
   const [title, setTitle] = useState(
-    quotation?.title || `${project?.name || 'Project'} — BOQ`,
+    quotation?.title ||
+      `${project?.name || 'Project'} — ${BOQ_TYPE_META[initialBoqType]?.label || ''} BOQ`.trim(),
   )
   const [versionLabel, setVersionLabel] = useState(
-    quotation?.versionLabel || 'Standard',
+    quotation?.versionLabel || BOQ_TYPE_META[initialBoqType]?.label || 'Standard',
   )
   const [items, setItems] = useState(() =>
     quotation?.items?.length
@@ -816,6 +839,8 @@ function BoqSheet({
   const locked = quotation?.status === 'approved'
   const status = quotation?.status || 'draft'
   const statusMeta = STATUS_META[status] || STATUS_META.draft
+  const materialMode = isMaterialSpecSheet(boqType, items)
+  const roomSuggestions = roomSuggestionsForType(boqType)
 
   const subtotal = useMemo(
     () => items.reduce((s, i) => s + lineAmount(i), 0),
@@ -899,14 +924,21 @@ function BoqSheet({
 
   const payload = (extra = {}) => ({
     title: title.trim() || 'Project BOQ',
-    versionLabel: versionLabel.trim() || 'Standard',
+    versionLabel: versionLabel.trim() || BOQ_TYPE_META[boqType]?.label || 'Standard',
+    boqType: boqType || 'general',
     items: items.map(({ _key, ...i }) => ({
       ...i,
+      ...normalizeMaterialFields(i),
       qty: Number(i.qty) || 0,
       rate: Number(i.rate) || 0,
       amount: lineAmount(i),
       room: i.room?.trim() || 'General',
-      description: i.description?.trim() || '',
+      description:
+        i.description?.trim() ||
+        [i.materialName, i.grade, i.thickness, i.brand, i.dimensions]
+          .filter(Boolean)
+          .join(' · ') ||
+        '',
       unit: i.unit || 'nos',
       image: i.image || '',
     })),
@@ -917,6 +949,32 @@ function BoqSheet({
     grandTotal: grand,
     ...extra,
   })
+
+  const loadMaterialTemplate = async () => {
+    if (locked) return
+    try {
+      const res = await api(`/material-catalog/template/${boqType}`)
+      const lines = (res.items || []).map((row) => ({
+        _key: uid(),
+        ...catalogRowToBoqLine(row, 'Materials'),
+      }))
+      markDirty()
+      setItems(lines)
+      toast(`Loaded ${lines.length} ${BOQ_TYPE_META[boqType]?.label} materials`, {
+        type: 'success',
+      })
+      setCatalogOpen(false)
+    } catch (e) {
+      toast(e.message || 'Could not load template', { type: 'error' })
+    }
+  }
+
+  const addCatalogRow = (row) => {
+    if (locked) return
+    markDirty()
+    setItems((prev) => [...prev, { _key: uid(), ...catalogRowToBoqLine(row, 'Materials') }])
+    toast('Material added to sheet', { type: 'success' })
+  }
 
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: ['projects-boq'] })
@@ -1095,6 +1153,13 @@ function BoqSheet({
 
   return (
     <>
+      <MaterialCatalogPicker
+        open={catalogOpen}
+        onClose={() => setCatalogOpen(false)}
+        boqType={boqType}
+        onAdd={addCatalogRow}
+        onLoadTemplate={loadMaterialTemplate}
+      />
       <div
         className="relative flex h-full min-h-0 flex-col gap-3.5 overflow-y-auto bg-[#f4f7fb] p-3.5 print:hidden lg:flex-row lg:overflow-visible"
         onDragOver={(e) => {
@@ -1125,6 +1190,21 @@ function BoqSheet({
         <div className="flex min-h-[480px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2eaf5] bg-surface shadow-[0_2px_4px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.25)] lg:min-h-0">
           {/* Action bar */}
           <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#edf1f7] px-4 py-3 sm:px-5">
+            {materialMode && !locked ? (
+              <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-[#dbe7fb] bg-[#f5f9ff] px-3 py-2 text-[12px] text-[#3b6fd4]">
+                <span className="font-semibold text-[#24b47e]">
+                  {BOQ_TYPE_META[boqType]?.section}
+                </span>
+                <span>· Plywood material specification template</span>
+                <button
+                  type="button"
+                  onClick={loadMaterialTemplate}
+                  className="ml-auto rounded-lg bg-[#3ecf8e] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#24b47e]"
+                >
+                  Load full template
+                </button>
+              </div>
+            ) : null}
             <div className="flex flex-1 items-center gap-2">
               <input
                 value={title}
@@ -1187,6 +1267,17 @@ function BoqSheet({
                 <Upload className="h-3.5 w-3.5" />
                 {importing ? 'Reading…' : 'Import Excel'}
               </button>
+              {materialMode ? (
+                <button
+                  type="button"
+                  disabled={locked}
+                  onClick={() => setCatalogOpen(true)}
+                  className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 text-[12px] font-semibold text-[#24b47e] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
+                >
+                  <Layers className="h-3.5 w-3.5" />
+                  Materials
+                </button>
+              ) : null}
               <div className="flex h-[34px] items-center rounded-xl border border-[#e4eaf3] bg-surface px-0.5">
                 <ToolButton
                   label="Add line"
@@ -1232,7 +1323,19 @@ function BoqSheet({
               <thead className="sticky top-0 z-10">
                 <tr className="[&>th]:h-9 [&>th]:border-b [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:px-2 [&>th]:backdrop-blur-md [&>th]:text-[10px] [&>th]:font-bold [&>th]:uppercase [&>th]:tracking-[0.1em] [&>th]:text-[#8a98ac]">
                   <th className="w-12 text-left">S.no</th>
-                  <th className="w-[76px] text-left">Location</th>
+                  {!materialMode ? (
+                    <th className="w-[76px] text-left">Location</th>
+                  ) : null}
+                  {materialMode ? (
+                    <>
+                      <th className="min-w-[88px] text-left">Family</th>
+                      <th className="min-w-[96px] text-left">Name</th>
+                      <th className="min-w-[120px] text-left">Grade</th>
+                      <th className="w-[72px] text-left">Thick.</th>
+                      <th className="min-w-[96px] text-left">Brand</th>
+                      <th className="min-w-[80px] text-left">Size</th>
+                    </>
+                  ) : null}
                   <th className="text-left">Description</th>
                   <th className="w-[84px] text-left">Unit</th>
                   <th className="w-[88px] text-right">Qty</th>
@@ -1246,7 +1349,7 @@ function BoqSheet({
                   <Fragment key={`${g.room}-${g.startIdx}`}>
                     <tr>
                       <td
-                        colSpan={8}
+                        colSpan={materialMode ? 13 : 8}
                         className="sticky top-[35px] z-[5] border-b border-[#edf1f7] bg-[#f7f9fc] px-3 py-1.5"
                       >
                         <div className="flex items-center gap-2">
@@ -1301,41 +1404,53 @@ function BoqSheet({
                           <td className="px-2 py-1.5 text-[11px] tabular-nums text-[#b4c0d0]">
                             {idx + 1}
                           </td>
-                          <td className="px-1.5 py-1.5">
-                            {it.image ? (
-                              <div className="relative h-9 w-9">
-                                <img
-                                  src={assetUrl(it.image)}
-                                  alt=""
-                                  onClick={() => setPreview(assetUrl(it.image))}
-                                  className="h-9 w-9 cursor-zoom-in rounded-lg object-cover ring-1 ring-[#e4eaf3] transition hover:ring-[#b6cef7]"
-                                />
-                                {!locked && (
-                                  <button
-                                    type="button"
-                                    title="Remove image"
-                                    onClick={() => updateItem(idx, 'image', '')}
-                                    className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#171717] text-white shadow-sm group-hover/row:flex"
-                                  >
-                                    <X className="h-2.5 w-2.5" />
-                                  </button>
-                                )}
-                              </div>
-                            ) : (
-                              <button
-                                type="button"
-                                title="Attach a reference image to this line"
-                                disabled={locked || uploading}
-                                onClick={() => {
-                                  rowImageTarget.current = idx
-                                  rowImageInputRef.current?.click()
-                                }}
-                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-[#dde5ef] text-[#c3ccd9] transition hover:border-[#b6cef7] hover:bg-[#f5f9ff] hover:text-[#3ecf8e] disabled:opacity-40"
-                              >
-                                <ImageIcon className="h-3.5 w-3.5" />
-                              </button>
-                            )}
-                          </td>
+                          {!materialMode ? (
+                            <td className="px-1.5 py-1.5">
+                              {it.image ? (
+                                <div className="relative h-9 w-9">
+                                  <img
+                                    src={assetUrl(it.image)}
+                                    alt=""
+                                    onClick={() => setPreview(assetUrl(it.image))}
+                                    className="h-9 w-9 cursor-zoom-in rounded-lg object-cover ring-1 ring-[#e4eaf3] transition hover:ring-[#b6cef7]"
+                                  />
+                                  {!locked && (
+                                    <button
+                                      type="button"
+                                      title="Remove image"
+                                      onClick={() => updateItem(idx, 'image', '')}
+                                      className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#171717] text-white shadow-sm group-hover/row:flex"
+                                    >
+                                      <X className="h-2.5 w-2.5" />
+                                    </button>
+                                  )}
+                                </div>
+                              ) : (
+                                <button
+                                  type="button"
+                                  title="Attach a reference image to this line"
+                                  disabled={locked || uploading}
+                                  onClick={() => {
+                                    rowImageTarget.current = idx
+                                    rowImageInputRef.current?.click()
+                                  }}
+                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-[#dde5ef] text-[#c3ccd9] transition hover:border-[#b6cef7] hover:bg-[#f5f9ff] hover:text-[#3ecf8e] disabled:opacity-40"
+                                >
+                                  <ImageIcon className="h-3.5 w-3.5" />
+                                </button>
+                              )}
+                            </td>
+                          ) : null}
+                          {materialMode ? (
+                            <>
+                              <td className="px-1.5 py-1.5 text-[12px] text-secondary">{it.materialFamily || '—'}</td>
+                              <td className="px-1.5 py-1.5 text-[12px]">{it.materialName || '—'}</td>
+                              <td className="px-1.5 py-1.5 text-[12px]">{it.grade || '—'}</td>
+                              <td className="px-1.5 py-1.5 text-[12px]">{it.thickness || '—'}</td>
+                              <td className="px-1.5 py-1.5 text-[12px] font-medium">{it.brand || '—'}</td>
+                              <td className="px-1.5 py-1.5 text-[12px]">{it.dimensions || '—'}</td>
+                            </>
+                          ) : null}
                           <td className="px-1.5 py-1.5">
                             <input
                               data-field="description"
@@ -1433,7 +1548,7 @@ function BoqSheet({
             </table>
 
             <datalist id="boq-rooms">
-              {ROOM_SUGGESTIONS.map((r) => (
+              {roomSuggestions.map((r) => (
                 <option key={r} value={r} />
               ))}
             </datalist>
@@ -1956,7 +2071,11 @@ function BoqPrintView({
                 {it.room || 'General'}
               </td>
               <td className="py-1.5 pr-2 text-[#0b1220]">
-                {it.description || '—'}
+                {it.description ||
+                  [it.materialName, it.grade, it.thickness, it.brand, it.dimensions]
+                    .filter(Boolean)
+                    .join(' · ') ||
+                  '—'}
               </td>
               <td className="py-1.5 pr-2 text-secondary">{unitLabel(it.unit)}</td>
               <td className="py-1.5 pr-2 text-right tabular-nums">{it.qty}</td>

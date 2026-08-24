@@ -18,6 +18,7 @@
     },
     "android": {
       "package": "studio.cubic.mobile",
+      "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#004838",
         "foregroundImage": "./assets/android-icon-foreground.png",

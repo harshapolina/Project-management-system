@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import {
-  KeyboardAvoidingView,
   Platform,
   Pressable,
   ScrollView,
@@ -14,9 +13,12 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Screen } from './Screen'
 import { AppNavBar } from './AppNavBar'
 import { PageHeader } from './PageHeader'
+import { KeyboardAwareView } from './KeyboardAwareView'
+import { TAB_BAR_CLEARANCE } from './GlassyTabBar'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
+import { isKeyboardOpen, useKeyboardInset } from '../hooks/useKeyboardInset'
 
 type FormLayoutProps = {
   title: string
@@ -33,6 +35,8 @@ type FormLayoutProps = {
    * `page` — full-screen page header (edit profile, etc.).
    */
   variant?: 'sheet' | 'page'
+  /** Reserve space above the bottom tab bar (default true when a footer is shown). */
+  tabBarClearance?: boolean
 }
 
 /**
@@ -47,23 +51,30 @@ export function FormLayout({
   footer,
   card = true,
   variant = 'sheet',
+  tabBarClearance,
 }: FormLayoutProps) {
   const colors = useColors()
   const shadows = useShadows()
   const insets = useSafeAreaInsets()
+  const keyboardInset = useKeyboardInset()
+  const keyboardOpen = isKeyboardOpen(keyboardInset)
   const { pagePadding } = useResponsive()
   const styles = useMemo(
     () => createStyles(colors, shadows, pagePadding),
     [colors, shadows, pagePadding],
   )
   const isSheet = variant === 'sheet'
-  const footerPad = Math.max(insets.bottom, 12) + spacing.md
+  // Tab bar is absolute on every main tab screen — always lift footers above it.
+  const reserveTabBar = tabBarClearance ?? !!footer
+  const footerPad =
+    Math.max(insets.bottom, 12) +
+    spacing.md +
+    (reserveTabBar && !keyboardOpen ? TAB_BAR_CLEARANCE : 0)
 
   return (
     <Screen
       padded={false}
-      edges={['left', 'right']}
-      keyboardAvoiding
+      edges={isSheet ? ['left', 'right'] : ['top', 'left', 'right']}
       background={colors.canvas}
     >
       {isSheet ? (
@@ -102,20 +113,29 @@ export function FormLayout({
         </>
       )}
 
-      <KeyboardAvoidingView
+      <KeyboardAwareView
         style={styles.flex}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
         <ScrollView
-          contentContainerStyle={[styles.scroll, !footer && { paddingBottom: footerPad + spacing.lg }]}
+          style={styles.scrollView}
+          contentContainerStyle={[
+            styles.scroll,
+            !footer && styles.scrollFill,
+            footer ? { paddingBottom: spacing.sm } : { paddingBottom: footerPad + spacing.lg },
+          ]}
           keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
           showsVerticalScrollIndicator={false}
         >
           {card ? <View style={styles.card}>{children}</View> : children}
         </ScrollView>
-        {footer ? <View style={[styles.footer, { paddingBottom: footerPad }]}>{footer}</View> : null}
-      </KeyboardAvoidingView>
+        {footer ? (
+          <View style={[styles.footer, { paddingBottom: footerPad }]}>
+            {footer}
+          </View>
+        ) : null}
+      </KeyboardAwareView>
     </Screen>
   )
 }
@@ -126,7 +146,8 @@ function createStyles(
   pagePadding: number,
 ) {
   return StyleSheet.create({
-    flex: { flex: 1 },
+    flex: { flex: 1, minHeight: 0 },
+    scrollView: { flex: 1, minHeight: 0 },
     sheetChrome: {
       paddingHorizontal: pagePadding,
       paddingTop: spacing.sm,
@@ -171,9 +192,11 @@ function createStyles(
     },
     scroll: {
       paddingHorizontal: pagePadding,
-      paddingBottom: spacing.lg,
       gap: spacing.md,
+    },
+    scrollFill: {
       flexGrow: 1,
+      paddingBottom: spacing.lg,
     },
     card: {
       backgroundColor: c.surface,
@@ -185,12 +208,15 @@ function createStyles(
       ...sh.card,
     },
     footer: {
+      flexShrink: 0,
       paddingHorizontal: pagePadding,
       paddingTop: spacing.sm,
       borderTopWidth: StyleSheet.hairlineWidth,
       borderTopColor: c.border,
       backgroundColor: c.canvas,
       gap: spacing.sm,
+      zIndex: 2,
+      elevation: 4,
     },
   })
 }

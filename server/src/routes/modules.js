@@ -19,6 +19,11 @@ import {
   normalizePermissionMap,
 } from '../lib/permissions.js'
 import {
+  listMaterialCatalog,
+  templateItemsForType,
+  BOQ_TYPE_META,
+} from '../data/plywoodMaterialCatalog.js'
+import {
   Lead,
   Quotation,
   Project,
@@ -342,6 +347,44 @@ router.post(
   }),
 )
 
+/* ─── Material catalog (plywood master) ─── */
+router.get(
+  '/material-catalog',
+  requireAuth,
+  requirePermission('boq'),
+  asyncHandler(async (req, res) => {
+    const data = listMaterialCatalog({
+      boqType: req.query.boqType,
+      q: req.query.q,
+      brand: req.query.brand,
+      thickness: req.query.thickness,
+      page: Number(req.query.page) || 1,
+      limit: Math.min(Number(req.query.limit) || 50, 500),
+    })
+    res.json({ success: true, ...data, types: BOQ_TYPE_META })
+  }),
+)
+
+router.get(
+  '/material-catalog/template/:boqType',
+  requireAuth,
+  requirePermission('boq'),
+  asyncHandler(async (req, res) => {
+    const boqType = req.params.boqType
+    if (!['residential', 'commercial'].includes(boqType)) {
+      throw new AppError('boqType must be residential or commercial', 400)
+    }
+    const items = templateItemsForType(boqType)
+    res.json({
+      success: true,
+      boqType,
+      count: items.length,
+      section: BOQ_TYPE_META[boqType]?.section,
+      items,
+    })
+  }),
+)
+
 /* ─── Quotations / BOQ ─── */
 router.get(
   '/quotations',
@@ -420,6 +463,7 @@ router.patch(
     const allowed = [
       'title',
       'versionLabel',
+      'boqType',
       'status',
       'items',
       'attachments',

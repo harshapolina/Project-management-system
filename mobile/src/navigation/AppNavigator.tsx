@@ -9,6 +9,7 @@ import { AppDrawerContent } from '../components/AppDrawerContent'
 import { useAuthStore } from '../store/authStore'
 import { capabilitiesForUser } from '../utils/roles'
 import { useColors } from '../theme/useColors'
+import { useLiveSync } from '../hooks/useLiveSync'
 import type { RootDrawerParamList, RootTabParamList } from './types'
 
 const Tab = createBottomTabNavigator<RootTabParamList>()
@@ -17,6 +18,7 @@ const Drawer = createDrawerNavigator<RootDrawerParamList>()
 function MainTabs() {
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
+  useLiveSync()
 
   return (
     <Tab.Navigator

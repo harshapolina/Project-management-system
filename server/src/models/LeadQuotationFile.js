@@ -44,6 +44,13 @@ const boqItemSchema = new mongoose.Schema(
     amount: { type: Number, default: 0 },
     room: { type: String, default: 'General' },
     image: { type: String, default: '' },
+    /** Material specification (plywood master template) */
+    materialFamily: { type: String, default: '' },
+    materialName: { type: String, default: '' },
+    grade: { type: String, default: '' },
+    thickness: { type: String, default: '' },
+    brand: { type: String, default: '' },
+    dimensions: { type: String, default: '' },
   },
   { _id: true },
 )
@@ -70,6 +77,12 @@ const quotationSchema = new mongoose.Schema(
     leadId: { type: mongoose.Schema.Types.ObjectId, ref: 'Lead' },
     title: { type: String, required: true },
     versionLabel: { type: String, default: 'Standard' },
+    /** residential = BWR IS 303 · commercial = BWP 710 */
+    boqType: {
+      type: String,
+      enum: ['residential', 'commercial', 'general'],
+      default: 'general',
+    },
     status: {
       type: String,
       enum: ['draft', 'sent', 'viewed', 'approved', 'rejected'],

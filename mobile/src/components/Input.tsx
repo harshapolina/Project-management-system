@@ -1,7 +1,8 @@
 import { forwardRef, useMemo, useState } from 'react'
-import { StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native'
+import { Platform, StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
+import { scrollInputIntoView } from '../hooks/useKeyboardInset'
 
 interface InputProps extends TextInputProps {
   label?: string
@@ -35,6 +36,7 @@ export const Input = forwardRef<TextInput, InputProps>(
           allowFontScaling
           onFocus={(e) => {
             setFocused(true)
+            scrollInputIntoView(e.nativeEvent.target)
             onFocus?.(e)
           }}
           onBlur={(e) => {
@@ -72,6 +74,13 @@ function createStyles(c: AppColors) {
       color: c.textPrimary,
       backgroundColor: c.surface,
       minHeight: 50,
+      width: '100%',
+      ...(Platform.OS === 'web'
+        ? ({
+            outlineStyle: 'none',
+            boxSizing: 'border-box',
+          } as object)
+        : null),
     },
     inputFocused: { borderColor: c.accent, backgroundColor: c.accentSoft },
     inputError: { borderColor: c.danger, backgroundColor: c.dangerSoft },

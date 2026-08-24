@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { Pressable, ScrollView, StyleSheet, Text, type StyleProp, type ViewStyle } from 'react-native'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
@@ -26,6 +26,8 @@ export function SegmentedControl<T extends string>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      // RN Web defaults ScrollView to flexGrow:1, which stretches chips into tall columns.
+      style={styles.scroll}
       contentContainerStyle={[styles.row, style]}
     >
       {options.map((opt) => {
@@ -44,14 +46,19 @@ export function SegmentedControl<T extends string>({
           </Pressable>
         )
       })}
-      {inset ? <View style={{ width: pagePadding }} /> : null}
     </ScrollView>
   )
 }
 
 function createStyles(c: AppColors, pagePadding: number, inset: boolean) {
   return StyleSheet.create({
+    scroll: {
+      flexGrow: 0,
+      flexShrink: 0,
+    },
     row: {
+      flexDirection: 'row',
+      alignItems: 'center',
       paddingHorizontal: inset ? pagePadding : 0,
       gap: 8,
       paddingBottom: spacing.sm,
@@ -63,6 +70,9 @@ function createStyles(c: AppColors, pagePadding: number, inset: boolean) {
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
     },
     chipActive: {
       backgroundColor: c.textPrimary,

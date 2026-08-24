@@ -1,7 +1,7 @@
 import { Platform } from 'react-native'
 import Constants from 'expo-constants'
 
-const API_PORT = 5050
+const API_PORT = 5000
 
 /**
  * The server binds to a real port; Android's emulator and iOS's simulator

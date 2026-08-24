@@ -13,6 +13,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { STATUS_LABELS } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
+import { goBackOrHome } from '../../navigation/openProject'
 import { tasksApi } from '../../api/tasks'
 import { homeApi } from '../../api/home'
 import { isApiError } from '../../api/client'
@@ -62,7 +63,7 @@ export function ProjectTasksScreen({ route, navigation }: Props) {
         title="Tasks"
         subtitle={projectName || 'Project tasks'}
         subtitleIcon="checkbox-outline"
-        onBack={() => navigation.goBack()}
+        onBack={() => goBackOrHome(navigation, route)}
       />
       <SegmentedControl options={STATUS_OPTIONS} value={status} onChange={setStatus} />
 

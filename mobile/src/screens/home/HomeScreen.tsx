@@ -3,6 +3,7 @@ import {
   Animated,
   Image,
   Modal,
+  Platform,
   Pressable,
   RefreshControl,
   StyleSheet,
@@ -33,6 +34,7 @@ import { useAuthStore } from '../../store/authStore'
 import { isApiError } from '../../api/client'
 import { capabilitiesForUser } from '../../utils/roles'
 import type { HomeStackParamList, RootTabParamList } from '../../navigation/types'
+import { openProjectScreen, openMoreScreen } from '../../navigation/openProject'
 import type { HomeData, Task } from '../../types/models'
 import type { SiteUpdate, Snag } from '../../types/ops'
 
@@ -190,7 +192,11 @@ export function HomeScreen({ navigation }: Props) {
   const materialsPending = (data?.approvals || []).length
   const issuesOpen = openSnags.length
 
-  const goMore = (screen: string, params?: object) => {
+  const goMore = (screen: string, params?: object, fromHome = false) => {
+    if (fromHome) {
+      openMoreScreen(navigation, screen as never, params, { fromHome: true })
+      return
+    }
     navigation.navigate('More', { screen, params } as never)
   }
 
@@ -212,10 +218,16 @@ export function HomeScreen({ navigation }: Props) {
       navigation.navigate('Projects' as never)
       return
     }
-    navigation.navigate('Projects', {
-      screen,
-      params: { projectId: activeProjectId, projectName: activeProject?.name, ...params },
-    } as never)
+    openProjectScreen(
+      navigation,
+      screen as never,
+      {
+        projectId: activeProjectId,
+        projectName: activeProject?.name,
+        ...params,
+      },
+      { fromHome: true },
+    )
   }
 
   const attentionItems: AttentionItem[] = useMemo(() => {
@@ -407,7 +419,7 @@ export function HomeScreen({ navigation }: Props) {
 
             <View style={styles.heroCtas}>
               <Pressable
-                style={styles.heroCta}
+                style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
                 onPress={openMyTasks}
                 accessibilityRole="button"
                 accessibilityLabel="My tasks"
@@ -416,7 +428,7 @@ export function HomeScreen({ navigation }: Props) {
                 <Text style={styles.heroCtaText}>My tasks</Text>
               </Pressable>
               <Pressable
-                style={styles.heroCta}
+                style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
                 onPress={() =>
                   caps.siteFeed
                     ? goMore(
@@ -441,7 +453,7 @@ export function HomeScreen({ navigation }: Props) {
               <View style={styles.heroPanel}>
                 <Text style={styles.heroPanelLabel}>Active project</Text>
                 <Pressable
-                  style={styles.heroProjectRow}
+                  style={({ pressed }) => [styles.heroProjectRow, pressed && styles.heroCtaPressed]}
                   onPress={() => setPickerOpen(true)}
                   accessibilityRole="button"
                   accessibilityLabel="Select project"
@@ -459,6 +471,7 @@ export function HomeScreen({ navigation }: Props) {
 
         <Animated.ScrollView
           style={styles.scrollView}
+          pointerEvents="box-none"
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
@@ -480,7 +493,10 @@ export function HomeScreen({ navigation }: Props) {
           }
         >
           {/* Spacer ends early so the white curve rests on the green */}
-          <View style={{ height: Math.max((heroHeight || 320) - SHEET_OVERLAP, 200) }} />
+          <View
+            pointerEvents="none"
+            style={{ height: Math.max((heroHeight || 320) - SHEET_OVERLAP, 200) }}
+          />
 
           {/* White sheet with curved top overlapping green */}
           <Animated.View
@@ -498,10 +514,15 @@ export function HomeScreen({ navigation }: Props) {
             action="View Details ›"
             onAction={() =>
               activeProjectId
-                ? navigation.navigate('Projects', {
-                    screen: 'ProjectOverview',
-                    params: { projectId: activeProjectId, projectName: activeProject?.name },
-                  } as never)
+                ? openProjectScreen(
+                    navigation,
+                    'ProjectOverview',
+                    {
+                      projectId: activeProjectId,
+                      projectName: activeProject?.name,
+                    },
+                    { fromHome: true },
+                  )
                 : navigation.navigate('Projects' as never)
             }
           >
@@ -538,7 +559,7 @@ export function HomeScreen({ navigation }: Props) {
               valueColor={materialsPending ? colors.warning : colors.success}
               onPress={() =>
                 caps.procurement
-                  ? goMore('PurchaseOrders', activeProjectId ? { projectId: activeProjectId } : undefined)
+                  ? goMore('PurchaseOrders', activeProjectId ? { projectId: activeProjectId } : undefined, true)
                   : goProject('ProjectOverview')
               }
             />
@@ -552,7 +573,7 @@ export function HomeScreen({ navigation }: Props) {
               valueColor={colors.danger}
               onPress={() =>
                 caps.siteFeed
-                  ? goMore('Snags', activeProjectId ? { projectId: activeProjectId } : undefined)
+                  ? goMore('Snags', activeProjectId ? { projectId: activeProjectId } : undefined, true)
                   : goProject('ProjectOverview')
               }
             />
@@ -891,6 +912,7 @@ function createStyles(
     scrollView: {
       flex: 1,
       backgroundColor: 'transparent',
+      zIndex: 1,
     },
     scroll: {
       flexGrow: 1,
@@ -903,7 +925,8 @@ function createStyles(
       top: 0,
       left: 0,
       right: 0,
-      zIndex: 0,
+      zIndex: 10,
+      elevation: 10,
       backgroundColor: HERO.bg,
       // Tall empty green band so the white curve never clips the project card
       paddingBottom: spacing.xxl + 40,
@@ -962,6 +985,11 @@ function createStyles(
       borderRadius: radius.full,
       backgroundColor: HERO.lime,
       paddingHorizontal: spacing.md,
+      ...(Platform.OS === 'web' ? { cursor: 'pointer' as const } : null),
+    },
+    heroCtaPressed: {
+      opacity: 0.88,
+      transform: [{ scale: 0.98 }],
     },
     heroCtaText: {
       ...typography.bodyStrong,

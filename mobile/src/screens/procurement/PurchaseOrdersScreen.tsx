@@ -18,6 +18,7 @@ import { poWhatsappLink } from '../../utils/phone'
 import type { POStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { SharedOpsParamList } from '../../navigation/types'
+import { goBackOrHome } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<SharedOpsParamList, 'PurchaseOrders'>
 
@@ -50,7 +51,7 @@ export function PurchaseOrdersScreen({ route, navigation }: Props) {
       title="Purchase orders"
       subtitle="Material orders"
       subtitleIcon="cart-outline"
-      onBack={() => navigation.goBack()}
+      onBack={() => goBackOrHome(navigation, route)}
     />
     </>
   )
