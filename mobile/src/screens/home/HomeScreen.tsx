@@ -900,6 +900,7 @@ function createStyles(
       flex: 1,
       // Locked white under the sheet / above the tab bar
       backgroundColor: c.canvas,
+      position: 'relative',
     },
     heroBleed: {
       position: 'absolute',
@@ -907,12 +908,16 @@ function createStyles(
       left: 0,
       right: 0,
       zIndex: 0,
+      elevation: 0,
       backgroundColor: HERO.bg,
     },
     scrollView: {
       flex: 1,
       backgroundColor: 'transparent',
-      zIndex: 1,
+      // Above the fixed green hero so the white sheet covers it while scrolling
+      zIndex: 5,
+      elevation: 5,
+      ...(Platform.OS === 'web' ? { position: 'relative' as const } : null),
     },
     scroll: {
       flexGrow: 1,
@@ -925,8 +930,9 @@ function createStyles(
       top: 0,
       left: 0,
       right: 0,
-      zIndex: 10,
-      elevation: 10,
+      // Sit under the white sheet — sheet scrolls over green, not under it
+      zIndex: 1,
+      elevation: 1,
       backgroundColor: HERO.bg,
       // Tall empty green band so the white curve never clips the project card
       paddingBottom: spacing.xxl + 40,
@@ -1032,9 +1038,11 @@ function createStyles(
       paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,
       gap: spacing.md,
       minHeight: Math.max(windowHeight - 80, 520),
-      zIndex: 2,
+      zIndex: 6,
+      elevation: 6,
       overflow: 'hidden',
       borderCurve: 'continuous',
+      ...(Platform.OS === 'web' ? { position: 'relative' as const } : null),
     },
     healthRow: { flexDirection: 'row', gap: 8 },
     healthTile: {

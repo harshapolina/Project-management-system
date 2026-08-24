@@ -583,7 +583,10 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof useShadows>, onHe
     shell: {
       // backgroundColor set dynamically (theme canvas / hero blend)
       paddingBottom: spacing.sm,
-      zIndex: 3,
+      // Stay above Home white sheet so search chrome never scrolls under content
+      zIndex: 20,
+      elevation: 20,
+      position: 'relative',
     },
     bar: {
       flexDirection: 'row',
