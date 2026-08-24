@@ -3,7 +3,7 @@
     "name": "Cubic",
     "slug": "editco-media",
     "scheme": "cubic",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "automatic",
@@ -18,6 +18,7 @@
     },
     "android": {
       "package": "studio.cubic.mobile",
+      "versionCode": 3,
       "softwareKeyboardLayoutMode": "resize",
       "adaptiveIcon": {
         "backgroundColor": "#004838",
@@ -35,10 +36,10 @@
       "expo-secure-store",
       "expo-status-bar"
     ],
-    "owner": "harshapolin",
+    "owner": "editcomedias-team",
     "extra": {
       "eas": {
-        "projectId": "ead86b32-f131-4b7e-94f5-364d30a8be23"
+        "projectId": "96edd0dd-a1c2-4b9c-9573-f49c882d19ad"
       }
     }
   }

@@ -14,6 +14,16 @@
         "EXPO_PUBLIC_TENANT_SLUG": "cubic"
       }
     },
+    "production-apk": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://project-management-system-msmw.vercel.app",
+        "EXPO_PUBLIC_TENANT_SLUG": "cubic"
+      }
+    },
     "production": {
       "autoIncrement": true,
       "android": {
