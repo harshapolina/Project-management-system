@@ -1,6 +1,7 @@
-import { forwardRef, useState } from 'react'
+import { forwardRef, useMemo, useState } from 'react'
 import { StyleSheet, Text, TextInput, View, type StyleProp, type TextInputProps, type ViewStyle } from 'react-native'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 
 interface InputProps extends TextInputProps {
   label?: string
@@ -11,6 +12,8 @@ interface InputProps extends TextInputProps {
 
 export const Input = forwardRef<TextInput, InputProps>(
   ({ label, error, hint, style, containerStyle, onFocus, onBlur, ...props }, ref) => {
+    const colors = useColors()
+    const styles = useMemo(() => createStyles(colors), [colors])
     const [focused, setFocused] = useState(false)
 
     return (
@@ -55,22 +58,24 @@ export const Input = forwardRef<TextInput, InputProps>(
 )
 Input.displayName = 'Input'
 
-const styles = StyleSheet.create({
-  wrap: { gap: 6, alignSelf: 'stretch' },
-  label: { ...typography.captionStrong, color: colors.textSecondary },
-  input: {
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 13,
-    fontSize: 16,
-    color: colors.textPrimary,
-    backgroundColor: colors.surface,
-    minHeight: 50,
-  },
-  inputFocused: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  inputError: { borderColor: colors.danger, backgroundColor: colors.dangerSoft },
-  error: { ...typography.caption, color: colors.danger },
-  hint: { ...typography.caption, color: colors.textMuted },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    wrap: { gap: 6, alignSelf: 'stretch' },
+    label: { ...typography.captionStrong, color: c.textSecondary },
+    input: {
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.lg,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 13,
+      fontSize: 16,
+      color: c.textPrimary,
+      backgroundColor: c.surface,
+      minHeight: 50,
+    },
+    inputFocused: { borderColor: c.accent, backgroundColor: c.accentSoft },
+    inputError: { borderColor: c.danger, backgroundColor: c.dangerSoft },
+    error: { ...typography.caption, color: c.danger },
+    hint: { ...typography.caption, color: c.textMuted },
+  })
+}

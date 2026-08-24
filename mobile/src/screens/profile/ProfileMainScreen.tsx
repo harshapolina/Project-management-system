@@ -1,11 +1,15 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
+import { useMemo } from 'react'
+import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Screen } from '../../components/Screen'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
 import { PageHeader } from '../../components/PageHeader'
-import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { colors, radius, shadows, spacing, typography } from '../../constants/theme'
+import { NavRow, NavSection } from '../../components/NavRow'
+import { SurfaceCard } from '../../components/SurfaceCard'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors, useThemeMode } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
+import { useUiStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
 import { authApi } from '../../api/auth'
 import { capabilitiesForUser, ROLE_LABELS } from '../../utils/roles'
@@ -15,11 +19,18 @@ import type { ProfileStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ProfileMain'>
 
 export function ProfileMainScreen({ navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+  const theme = useThemeMode()
+  const setTheme = useUiStore((s) => s.setTheme)
+
   const user = useAuthStore((s) => s.user)
   const tenant = useAuthStore((s) => s.tenant)
   const refreshToken = useAuthStore((s) => s.refreshToken)
   const logout = useAuthStore((s) => s.logout)
   const caps = capabilitiesForUser(user)
+  const showPeople = caps.people || caps.managePeople
 
   const doLogout = () => {
     Alert.alert('Log out', 'You’ll need to sign in again to see your work.', [
@@ -38,114 +49,90 @@ export function ProfileMainScreen({ navigation }: Props) {
     ])
   }
 
-  const menu: { icon: keyof typeof Ionicons.glyphMap; label: string; hint: string; onPress: () => void; visible?: boolean }[] = [
-    { icon: 'person-outline', label: 'Edit profile', hint: 'Name and photo', onPress: () => navigation.navigate('EditProfile') },
-    { icon: 'lock-closed-outline', label: 'Password', hint: 'Update sign-in', onPress: () => navigation.navigate('ChangePassword') },
-    {
-      icon: 'people-outline',
-      label: 'People',
-      hint: 'Teammates in this company',
-      onPress: () => navigation.navigate('People'),
-      visible: caps.people || caps.managePeople,
-    },
-  ]
-
   return (
-    <Screen padded={false}>
-      <PageHeader title="You" subtitle="Account and company" />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.identity}>
-          <Avatar name={user?.name} uri={user?.avatar} size={72} />
-          <Text style={styles.name}>{user?.name}</Text>
-          <Text style={styles.email}>{user?.email}</Text>
-          <View style={styles.pillRow}>
-            <Pill label={ROLE_LABELS[user?.role || 'client'] || user?.role || ''} bg={colors.accentSoft} color={colors.accent} />
-            {tenant?.name ? <Pill label={tenant.name} /> : null}
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      <PageHeader
+        title="You"
+        subtitle="Account and company"
+        subtitleIcon="person-outline"
+        onBack={() => navigation.goBack()}
+      />
+      <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
+        <SurfaceCard>
+          <View style={styles.identity}>
+            <Avatar name={user?.name} uri={user?.avatar} size={72} />
+            <Text style={styles.name}>{user?.name}</Text>
+            <Text style={styles.email}>{user?.email}</Text>
+            <View style={styles.pillRow}>
+              <Pill label={ROLE_LABELS[user?.role || 'client'] || user?.role || ''} bg={colors.accentSoft} color={colors.accent} />
+              {tenant?.name ? <Pill label={tenant.name} /> : null}
+            </View>
           </View>
-        </View>
+        </SurfaceCard>
 
-        <View style={styles.menu}>
-          {menu
-            .filter((m) => m.visible !== false)
-            .map((item, i) => (
-              <Pressable
-                key={item.label}
-                style={[styles.menuRow, i === 0 && styles.menuRowFirst]}
-                onPress={item.onPress}
-                accessibilityRole="button"
-              >
-                <View style={styles.iconWell}>
-                  <Ionicons name={item.icon} size={18} color={colors.accent} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.menuLabel}>{item.label}</Text>
-                  <Text style={styles.menuHint}>{item.hint}</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </Pressable>
-            ))}
-        </View>
+        <NavSection title="Account">
+          <NavRow
+            icon="person-outline"
+            label="Edit profile"
+            hint="Name and photo"
+            tone={0}
+            onPress={() => navigation.navigate('EditProfile')}
+          />
+          <NavRow
+            icon="lock-closed-outline"
+            label="Password"
+            hint="Update sign-in"
+            tone={1}
+            last={!showPeople}
+            onPress={() => navigation.navigate('ChangePassword')}
+          />
+          {showPeople ? (
+            <NavRow
+              icon="people-outline"
+              label="People"
+              hint="Teammates in this company"
+              tone={3}
+              last
+              onPress={() => navigation.navigate('People')}
+            />
+          ) : null}
+        </NavSection>
 
-        <Pressable style={styles.logoutRow} onPress={doLogout} accessibilityRole="button">
-          <Ionicons name="log-out-outline" size={18} color={colors.danger} />
-          <Text style={styles.logoutLabel}>Log out</Text>
-        </Pressable>
+        <NavSection title="Appearance">
+          <NavRow
+            icon={theme === 'dark' ? 'moon-outline' : 'sunny-outline'}
+            label="Appearance"
+            hint={theme === 'dark' ? 'Dark mode on' : 'Light mode on'}
+            tone={2}
+            last
+            onPress={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          />
+        </NavSection>
+
+        <NavSection title="Session">
+          <NavRow
+            icon="log-out-outline"
+            label="Log out"
+            hint="Sign out of this device"
+            tone={5}
+            last
+            onPress={doLogout}
+          />
+        </NavSection>
       </ScrollView>
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: spacing.lg, gap: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
-  identity: {
-    alignItems: 'center',
-    gap: 6,
-    paddingVertical: spacing.lg,
-    backgroundColor: colors.surface,
-    borderRadius: radius.xl,
-    borderWidth: 1,
-    borderColor: colors.border,
-    ...shadows.card,
-  },
-  name: { ...typography.h2, color: colors.textPrimary, marginTop: 6 },
-  email: { ...typography.caption, color: colors.textSecondary },
-  pillRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 6 },
-  menu: {
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    overflow: 'hidden',
-    ...shadows.card,
-  },
-  menuRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 12,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  menuRowFirst: { borderTopWidth: 0 },
-  iconWell: {
-    width: 36,
-    height: 36,
-    borderRadius: 10,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  menuLabel: { ...typography.bodyStrong, color: colors.textPrimary },
-  menuHint: { ...typography.caption, color: colors.textMuted },
-  logoutRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: spacing.sm,
-    paddingVertical: 14,
-    backgroundColor: colors.dangerSoft,
-    borderRadius: radius.lg,
-  },
-  logoutLabel: { ...typography.bodyStrong, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    identity: {
+      alignItems: 'center',
+      gap: 6,
+      paddingVertical: spacing.sm,
+    },
+    name: { ...typography.h2, color: c.textPrimary, marginTop: 6 },
+    email: { ...typography.caption, color: c.textSecondary },
+    pillRow: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: spacing.sm, marginTop: 6 },
+  })
+}

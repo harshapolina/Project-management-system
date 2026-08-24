@@ -1,51 +1,124 @@
-/** Production design tokens — calm, high-contrast, studio-grade. */
-export const colors = {
-  canvas: '#F6F7F9',
+/** Design tokens matched to client/src/index.css (Supabase-inspired emerald theme). */
+
+export type ThemeMode = 'light' | 'dark'
+
+const statusLight = {
+  not_started: '#a1a1aa',
+  todo: '#a1a1aa',
+  in_progress: '#3ecf8e',
+  review: '#eab308',
+  on_hold: '#eab308',
+  completed: '#24b47e',
+  done: '#24b47e',
+  delayed: '#ef4444',
+} as Record<string, string>
+
+const statusDark = {
+  not_started: '#737373',
+  todo: '#737373',
+  in_progress: '#3ecf8e',
+  review: '#eab308',
+  on_hold: '#eab308',
+  completed: '#34d399',
+  done: '#34d399',
+  delayed: '#f87171',
+} as Record<string, string>
+
+const priorityLight = {
+  urgent: '#ef4444',
+  high: '#eab308',
+  medium: '#3ecf8e',
+  low: '#a1a1aa',
+} as Record<string, string>
+
+const priorityDark = {
+  urgent: '#f87171',
+  high: '#eab308',
+  medium: '#3ecf8e',
+  low: '#737373',
+} as Record<string, string>
+
+export const lightColors = {
+  canvas: '#f4f4f5',
   surface: '#ffffff',
-  surfaceRaised: '#F1F3F6',
-  muted: '#EEF1F5',
-  active: '#E8ECF1',
-  rail: '#0B1220',
-  railHover: '#151D2E',
+  surfaceRaised: '#f4f4f5',
+  muted: '#f4f4f5',
+  active: '#e4e4e7',
+  rail: '#ffffff',
+  railHover: '#f4f4f5',
 
-  textPrimary: '#0F172A',
-  textSecondary: '#5B6577',
-  textMuted: '#8B95A7',
-  textSoft: '#334155',
-  textOnRail: '#E8EDF3',
-  textOnRailMuted: '#8FA1B8',
+  textPrimary: '#18181b',
+  textSecondary: '#71717a',
+  textMuted: '#a1a1aa',
+  textSoft: '#3f3f46',
+  textOnRail: '#18181b',
+  textOnRailMuted: '#71717a',
+  /** CTA / primary button label on emerald */
+  textOnAccent: '#171717',
+  /** Label on danger / solid red surfaces */
+  textOnDanger: '#ffffff',
 
-  accent: '#2563EB',
-  accentHover: '#1D4ED8',
-  accentSoft: '#EFF4FF',
+  accent: '#3ecf8e',
+  accentHover: '#24b47e',
+  accentSoft: '#ecfdf5',
 
-  border: '#E6EAF0',
-  borderLight: '#D7DEE8',
+  border: '#e4e4e7',
+  borderLight: '#d4d4d8',
 
-  danger: '#E11D48',
-  dangerSoft: '#FFF1F2',
-  success: '#059669',
-  successSoft: '#ECFDF5',
-  warning: '#D97706',
-  warningSoft: '#FFFBEB',
+  danger: '#ef4444',
+  dangerSoft: '#fef2f2',
+  success: '#24b47e',
+  successSoft: '#ecfdf5',
+  warning: '#eab308',
+  warningSoft: '#fefce8',
 
-  status: {
-    not_started: '#94A3B8',
-    todo: '#94A3B8',
-    in_progress: '#2563EB',
-    review: '#D97706',
-    on_hold: '#D97706',
-    completed: '#059669',
-    done: '#059669',
-    delayed: '#E11D48',
-  } as Record<string, string>,
+  status: statusLight,
+  priority: priorityLight,
+}
 
-  priority: {
-    urgent: '#E11D48',
-    high: '#D97706',
-    medium: '#2563EB',
-    low: '#94A3B8',
-  } as Record<string, string>,
+export const darkColors = {
+  canvas: '#0f0f0f',
+  surface: '#181818',
+  surfaceRaised: '#1f1f1f',
+  muted: '#151515',
+  active: '#262626',
+  rail: '#0c0c0c',
+  railHover: 'rgba(255,255,255,0.06)',
+
+  textPrimary: '#f5f5f5',
+  textSecondary: '#a3a3a3',
+  textMuted: '#737373',
+  textSoft: '#d4d4d4',
+  textOnRail: '#f5f5f5',
+  textOnRailMuted: '#a3a3a3',
+  textOnAccent: '#171717',
+  textOnDanger: '#ffffff',
+
+  accent: '#3ecf8e',
+  accentHover: '#34d399',
+  accentSoft: 'rgba(62,207,142,0.12)',
+
+  border: 'rgba(255,255,255,0.055)',
+  borderLight: 'rgba(255,255,255,0.08)',
+
+  danger: '#f87171',
+  dangerSoft: 'rgba(248,113,113,0.12)',
+  success: '#34d399',
+  successSoft: 'rgba(52,211,153,0.12)',
+  warning: '#eab308',
+  warningSoft: 'rgba(234,179,8,0.12)',
+
+  status: statusDark,
+  priority: priorityDark,
+}
+
+export type AppColors = typeof lightColors
+
+/** @deprecated Prefer useColors() — static light fallback for non-React helpers */
+export const colors = lightColors
+
+export function colorsFor(mode: ThemeMode): AppColors {
+  return mode === 'dark' ? darkColors : lightColors
 }
 
 export const spacing = {
@@ -58,10 +131,10 @@ export const spacing = {
 }
 
 export const radius = {
-  sm: 10,
-  md: 14,
-  lg: 18,
-  xl: 24,
+  sm: 6,
+  md: 8,
+  lg: 12,
+  xl: 16,
   full: 999,
 }
 
@@ -76,22 +149,45 @@ export const typography = {
   micro: { fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.2 },
 }
 
-export const shadows = {
-  card: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  floating: {
-    shadowColor: '#0F172A',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
-  },
+export function shadowsFor(mode: ThemeMode) {
+  if (mode === 'dark') {
+    return {
+      card: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+        elevation: 2,
+      },
+      floating: {
+        shadowColor: '#000000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.45,
+        shadowRadius: 16,
+        elevation: 8,
+      },
+    }
+  }
+  return {
+    card: {
+      shadowColor: '#18181b',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.05,
+      shadowRadius: 8,
+      elevation: 2,
+    },
+    floating: {
+      shadowColor: '#18181b',
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.12,
+      shadowRadius: 16,
+      elevation: 8,
+    },
+  }
 }
+
+/** @deprecated Prefer shadowsFor(mode) via useTheme() */
+export const shadows = shadowsFor('light')
 
 export const STATUS_LABELS: Record<string, string> = {
   todo: 'Not started',

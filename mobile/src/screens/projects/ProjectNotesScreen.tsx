@@ -1,12 +1,18 @@
-import { useLayoutEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { projectsApi } from '../../api/projects'
 import { notesApi } from '../../api/notes'
 import { isApiError } from '../../api/client'
@@ -21,14 +27,14 @@ function formatDate(date: string) {
 }
 
 export function ProjectNotesScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const { listContent, pagePadding } = useResponsive()
+  const styles = useMemo(() => createStyles(colors, pagePadding), [colors, pagePadding])
+
   const { projectId, projectName } = route.params
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
   const [text, setText] = useState('')
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: projectName ? `${projectName} · Notes` : 'Meeting notes' })
-  }, [navigation, projectName])
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['project', projectId],
@@ -48,16 +54,27 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
   })
 
+  const header = (
+    <PageHeader
+      title="Notes"
+      subtitle={projectName || 'Meeting notes'}
+      subtitleIcon="chatbubble-ellipses-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading notes…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
+        <LoadingState label="Loading notes…" variant="list" />
       </Screen>
     )
   }
   if (isError || !data) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
@@ -66,16 +83,18 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
   const notes = [...(data.project.meetingNotes || [])].reverse()
 
   return (
-    <Screen padded={false} keyboardAvoiding>
+    <Screen padded={false} edges={['top', 'left', 'right']} keyboardAvoiding>
+      {header}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList
           data={notes}
           keyExtractor={(n) => n._id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={[listContent, styles.listGrow]}
+          ListHeaderComponent={notes.length > 0 ? <SectionLabel count={notes.length}>Notes</SectionLabel> : null}
           renderItem={({ item }) => {
             const canDelete = item.createdBy === user?.id
             return (
-              <View style={styles.card}>
+              <SurfaceCard>
                 <View style={styles.cardTop}>
                   <Text style={styles.author}>{item.createdByName}</Text>
                   <Text style={styles.date}>{formatDate(item.createdAt)}</Text>
@@ -87,7 +106,7 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
                     <Text style={styles.deleteText}>Delete</Text>
                   </Pressable>
                 ) : null}
-              </View>
+              </SurfaceCard>
             )
           }}
           ListEmptyComponent={<EmptyState title="No notes yet" body="Capture meeting takeaways here." />}
@@ -108,22 +127,25 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.sm, flexGrow: 1 },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: spacing.md, gap: 4 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between' },
-  author: { ...typography.captionStrong, color: colors.textPrimary },
-  date: { ...typography.micro, color: colors.textMuted },
-  text: { ...typography.body, color: colors.textPrimary },
-  deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 4 },
-  deleteText: { ...typography.micro, color: colors.danger },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-})
+function createStyles(c: AppColors, pagePadding: number) {
+  return StyleSheet.create({
+    listGrow: { flexGrow: 1 },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    author: { ...typography.captionStrong, color: c.textPrimary },
+    date: { ...typography.micro, color: c.textMuted },
+    text: { ...typography.body, color: c.textPrimary },
+    deleteBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, alignSelf: 'flex-end', marginTop: 4 },
+    deleteText: { ...typography.micro, color: c.danger },
+    composer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+      paddingHorizontal: pagePadding,
+      paddingTop: spacing.md,
+      paddingBottom: TAB_BAR_CLEARANCE,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      backgroundColor: c.canvas,
+    },
+  })
+}

@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { ProjectPicker } from '../../components/ProjectPicker'
-import { colors, spacing, typography } from '../../constants/theme'
+import { typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { financeApi } from '../../api/finance'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -14,6 +15,8 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'CreateExpense'>
 
 export function CreateExpenseScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const params = route.params || {}
   const queryClient = useQueryClient()
   const [projectId, setProjectId] = useState(params.projectId)
@@ -39,13 +42,12 @@ export function CreateExpenseScreen({ route, navigation }: Props) {
   })
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        {!params.projectId ? <ProjectPicker value={projectId} onChange={(id) => setProjectId(id)} /> : null}
-        <Input label="Amount" placeholder="0" keyboardType="numeric" value={amount} onChangeText={setAmount} />
-        <Input label="Category (optional)" placeholder="Materials" value={category} onChangeText={setCategory} />
-        <Input label="Note (optional)" value={note} onChangeText={setNote} multiline numberOfLines={3} style={{ minHeight: 80, textAlignVertical: 'top' }} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+    <FormLayout
+      title="New expense"
+      subtitle="Log a cost against a project"
+      subtitleIcon="wallet-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Submit expense"
           onPress={() => {
@@ -63,12 +65,26 @@ export function CreateExpenseScreen({ route, navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      {!params.projectId ? <ProjectPicker value={projectId} onChange={(id) => setProjectId(id)} /> : null}
+      <Input label="Amount" placeholder="0" keyboardType="numeric" value={amount} onChangeText={setAmount} />
+      <Input label="Category (optional)" placeholder="Materials" value={category} onChangeText={setCategory} />
+      <Input
+        label="Note (optional)"
+        value={note}
+        onChangeText={setNote}
+        multiline
+        numberOfLines={3}
+        style={{ minHeight: 80, textAlignVertical: 'top' }}
+      />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+  })
+}

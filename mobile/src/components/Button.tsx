@@ -1,5 +1,7 @@
+import { useMemo } from 'react'
 import { ActivityIndicator, Pressable, StyleSheet, Text, View, type PressableProps } from 'react-native'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 
 type Variant = 'primary' | 'secondary' | 'ghost' | 'danger'
 type Size = 'md' | 'sm'
@@ -24,7 +26,11 @@ export function Button({
   icon,
   ...pressableProps
 }: ButtonProps) {
+  const colors = useColors()
+  const themed = useMemo(() => createThemed(colors), [colors])
   const isDisabled = disabled || loading
+  const spinnerColor =
+    variant === 'secondary' || variant === 'ghost' ? colors.accent : colors.textOnAccent
 
   return (
     <Pressable
@@ -34,7 +40,7 @@ export function Button({
       style={({ pressed }) => [
         styles.base,
         size === 'sm' ? styles.sm : styles.md,
-        variantStyles[variant],
+        themed.variant[variant],
         fullWidth && { alignSelf: 'stretch' },
         pressed && !isDisabled && { transform: [{ scale: 0.98 }], opacity: 0.92 },
         isDisabled && { opacity: 0.45 },
@@ -43,12 +49,12 @@ export function Button({
       {...pressableProps}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'secondary' || variant === 'ghost' ? colors.accent : '#fff'} />
+        <ActivityIndicator color={spinnerColor} />
       ) : (
         <View style={styles.content}>
           {icon}
           <Text
-            style={[styles.label, size === 'sm' && { fontSize: 13 }, labelColor[variant]]}
+            style={[styles.label, size === 'sm' && { fontSize: 13 }, themed.label[variant]]}
             numberOfLines={1}
           >
             {title}
@@ -59,9 +65,26 @@ export function Button({
   )
 }
 
+function createThemed(c: AppColors) {
+  return {
+    variant: {
+      primary: { backgroundColor: c.accent },
+      secondary: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
+      ghost: { backgroundColor: 'transparent' },
+      danger: { backgroundColor: c.danger },
+    } as Record<Variant, object>,
+    label: {
+      primary: { color: c.textOnAccent },
+      secondary: { color: c.textPrimary },
+      ghost: { color: c.accent },
+      danger: { color: c.textOnDanger },
+    } as Record<Variant, object>,
+  }
+}
+
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.md,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
     minHeight: 50,
@@ -71,17 +94,3 @@ const styles = StyleSheet.create({
   content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   label: { ...typography.bodyStrong },
 })
-
-const variantStyles: Record<Variant, object> = {
-  primary: { backgroundColor: colors.accent },
-  secondary: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border },
-  ghost: { backgroundColor: 'transparent' },
-  danger: { backgroundColor: colors.danger },
-}
-
-const labelColor: Record<Variant, object> = {
-  primary: { color: '#ffffff' },
-  secondary: { color: colors.textPrimary },
-  ghost: { color: colors.accent },
-  danger: { color: '#ffffff' },
-}

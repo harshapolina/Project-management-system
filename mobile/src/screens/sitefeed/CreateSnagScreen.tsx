@@ -1,11 +1,12 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { ProjectPicker } from '../../components/ProjectPicker'
-import { colors, spacing, typography } from '../../constants/theme'
+import { typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { siteFeedApi } from '../../api/siteFeed'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -14,6 +15,8 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'CreateSnag'>
 
 export function CreateSnagScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const params = route.params || {}
   const queryClient = useQueryClient()
   const [projectId, setProjectId] = useState(params.projectId)
@@ -24,17 +27,19 @@ export function CreateSnagScreen({ route, navigation }: Props) {
     mutationFn: () => siteFeedApi.createSnag({ projectId: projectId!, title: title.trim() }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['snags'] })
+      queryClient.invalidateQueries({ queryKey: ['snags-home'] })
       navigation.goBack()
     },
     onError: (err) => setError(isApiError(err) ? err.message : 'Could not log snag'),
   })
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        {!params.projectId ? <ProjectPicker value={projectId} onChange={(id) => setProjectId(id)} /> : null}
-        <Input label="Issue" placeholder="e.g. Chipped tile in master bath" value={title} onChangeText={setTitle} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+    <FormLayout
+      title="Log issue"
+      subtitle="Capture a snag from the site"
+      subtitleIcon="alert-circle-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Log snag"
           onPress={() => {
@@ -52,12 +57,22 @@ export function CreateSnagScreen({ route, navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      {!params.projectId ? <ProjectPicker value={projectId} onChange={(id) => setProjectId(id)} /> : null}
+      <Input
+        label="Issue"
+        placeholder="e.g. Chipped tile in master bath"
+        value={title}
+        onChangeText={setTitle}
+      />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+  })
+}

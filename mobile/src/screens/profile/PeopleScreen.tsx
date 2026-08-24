@@ -1,13 +1,18 @@
-import { useLayoutEffect, useState } from 'react'
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
 import { SearchField } from '../../components/SearchField'
+import { SurfaceCard } from '../../components/SurfaceCard'
+import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { adminApi, type TeamMember } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
@@ -19,21 +24,13 @@ import type { ProfileStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<ProfileStackParamList, 'People'>
 
 export function PeopleScreen({ navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
   const [search, setSearch] = useState('')
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: caps.managePeople
-        ? () => (
-            <Pressable onPress={() => navigation.navigate('InvitePerson')} hitSlop={10} accessibilityLabel="Invite person">
-              <Ionicons name="person-add-outline" size={22} color={colors.accent} />
-            </Pressable>
-          )
-        : undefined,
-    })
-  }, [navigation, caps.managePeople])
 
   const summary = useQuery({
     queryKey: ['admin-team-summary'],
@@ -70,75 +67,100 @@ export function PeopleScreen({ navigation }: Props) {
   const refetch = caps.people ? summary.refetch : directory.refetch
   const isRefetching = caps.people ? summary.isRefetching : directory.isRefetching
 
+  const pageHeader = (
+    <PageHeader
+      title="People"
+      subtitle="Teammates in this company"
+      subtitleIcon="people-outline"
+      onBack={() => navigation.goBack()}
+      right={
+        caps.managePeople ? (
+          <IconButton
+            icon="person-add-outline"
+            label="Invite person"
+            tone="ghost"
+            onPress={() => navigation.navigate('InvitePerson')}
+          />
+        ) : null
+      }
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading directory…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading directory…" variant="rows" />
       </Screen>
     )
   }
   if (isError) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <SearchField value={search} onChangeText={setSearch} placeholder="Search people or roles" />
       <FlatList
         data={filtered}
         keyExtractor={(m) => m.user._id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.accent} />}
         renderItem={({ item }) => {
           const person = item.user
           return (
-            <Pressable
-              style={styles.row}
-              onPress={() => (caps.people ? navigation.navigate('PersonAccess', { userId: person._id }) : undefined)}
-              disabled={!caps.people}
+            <SurfaceCard
+              onPress={caps.people ? () => navigation.navigate('PersonAccess', { userId: person._id }) : undefined}
             >
-              <Avatar name={person.name} uri={person.avatar} size={40} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.name} numberOfLines={1}>
-                  {person.name}
-                </Text>
-                <Text style={styles.email} numberOfLines={1}>
-                  {person.title || person.email}
-                </Text>
-                {caps.people ? (
-                  <Text style={styles.stats}>
-                    {item.open} open · {item.overdue} overdue · {formatTrackedSeconds(item.timeSpent)}
+              <View style={styles.row}>
+                <Avatar name={person.name} uri={person.avatar} size={40} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.name} numberOfLines={1}>
+                    {person.name}
                   </Text>
-                ) : null}
+                  <Text style={styles.email} numberOfLines={1}>
+                    {person.title || person.email}
+                  </Text>
+                  {caps.people ? (
+                    <Text style={styles.stats}>
+                      {item.open} open · {item.overdue} overdue · {formatTrackedSeconds(item.timeSpent)}
+                    </Text>
+                  ) : null}
+                </View>
+                <Pill label={ROLE_LABELS[person.role] || person.role} />
+                {caps.people ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
               </View>
-              <Pill label={ROLE_LABELS[person.role] || person.role} />
-              {caps.people ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
-            </Pressable>
+            </SurfaceCard>
           )
         }}
-        ListEmptyComponent={<EmptyState title="No teammates yet" />}
+        ListEmptyComponent={
+          <EmptyState
+            title="No teammates yet"
+            body={caps.managePeople ? 'Invite someone to join this company.' : undefined}
+            action={caps.managePeople ? 'Invite person' : undefined}
+            onAction={caps.managePeople ? () => navigation.navigate('InvitePerson') : undefined}
+          />
+        }
       />
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxl, gap: spacing.sm },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  name: { ...typography.bodyStrong, color: colors.textPrimary },
-  email: { ...typography.caption, color: colors.textSecondary },
-  stats: { ...typography.micro, color: colors.textMuted, marginTop: 2 },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    name: { ...typography.bodyStrong, color: c.textPrimary },
+    email: { ...typography.caption, color: c.textSecondary },
+    stats: { ...typography.micro, color: c.textMuted, marginTop: 2 },
+  })
+}

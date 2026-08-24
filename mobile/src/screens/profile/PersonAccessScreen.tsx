@@ -2,12 +2,16 @@ import { useEffect, useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
-import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
 import { Button } from '../../components/Button'
 import { Pill } from '../../components/Badge'
 import { ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import { ACCESS_TOGGLES, ROLE_LABELS, capabilitiesForUser } from '../../utils/roles'
@@ -17,7 +21,11 @@ import type { ProfileStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'PersonAccess'>
 
-export function PersonAccessScreen({ route }: Props) {
+export function PersonAccessScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { userId } = route.params
   const me = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(me)
@@ -61,16 +69,27 @@ export function PersonAccessScreen({ route }: Props) {
     onError: (err) => Alert.alert('Could not reset', isApiError(err) ? err.message : 'Try again'),
   })
 
+  const header = (
+    <PageHeader
+      title="Access"
+      subtitle="Permissions & account"
+      subtitleIcon="shield-checkmark-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (summary.isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading access…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
+        <LoadingState label="Loading access…" variant="form" />
       </Screen>
     )
   }
   if (summary.isError || !member) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
         <ErrorState
           message={isApiError(summary.error) ? summary.error.message : 'Person not found'}
           onRetry={() => summary.refetch()}
@@ -82,9 +101,10 @@ export function PersonAccessScreen({ route }: Props) {
   const user = member.user
 
   return (
-    <Screen padded={false}>
-      <ScrollView contentContainerStyle={styles.scroll}>
-        <Card style={styles.identity}>
+    <Screen padded={false} edges={['top', 'left', 'right', 'bottom']}>
+      {header}
+      <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
+        <SurfaceCard style={styles.identity}>
           <Avatar name={user.name} uri={user.avatar} size={56} />
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.email}>{user.email}</Text>
@@ -98,12 +118,12 @@ export function PersonAccessScreen({ route }: Props) {
           <Text style={styles.meta}>
             {member.open} open · {member.overdue} overdue · {member.done} done
           </Text>
-        </Card>
+        </SurfaceCard>
 
         {Object.entries(groups).map(([group, items]) => (
           <View key={group} style={styles.group}>
-            <Text style={styles.groupTitle}>{group}</Text>
-            <Card style={{ padding: 0, overflow: 'hidden' }}>
+            <SectionLabel>{group}</SectionLabel>
+            <SurfaceCard padded={false}>
               {items.map((item, i) => (
                 <View key={item.key} style={[styles.toggleRow, i === 0 && { borderTopWidth: 0 }]}>
                   <Text style={styles.toggleLabel}>{item.label}</Text>
@@ -115,7 +135,7 @@ export function PersonAccessScreen({ route }: Props) {
                   />
                 </View>
               ))}
-            </Card>
+            </SurfaceCard>
           </View>
         ))}
 
@@ -138,13 +158,13 @@ export function PersonAccessScreen({ route }: Props) {
               fullWidth
             />
             {tempPassword ? (
-              <Card>
+              <SurfaceCard>
                 <Text style={styles.tempLabel}>Temporary password</Text>
                 <Text selectable style={styles.tempValue}>
                   {tempPassword}
                 </Text>
                 <Text style={styles.meta}>Share this once. They’ll be asked to change it on sign-in.</Text>
-              </Card>
+              </SurfaceCard>
             ) : null}
           </View>
         ) : null}
@@ -180,33 +200,33 @@ export function PersonAccessScreen({ route }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
-  identity: { alignItems: 'center', gap: 4 },
-  name: { ...typography.h2, color: colors.textPrimary, marginTop: 8 },
-  email: { ...typography.caption, color: colors.textSecondary },
-  pills: { flexDirection: 'row', gap: 8, marginTop: 6 },
-  meta: { ...typography.caption, color: colors.textMuted, marginTop: 4 },
-  group: { gap: 8 },
-  groupTitle: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase' },
-  toggleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 10,
-    borderTopWidth: StyleSheet.hairlineWidth,
-    borderTopColor: colors.border,
-  },
-  toggleLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  tempLabel: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase' },
-  tempValue: { ...typography.h3, color: colors.textPrimary, marginTop: 4 },
-  dangerRow: {
-    alignItems: 'center',
-    paddingVertical: 14,
-    backgroundColor: colors.dangerSoft,
-    borderRadius: radius.lg,
-  },
-  dangerText: { ...typography.bodyStrong, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    identity: { alignItems: 'center', gap: 4 },
+    name: { ...typography.h2, color: c.textPrimary, marginTop: 8 },
+    email: { ...typography.caption, color: c.textSecondary },
+    pills: { flexDirection: 'row', gap: 8, marginTop: 6 },
+    meta: { ...typography.caption, color: c.textMuted, marginTop: 4 },
+    group: { gap: 8 },
+    toggleRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      gap: spacing.md,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 10,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+    },
+    toggleLabel: { ...typography.body, color: c.textPrimary, flex: 1 },
+    tempLabel: { ...typography.captionStrong, color: c.textMuted, textTransform: 'uppercase' },
+    tempValue: { ...typography.h3, color: c.textPrimary, marginTop: 4 },
+    dangerRow: {
+      alignItems: 'center',
+      paddingVertical: 14,
+      backgroundColor: c.dangerSoft,
+      borderRadius: radius.xl,
+    },
+    dangerText: { ...typography.bodyStrong, color: c.danger },
+  })
+}

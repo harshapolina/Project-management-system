@@ -1,38 +1,61 @@
+import { useNavigation } from '@react-navigation/native'
+import { useMemo } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
-import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { StatCard } from '../../components/StatCard'
 import { ErrorState, LoadingState } from '../../components/States'
-import { colors, formatInr, spacing, typography } from '../../constants/theme'
+import { formatInr, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { companyAdminApi } from '../../api/companyAdmin'
 import { isApiError } from '../../api/client'
 
 export function CompanyAdminDashboardScreen() {
+  const navigation = useNavigation()
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['company-admin-dashboard'],
     queryFn: () => companyAdminApi.dashboard('30d'),
   })
 
+  const pageHeader = (
+    <PageHeader
+      title="Company"
+      subtitle="Team overview"
+      subtitleIcon="stats-chart-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading dashboard…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading dashboard…" variant="dashboard" />
       </Screen>
     )
   }
   if (isError || !data) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
       >
         <Text style={styles.rangeLabel}>Last 30 days</Text>
@@ -48,8 +71,8 @@ export function CompanyAdminDashboardScreen() {
           />
         </View>
 
-        <View>
-          <Text style={styles.sectionTitle}>Project status</Text>
+        <SectionLabel>Project status</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
           {data.statusOverview.map((row) => (
             <View key={row.key} style={styles.statusRow}>
               <View style={[styles.dot, { backgroundColor: row.color }]} />
@@ -57,10 +80,10 @@ export function CompanyAdminDashboardScreen() {
               <Text style={styles.statusValue}>{row.value}</Text>
             </View>
           ))}
-        </View>
+        </SurfaceCard>
 
-        <Card style={{ gap: 6 }}>
-          <Text style={styles.sectionTitle}>Budget</Text>
+        <SectionLabel>Budget</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
           <View style={styles.row}>
             <Text style={styles.meta}>Total budget</Text>
             <Text style={styles.value}>{formatInr(data.budget.totalBudget)}</Text>
@@ -77,10 +100,10 @@ export function CompanyAdminDashboardScreen() {
             <Text style={styles.meta}>Pending expenses</Text>
             <Text style={styles.value}>{formatInr(data.budget.pendingAmount)}</Text>
           </View>
-        </Card>
+        </SurfaceCard>
 
-        <View>
-          <Text style={styles.sectionTitle}>Top vendors</Text>
+        <SectionLabel count={data.topVendors.length}>Top vendors</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
           {data.topVendors.length === 0 ? (
             <Text style={styles.meta}>No vendor activity yet.</Text>
           ) : (
@@ -93,33 +116,34 @@ export function CompanyAdminDashboardScreen() {
               </View>
             ))
           )}
-        </View>
+        </SurfaceCard>
 
-        <View>
-          <Text style={styles.sectionTitle}>Recent activity</Text>
+        <SectionLabel>Recent activity</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
           {data.activity.slice(0, 10).map((a) => (
             <Text key={a.id} style={styles.activityLine} numberOfLines={2}>
               {a.message}
             </Text>
           ))}
-        </View>
+        </SurfaceCard>
       </ScrollView>
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
-  rangeLabel: { ...typography.caption, color: colors.textMuted },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  sectionTitle: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase', marginBottom: spacing.sm },
-  statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 4 },
-  dot: { width: 10, height: 10, borderRadius: 5 },
-  statusLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  statusValue: { ...typography.bodyStrong, color: colors.textPrimary },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 4 },
-  rowLabel: { ...typography.body, color: colors.textPrimary, flexShrink: 1 },
-  meta: { ...typography.caption, color: colors.textSecondary },
-  value: { ...typography.captionStrong, color: colors.textPrimary },
-  activityLine: { ...typography.caption, color: colors.textSecondary, marginBottom: 6 },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    rangeLabel: { ...typography.caption, color: c.textMuted },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+    blockGap: { gap: spacing.sm },
+    statusRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 2 },
+    dot: { width: 10, height: 10, borderRadius: 5 },
+    statusLabel: { ...typography.body, color: c.textPrimary, flex: 1 },
+    statusValue: { ...typography.bodyStrong, color: c.textPrimary },
+    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 2, gap: spacing.sm },
+    rowLabel: { ...typography.body, color: c.textPrimary, flexShrink: 1 },
+    meta: { ...typography.caption, color: c.textSecondary },
+    value: { ...typography.captionStrong, color: c.textPrimary },
+    activityLine: { ...typography.caption, color: c.textSecondary },
+  })
+}

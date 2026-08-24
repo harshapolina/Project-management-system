@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { MoreMainScreen } from '../screens/more/MoreMainScreen'
 import { LeadsScreen } from '../screens/leads/LeadsScreen'
@@ -18,6 +19,7 @@ import { CreateSnagScreen } from '../screens/sitefeed/CreateSnagScreen'
 import { ReportsScreen } from '../screens/reports/ReportsScreen'
 import { PortfolioScreen } from '../screens/reports/PortfolioScreen'
 import { InventoryScreen } from '../screens/inventory/InventoryScreen'
+import { CreateInventoryItemScreen } from '../screens/inventory/CreateInventoryItemScreen'
 import { InventoryMovementsScreen } from '../screens/inventory/InventoryMovementsScreen'
 import { CompanyAdminDashboardScreen } from '../screens/admin/CompanyAdminDashboardScreen'
 import { PlatformAdminScreen } from '../screens/admin/PlatformAdminScreen'
@@ -27,62 +29,70 @@ import { ProfileNavigator } from './ProfileNavigator'
 import { BillingScreen } from '../screens/billing/BillingScreen'
 import { CreateInvoiceScreen } from '../screens/billing/CreateInvoiceScreen'
 import { NotificationsScreen } from '../screens/inbox/NotificationsScreen'
-import { stackScreenOptions } from './options'
+import { formSheetOptions, stackScreenOptions } from './options'
+import { useColors } from '../theme/useColors'
 import type { MoreStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<MoreStackParamList>()
 
 export function MoreNavigator() {
+  const colors = useColors()
+  const options = useMemo(() => stackScreenOptions(colors), [colors])
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Navigator screenOptions={options}>
       <Stack.Screen name="MoreMain" component={MoreMainScreen} options={{ headerShown: false }} />
 
-      <Stack.Screen name="Leads" component={LeadsScreen} options={{ title: 'New enquiries' }} />
-      <Stack.Screen name="CreateLead" component={CreateLeadScreen} options={{ presentation: 'modal', title: 'New enquiry' }} />
+      <Stack.Screen name="Leads" component={LeadsScreen} options={{ headerShown: false, title: 'New enquiries' }} />
+      <Stack.Screen name="CreateLead" component={CreateLeadScreen} options={formSheetOptions(colors, 'New enquiry')} />
 
-      <Stack.Screen name="BoqList" component={BoqListScreen} options={{ title: 'BOQ / Quotes' }} />
-      <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ title: 'Quotation' }} />
-      <Stack.Screen name="CreateBoq" component={CreateBoqScreen} options={{ presentation: 'modal', title: 'New quotation' }} />
+      <Stack.Screen name="BoqList" component={BoqListScreen} options={{ headerShown: false, title: 'BOQ / Quotes' }} />
+      <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ headerShown: false, title: 'Quotation' }} />
+      <Stack.Screen name="CreateBoq" component={CreateBoqScreen} options={formSheetOptions(colors, 'New quotation')} />
 
-      <Stack.Screen name="Vendors" component={VendorsScreen} options={{ title: 'Vendors' }} />
-      <Stack.Screen name="CreateVendor" component={CreateVendorScreen} options={{ presentation: 'modal', title: 'New vendor' }} />
-      <Stack.Screen name="PurchaseOrders" component={PurchaseOrdersScreen} options={{ title: 'Purchase Orders' }} />
+      <Stack.Screen name="Vendors" component={VendorsScreen} options={{ headerShown: false, title: 'Vendors' }} />
+      <Stack.Screen name="CreateVendor" component={CreateVendorScreen} options={formSheetOptions(colors, 'New vendor')} />
+      <Stack.Screen name="PurchaseOrders" component={PurchaseOrdersScreen} options={{ headerShown: false, title: 'Purchase Orders' }} />
       <Stack.Screen
         name="CreatePurchaseOrder"
         component={CreatePurchaseOrderScreen}
-        options={{ presentation: 'modal', title: 'New purchase order' }}
+        options={formSheetOptions(colors, 'New purchase order')}
       />
 
-      <Stack.Screen name="Finance" component={FinanceScreen} options={{ title: 'Finance' }} />
-      <Stack.Screen name="CreateExpense" component={CreateExpenseScreen} options={{ presentation: 'modal', title: 'New expense' }} />
+      <Stack.Screen name="Finance" component={FinanceScreen} options={{ headerShown: false, title: 'Finance' }} />
+      <Stack.Screen name="CreateExpense" component={CreateExpenseScreen} options={formSheetOptions(colors, 'New expense')} />
 
-      <Stack.Screen name="SiteFeed" component={SiteFeedScreen} options={{ title: 'Site Feed' }} />
+      <Stack.Screen name="SiteFeed" component={SiteFeedScreen} options={{ headerShown: false, title: 'Site Feed' }} />
       <Stack.Screen
         name="PostSiteUpdate"
         component={PostSiteUpdateScreen}
-        options={{ presentation: 'modal', title: 'Post update' }}
+        options={formSheetOptions(colors, 'Post update')}
       />
-      <Stack.Screen name="Snags" component={SnagsScreen} options={{ title: 'Snags' }} />
-      <Stack.Screen name="CreateSnag" component={CreateSnagScreen} options={{ presentation: 'modal', title: 'Log snag' }} />
+      <Stack.Screen name="Snags" component={SnagsScreen} options={{ headerShown: false, title: 'Snags' }} />
+      <Stack.Screen name="CreateSnag" component={CreateSnagScreen} options={formSheetOptions(colors, 'Log snag')} />
 
-      <Stack.Screen name="Reports" component={ReportsScreen} options={{ title: 'Reports' }} />
-      <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ title: 'Portfolio' }} />
+      <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false, title: 'Reports' }} />
+      <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ headerShown: false, title: 'Portfolio' }} />
 
-      <Stack.Screen name="Inventory" component={InventoryScreen} options={{ title: 'Inventory' }} />
-      <Stack.Screen name="InventoryMovements" component={InventoryMovementsScreen} options={{ title: 'Stock Movements' }} />
+      <Stack.Screen name="Inventory" component={InventoryScreen} options={{ headerShown: false, title: 'Inventory' }} />
+      <Stack.Screen
+        name="CreateInventoryItem"
+        component={CreateInventoryItemScreen}
+        options={formSheetOptions(colors, 'New item')}
+      />
+      <Stack.Screen name="InventoryMovements" component={InventoryMovementsScreen} options={{ headerShown: false, title: 'Stock Movements' }} />
 
       <Stack.Screen
         name="CompanyAdminDashboard"
         component={CompanyAdminDashboardScreen}
-        options={{ title: 'Company Dashboard' }}
+        options={{ headerShown: false, title: 'Company Dashboard' }}
       />
-      <Stack.Screen name="PlatformAdmin" component={PlatformAdminScreen} options={{ title: 'Workspaces' }} />
-      <Stack.Screen name="CreateTenant" component={CreateTenantScreen} options={{ presentation: 'modal', title: 'New workspace' }} />
+      <Stack.Screen name="PlatformAdmin" component={PlatformAdminScreen} options={{ headerShown: false, title: 'Workspaces' }} />
+      <Stack.Screen name="CreateTenant" component={CreateTenantScreen} options={formSheetOptions(colors, 'New workspace')} />
       <Stack.Screen name="Impact" component={ImpactScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProfileHub" component={ProfileNavigator} options={{ headerShown: false }} />
-      <Stack.Screen name="Billing" component={BillingScreen} options={{ title: 'Billing' }} />
-      <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} options={{ presentation: 'modal', title: 'Add invoice' }} />
-      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ title: 'Alerts' }} />
+      <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: false, title: 'Billing' }} />
+      <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} options={formSheetOptions(colors, 'Add invoice')} />
+      <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false, title: 'Alerts' }} />
     </Stack.Navigator>
   )
 }

@@ -1,12 +1,16 @@
+import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { Screen } from '../../components/Screen'
-import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, spacing, typography } from '../../constants/theme'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { notificationsApi } from '../../api/notifications'
 import { isApiError } from '../../api/client'
 import type { AppNotification } from '../../types/ops'
@@ -28,7 +32,76 @@ function taskIdFrom(n: AppNotification) {
   return match?.[1] || null
 }
 
+function metaId(n: AppNotification, keys: string[]) {
+  for (const key of keys) {
+    const v = n.meta?.[key]
+    if (typeof v === 'string' && v) return v
+  }
+  return null
+}
+
+function openNotification(
+  n: AppNotification,
+  navigation: CompositeNavigationProp<
+    NativeStackNavigationProp<MoreStackParamList, 'Notifications'>,
+    BottomTabNavigationProp<RootTabParamList>
+  >,
+) {
+  const taskId = taskIdFrom(n)
+  if (taskId) {
+    navigation.navigate('Home', { screen: 'TaskDetail', params: { taskId } })
+    return
+  }
+
+  const projectId = metaId(n, ['projectId'])
+  if (projectId) {
+    navigation.navigate('Projects', {
+      screen: 'ProjectOverview',
+      params: { projectId },
+    })
+    return
+  }
+
+  const link = String(n.link || '')
+  if (link.includes('/inbox') || link.includes('mail')) {
+    navigation.navigate('Inbox')
+    return
+  }
+  if (link.includes('/leads') || link.includes('enquiry')) {
+    navigation.navigate('Leads')
+    return
+  }
+  if (link.includes('/snag')) {
+    navigation.navigate('Snags')
+    return
+  }
+  if (link.includes('/billing') || link.includes('invoice')) {
+    navigation.navigate('Billing')
+    return
+  }
+  if (link.includes('/finance') || link.includes('expense')) {
+    navigation.navigate('Finance')
+    return
+  }
+  if (link.includes('/projects/') || link.includes('project=')) {
+    const m = link.match(/projects\/([a-f0-9]{24})|project=([a-f0-9]{24})/i)
+    const id = m?.[1] || m?.[2]
+    if (id) {
+      navigation.navigate('Projects', {
+        screen: 'ProjectOverview',
+        params: { projectId: id },
+      })
+      return
+    }
+    navigation.navigate('Projects')
+  }
+}
+
 export function NotificationsScreen() {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const navigation =
     useNavigation<
       CompositeNavigationProp<
@@ -51,16 +124,27 @@ export function NotificationsScreen() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   })
 
+  const pageHeader = (
+    <PageHeader
+      title="Alerts"
+      subtitle="Assignments and mentions"
+      subtitleIcon="notifications-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading alerts…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading alerts…" variant="rows" />
       </Screen>
     )
   }
   if (isError) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
@@ -70,9 +154,10 @@ export function NotificationsScreen() {
   const unread = items.filter((n) => !n.read).length
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
       >
         {unread ? (
@@ -85,30 +170,24 @@ export function NotificationsScreen() {
           <EmptyState icon="notifications-outline" title="No alerts yet" body="Task assignments and mentions will land here." />
         ) : (
           items.map((n) => (
-            <Pressable
+            <SurfaceCard
               key={n._id}
               onPress={() => {
                 if (!n.read) readOne.mutate(n._id)
-                const taskId = taskIdFrom(n)
-                if (taskId) {
-                  navigation.navigate('Home', { screen: 'TaskDetail', params: { taskId } })
-                } else if (String(n.link || '').includes('/inbox')) {
-                  navigation.navigate('Inbox')
-                }
+                openNotification(n, navigation)
               }}
+              style={!n.read ? styles.unread : undefined}
             >
-              <Card style={[styles.card, !n.read && styles.unread]}>
-                <View style={styles.top}>
-                  <Text style={styles.title}>{n.title}</Text>
-                  <Text style={styles.time}>{timeAgo(n.createdAt)}</Text>
-                </View>
-                {n.body ? (
-                  <Text style={styles.body} numberOfLines={3}>
-                    {n.body}
-                  </Text>
-                ) : null}
-              </Card>
-            </Pressable>
+              <View style={styles.top}>
+                <Text style={styles.title}>{n.title}</Text>
+                <Text style={styles.time}>{timeAgo(n.createdAt)}</Text>
+              </View>
+              {n.body ? (
+                <Text style={styles.body} numberOfLines={3}>
+                  {n.body}
+                </Text>
+              ) : null}
+            </SurfaceCard>
           ))
         )}
       </ScrollView>
@@ -116,14 +195,14 @@ export function NotificationsScreen() {
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl },
-  markAll: { alignSelf: 'flex-end', marginBottom: 4 },
-  markAllText: { ...typography.captionStrong, color: colors.accent },
-  card: { gap: 4 },
-  unread: { borderColor: colors.accent, backgroundColor: colors.accentSoft },
-  top: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
-  title: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
-  time: { ...typography.caption, color: colors.textMuted },
-  body: { ...typography.caption, color: colors.textSecondary },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    markAll: { alignSelf: 'flex-end' },
+    markAllText: { ...typography.captionStrong, color: c.accent },
+    unread: { borderColor: c.accent, backgroundColor: c.accentSoft },
+    top: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+    title: { ...typography.bodyStrong, color: c.textPrimary, flex: 1 },
+    time: { ...typography.caption, color: c.textMuted },
+    body: { ...typography.caption, color: c.textSecondary, marginTop: 4 },
+  })
+}

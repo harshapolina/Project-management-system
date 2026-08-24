@@ -1,22 +1,29 @@
-import { useLayoutEffect } from 'react'
+import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
+import { CompositeNavigationProp } from '@react-navigation/native'
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { Screen } from '../../components/Screen'
-import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
 import { ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors, useShadows } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { projectsApi } from '../../api/projects'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 import { capabilitiesForUser, ROLE_LABELS } from '../../utils/roles'
 import type { Role } from '../../types/models'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import type { ProjectStackParamList } from '../../navigation/types'
+import type { ProjectStackParamList, RootTabParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectOverview'>
+type Nav = CompositeNavigationProp<Props['navigation'], BottomTabNavigationProp<RootTabParamList>>
 
 function money(n?: number) {
   if (!n) return '₹0'
@@ -24,6 +31,12 @@ function money(n?: number) {
 }
 
 export function ProjectOverviewScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const shadows = useShadows()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors, shadows), [colors, shadows])
+  const tabNav = navigation as unknown as Nav
+
   const { projectId, projectName } = route.params
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
@@ -33,20 +46,33 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
     queryFn: () => projectsApi.get(projectId),
   })
 
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: projectName || data?.project.name || 'Project' })
-  }, [navigation, projectName, data])
+  const title = projectName || data?.project.name || 'Project'
+  const subtitle = data?.project
+    ? `${data.project.clientName}${data.project.location ? ` · ${data.project.location}` : ''}`
+    : 'Project workspace'
+  const nameForNav = projectName || data?.project.name
+
+  const pageHeader = (
+    <PageHeader
+      title={title}
+      subtitle={subtitle}
+      subtitleIcon="folder-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
 
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading project…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading project…" variant="detail" />
       </Screen>
     )
   }
   if (isError || !data) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
@@ -54,7 +80,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
 
   const { project, stats } = data
   type TabKey = 'ProjectTasks' | 'ProjectFiles' | 'ProjectNotes' | 'SiteFeed' | 'PurchaseOrders' | 'ProjectTeam'
-  type TabIcon = 'checkbox-outline' | 'folder-outline' | 'chatbubble-ellipses-outline' | 'camera-outline' | 'cart-outline' | 'people-outline'
+  type TabIcon = keyof typeof Ionicons.glyphMap
   const tabs: { key: TabKey; label: string; icon: TabIcon }[] = [
     { key: 'ProjectTasks', label: 'Tasks', icon: 'checkbox-outline' },
     { key: 'ProjectFiles', label: 'Files', icon: 'folder-outline' },
@@ -63,27 +89,37 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
     ...(caps.procurement ? [{ key: 'PurchaseOrders' as const, label: 'Orders', icon: 'cart-outline' as const }] : []),
     ...(caps.manageProjects ? [{ key: 'ProjectTeam' as const, label: 'Team', icon: 'people-outline' as const }] : []),
   ]
+  const members = project.members || []
+  const stages = project.stages || []
+
+  const goTasks = () => navigation.navigate('ProjectTasks', { projectId, projectName: nameForNav })
+  const openMember = (memberId: string, memberName: string) => {
+    tabNav.navigate('Inbox', {
+      screen: 'Conversation',
+      params: { userId: memberId, userName: memberName },
+    })
+  }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
       >
-        <View style={styles.headerCard}>
-          <View style={styles.headerRow}>
-            <Text style={styles.name} numberOfLines={2}>
-              {project.name}
-            </Text>
-            <Pill label={project.currentStage || ''} bg={colors.accentSoft} color={colors.accent} />
-          </View>
-          <Text style={styles.client}>
-            {project.clientName}
-            {project.location ? ` · ${project.location}` : ''}
-          </Text>
-          {project.description ? <Text style={styles.description}>{project.description}</Text> : null}
-        </View>
+        {(project.description || project.currentStage) ? (
+          <SurfaceCard padded={false}>
+            <View style={styles.focusAccent} />
+            <View style={styles.focusBody}>
+              {project.currentStage ? (
+                <Pill label={project.currentStage} bg={colors.accentSoft} color={colors.accent} />
+              ) : null}
+              {project.description ? <Text style={styles.description}>{project.description}</Text> : null}
+            </View>
+          </SurfaceCard>
+        ) : null}
 
+        <SectionLabel>Shortcuts</SectionLabel>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.tabRow}>
           {tabs.map((t) => (
             <Pressable
@@ -98,19 +134,20 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
           ))}
         </ScrollView>
 
+        <SectionLabel>At a glance</SectionLabel>
         <View style={styles.statsGrid}>
-          <Card style={styles.statCard}>
+          <SurfaceCard style={styles.statCard} onPress={goTasks}>
             <Text style={styles.statValue}>{stats.openTasks}</Text>
             <Text style={styles.statLabel}>Open tasks</Text>
-          </Card>
-          <Card style={styles.statCard}>
+          </SurfaceCard>
+          <SurfaceCard style={styles.statCard} onPress={goTasks}>
             <Text style={styles.statValue}>{stats.pendingApprovals}</Text>
             <Text style={styles.statLabel}>Pending approvals</Text>
-          </Card>
+          </SurfaceCard>
         </View>
 
-        <Card style={{ gap: spacing.sm }}>
-          <Text style={styles.cardTitle}>Budget</Text>
+        <SectionLabel>Budget</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
           <View style={styles.budgetRow}>
             <Text style={styles.budgetText}>{money(stats.budgetVsSpent.spent)} spent</Text>
             <Text style={styles.budgetTextMuted}>of {money(stats.budgetVsSpent.budget)}</Text>
@@ -124,11 +161,11 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
               ]}
             />
           </View>
-        </Card>
+        </SurfaceCard>
 
-        <Card style={{ gap: spacing.md }}>
-          <Text style={styles.cardTitle}>Stages</Text>
-          {(project.stages || []).map((s) => (
+        <SectionLabel count={stages.length}>Stages</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
+          {stages.map((s) => (
             <View key={s.key} style={styles.stageRow}>
               <View
                 style={[
@@ -143,12 +180,17 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
               <Text style={styles.stageProgress}>{s.progress}%</Text>
             </View>
           ))}
-        </Card>
+        </SurfaceCard>
 
-        <Card style={{ gap: spacing.sm }}>
-          <Text style={styles.cardTitle}>Team</Text>
-          {(project.members || []).slice(0, 6).map((m) => (
-            <View key={m.user._id} style={styles.memberRow}>
+        <SectionLabel count={members.length}>Team</SectionLabel>
+        <SurfaceCard style={styles.blockGap}>
+          {members.slice(0, 6).map((m) => (
+            <Pressable
+              key={m.user._id}
+              style={styles.memberRow}
+              onPress={() => openMember(m.user._id, m.user.name)}
+              accessibilityRole="button"
+            >
               <Avatar name={m.user.name} uri={m.user.avatar} size={30} />
               <View style={{ flex: 1, minWidth: 0 }}>
                 <Text style={styles.memberName} numberOfLines={1}>
@@ -158,48 +200,50 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
                   {ROLE_LABELS[(m.role || m.user.role) as Role] || m.role || m.user.role}
                 </Text>
               </View>
-            </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </Pressable>
           ))}
-        </Card>
+        </SurfaceCard>
       </ScrollView>
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
-  headerCard: { gap: spacing.xs },
-  headerRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
-  name: { ...typography.h2, color: colors.textPrimary, flex: 1 },
-  client: { ...typography.body, color: colors.textSecondary },
-  description: { ...typography.caption, color: colors.textSecondary, marginTop: spacing.xs },
-  tabRow: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.lg },
-  tabButton: {
-    width: 84,
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    paddingVertical: spacing.md,
-  },
-  tabLabel: { ...typography.caption, color: colors.textPrimary },
-  statsGrid: { flexDirection: 'row', gap: spacing.md },
-  statCard: { flex: 1, alignItems: 'center', gap: 2 },
-  statValue: { ...typography.h2, color: colors.textPrimary },
-  statLabel: { ...typography.caption, color: colors.textSecondary, textAlign: 'center' },
-  cardTitle: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase' },
-  budgetRow: { flexDirection: 'row', gap: 6, alignItems: 'baseline' },
-  budgetText: { ...typography.bodyStrong, color: colors.textPrimary },
-  budgetTextMuted: { ...typography.caption, color: colors.textSecondary },
-  progressTrack: { height: 8, borderRadius: radius.full, backgroundColor: colors.surfaceRaised, overflow: 'hidden' },
-  progressFill: { height: '100%', backgroundColor: colors.accent },
-  stageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  stageDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: colors.borderLight },
-  stageLabel: { ...typography.body, color: colors.textPrimary, flex: 1 },
-  stageProgress: { ...typography.caption, color: colors.textSecondary },
-  memberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  memberName: { ...typography.bodyStrong, color: colors.textPrimary },
-  memberRole: { ...typography.caption, color: colors.textSecondary, textTransform: 'capitalize' },
-})
+function createStyles(c: AppColors, sh: ReturnType<typeof useShadows>) {
+  return StyleSheet.create({
+    focusAccent: { height: 3, backgroundColor: c.accent },
+    focusBody: { padding: spacing.md, gap: spacing.sm },
+    description: { ...typography.body, color: c.textSecondary },
+    tabRow: { flexDirection: 'row', gap: spacing.sm, paddingRight: spacing.md },
+    tabButton: {
+      minWidth: 72,
+      paddingHorizontal: spacing.sm,
+      alignItems: 'center',
+      gap: 4,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: radius.xl,
+      paddingVertical: spacing.md,
+      ...sh.card,
+    },
+    tabLabel: { ...typography.caption, color: c.textPrimary, textAlign: 'center' },
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+    statCard: { flexGrow: 1, flexBasis: '30%', minWidth: 96, alignItems: 'center', gap: 2 },
+    statValue: { ...typography.h2, color: c.textPrimary },
+    statLabel: { ...typography.caption, color: c.textSecondary, textAlign: 'center' },
+    blockGap: { gap: spacing.sm },
+    budgetRow: { flexDirection: 'row', gap: 6, alignItems: 'baseline' },
+    budgetText: { ...typography.bodyStrong, color: c.textPrimary },
+    budgetTextMuted: { ...typography.caption, color: c.textSecondary },
+    progressTrack: { height: 8, borderRadius: radius.full, backgroundColor: c.surfaceRaised, overflow: 'hidden' },
+    progressFill: { height: '100%', backgroundColor: c.accent },
+    stageRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    stageDot: { width: 10, height: 10, borderRadius: 5, backgroundColor: c.borderLight },
+    stageLabel: { ...typography.body, color: c.textPrimary, flex: 1 },
+    stageProgress: { ...typography.caption, color: c.textSecondary },
+    memberRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    memberName: { ...typography.bodyStrong, color: c.textPrimary },
+    memberRole: { ...typography.caption, color: c.textSecondary, textTransform: 'capitalize' },
+  })
+}

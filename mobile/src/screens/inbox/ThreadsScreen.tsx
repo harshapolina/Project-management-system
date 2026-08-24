@@ -1,12 +1,16 @@
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
 import { Avatar } from '../../components/Avatar'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { IconButton } from '../../components/IconButton'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { colors, radius, shadows, spacing, typography } from '../../constants/theme'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -25,59 +29,66 @@ function timeAgo(date: string) {
 }
 
 export function ThreadsScreen({ navigation }: Props) {
+  const colors = useColors()
+  const { tabListContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['mail-threads'],
     queryFn: mailApi.threads,
   })
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
       <PageHeader
         title="Inbox"
         subtitle="Messages with your team"
+        subtitleIcon="chatbubbles-outline"
         right={
           <IconButton
             icon="create-outline"
             label="New message"
+            tone="ghost"
             onPress={() => navigation.navigate('NewMessage')}
           />
         }
       />
 
       {isLoading ? (
-        <LoadingState label="Loading messages…" />
+        <LoadingState label="Loading messages…"  variant="rows" />
       ) : isError ? (
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       ) : (
         <FlatList
           data={data}
           keyExtractor={(t) => t.user._id}
-          contentContainerStyle={styles.listContent}
+          contentContainerStyle={tabListContent}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
           renderItem={({ item }) => (
-            <Pressable
-              style={({ pressed }) => [styles.row, pressed && { backgroundColor: colors.surfaceRaised }]}
+            <SurfaceCard
               onPress={() => navigation.navigate('Conversation', { userId: item.user._id, userName: item.user.name })}
-              accessibilityRole="button"
             >
-              <Avatar name={item.user.name} uri={item.user.avatar} size={46} />
-              <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-                <View style={styles.rowTop}>
-                  <Text style={styles.name} numberOfLines={1}>
-                    {item.user.name}
+              <View style={styles.row}>
+                <Avatar name={item.user.name} uri={item.user.avatar} size={46} />
+                <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
+                  <View style={styles.rowTop}>
+                    <Text style={styles.name} numberOfLines={1}>
+                      {item.user.name}
+                    </Text>
+                    <Text style={styles.time}>{timeAgo(item.lastMessage.createdAt)}</Text>
+                  </View>
+                  <Text style={[styles.preview, item.unread > 0 && styles.previewUnread]} numberOfLines={1}>
+                    {item.lastMessage.body}
                   </Text>
-                  <Text style={styles.time}>{timeAgo(item.lastMessage.createdAt)}</Text>
                 </View>
-                <Text style={[styles.preview, item.unread > 0 && styles.previewUnread]} numberOfLines={1}>
-                  {item.lastMessage.body}
-                </Text>
+                {item.unread > 0 ? (
+                  <View style={styles.unreadBadge}>
+                    <Text style={styles.unreadText}>{item.unread}</Text>
+                  </View>
+                ) : null}
               </View>
-              {item.unread > 0 ? (
-                <View style={styles.unreadBadge}>
-                  <Text style={styles.unreadText}>{item.unread}</Text>
-                </View>
-              ) : null}
-            </Pressable>
+            </SurfaceCard>
           )}
           ListEmptyComponent={
             <EmptyState
@@ -92,33 +103,27 @@ export function ThreadsScreen({ navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.md,
-    backgroundColor: colors.surface,
-    borderRadius: radius.lg,
-    borderWidth: 1,
-    borderColor: colors.border,
-    marginBottom: 10,
-    ...shadows.card,
-  },
-  rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
-  name: { ...typography.bodyStrong, color: colors.textPrimary, flexShrink: 1 },
-  time: { ...typography.caption, color: colors.textMuted },
-  preview: { ...typography.caption, color: colors.textSecondary },
-  previewUnread: { color: colors.textPrimary, fontWeight: '600' },
-  unreadBadge: {
-    minWidth: 20,
-    height: 20,
-    borderRadius: 10,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
-  },
-  unreadText: { color: '#fff', fontSize: 11, fontWeight: '700' },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+    },
+    rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
+    name: { ...typography.bodyStrong, color: c.textPrimary, flexShrink: 1 },
+    time: { ...typography.caption, color: c.textMuted },
+    preview: { ...typography.caption, color: c.textSecondary },
+    previewUnread: { color: c.textPrimary, fontWeight: '600' },
+    unreadBadge: {
+      minWidth: 20,
+      height: 20,
+      borderRadius: 10,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: 5,
+    },
+    unreadText: { color: c.textOnAccent, fontSize: 11, fontWeight: '700' },
+  })
+}

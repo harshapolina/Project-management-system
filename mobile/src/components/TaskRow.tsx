@@ -1,6 +1,8 @@
+import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { spacing, typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 import { PriorityBadge } from './Badge'
 import type { Task } from '../types/models'
 
@@ -36,6 +38,8 @@ export function TaskRow({
   onPress: () => void
   onToggle?: () => void
 }) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const due = formatDue(task.dueDate)
   const pName = projectName(task)
   const done = task.status === 'done'
@@ -55,7 +59,7 @@ export function TaskRow({
           accessibilityRole="checkbox"
           accessibilityState={{ checked: done }}
         >
-          {done ? <Ionicons name="checkmark" size={13} color="#fff" /> : null}
+          {done ? <Ionicons name="checkmark" size={13} color={colors.textOnAccent} /> : null}
         </Pressable>
       ) : (
         <View style={[styles.checkbox, done && styles.checkboxDone]} />
@@ -85,28 +89,30 @@ export function TaskRow({
   )
 }
 
-const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: 13,
-    paddingHorizontal: spacing.md,
-  },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: 7,
-    borderWidth: 1.5,
-    borderColor: colors.borderLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxDone: { backgroundColor: colors.success, borderColor: colors.success },
-  content: { flex: 1, gap: 3, minWidth: 0 },
-  title: { ...typography.bodyStrong, color: colors.textPrimary },
-  titleDone: { color: colors.textMuted, textDecorationLine: 'line-through' },
-  metaRow: { flexDirection: 'row', flexWrap: 'wrap' },
-  meta: { ...typography.caption, color: colors.textSecondary },
-  metaOverdue: { color: colors.danger, fontWeight: '600' },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: 13,
+      paddingHorizontal: spacing.md,
+    },
+    checkbox: {
+      width: 22,
+      height: 22,
+      borderRadius: 7,
+      borderWidth: 1.5,
+      borderColor: c.borderLight,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    checkboxDone: { backgroundColor: c.success, borderColor: c.success },
+    content: { flex: 1, gap: 3, minWidth: 0 },
+    title: { ...typography.bodyStrong, color: c.textPrimary },
+    titleDone: { color: c.textMuted, textDecorationLine: 'line-through' },
+    metaRow: { flexDirection: 'row', flexWrap: 'wrap' },
+    meta: { ...typography.caption, color: c.textSecondary },
+    metaOverdue: { color: c.danger, fontWeight: '600' },
+  })
+}

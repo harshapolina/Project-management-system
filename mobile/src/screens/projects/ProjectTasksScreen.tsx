@@ -1,11 +1,17 @@
-import { useLayoutEffect, useState } from 'react'
-import { FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useState } from 'react'
+import { RefreshControl, ScrollView } from 'react-native'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
+import { SegmentedControl } from '../../components/SegmentedControl'
+import { Fab } from '../../components/Fab'
 import { TaskRow } from '../../components/TaskRow'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, STATUS_LABELS, typography } from '../../constants/theme'
+import { STATUS_LABELS } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { tasksApi } from '../../api/tasks'
 import { homeApi } from '../../api/home'
 import { isApiError } from '../../api/client'
@@ -17,18 +23,23 @@ import type { TaskStatus } from '../../types/models'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectTasks'>
 
-const STATUS_FILTERS: (TaskStatus | 'all')[] = ['all', 'todo', 'in_progress', 'review', 'done']
+const STATUS_OPTIONS: { key: TaskStatus | 'all'; label: string }[] = [
+  { key: 'all', label: 'All' },
+  { key: 'todo', label: STATUS_LABELS.todo },
+  { key: 'in_progress', label: STATUS_LABELS.in_progress },
+  { key: 'review', label: STATUS_LABELS.review },
+  { key: 'done', label: STATUS_LABELS.done },
+]
 
 export function ProjectTasksScreen({ route, navigation }: Props) {
+  useColors()
+  const { listContent } = useResponsive()
+
   const { projectId, projectName } = route.params
   const [status, setStatus] = useState<TaskStatus | 'all'>('all')
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
   const queryClient = useQueryClient()
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: projectName ? `${projectName} · Tasks` : 'Tasks' })
-  }, [navigation, projectName])
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['tasks', projectId],
@@ -36,6 +47,7 @@ export function ProjectTasksScreen({ route, navigation }: Props) {
   })
 
   const filtered = (data || []).filter((t) => status === 'all' || t.status === status)
+  const colors = useColors()
 
   const toggleTask = async (id: string) => {
     await homeApi.toggleTask(id)
@@ -43,91 +55,50 @@ export function ProjectTasksScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false}>
-      <View style={styles.filters}>
-        <FlatList
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          data={STATUS_FILTERS}
-          keyExtractor={(s) => s}
-          contentContainerStyle={{ gap: spacing.sm, paddingHorizontal: spacing.lg }}
-          renderItem={({ item }) => {
-            const active = status === item
-            return (
-              <Text
-                onPress={() => setStatus(item)}
-                style={[styles.chip, active && styles.chipActive]}
-                accessibilityRole="button"
-              >
-                {item === 'all' ? 'All' : STATUS_LABELS[item]}
-              </Text>
-            )
-          }}
-        />
-      </View>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      <PageHeader
+        title="Tasks"
+        subtitle={projectName || 'Project tasks'}
+        subtitleIcon="checkbox-outline"
+        onBack={() => navigation.goBack()}
+      />
+      <SegmentedControl options={STATUS_OPTIONS} value={status} onChange={setStatus} />
 
       {isLoading ? (
-        <LoadingState label="Loading tasks…" />
+        <LoadingState label="Loading tasks…" variant="rows" />
       ) : isError ? (
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       ) : (
-        <FlatList
-          data={filtered}
-          keyExtractor={(t) => t._id}
-          contentContainerStyle={styles.listContent}
+        <ScrollView
+          contentContainerStyle={listContent}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
-          renderItem={({ item }) => (
-            <TaskRow
-              task={item}
-              onPress={() => navigation.navigate('TaskDetail', { taskId: item._id })}
-              onToggle={() => toggleTask(item._id)}
+        >
+          <SectionLabel count={filtered.length}>Tasks</SectionLabel>
+          {filtered.length === 0 ? (
+            <EmptyState
+              title="No tasks"
+              body="Tasks in this project will show up here."
+              action={caps.createTask ? 'Add task' : undefined}
+              onAction={caps.createTask ? () => navigation.navigate('CreateTask', { projectId }) : undefined}
             />
+          ) : (
+            <SurfaceCard padded={false}>
+              {filtered.map((item) => (
+                <TaskRow
+                  key={item._id}
+                  task={item}
+                  onPress={() => navigation.navigate('TaskDetail', { taskId: item._id })}
+                  onToggle={() => toggleTask(item._id)}
+                />
+              ))}
+            </SurfaceCard>
           )}
-          ListEmptyComponent={<EmptyState title="No tasks" body="Tasks in this project will show up here." />}
-        />
+        </ScrollView>
       )}
 
       {caps.createTask ? (
-        <Pressable
-          style={styles.fab}
-          onPress={() => navigation.navigate('CreateTask', { projectId })}
-          accessibilityRole="button"
-          accessibilityLabel="Add task"
-        >
-          <Ionicons name="add" size={26} color="#fff" />
-        </Pressable>
+        <Fab label="Add task" onPress={() => navigation.navigate('CreateTask', { projectId })} />
       ) : null}
     </Screen>
   )
 }
-
-const styles = StyleSheet.create({
-  filters: { paddingVertical: spacing.sm },
-  chip: {
-    ...typography.captionStrong,
-    color: colors.textSecondary,
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 7,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-  },
-  chipActive: { backgroundColor: colors.rail, color: '#fff' },
-  listContent: { paddingHorizontal: spacing.md, paddingBottom: spacing.xxl * 2 },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-})

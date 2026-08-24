@@ -1,5 +1,6 @@
+import { useMemo } from 'react'
 import { Image, StyleSheet, Text, View } from 'react-native'
-import { colors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 import { assetUrl } from '../constants/env'
 
 interface AvatarProps {
@@ -8,7 +9,8 @@ interface AvatarProps {
   size?: number
 }
 
-const PALETTE = ['#2563eb', '#7c3aed', '#0891b2', '#ea580c', '#16a34a', '#db2777', '#4f46e5']
+/** Emerald-leaning palette (matches web accent system) */
+const PALETTE = ['#3ecf8e', '#24b47e', '#34d399', '#71717a', '#eab308', '#18181b', '#a1a1aa']
 
 function colorForName(name: string) {
   let hash = 0
@@ -25,24 +27,34 @@ function initials(name?: string) {
 }
 
 export function Avatar({ name = '', uri, size = 36 }: AvatarProps) {
+  const colors = useColors()
+  const styles = useMemo(
+    () =>
+      StyleSheet.create({
+        image: { backgroundColor: colors.surfaceRaised },
+        fallback: { alignItems: 'center', justifyContent: 'center' },
+        initials: { color: colors.textOnAccent, fontWeight: '700' },
+      }),
+    [colors],
+  )
   const dim = { width: size, height: size, borderRadius: size / 2 }
   const resolved = assetUrl(uri)
+  const bg = colorForName(name || '?')
+  const initialColor =
+    bg === '#18181b' || bg === '#71717a' ? colors.textPrimary : colors.textOnAccent
 
   if (resolved) {
     return <Image source={{ uri: resolved }} style={[styles.image, dim]} />
   }
 
   return (
-    <View style={[styles.fallback, dim, { backgroundColor: colorForName(name || '?') }]}>
-      <Text style={[styles.initials, { fontSize: Math.max(11, size * 0.38) }]} allowFontScaling={false}>
+    <View style={[styles.fallback, dim, { backgroundColor: bg }]}>
+      <Text
+        style={[styles.initials, { fontSize: Math.max(11, size * 0.38), color: initialColor }]}
+        allowFontScaling={false}
+      >
         {initials(name)}
       </Text>
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  image: { backgroundColor: colors.surfaceRaised },
-  fallback: { alignItems: 'center', justifyContent: 'center' },
-  initials: { color: '#fff', fontWeight: '700' },
-})

@@ -1,13 +1,26 @@
-import { ActivityIndicator, StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { spacing, typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 import { Button } from './Button'
+import { IconWell } from './IconWell'
+import { SkeletonScreen, type SkeletonVariant } from './Skeleton'
 
-export function LoadingState({ label = 'Loading…' }: { label?: string }) {
+export type { SkeletonVariant }
+
+/** In-place UI skeleton — replaces spinner loaders. */
+export function LoadingState({
+  variant = 'list',
+  label,
+}: {
+  /** Kept for a11y / call-site compatibility; not shown as spinner text. */
+  label?: string
+  variant?: SkeletonVariant
+}) {
   return (
-    <View style={styles.center}>
-      <ActivityIndicator color={colors.accent} size="large" />
-      <Text style={styles.muted}>{label}</Text>
+    <View style={styles.fill} accessibilityLabel={label || 'Loading'} accessibilityRole="progressbar">
+      <SkeletonScreen variant={variant} />
     </View>
   )
 }
@@ -25,16 +38,18 @@ export function EmptyState({
   onAction?: () => void
   icon?: keyof typeof Ionicons.glyphMap
 }) {
+  const colors = useColors()
+  const stylesLocal = useMemo(() => createStyles(colors), [colors])
   return (
-    <View style={styles.center}>
-      <View style={styles.iconWell}>
-        <Ionicons name={icon} size={26} color={colors.accent} />
+    <View style={stylesLocal.center}>
+      <View style={{ marginBottom: 6 }}>
+        <IconWell name={icon} tone="accent" size={26} well={56} />
       </View>
-      <Text style={styles.title} numberOfLines={2}>
+      <Text style={stylesLocal.title} numberOfLines={2}>
         {title}
       </Text>
       {body ? (
-        <Text style={styles.muted} numberOfLines={4}>
+        <Text style={stylesLocal.muted} numberOfLines={4}>
           {body}
         </Text>
       ) : null}
@@ -54,13 +69,13 @@ export function ErrorState({
   message?: string
   onRetry?: () => void
 }) {
+  const colors = useColors()
+  const stylesLocal = useMemo(() => createStyles(colors), [colors])
   return (
-    <View style={styles.center}>
-      <View style={[styles.iconWell, { backgroundColor: colors.dangerSoft }]}>
-        <Ionicons name="alert-circle-outline" size={26} color={colors.danger} />
-      </View>
-      <Text style={styles.title}>Couldn’t load this</Text>
-      <Text style={styles.muted} numberOfLines={4}>
+    <View style={stylesLocal.center}>
+      <IconWell name="alert-circle-outline" tone="danger" size={26} well={56} />
+      <Text style={stylesLocal.title}>Couldn’t load this</Text>
+      <Text style={stylesLocal.muted} numberOfLines={4}>
         {message}
       </Text>
       {onRetry ? (
@@ -72,24 +87,21 @@ export function ErrorState({
   )
 }
 
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    center: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingHorizontal: spacing.xl,
+      paddingVertical: spacing.xxl,
+      gap: 8,
+    },
+    title: { ...typography.h3, color: c.textPrimary, textAlign: 'center' },
+    muted: { ...typography.body, color: c.textSecondary, textAlign: 'center', lineHeight: 21 },
+  })
+}
+
 const styles = StyleSheet.create({
-  center: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxl,
-    gap: 8,
-  },
-  iconWell: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
-  },
-  title: { ...typography.h3, color: colors.textPrimary, textAlign: 'center' },
-  muted: { ...typography.body, color: colors.textSecondary, textAlign: 'center', lineHeight: 21 },
+  fill: { flex: 1 },
 })

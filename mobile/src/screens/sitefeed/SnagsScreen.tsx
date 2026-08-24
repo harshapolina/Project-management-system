@@ -1,12 +1,16 @@
-import { useLayoutEffect } from 'react'
+import { useMemo } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
+import { Fab } from '../../components/Fab'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { siteFeedApi } from '../../api/siteFeed'
 import { isApiError } from '../../api/client'
 import type { SnagStatus } from '../../types/ops'
@@ -15,21 +19,23 @@ import type { MoreStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Snags'>
 
-const STATUS_COLOR: Record<SnagStatus, string> = {
-  open: colors.danger,
-  fixed: colors.warning,
-  verified: colors.success,
+function statusColorMap(c: AppColors): Record<SnagStatus, string> {
+  return {
+    open: c.danger,
+    fixed: c.warning,
+    verified: c.success,
+  }
 }
 
 const NEXT: Record<SnagStatus, SnagStatus | null> = { open: 'fixed', fixed: 'verified', verified: null }
 
 export function SnagsScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { projectId, projectName } = route.params || {}
   const queryClient = useQueryClient()
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: projectName ? `${projectName} · Snags` : 'Snags' })
-  }, [navigation, projectName])
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['snags', projectId ?? 'all'],
@@ -41,36 +47,48 @@ export function SnagsScreen({ route, navigation }: Props) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['snags'] }),
   })
 
+  const pageHeader = (
+    <PageHeader
+      title="Snags"
+      subtitle="Issues to fix"
+      subtitleIcon="alert-circle-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading snags…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading snags…" variant="list" />
       </Screen>
     )
   }
   if (isError) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <FlatList
         data={data}
         keyExtractor={(s) => s._id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listContent}
         renderItem={({ item }) => {
           const next = NEXT[item.status]
           return (
-            <View style={styles.card}>
+            <SurfaceCard>
               <View style={styles.cardTop}>
                 <Text style={styles.title} numberOfLines={2}>
                   {item.title}
                 </Text>
-                <Pill label={item.status} color={STATUS_COLOR[item.status]} bg={`${STATUS_COLOR[item.status]}22`} />
+                <Pill label={item.status} color={statusColorMap(colors)[item.status]} bg={`${statusColorMap(colors)[item.status]}22`} />
               </View>
               {item.assignee ? (
                 <View style={styles.assigneeRow}>
@@ -87,45 +105,40 @@ export function SnagsScreen({ route, navigation }: Props) {
                   <Text style={styles.actionText}>Mark {next}</Text>
                 </Pressable>
               ) : null}
-            </View>
+            </SurfaceCard>
           )
         }}
-        ListEmptyComponent={<EmptyState title="No snags logged" body="Quality issues found on site will show up here." />}
+        ListEmptyComponent={
+          <EmptyState
+            title="No snags logged"
+            body="Quality issues found on site will show up here."
+            action="Log snag"
+            onAction={() => navigation.navigate('CreateSnag', { projectId, projectName })}
+          />
+        }
       />
-      <Pressable
-        style={styles.fab}
+      <Fab
+        label="Log snag"
         onPress={() => navigation.navigate('CreateSnag', { projectId, projectName })}
-        accessibilityLabel="Log snag"
-      >
-        <Ionicons name="add" size={26} color="#fff" />
-      </Pressable>
+      />
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl * 2 },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: spacing.sm },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
-  title: { ...typography.bodyStrong, color: colors.textPrimary, flex: 1 },
-  assigneeRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  assigneeName: { ...typography.caption, color: colors.textSecondary },
-  actionBtn: { alignSelf: 'flex-start', backgroundColor: colors.surfaceRaised, paddingHorizontal: spacing.md, paddingVertical: 6, borderRadius: radius.full },
-  actionText: { ...typography.micro, color: colors.textSecondary, textTransform: 'capitalize' },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', gap: spacing.sm },
+    title: { ...typography.bodyStrong, color: c.textPrimary, flex: 1 },
+    assigneeRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm },
+    assigneeName: { ...typography.caption, color: c.textSecondary },
+    actionBtn: {
+      alignSelf: 'flex-start',
+      backgroundColor: c.surfaceRaised,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      marginTop: spacing.sm,
+    },
+    actionText: { ...typography.micro, color: c.textSecondary, textTransform: 'capitalize' },
+  })
+}

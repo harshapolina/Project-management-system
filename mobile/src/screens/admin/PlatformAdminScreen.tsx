@@ -1,11 +1,16 @@
-import { useLayoutEffect } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { Pill } from '../../components/Badge'
+import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { platformApi } from '../../api/platform'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -13,57 +18,78 @@ import type { MoreStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'PlatformAdmin'>
 
-const STATUS_COLOR = { trial: colors.warning, active: colors.success, suspended: colors.danger }
+function statusColor(c: AppColors) {
+  return { trial: c.warning, active: c.success, suspended: c.danger }
+}
 
 export function PlatformAdminScreen({ navigation }: Props) {
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerRight: () => (
-        <Pressable onPress={() => navigation.navigate('CreateTenant')} hitSlop={10} accessibilityLabel="New workspace">
-          <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
-        </Pressable>
-      ),
-    })
-  }, [navigation])
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['platform-tenants'],
     queryFn: platformApi.tenants,
   })
 
+  const pageHeader = (
+    <PageHeader
+      title="Workspaces"
+      subtitle="Companies on Cubic"
+      subtitleIcon="server-outline"
+      onBack={() => navigation.goBack()}
+      right={
+        <IconButton
+          icon="add-outline"
+          label="New workspace"
+          tone="ghost"
+          onPress={() => navigation.navigate('CreateTenant')}
+        />
+      }
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading workspaces…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading workspaces…" variant="list" />
       </Screen>
     )
   }
   if (isError) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
+  const tenants = data || []
+
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <FlatList
-        data={data}
+        data={tenants}
         keyExtractor={(t) => t._id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listContent}
+        ListHeaderComponent={
+          tenants.length > 0 ? <SectionLabel count={tenants.length}>Workspaces</SectionLabel> : null
+        }
         renderItem={({ item }) => (
-          <View style={styles.card}>
+          <SurfaceCard>
             <View style={styles.cardTop}>
               <Text style={styles.name} numberOfLines={1}>
                 {item.name}
               </Text>
-              <Pill label={item.status} color={STATUS_COLOR[item.status]} bg={`${STATUS_COLOR[item.status]}22`} />
+              <Pill label={item.status} color={statusColor(colors)[item.status]} bg={`${statusColor(colors)[item.status]}22`} />
             </View>
             <Text style={styles.meta}>
               {item.slug} · {item.seatsUsed}/{item.seatLimit} seats
             </Text>
-          </View>
+          </SurfaceCard>
         )}
         ListEmptyComponent={<EmptyState title="No workspaces yet" body="Create the first tenant to onboard a company." />}
       />
@@ -71,10 +97,10 @@ export function PlatformAdminScreen({ navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.md },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: 4 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
-  name: { ...typography.bodyStrong, color: colors.textPrimary, flexShrink: 1 },
-  meta: { ...typography.caption, color: colors.textSecondary },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm },
+    name: { ...typography.bodyStrong, color: c.textPrimary, flexShrink: 1 },
+    meta: { ...typography.caption, color: c.textSecondary, marginTop: 4 },
+  })
+}

@@ -1,12 +1,19 @@
-import { useLayoutEffect } from 'react'
-import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useMemo } from 'react'
+import { FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
+import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { IconWell } from '../../components/IconWell'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { filesApi } from '../../api/files'
 import { assetUrl } from '../../constants/env'
 import { isApiError } from '../../api/client'
@@ -18,13 +25,15 @@ import type { ProjectFile } from '../../types/models'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectFiles'>
 
-const STATUS_COLOR: Record<string, string> = {
-  draft: colors.textMuted,
-  sent: colors.accent,
-  approved: colors.success,
+function statusColorMap(c: AppColors): Record<string, string> {
+  return {
+    draft: c.textMuted,
+    sent: c.accent,
+    approved: c.success,
+  }
 }
 
-function iconForMime(mime?: string) {
+function iconForMime(mime?: string): keyof typeof Ionicons.glyphMap {
   if (!mime) return 'document-outline'
   if (mime.startsWith('image/')) return 'image-outline'
   if (mime === 'application/pdf') return 'document-text-outline'
@@ -32,14 +41,14 @@ function iconForMime(mime?: string) {
 }
 
 export function ProjectFilesScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { projectId, projectName } = route.params
   const queryClient = useQueryClient()
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: projectName ? `${projectName} · Files` : 'Files' })
-  }, [navigation, projectName])
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['files', projectId],
@@ -59,9 +68,19 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
     },
   })
 
+  const pageHeader = (
+    <PageHeader
+      title="Files"
+      subtitle={projectName || 'Project files'}
+      subtitleIcon="folder-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (!caps.manageFiles) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <EmptyState title="Files aren't available" body="Your role doesn't have access to project files." />
       </Screen>
     )
@@ -69,103 +88,75 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
 
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading files…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading files…" variant="list" />
       </Screen>
     )
   }
   if (isError) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
+  const files = data || []
+
   const renderItem = ({ item }: { item: ProjectFile }) => {
     const current = item.versions[item.versions.length - 1]
     return (
-      <Pressable
-        style={styles.row}
-        onPress={() => current?.url && Linking.openURL(assetUrl(current.url))}
-        accessibilityRole="button"
-      >
-        <View style={styles.iconWrap}>
-          <Ionicons name={iconForMime(item.mime) as any} size={20} color={colors.accent} />
+      <SurfaceCard onPress={() => current?.url && Linking.openURL(assetUrl(current.url))}>
+        <View style={styles.row}>
+          <IconWell name={iconForMime(item.mime)} tone="accent" size={18} well={36} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <Text style={styles.name} numberOfLines={1}>
+              {item.name}
+            </Text>
+            <Text style={styles.meta} numberOfLines={1}>
+              v{item.currentVersion} · {item.folder}
+            </Text>
+          </View>
+          <Pill
+            label={item.status}
+            color={statusColorMap(colors)[item.status] || colors.textMuted}
+            bg={`${statusColorMap(colors)[item.status] || colors.textMuted}22`}
+          />
         </View>
-        <View style={{ flex: 1, minWidth: 0 }}>
-          <Text style={styles.name} numberOfLines={1}>
-            {item.name}
-          </Text>
-          <Text style={styles.meta} numberOfLines={1}>
-            v{item.currentVersion} · {item.folder}
-          </Text>
-        </View>
-        <Pill label={item.status} color={STATUS_COLOR[item.status] || colors.textMuted} bg={`${STATUS_COLOR[item.status] || colors.textMuted}22`} />
-      </Pressable>
+      </SurfaceCard>
     )
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <FlatList
-        data={data}
+        data={files}
         keyExtractor={(f) => f._id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
+        ListHeaderComponent={files.length > 0 ? <SectionLabel count={files.length}>Files</SectionLabel> : null}
         renderItem={renderItem}
         ListEmptyComponent={<EmptyState title="No files yet" body="Drawings, BOQs, and documents will show up here." />}
       />
 
-      <Pressable
-        style={styles.fab}
+      <Fab
+        label="Upload file"
+        icon={uploadMutation.isPending ? 'hourglass-outline' : 'cloud-upload-outline'}
         onPress={() => uploadMutation.mutate()}
         disabled={uploadMutation.isPending}
-        accessibilityRole="button"
-        accessibilityLabel="Upload file"
-      >
-        <Ionicons name={uploadMutation.isPending ? 'hourglass-outline' : 'cloud-upload-outline'} size={24} color="#fff" />
-      </Pressable>
+        aboveTabBar={true}
+      />
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl * 2 },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.md,
-  },
-  iconWrap: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.sm,
-    backgroundColor: colors.accentSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  name: { ...typography.bodyStrong, color: colors.textPrimary },
-  meta: { ...typography.caption, color: colors.textSecondary, textTransform: 'capitalize' },
-  fab: {
-    position: 'absolute',
-    right: spacing.lg,
-    bottom: spacing.xl,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: colors.accent,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 4 },
-    elevation: 4,
-  },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+    name: { ...typography.bodyStrong, color: c.textPrimary },
+    meta: { ...typography.caption, color: c.textSecondary, textTransform: 'capitalize' },
+  })
+}

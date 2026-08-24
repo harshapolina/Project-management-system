@@ -1,12 +1,13 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { ProjectPicker } from '../../components/ProjectPicker'
 import { VendorPicker } from '../../components/VendorPicker'
-import { colors, spacing, typography } from '../../constants/theme'
+import { typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { purchaseOrdersApi } from '../../api/procurement'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -15,6 +16,8 @@ import type { SharedOpsParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<SharedOpsParamList, 'CreatePurchaseOrder'>
 
 export function CreatePurchaseOrderScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const params = route.params || {}
   const queryClient = useQueryClient()
   const [projectId, setProjectId] = useState(params.projectId)
@@ -41,13 +44,12 @@ export function CreatePurchaseOrderScreen({ route, navigation }: Props) {
   })
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        {!params.projectId ? <ProjectPicker value={projectId} onChange={(id) => setProjectId(id)} /> : null}
-        <VendorPicker value={vendor} onChange={setVendor} />
-        <Input label="Description (optional)" value={description} onChangeText={setDescription} />
-        <Input label="Order value" placeholder="0" keyboardType="numeric" value={value} onChangeText={setValue} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+    <FormLayout
+      title="Purchase order"
+      subtitle="Request materials from a vendor"
+      subtitleIcon="cart-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Create purchase order"
           onPress={() => {
@@ -61,12 +63,19 @@ export function CreatePurchaseOrderScreen({ route, navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      {!params.projectId ? <ProjectPicker value={projectId} onChange={(id) => setProjectId(id)} /> : null}
+      <VendorPicker value={vendor} onChange={setVendor} />
+      <Input label="Description (optional)" value={description} onChangeText={setDescription} />
+      <Input label="Order value" placeholder="0" keyboardType="numeric" value={value} onChangeText={setValue} />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+  })
+}

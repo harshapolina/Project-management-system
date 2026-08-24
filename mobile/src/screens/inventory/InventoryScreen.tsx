@@ -1,11 +1,17 @@
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
 import { StatCard } from '../../components/StatCard'
+import { SurfaceCard } from '../../components/SurfaceCard'
+import { Fab } from '../../components/Fab'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { colors, formatInr, radius, spacing, typography } from '../../constants/theme'
+import { formatInr, radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { inventoryApi } from '../../api/inventory'
 import { isApiError } from '../../api/client'
 import type { InventoryItem } from '../../types/ops'
@@ -15,6 +21,10 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'Inventory'>
 
 export function InventoryScreen({ navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const queryClient = useQueryClient()
   const [busyId, setBusyId] = useState<string | null>(null)
 
@@ -32,31 +42,43 @@ export function InventoryScreen({ navigation }: Props) {
     onError: (err) => Alert.alert('Could not update stock', isApiError(err) ? err.message : 'Try again'),
   })
 
+  const pageHeader = (
+    <PageHeader
+      title="Inventory"
+      subtitle="Stock on hand"
+      subtitleIcon="cube-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (summary.isLoading || items.isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading inventory…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading inventory…" variant="dashboard" />
       </Screen>
     )
   }
   if (summary.isError) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(summary.error) ? summary.error.message : undefined} onRetry={() => summary.refetch()} />
       </Screen>
     )
   }
 
   const data = summary.data!
+  const list = items.data || []
   const renderItem = ({ item }: { item: InventoryItem }) => {
     const low = item.quantity <= item.reorderLevel
     return (
-      <View style={styles.card}>
+      <SurfaceCard>
         <View style={styles.cardTop}>
           <Text style={styles.name} numberOfLines={1}>
             {item.name}
           </Text>
-          {low ? <Ionicons name="warning" size={16} color={colors.warning} /> : null}
+          {low ? <Ionicons name="warning-outline" size={16} color={colors.warning} /> : null}
         </View>
         <Text style={styles.meta}>
           {item.quantity} {item.unit} · {item.category}
@@ -88,16 +110,17 @@ export function InventoryScreen({ navigation }: Props) {
             <Text style={styles.moveText}>History</Text>
           </Pressable>
         </View>
-      </View>
+      </SurfaceCard>
     )
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <FlatList
-        data={items.data}
+        data={list}
         keyExtractor={(i) => i._id}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listContent}
         refreshControl={
           <RefreshControl
             refreshing={items.isRefetching || summary.isRefetching}
@@ -109,29 +132,40 @@ export function InventoryScreen({ navigation }: Props) {
           />
         }
         ListHeaderComponent={
-          <View style={styles.statsGrid}>
-            <StatCard label="Items" value={data.totals.items} />
-            <StatCard label="Low stock" value={data.totals.lowStock} tone={data.totals.lowStock ? 'warning' : 'default'} />
-            <StatCard label="Total units" value={data.totals.units} />
-            <StatCard label="Stock value" value={formatInr(data.totals.value)} />
+          <View style={{ gap: spacing.md }}>
+            <View style={styles.statsGrid}>
+              <StatCard label="Items" value={data.totals.items} />
+              <StatCard label="Low stock" value={data.totals.lowStock} tone={data.totals.lowStock ? 'warning' : 'default'} />
+              <StatCard label="Total units" value={data.totals.units} />
+              <StatCard label="Stock value" value={formatInr(data.totals.value)} />
+            </View>
+            {list.length > 0 ? <SectionLabel count={list.length}>Items</SectionLabel> : null}
           </View>
         }
         renderItem={renderItem}
-        ListEmptyComponent={<EmptyState title="No inventory items yet" />}
+        ListEmptyComponent={
+          <EmptyState
+            title="No inventory items yet"
+            body="Add materials and stock levels to track on hand."
+            action="Add item"
+            onAction={() => navigation.navigate('CreateInventoryItem')}
+          />
+        }
       />
+      <Fab label="Add item" onPress={() => navigation.navigate('CreateInventoryItem')} />
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.md, paddingBottom: spacing.xxl },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginBottom: spacing.md },
-  card: { backgroundColor: colors.surface, borderWidth: 1, borderColor: colors.border, borderRadius: radius.lg, padding: spacing.md, gap: 4 },
-  cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  name: { ...typography.bodyStrong, color: colors.textPrimary, flexShrink: 1 },
-  meta: { ...typography.caption, color: colors.textSecondary },
-  value: { ...typography.captionStrong, color: colors.accent },
-  moveRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 4 },
-  moveBtn: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, backgroundColor: colors.surfaceRaised },
-  moveText: { ...typography.micro, color: colors.textSecondary, fontWeight: '700' },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+    cardTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    name: { ...typography.bodyStrong, color: c.textPrimary, flexShrink: 1 },
+    meta: { ...typography.caption, color: c.textSecondary, marginTop: 4 },
+    value: { ...typography.captionStrong, color: c.accent, marginTop: 2 },
+    moveRow: { flexDirection: 'row', gap: spacing.sm, marginTop: 8 },
+    moveBtn: { paddingHorizontal: spacing.sm, paddingVertical: 6, borderRadius: radius.full, backgroundColor: c.surfaceRaised },
+    moveText: { ...typography.micro, color: c.textSecondary, fontWeight: '700' },
+  })
+}

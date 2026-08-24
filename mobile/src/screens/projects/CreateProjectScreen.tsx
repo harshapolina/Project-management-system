@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { projectsApi } from '../../api/projects'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -19,6 +20,8 @@ const TYPES: { value: 'residential' | 'commercial' | 'blank'; label: string }[] 
 ]
 
 export function CreateProjectScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [clientName, setClientName] = useState('')
@@ -54,67 +57,62 @@ export function CreateProjectScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <Text style={styles.heading}>New project</Text>
-
-        <View>
-          <Text style={styles.label}>Project type</Text>
-          <View style={styles.typeRow}>
-            {TYPES.map((t) => (
-              <Pressable
-                key={t.value}
-                onPress={() => setType(t.value)}
-                style={[styles.typeChip, type === t.value && styles.typeChipActive]}
-              >
-                <Text style={[styles.typeChipText, type === t.value && styles.typeChipTextActive]}>{t.label}</Text>
-              </Pressable>
-            ))}
-          </View>
+    <FormLayout
+      title="New project"
+      subtitle="Set up a workspace for the client"
+      subtitleIcon="folder-outline"
+      onBack={() => navigation.goBack()}
+      footer={<Button title="Create project" onPress={onSubmit} loading={mutation.isPending} fullWidth />}
+    >
+      <View>
+        <Text style={styles.label}>Project type</Text>
+        <View style={styles.typeRow}>
+          {TYPES.map((t) => (
+            <Pressable
+              key={t.value}
+              onPress={() => setType(t.value)}
+              style={[styles.typeChip, type === t.value && styles.typeChipActive]}
+            >
+              <Text style={[styles.typeChipText, type === t.value && styles.typeChipTextActive]}>{t.label}</Text>
+            </Pressable>
+          ))}
         </View>
-
-        <View style={styles.form}>
-          <Input label="Project name" placeholder="e.g. Sharma Penthouse" value={name} onChangeText={setName} error={errors.name} />
-          <Input label="Client name" placeholder="e.g. Priya Sharma" value={clientName} onChangeText={setClientName} error={errors.clientName} />
-          <Input
-            label="Client phone (optional)"
-            placeholder="+91…"
-            keyboardType="phone-pad"
-            value={clientPhone}
-            onChangeText={setClientPhone}
-          />
-          <Input label="Location (optional)" placeholder="City, area" value={location} onChangeText={setLocation} />
-          <Input
-            label="Budget (optional)"
-            placeholder="0"
-            keyboardType="numeric"
-            value={budget}
-            onChangeText={setBudget}
-          />
-
-          {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
-
-          <Button title="Create project" onPress={onSubmit} loading={mutation.isPending} fullWidth />
-        </View>
-      </ScrollView>
-    </Screen>
+      </View>
+      <Input label="Project name" placeholder="e.g. Sharma Penthouse" value={name} onChangeText={setName} error={errors.name} />
+      <Input
+        label="Client name"
+        placeholder="e.g. Priya Sharma"
+        value={clientName}
+        onChangeText={setClientName}
+        error={errors.clientName}
+      />
+      <Input
+        label="Client phone (optional)"
+        placeholder="+91…"
+        keyboardType="phone-pad"
+        value={clientPhone}
+        onChangeText={setClientPhone}
+      />
+      <Input label="Location (optional)" placeholder="City, area" value={location} onChangeText={setLocation} />
+      <Input label="Budget (optional)" placeholder="0" keyboardType="numeric" value={budget} onChangeText={setBudget} />
+      {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { paddingBottom: spacing.xxl, gap: spacing.lg },
-  heading: { ...typography.h2, color: colors.textPrimary, marginTop: spacing.md },
-  label: { ...typography.captionStrong, color: colors.textSecondary, marginBottom: spacing.sm },
-  typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  typeChip: {
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    borderRadius: radius.full,
-    backgroundColor: colors.surfaceRaised,
-  },
-  typeChipActive: { backgroundColor: colors.rail },
-  typeChipText: { ...typography.caption, color: colors.textSecondary },
-  typeChipTextActive: { color: '#fff', fontWeight: '700' },
-  form: { gap: spacing.md },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    label: { ...typography.captionStrong, color: c.textSecondary, marginBottom: spacing.sm },
+    typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    typeChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+    },
+    typeChipActive: { backgroundColor: c.textPrimary },
+    typeChipText: { ...typography.caption, color: c.textSecondary },
+    typeChipTextActive: { color: c.canvas, fontWeight: '700' },
+    error: { ...typography.caption, color: c.danger },
+  })
+}

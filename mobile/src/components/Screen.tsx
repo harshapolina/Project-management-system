@@ -1,7 +1,8 @@
 import type { ReactNode } from 'react'
 import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { colors, spacing } from '../constants/theme'
+import { useColors } from '../theme/useColors'
+import { useResponsive } from '../theme/useResponsive'
 
 interface ScreenProps {
   children: ReactNode
@@ -12,25 +13,36 @@ interface ScreenProps {
 }
 
 /**
- * Base screen shell: safe-area aware, never a fixed width/height so it
- * behaves the same from an iPhone SE up to an iPad. Screens that render
- * their own FlatList pass edges=['top','left','right'] and let the list
- * handle bottom inset via contentContainerStyle so pull-to-refresh isn't
- * fighting a KeyboardAvoidingView.
+ * Base screen shell: safe-area aware, fluid width from iPhone SE to tablet.
+ * On tablets, content is centered with a max width so cards don’t stretch endlessly.
  */
 export function Screen({
   children,
   edges = ['top', 'left', 'right', 'bottom'],
   padded = true,
   keyboardAvoiding = false,
-  background = colors.canvas,
+  background,
 }: ScreenProps) {
+  const colors = useColors()
+  const { pagePadding, contentMaxWidth, isTablet } = useResponsive()
+  const bg = background ?? colors.canvas
+
   const content = (
-    <View style={[styles.flex, padded && styles.padded]}>{children}</View>
+    <View
+      style={[
+        styles.flex,
+        padded && { paddingHorizontal: pagePadding },
+        isTablet && contentMaxWidth
+          ? { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center' }
+          : null,
+      ]}
+    >
+      {children}
+    </View>
   )
 
   return (
-    <SafeAreaView edges={edges} style={[styles.flex, { backgroundColor: background }]}>
+    <SafeAreaView edges={edges} style={[styles.flex, { backgroundColor: bg }]}>
       {keyboardAvoiding ? (
         <KeyboardAvoidingView
           style={styles.flex}
@@ -48,5 +60,4 @@ export function Screen({
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  padded: { paddingHorizontal: spacing.lg },
 })

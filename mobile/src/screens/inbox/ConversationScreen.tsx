@@ -1,11 +1,15 @@
-import { useLayoutEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { PageHeader } from '../../components/PageHeader'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { LoadingState, ErrorState, EmptyState } from '../../components/States'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
@@ -15,14 +19,14 @@ import type { InboxStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<InboxStackParamList, 'Conversation'>
 
 export function ConversationScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const { pagePadding } = useResponsive()
+  const styles = useMemo(() => createStyles(colors, pagePadding), [colors, pagePadding])
+
   const { userId, userName } = route.params
   const me = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const [body, setBody] = useState('')
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: userName })
-  }, [navigation, userName])
 
   const { data, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['mail-conversation', userId],
@@ -38,28 +42,39 @@ export function ConversationScreen({ route, navigation }: Props) {
     },
   })
 
+  const header = (
+    <PageHeader
+      title={userName}
+      subtitle="Direct message"
+      subtitleIcon="chatbubble-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading conversation…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
+        <LoadingState label="Loading conversation…" variant="chat" />
       </Screen>
     )
   }
   if (isError || !data) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
   return (
-    <Screen padded={false} keyboardAvoiding>
+    <Screen padded={false} edges={['top', 'left', 'right']} keyboardAvoiding>
+      {header}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList
           data={data.messages}
           keyExtractor={(m) => m._id}
-          inverted={false}
           contentContainerStyle={styles.listContent}
           renderItem={({ item }) => {
             const mine = String(item.from._id) === String(me?.id)
@@ -88,22 +103,43 @@ export function ConversationScreen({ route, navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.sm, flexGrow: 1, justifyContent: 'flex-end' },
-  bubbleRow: { flexDirection: 'row' },
-  bubbleRowMine: { justifyContent: 'flex-end' },
-  bubble: { maxWidth: '80%', borderRadius: radius.lg, paddingHorizontal: spacing.md, paddingVertical: spacing.sm },
-  bubbleTheirs: { backgroundColor: colors.surfaceRaised, borderBottomLeftRadius: 4 },
-  bubbleMine: { backgroundColor: colors.accent, borderBottomRightRadius: 4 },
-  bubbleText: { ...typography.body, color: colors.textPrimary },
-  bubbleTextMine: { color: '#fff' },
-  composer: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-    padding: spacing.md,
-    borderTopWidth: 1,
-    borderTopColor: colors.border,
-    backgroundColor: colors.surface,
-  },
-})
+function createStyles(c: AppColors, pagePadding: number) {
+  return StyleSheet.create({
+    listContent: {
+      paddingHorizontal: pagePadding,
+      paddingVertical: spacing.md,
+      gap: spacing.md,
+      flexGrow: 1,
+      justifyContent: 'flex-end',
+      paddingBottom: spacing.md,
+    },
+    bubbleRow: { flexDirection: 'row' },
+    bubbleRowMine: { justifyContent: 'flex-end' },
+    bubble: {
+      maxWidth: '80%',
+      borderRadius: radius.xl,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+    },
+    bubbleTheirs: {
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderBottomLeftRadius: 4,
+    },
+    bubbleMine: { backgroundColor: c.accent, borderBottomRightRadius: 4 },
+    bubbleText: { ...typography.body, color: c.textPrimary },
+    bubbleTextMine: { color: c.textOnAccent },
+    composer: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.sm,
+      paddingHorizontal: pagePadding,
+      paddingTop: spacing.md,
+      paddingBottom: TAB_BAR_CLEARANCE,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      backgroundColor: c.canvas,
+    },
+  })
+}

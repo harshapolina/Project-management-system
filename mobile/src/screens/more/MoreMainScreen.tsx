@@ -1,39 +1,95 @@
-import { ScrollView, StyleSheet } from 'react-native'
+import { Alert, ScrollView } from 'react-native'
 import { Screen } from '../../components/Screen'
 import { NavRow, NavSection } from '../../components/NavRow'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
-import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { spacing } from '../../constants/theme'
+import { useColors, useThemeMode } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
+import { useUiStore } from '../../store/uiStore'
 import { useAuthStore } from '../../store/authStore'
+import { authApi } from '../../api/auth'
 import { capabilitiesForUser } from '../../utils/roles'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import type { CompositeNavigationProp } from '@react-navigation/native'
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import type { MoreStackParamList } from '../../navigation/types'
+import type { MoreStackParamList, RootTabParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'MoreMain'>
 
-export function MoreMainScreen({ navigation }: Props) {
-  const user = useAuthStore((s) => s.user)
-  const caps = capabilitiesForUser(user)
+type Nav = CompositeNavigationProp<
+  NativeStackNavigationProp<MoreStackParamList, 'MoreMain'>,
+  BottomTabNavigationProp<RootTabParamList>
+>
 
-  const anySales = caps.leads || caps.boq
-  const anyOps = caps.procurement || caps.finance
-  const anySite = caps.siteFeed
-  const anyInsights = caps.portfolio
-  const anyCompany = caps.companyAdmin
-  const anyPlatform = caps.platform
+export function MoreMainScreen({ navigation }: Props) {
+  useColors()
+  const theme = useThemeMode()
+  const setTheme = useUiStore((s) => s.setTheme)
+  const user = useAuthStore((s) => s.user)
+  const refreshToken = useAuthStore((s) => s.refreshToken)
+  const logout = useAuthStore((s) => s.logout)
+  const caps = capabilitiesForUser(user)
+  const { tabListContent } = useResponsive()
+  const tabNav = navigation as unknown as Nav
+
+  const goTab = (tab: keyof RootTabParamList) => {
+    tabNav.navigate(tab)
+  }
+
+  const doLogout = () => {
+    Alert.alert('Log out', 'You’ll need to sign in again to see your work.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log out',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await authApi.logout(refreshToken)
+          } finally {
+            logout()
+          }
+        },
+      },
+    ])
+  }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
-      <PageHeader title="More" subtitle="Account, tools, and company." />
-      <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
+      <PageHeader
+        title="More"
+        subtitle="Account, tools, and company"
+        subtitleIcon="grid-outline"
+      />
+      <ScrollView contentContainerStyle={tabListContent} showsVerticalScrollIndicator={false}>
+        {/* Account */}
         <NavSection title="You">
           <NavRow
             icon="person-outline"
             label="Profile"
-            hint="Account, password, people"
+            hint="Account, password, appearance"
             tone={0}
             onPress={() => navigation.navigate('ProfileHub')}
           />
+          {caps.myWork ? (
+            <NavRow
+              icon="checkbox-outline"
+              label="My work"
+              hint="Tasks assigned to you"
+              tone={1}
+              onPress={() => goTab('Home')}
+            />
+          ) : null}
+          {caps.projects ? (
+            <NavRow
+              icon="folder-outline"
+              label="Projects"
+              hint="All live workspaces"
+              tone={3}
+              onPress={() => goTab('Projects')}
+            />
+          ) : null}
           {caps.impact ? (
             <NavRow
               icon="trophy-outline"
@@ -50,15 +106,26 @@ export function MoreMainScreen({ navigation }: Props) {
             tone={4}
             onPress={() => navigation.navigate('Notifications')}
           />
+          <NavRow
+            icon="chatbubbles-outline"
+            label="Messages"
+            hint="Team inbox"
+            tone={0}
+            last
+            onPress={() => goTab('Inbox')}
+          />
         </NavSection>
-        {anySales ? (
+
+        {/* Sales */}
+        {caps.leads || caps.boq ? (
           <NavSection title="Sales">
             {caps.leads ? (
               <NavRow
-                icon="people-outline"
+                icon="briefcase-outline"
                 label="New enquiries"
                 hint="Assign and follow up"
                 tone={0}
+                last={!caps.boq}
                 onPress={() => navigation.navigate('Leads')}
               />
             ) : null}
@@ -68,13 +135,15 @@ export function MoreMainScreen({ navigation }: Props) {
                 label="BOQ / Quotes"
                 hint="Estimates and versions"
                 tone={4}
+                last
                 onPress={() => navigation.navigate('BoqList', undefined)}
               />
             ) : null}
           </NavSection>
         ) : null}
 
-        {anyOps ? (
+        {/* Operations */}
+        {caps.procurement || caps.finance ? (
           <NavSection title="Operations">
             {caps.procurement ? (
               <>
@@ -90,6 +159,7 @@ export function MoreMainScreen({ navigation }: Props) {
                   label="Purchase orders"
                   hint="Material orders"
                   tone={2}
+                  last={!caps.finance}
                   onPress={() => navigation.navigate('PurchaseOrders', undefined)}
                 />
               </>
@@ -108,6 +178,7 @@ export function MoreMainScreen({ navigation }: Props) {
                   label="Billing"
                   hint="Vendor invoices"
                   tone={2}
+                  last
                   onPress={() => navigation.navigate('Billing')}
                 />
               </>
@@ -115,7 +186,8 @@ export function MoreMainScreen({ navigation }: Props) {
           </NavSection>
         ) : null}
 
-        {anySite ? (
+        {/* Site */}
+        {caps.siteFeed ? (
           <NavSection title="Site">
             <NavRow
               icon="camera-outline"
@@ -125,37 +197,51 @@ export function MoreMainScreen({ navigation }: Props) {
               onPress={() => navigation.navigate('SiteFeed', undefined)}
             />
             <NavRow
+              icon="add-circle-outline"
+              label="Post update"
+              hint="Share progress from the field"
+              tone={1}
+              onPress={() => navigation.navigate('PostSiteUpdate', undefined)}
+            />
+            <NavRow
               icon="alert-circle-outline"
               label="Snags"
               hint="Issues to fix"
               tone={5}
+              last
               onPress={() => navigation.navigate('Snags', undefined)}
             />
           </NavSection>
         ) : null}
 
-        {anyInsights ? (
+        {/* Insights */}
+        {caps.portfolio || caps.reports ? (
           <NavSection title="Insights">
+            {caps.portfolio ? (
+              <NavRow
+                icon="grid-outline"
+                label="Portfolio"
+                hint="All live work"
+                tone={0}
+                last={!caps.reports}
+                onPress={() => navigation.navigate('Portfolio')}
+              />
+            ) : null}
             {caps.reports ? (
               <NavRow
                 icon="bar-chart-outline"
                 label="Reports"
                 hint="Progress snapshot"
                 tone={3}
+                last
                 onPress={() => navigation.navigate('Reports')}
               />
             ) : null}
-            <NavRow
-              icon="grid-outline"
-              label="Portfolio"
-              hint="All live work"
-              tone={0}
-              onPress={() => navigation.navigate('Portfolio')}
-            />
           </NavSection>
         ) : null}
 
-        {anyCompany || caps.inventory || caps.people ? (
+        {/* Company */}
+        {caps.companyAdmin || caps.inventory || caps.people || caps.managePeople ? (
           <NavSection title="Company">
             {caps.companyAdmin ? (
               <NavRow
@@ -163,16 +249,28 @@ export function MoreMainScreen({ navigation }: Props) {
                 label="Company dashboard"
                 hint="Team overview"
                 tone={0}
+                last={!caps.people && !caps.managePeople && !caps.inventory}
                 onPress={() => navigation.navigate('CompanyAdminDashboard')}
               />
             ) : null}
-            {caps.people ? (
+            {caps.people || caps.managePeople ? (
               <NavRow
                 icon="people-outline"
                 label="People"
                 hint="Team and access"
                 tone={1}
+                last={!caps.managePeople && !caps.inventory}
                 onPress={() => navigation.navigate('ProfileHub', { screen: 'People' })}
+              />
+            ) : null}
+            {caps.managePeople ? (
+              <NavRow
+                icon="person-add-outline"
+                label="Invite teammate"
+                hint="Add someone to this workspace"
+                tone={0}
+                last={!caps.inventory}
+                onPress={() => navigation.navigate('ProfileHub', { screen: 'InvitePerson' })}
               />
             ) : null}
             {caps.inventory ? (
@@ -189,6 +287,7 @@ export function MoreMainScreen({ navigation }: Props) {
                   label="Stock log"
                   hint="In and out movements"
                   tone={4}
+                  last
                   onPress={() => navigation.navigate('InventoryMovements')}
                 />
               </>
@@ -196,7 +295,8 @@ export function MoreMainScreen({ navigation }: Props) {
           </NavSection>
         ) : null}
 
-        {anyPlatform ? (
+        {/* Platform */}
+        {caps.platform ? (
           <NavSection title="Platform">
             <NavRow
               icon="server-outline"
@@ -205,13 +305,36 @@ export function MoreMainScreen({ navigation }: Props) {
               tone={3}
               onPress={() => navigation.navigate('PlatformAdmin')}
             />
+            <NavRow
+              icon="add-outline"
+              label="New workspace"
+              hint="Create a tenant"
+              tone={0}
+              last
+              onPress={() => navigation.navigate('CreateTenant')}
+            />
           </NavSection>
         ) : null}
+
+        {/* Preferences */}
+        <NavSection title="Preferences">
+          <NavRow
+            icon={theme === 'dark' ? 'moon-outline' : 'sunny-outline'}
+            label="Appearance"
+            hint={theme === 'dark' ? 'Dark mode on' : 'Light mode on'}
+            tone={2}
+            onPress={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+          />
+          <NavRow
+            icon="log-out-outline"
+            label="Log out"
+            hint="Sign out of this device"
+            tone={5}
+            last
+            onPress={doLogout}
+          />
+        </NavSection>
       </ScrollView>
     </Screen>
   )
 }
-
-const styles = StyleSheet.create({
-  scroll: { paddingHorizontal: spacing.lg, gap: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
-})

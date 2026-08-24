@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { platformApi } from '../../api/platform'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -13,6 +14,9 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'CreateTenant'>
 
 export function CreateTenantScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [slug, setSlug] = useState('')
@@ -38,45 +42,32 @@ export function CreateTenantScreen({ navigation }: Props) {
 
   if (result) {
     return (
-      <Screen>
-        <View style={styles.successCard}>
-          <Text style={styles.successTitle}>Workspace created</Text>
-          <View style={styles.credBox}>
-            <Text style={styles.credLabel}>Admin email</Text>
-            <Text style={styles.credValue}>{adminEmail.trim().toLowerCase()}</Text>
-            <Text style={styles.credLabel}>Temporary password</Text>
-            <Text style={styles.credValue}>{result.tempPassword}</Text>
-            <Text style={styles.credLabel}>Login</Text>
-            <Text style={styles.credValue}>{result.loginHint}</Text>
-          </View>
-          <Button title="Done" onPress={() => navigation.goBack()} fullWidth />
+      <FormLayout
+        title="Workspace created"
+        subtitle="Share credentials securely"
+        subtitleIcon="checkmark-circle-outline"
+        onBack={() => navigation.goBack()}
+        footer={<Button title="Done" onPress={() => navigation.goBack()} fullWidth />}
+      >
+        <View style={styles.credBox}>
+          <Text style={styles.credLabel}>Admin email</Text>
+          <Text style={styles.credValue}>{adminEmail.trim().toLowerCase()}</Text>
+          <Text style={styles.credLabel}>Temporary password</Text>
+          <Text style={styles.credValue}>{result.tempPassword}</Text>
+          <Text style={styles.credLabel}>Login</Text>
+          <Text style={styles.credValue}>{result.loginHint}</Text>
         </View>
-      </Screen>
+      </FormLayout>
     )
   }
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <Input label="Workspace name" placeholder="e.g. Studio Forge" value={name} onChangeText={setName} error={errors.name} />
-        <Input
-          label="Workspace slug"
-          placeholder="studio-forge"
-          autoCapitalize="none"
-          value={slug}
-          onChangeText={setSlug}
-          error={errors.slug}
-        />
-        <Input label="Admin name" value={adminName} onChangeText={setAdminName} error={errors.adminName} />
-        <Input
-          label="Admin email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={adminEmail}
-          onChangeText={setAdminEmail}
-          error={errors.adminEmail}
-        />
-        {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+    <FormLayout
+      title="New workspace"
+      subtitle="Platform admin"
+      subtitleIcon="business-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Create workspace"
           onPress={() => {
@@ -91,17 +82,36 @@ export function CreateTenantScreen({ navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      <Input label="Workspace name" placeholder="e.g. Studio Forge" value={name} onChangeText={setName} error={errors.name} />
+      <Input
+        label="Workspace slug"
+        placeholder="studio-forge"
+        autoCapitalize="none"
+        value={slug}
+        onChangeText={setSlug}
+        error={errors.slug}
+      />
+      <Input label="Admin name" value={adminName} onChangeText={setAdminName} error={errors.adminName} />
+      <Input
+        label="Admin email"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        value={adminEmail}
+        onChangeText={setAdminEmail}
+        error={errors.adminEmail}
+      />
+      {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  error: { ...typography.caption, color: colors.danger },
-  successCard: { gap: spacing.md, paddingTop: spacing.xl },
-  successTitle: { ...typography.h2, color: colors.textPrimary },
-  credBox: { backgroundColor: colors.surfaceRaised, borderRadius: radius.lg, padding: spacing.lg, gap: 4 },
-  credLabel: { ...typography.micro, color: colors.textMuted, textTransform: 'uppercase', marginTop: spacing.sm },
-  credValue: { ...typography.bodyStrong, color: colors.textPrimary },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+    credBox: { gap: 4 },
+    credLabel: { ...typography.micro, color: c.textMuted, textTransform: 'uppercase', marginTop: spacing.sm },
+    credValue: { ...typography.bodyStrong, color: c.textPrimary },
+  })
+}

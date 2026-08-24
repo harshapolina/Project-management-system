@@ -71,6 +71,7 @@ export type MoreStackParamList = SharedOpsParamList & {
   Reports: undefined
   Portfolio: undefined
   Inventory: undefined
+  CreateInventoryItem: undefined
   InventoryMovements: undefined
   CompanyAdminDashboard: undefined
   PlatformAdmin: undefined
@@ -84,7 +85,11 @@ export type MoreStackParamList = SharedOpsParamList & {
 
 export type RootTabParamList = {
   Home: NavigatorScreenParams<HomeStackParamList> | undefined
-  Projects: undefined
-  Inbox: undefined
+  Projects: NavigatorScreenParams<ProjectStackParamList> | undefined
+  Inbox: NavigatorScreenParams<InboxStackParamList> | undefined
   More: NavigatorScreenParams<MoreStackParamList> | undefined
+}
+
+export type RootDrawerParamList = {
+  MainTabs: NavigatorScreenParams<RootTabParamList> | undefined
 }

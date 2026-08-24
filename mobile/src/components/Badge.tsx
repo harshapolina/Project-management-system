@@ -1,12 +1,15 @@
 import { StyleSheet, Text, View } from 'react-native'
-import { colors, PRIORITY_LABELS, radius, STATUS_LABELS, typography } from '../constants/theme'
+import { PRIORITY_LABELS, radius, STATUS_LABELS, typography } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 import type { TaskPriority, TaskStatus } from '../types/models'
 
 function withAlpha(hex: string, alpha: string) {
+  if (hex.startsWith('rgba') || hex.startsWith('rgb')) return hex
   return `${hex}${alpha}`
 }
 
 export function StatusBadge({ status }: { status: TaskStatus | string }) {
+  const colors = useColors()
   const color = colors.status[status] || colors.textMuted
   return (
     <View style={[styles.badge, { backgroundColor: withAlpha(color, '22') }]}>
@@ -19,6 +22,7 @@ export function StatusBadge({ status }: { status: TaskStatus | string }) {
 }
 
 export function PriorityBadge({ priority }: { priority: TaskPriority | string }) {
+  const colors = useColors()
   const color = colors.priority[priority] || colors.textMuted
   return (
     <View style={[styles.badge, { backgroundColor: withAlpha(color, '22') }]}>
@@ -29,10 +33,19 @@ export function PriorityBadge({ priority }: { priority: TaskPriority | string })
   )
 }
 
-export function Pill({ label, color = colors.textSecondary, bg }: { label: string; color?: string; bg?: string }) {
+export function Pill({
+  label,
+  color,
+  bg,
+}: {
+  label: string
+  color?: string
+  bg?: string
+}) {
+  const colors = useColors()
   return (
     <View style={[styles.badge, { backgroundColor: bg || colors.surfaceRaised }]}>
-      <Text style={[styles.text, { color }]} numberOfLines={1}>
+      <Text style={[styles.text, { color: color || colors.textSecondary }]} numberOfLines={1}>
         {label}
       </Text>
     </View>

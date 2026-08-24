@@ -1,14 +1,15 @@
 import { useState } from 'react'
-import { FlatList, RefreshControl, StyleSheet, View } from 'react-native'
+import { FlatList, RefreshControl } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
 import { ProjectCard } from '../../components/ProjectCard'
 import { SearchField } from '../../components/SearchField'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { colors, spacing } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { projectsApi } from '../../api/projects'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
@@ -19,6 +20,9 @@ import type { ProjectStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectsList'>
 
 export function ProjectsListScreen({ navigation }: Props) {
+  const colors = useColors()
+  const { tabListContent } = useResponsive()
+
   const [search, setSearch] = useState('')
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
@@ -35,15 +39,18 @@ export function ProjectsListScreen({ navigation }: Props) {
   })
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
       <PageHeader
         title="Projects"
         subtitle={data ? `${data.length} live spaces` : 'Your active workspaces'}
+        subtitleIcon="folder-outline"
         right={
           caps.createProject ? (
             <IconButton
-              icon="add"
+              icon="add-outline"
               label="Create project"
+              tone="ghost"
               onPress={() => navigation.navigate('CreateProject')}
             />
           ) : null
@@ -53,15 +60,14 @@ export function ProjectsListScreen({ navigation }: Props) {
       <SearchField value={search} onChangeText={setSearch} placeholder="Search projects or clients" />
 
       {isLoading ? (
-        <LoadingState label="Loading projects…" />
+        <LoadingState label="Loading projects…"  variant="cards" />
       ) : isError ? (
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       ) : (
         <FlatList
           data={filtered}
           keyExtractor={(p) => p._id}
-          contentContainerStyle={styles.listContent}
-          ItemSeparatorComponent={() => <View style={{ height: spacing.md }} />}
+          contentContainerStyle={tabListContent}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
           renderItem={({ item }) => (
             <ProjectCard
@@ -81,7 +87,3 @@ export function ProjectsListScreen({ navigation }: Props) {
     </Screen>
   )
 }
-
-const styles = StyleSheet.create({
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: TAB_BAR_CLEARANCE },
-})

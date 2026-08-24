@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { leadsApi } from '../../api/leads'
 import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
@@ -14,6 +15,8 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'CreateLead'>
 
 export function CreateLeadScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const queryClient = useQueryClient()
   const [clientName, setClientName] = useState('')
   const [phone, setPhone] = useState('')
@@ -43,31 +46,12 @@ export function CreateLeadScreen({ navigation }: Props) {
   })
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <Input label="Client name" placeholder="e.g. Priya Sharma" value={clientName} onChangeText={setClientName} />
-        <Input label="Phone (optional)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-        <Input label="Email (optional)" keyboardType="email-address" autoCapitalize="none" value={email} onChangeText={setEmail} />
-        <Input
-          label="Estimated value (optional)"
-          placeholder="0"
-          keyboardType="numeric"
-          value={estimatedValue}
-          onChangeText={setEstimatedValue}
-        />
-        <Input label="Notes (optional)" value={notes} onChangeText={setNotes} multiline numberOfLines={3} style={{ minHeight: 80, textAlignVertical: 'top' }} />
-        <Text style={styles.label}>Assign employee (optional)</Text>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
-          {(users.data || []).map((u) => {
-            const active = owner === u._id
-            return (
-              <Pressable key={u._id} onPress={() => setOwner(active ? '' : u._id)} style={[styles.chip, active && styles.chipActive]}>
-                <Text style={[styles.chipText, active && styles.chipTextActive]}>{u.name}</Text>
-              </Pressable>
-            )
-          })}
-        </ScrollView>
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+    <FormLayout
+      title="New enquiry"
+      subtitle="Capture a lead and assign follow-up"
+      subtitleIcon="people-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Add enquiry"
           onPress={() => {
@@ -81,23 +65,67 @@ export function CreateLeadScreen({ navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      <Input label="Client name" placeholder="e.g. Priya Sharma" value={clientName} onChangeText={setClientName} />
+      <Input label="Phone (optional)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      <Input
+        label="Email (optional)"
+        keyboardType="email-address"
+        autoCapitalize="none"
+        value={email}
+        onChangeText={setEmail}
+      />
+      <Input
+        label="Estimated value (optional)"
+        placeholder="0"
+        keyboardType="numeric"
+        value={estimatedValue}
+        onChangeText={setEstimatedValue}
+      />
+      <Input
+        label="Notes (optional)"
+        value={notes}
+        onChangeText={setNotes}
+        multiline
+        numberOfLines={3}
+        style={{ minHeight: 80, textAlignVertical: 'top' }}
+      />
+      <View>
+        <Text style={styles.label}>Assign employee (optional)</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
+          {(users.data || []).map((u) => {
+            const active = owner === u._id
+            return (
+              <Pressable
+                key={u._id}
+                onPress={() => setOwner(active ? '' : u._id)}
+                style={[styles.chip, active && styles.chipActive]}
+              >
+                <Text style={[styles.chipText, active && styles.chipTextActive]}>{u.name}</Text>
+              </Pressable>
+            )
+          })}
+        </ScrollView>
+      </View>
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  error: { ...typography.caption, color: colors.danger },
-  label: { ...typography.captionStrong, color: colors.textSecondary },
-  chips: { gap: 8, paddingVertical: 2 },
-  chip: {
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-  },
-  chipActive: { backgroundColor: colors.textPrimary },
-  chipText: { ...typography.caption, color: colors.textSecondary },
-  chipTextActive: { color: '#fff' },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+    label: { ...typography.captionStrong, color: c.textSecondary, marginBottom: spacing.sm },
+    chips: { gap: 8, paddingVertical: 2 },
+    chip: {
+      backgroundColor: c.surfaceRaised,
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+    },
+    chipActive: { backgroundColor: c.textPrimary },
+    chipText: { ...typography.caption, color: c.textSecondary },
+    chipTextActive: { color: c.canvas },
+  })
+}

@@ -1,14 +1,18 @@
-import { useLayoutEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
-import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { SectionLabel } from '../../components/SectionLabel'
+import { SurfaceCard } from '../../components/SurfaceCard'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { Pill } from '../../components/Badge'
 import { LoadingState, ErrorState } from '../../components/States'
-import { colors, formatInr, radius, spacing, typography } from '../../constants/theme'
+import { formatInr, radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { boqApi } from '../../api/boq'
 import { isApiError } from '../../api/client'
 import type { BoqItem, QuotationStatus } from '../../types/ops'
@@ -20,6 +24,10 @@ type Props = NativeStackScreenProps<MoreStackParamList, 'BoqDetail'>
 const STATUS_FLOW: QuotationStatus[] = ['draft', 'sent', 'approved']
 
 export function BoqDetailScreen({ route, navigation }: Props) {
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { quotationId } = route.params
   const queryClient = useQueryClient()
   const [desc, setDesc] = useState('')
@@ -31,10 +39,6 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     queryKey: ['quotation', quotationId],
     queryFn: () => boqApi.get(quotationId),
   })
-
-  useLayoutEffect(() => {
-    navigation.setOptions({ title: quotation?.title || 'Quotation' })
-  }, [navigation, quotation?.title])
 
   const invalidate = () => {
     queryClient.invalidateQueries({ queryKey: ['quotation', quotationId] })
@@ -51,16 +55,27 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     onSuccess: invalidate,
   })
 
+  const header = (
+    <PageHeader
+      title={quotation?.title || 'Quotation'}
+      subtitle={quotation ? `${quotation.versionLabel} · BOQ` : 'Bill of quantities'}
+      subtitleIcon="document-text-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading quotation…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
+        <LoadingState label="Loading quotation…" variant="detail" />
       </Screen>
     )
   }
   if (isError || !quotation) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
@@ -90,65 +105,69 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right', 'bottom']}>
+      {header}
       <FlatList
         data={quotation.items}
         keyExtractor={(item, i) => item._id || String(i)}
-        contentContainerStyle={styles.listContent}
+        contentContainerStyle={listContent}
         ListHeaderComponent={
-          <View style={{ gap: spacing.md }}>
-            <View style={styles.badgeRow}>
-              <Pill label={quotation.status} bg={colors.accentSoft} color={colors.accent} />
-              <Text style={styles.versionLabel}>{quotation.versionLabel}</Text>
-            </View>
-
-            <View style={styles.statusRow}>
-              {STATUS_FLOW.map((s) => (
+          <View style={styles.headerBlock}>
+            <SurfaceCard style={styles.statusCard}>
+              <View style={styles.badgeRow}>
+                <Pill label={quotation.status} bg={colors.accentSoft} color={colors.accent} />
+                <Text style={styles.versionLabel}>{quotation.versionLabel}</Text>
+              </View>
+              <SectionLabel>Status</SectionLabel>
+              <View style={styles.statusRow}>
+                {STATUS_FLOW.map((s) => (
+                  <Pressable
+                    key={s}
+                    onPress={() => statusMutation.mutate(s)}
+                    disabled={statusMutation.isPending}
+                    style={[styles.statusChip, quotation.status === s && styles.statusChipActive]}
+                  >
+                    <Text style={[styles.statusChipText, quotation.status === s && styles.statusChipTextActive]}>
+                      {s === 'draft' ? 'Draft' : s === 'sent' ? 'Send' : 'Approve'}
+                    </Text>
+                  </Pressable>
+                ))}
                 <Pressable
-                  key={s}
-                  onPress={() => statusMutation.mutate(s)}
+                  onPress={() => statusMutation.mutate('rejected')}
                   disabled={statusMutation.isPending}
-                  style={[styles.statusChip, quotation.status === s && styles.statusChipActive]}
+                  style={[styles.statusChip, quotation.status === 'rejected' && styles.statusChipDanger]}
                 >
-                  <Text style={[styles.statusChipText, quotation.status === s && styles.statusChipTextActive]}>
-                    {s === 'draft' ? 'Draft' : s === 'sent' ? 'Send' : 'Approve'}
+                  <Text style={[styles.statusChipText, quotation.status === 'rejected' && styles.statusChipTextDanger]}>
+                    Reject
                   </Text>
                 </Pressable>
-              ))}
-              <Pressable
-                onPress={() => statusMutation.mutate('rejected')}
-                disabled={statusMutation.isPending}
-                style={[styles.statusChip, quotation.status === 'rejected' && styles.statusChipDanger]}
-              >
-                <Text style={[styles.statusChipText, quotation.status === 'rejected' && styles.statusChipTextActive]}>
-                  Reject
-                </Text>
-              </Pressable>
-            </View>
-
-            <Text style={styles.sectionTitle}>Line items · {quotation.items.length}</Text>
+              </View>
+            </SurfaceCard>
+            <SectionLabel count={quotation.items.length}>Line items</SectionLabel>
           </View>
         }
         renderItem={({ item, index }) => (
-          <View style={styles.itemRow}>
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <Text style={styles.itemDesc} numberOfLines={2}>
-                {item.description}
-              </Text>
-              <Text style={styles.itemMeta}>
-                {item.qty} {item.unit} × {formatInr(item.rate)}
-              </Text>
+          <SurfaceCard>
+            <View style={styles.itemRow}>
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <Text style={styles.itemDesc} numberOfLines={2}>
+                  {item.description}
+                </Text>
+                <Text style={styles.itemMeta}>
+                  {item.qty} {item.unit} × {formatInr(item.rate)}
+                </Text>
+              </View>
+              <Text style={styles.itemAmount}>{formatInr(item.amount)}</Text>
+              <Pressable onPress={() => removeItem(index)} hitSlop={8}>
+                <Ionicons name="trash-outline" size={18} color={colors.danger} />
+              </Pressable>
             </View>
-            <Text style={styles.itemAmount}>{formatInr(item.amount)}</Text>
-            <Pressable onPress={() => removeItem(index)} hitSlop={8}>
-              <Ionicons name="trash-outline" size={18} color={colors.danger} />
-            </Pressable>
-          </View>
+          </SurfaceCard>
         )}
         ListFooterComponent={
-          <View style={{ gap: spacing.lg }}>
-            <Card style={styles.addCard}>
-              <Text style={styles.sectionTitle}>Add item</Text>
+          <View style={styles.footerBlock}>
+            <SectionLabel>Add item</SectionLabel>
+            <SurfaceCard style={styles.addCard}>
               <Input placeholder="Description" value={desc} onChangeText={setDesc} />
               <View style={styles.addRow}>
                 <Input placeholder="Qty" keyboardType="numeric" value={qty} onChangeText={setQty} containerStyle={{ flex: 1 }} />
@@ -156,9 +175,10 @@ export function BoqDetailScreen({ route, navigation }: Props) {
               </View>
               {addError ? <Text style={styles.error}>{addError}</Text> : null}
               <Button title="Add item" size="sm" onPress={addItem} loading={updateItems.isPending} />
-            </Card>
+            </SurfaceCard>
 
-            <Card style={{ gap: 6 }}>
+            <SectionLabel>Totals</SectionLabel>
+            <SurfaceCard>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Subtotal</Text>
                 <Text style={styles.totalValue}>{formatInr(quotation.subtotal)}</Text>
@@ -177,7 +197,7 @@ export function BoqDetailScreen({ route, navigation }: Props) {
                 <Text style={styles.grandLabel}>Grand total</Text>
                 <Text style={styles.grandValue}>{formatInr(quotation.grandTotal)}</Text>
               </View>
-            </Card>
+            </SurfaceCard>
           </View>
         }
       />
@@ -185,37 +205,39 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   )
 }
 
-const styles = StyleSheet.create({
-  listContent: { padding: spacing.lg, gap: spacing.sm, paddingBottom: spacing.xxl },
-  badgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  versionLabel: { ...typography.caption, color: colors.textMuted },
-  statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  statusChip: { paddingHorizontal: spacing.md, paddingVertical: 8, borderRadius: radius.full, backgroundColor: colors.surfaceRaised },
-  statusChipActive: { backgroundColor: colors.rail },
-  statusChipDanger: { backgroundColor: colors.dangerSoft },
-  statusChipText: { ...typography.caption, color: colors.textSecondary },
-  statusChipTextActive: { color: '#fff', fontWeight: '700' },
-  sectionTitle: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase' },
-  itemRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-    borderRadius: radius.md,
-    padding: spacing.sm,
-  },
-  itemDesc: { ...typography.body, color: colors.textPrimary },
-  itemMeta: { ...typography.caption, color: colors.textSecondary },
-  itemAmount: { ...typography.bodyStrong, color: colors.textPrimary },
-  addCard: { gap: spacing.sm },
-  addRow: { flexDirection: 'row', gap: spacing.sm },
-  error: { ...typography.caption, color: colors.danger },
-  totalRow: { flexDirection: 'row', justifyContent: 'space-between' },
-  totalLabel: { ...typography.caption, color: colors.textSecondary },
-  totalValue: { ...typography.caption, color: colors.textPrimary },
-  grandRow: { borderTopWidth: 1, borderTopColor: colors.border, paddingTop: 6, marginTop: 2 },
-  grandLabel: { ...typography.bodyStrong, color: colors.textPrimary },
-  grandValue: { ...typography.h3, color: colors.accent },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    headerBlock: { gap: spacing.md },
+    footerBlock: { gap: spacing.md, marginTop: spacing.sm },
+    statusCard: { gap: spacing.sm },
+    badgeRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    versionLabel: { ...typography.caption, color: c.textMuted },
+    statusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    statusChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    statusChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    statusChipDanger: { backgroundColor: c.dangerSoft, borderColor: c.dangerSoft },
+    statusChipText: { ...typography.caption, color: c.textSecondary },
+    statusChipTextActive: { color: c.textOnAccent, fontWeight: '700' },
+    statusChipTextDanger: { color: c.danger, fontWeight: '700' },
+    itemRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    itemDesc: { ...typography.body, color: c.textPrimary },
+    itemMeta: { ...typography.caption, color: c.textSecondary },
+    itemAmount: { ...typography.bodyStrong, color: c.textPrimary },
+    addCard: { gap: spacing.sm },
+    addRow: { flexDirection: 'row', gap: spacing.sm },
+    error: { ...typography.caption, color: c.danger },
+    totalRow: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 4 },
+    totalLabel: { ...typography.caption, color: c.textSecondary },
+    totalValue: { ...typography.caption, color: c.textPrimary },
+    grandRow: { borderTopWidth: 1, borderTopColor: c.border, paddingTop: 8, marginTop: 4 },
+    grandLabel: { ...typography.bodyStrong, color: c.textPrimary },
+    grandValue: { ...typography.h3, color: c.accent },
+  })
+}

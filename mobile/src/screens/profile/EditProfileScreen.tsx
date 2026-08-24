@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { useMutation } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, spacing, typography } from '../../constants/theme'
+import { typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { authApi } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
 import { isApiError } from '../../api/client'
@@ -14,6 +15,8 @@ import type { ProfileStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<ProfileStackParamList, 'EditProfile'>
 
 export function EditProfileScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const [name, setName] = useState(user?.name || '')
@@ -23,7 +26,13 @@ export function EditProfileScreen({ navigation }: Props) {
   const [error, setError] = useState('')
 
   const mutation = useMutation({
-    mutationFn: () => authApi.updateMe({ name: name.trim(), phone: phone.trim(), title: title.trim(), company: company.trim() }),
+    mutationFn: () =>
+      authApi.updateMe({
+        name: name.trim(),
+        phone: phone.trim(),
+        title: title.trim(),
+        company: company.trim(),
+      }),
     onSuccess: (data) => {
       setUser(data.user)
       navigation.goBack()
@@ -32,13 +41,13 @@ export function EditProfileScreen({ navigation }: Props) {
   })
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <Input label="Name" value={name} onChangeText={setName} />
-        <Input label="Title" placeholder="e.g. Senior Project Manager" value={title} onChangeText={setTitle} />
-        <Input label="Company" value={company} onChangeText={setCompany} />
-        <Input label="Phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+    <FormLayout
+      title="Edit profile"
+      subtitle="Name, title, and contact"
+      subtitleIcon="person-outline"
+      variant="page"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Save changes"
           onPress={() => {
@@ -52,12 +61,19 @@ export function EditProfileScreen({ navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      <Input label="Name" value={name} onChangeText={setName} />
+      <Input label="Title" placeholder="e.g. Senior Project Manager" value={title} onChangeText={setTitle} />
+      <Input label="Company" value={company} onChangeText={setCompany} />
+      <Input label="Phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+  })
+}

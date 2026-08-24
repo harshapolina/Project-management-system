@@ -1,39 +1,78 @@
-import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useNavigation } from '@react-navigation/native'
+import type { CompositeNavigationProp } from '@react-navigation/native'
+import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
+import { useMemo } from 'react'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
-import { Card } from '../../components/Card'
+import { PageHeader } from '../../components/PageHeader'
+import { SurfaceCard } from '../../components/SurfaceCard'
+import { SectionLabel } from '../../components/SectionLabel'
 import { StatCard } from '../../components/StatCard'
 import { Avatar } from '../../components/Avatar'
-import { ErrorState, LoadingState } from '../../components/States'
-import { colors, spacing, typography } from '../../constants/theme'
+import { EmptyState, ErrorState, LoadingState } from '../../components/States'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
+import { useResponsive } from '../../theme/useResponsive'
 import { reportsApi } from '../../api/reports'
 import { isApiError } from '../../api/client'
+import type { MoreStackParamList, RootTabParamList } from '../../navigation/types'
+
+type Nav = CompositeNavigationProp<
+  NativeStackNavigationProp<MoreStackParamList, 'Portfolio'>,
+  BottomTabNavigationProp<RootTabParamList>
+>
 
 export function PortfolioScreen() {
+  const navigation = useNavigation<Nav>()
+  const colors = useColors()
+  const { listContent } = useResponsive()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['portfolio'],
     queryFn: reportsApi.portfolio,
   })
 
+  const openProject = (projectId: string, projectName?: string) => {
+    navigation.navigate('Projects', {
+      screen: 'ProjectOverview',
+      params: { projectId, projectName },
+    })
+  }
+
+  const pageHeader = (
+    <PageHeader
+      title="Portfolio"
+      subtitle="All live work"
+      subtitleIcon="grid-outline"
+      onBack={() => navigation.goBack()}
+    />
+  )
+
   if (isLoading) {
     return (
-      <Screen>
-        <LoadingState label="Loading portfolio…" />
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
+        <LoadingState label="Loading portfolio…" variant="dashboard" />
       </Screen>
     )
   }
   if (isError || !data) {
     return (
-      <Screen>
+      <Screen padded={false} edges={['top', 'left', 'right']}>
+        {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
     )
   }
 
   return (
-    <Screen padded={false}>
+    <Screen padded={false} edges={['top', 'left', 'right']}>
+      {pageHeader}
       <ScrollView
-        contentContainerStyle={styles.scroll}
+        contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
       >
         <View style={styles.statsGrid}>
@@ -44,63 +83,81 @@ export function PortfolioScreen() {
         </View>
 
         {data.delayAlerts.length ? (
-          <View>
-            <Text style={styles.sectionTitle}>Delay alerts</Text>
+          <View style={styles.section}>
+            <SectionLabel count={data.delayAlerts.length}>Delay alerts</SectionLabel>
             {data.delayAlerts.map((a) => (
-              <Card key={a.id} style={{ marginBottom: spacing.sm, borderColor: colors.danger }}>
+              <SurfaceCard
+                key={a.id}
+                style={{ borderColor: colors.danger }}
+                onPress={a.id ? () => openProject(a.id, a.name) : undefined}
+              >
                 <Text style={styles.rowLabel}>{a.name}</Text>
                 <Text style={styles.meta}>{a.location || a.stage}</Text>
-              </Card>
+              </SurfaceCard>
             ))}
           </View>
         ) : null}
 
-        <View>
-          <Text style={styles.sectionTitle}>Upcoming deadlines</Text>
+        <View style={styles.section}>
+          <SectionLabel>Upcoming deadlines</SectionLabel>
           {data.upcomingDeadlines.length === 0 ? (
-            <Text style={styles.meta}>Nothing due in the next two weeks.</Text>
+            <EmptyState title="Nothing due soon" body="No deadlines in the next two weeks." />
           ) : (
-            data.upcomingDeadlines.map((t) => (
-              <View key={t._id} style={styles.row}>
-                <Text style={styles.rowLabel} numberOfLines={1}>
-                  {t.title}
-                </Text>
-                <Text style={styles.meta}>{new Date(t.dueDate).toLocaleDateString()}</Text>
-              </View>
-            ))
+            <SurfaceCard>
+              {data.upcomingDeadlines.map((t) => {
+                const pid = t.projectId?._id
+                return (
+                  <Pressable
+                    key={t._id}
+                    style={styles.row}
+                    onPress={pid ? () => openProject(pid, t.projectId?.name) : undefined}
+                    accessibilityRole={pid ? 'button' : undefined}
+                    disabled={!pid}
+                  >
+                    <Text style={styles.rowLabel} numberOfLines={1}>
+                      {t.title}
+                    </Text>
+                    <Text style={styles.meta}>{new Date(t.dueDate).toLocaleDateString()}</Text>
+                  </Pressable>
+                )
+              })}
+            </SurfaceCard>
           )}
         </View>
 
-        <View>
-          <Text style={styles.sectionTitle}>Team workload</Text>
-          {data.workload.map((w) => (
-            <View key={w.user._id} style={styles.workloadRow}>
-              <Avatar name={w.user.name} uri={w.user.avatar} size={30} />
-              <View style={{ flex: 1, minWidth: 0 }}>
-                <Text style={styles.rowLabel} numberOfLines={1}>
-                  {w.user.name}
-                </Text>
-                <View style={styles.loadTrack}>
-                  <View style={[styles.loadFill, { width: `${Math.min(100, w.load)}%` }]} />
+        <View style={styles.section}>
+          <SectionLabel>Team workload</SectionLabel>
+          <SurfaceCard>
+            {data.workload.map((w) => (
+              <View key={w.user._id} style={styles.workloadRow}>
+                <Avatar name={w.user.name} uri={w.user.avatar} size={30} />
+                <View style={{ flex: 1, minWidth: 0 }}>
+                  <Text style={styles.rowLabel} numberOfLines={1}>
+                    {w.user.name}
+                  </Text>
+                  <View style={styles.loadTrack}>
+                    <View style={[styles.loadFill, { width: `${Math.min(100, w.load)}%` }]} />
+                  </View>
                 </View>
+                <Text style={styles.meta}>{w.openTasks} open</Text>
               </View>
-              <Text style={styles.meta}>{w.openTasks} open</Text>
-            </View>
-          ))}
+            ))}
+          </SurfaceCard>
         </View>
       </ScrollView>
     </Screen>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { padding: spacing.lg, gap: spacing.lg, paddingBottom: spacing.xxl },
-  statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
-  sectionTitle: { ...typography.captionStrong, color: colors.textMuted, textTransform: 'uppercase', marginBottom: spacing.sm },
-  row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
-  rowLabel: { ...typography.body, color: colors.textPrimary, flexShrink: 1 },
-  meta: { ...typography.caption, color: colors.textSecondary },
-  workloadRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 6 },
-  loadTrack: { height: 5, backgroundColor: colors.surfaceRaised, borderRadius: 3, overflow: 'hidden', marginTop: 4 },
-  loadFill: { height: '100%', backgroundColor: colors.accent },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+    section: { gap: spacing.sm },
+    row: { flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 6 },
+    rowLabel: { ...typography.body, color: c.textPrimary, flexShrink: 1 },
+    meta: { ...typography.caption, color: c.textSecondary },
+    workloadRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 6 },
+    loadTrack: { height: 5, backgroundColor: c.surfaceRaised, borderRadius: 3, overflow: 'hidden', marginTop: 4 },
+    loadFill: { height: '100%', backgroundColor: c.accent },
+  })
+}

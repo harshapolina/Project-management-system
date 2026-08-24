@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, radius, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import { INVITE_ROLE_OPTIONS } from '../../utils/roles'
@@ -15,6 +16,9 @@ import type { ProfileStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<ProfileStackParamList, 'InvitePerson'>
 
 export function InvitePersonScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const queryClient = useQueryClient()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -34,53 +38,34 @@ export function InvitePersonScreen({ navigation }: Props) {
 
   if (result) {
     return (
-      <Screen>
-        <View style={styles.successCard}>
-          <Text style={styles.successTitle}>Invite created</Text>
-          <Text style={styles.successBody}>
-            Share these temporary credentials with {name.split(' ')[0] || 'them'} — they&apos;ll be asked to set a
-            new password on first login.
-          </Text>
-          <View style={styles.credBox}>
-            <Text style={styles.credLabel}>Email</Text>
-            <Text style={styles.credValue}>{email.trim().toLowerCase()}</Text>
-            <Text style={styles.credLabel}>Temporary password</Text>
-            <Text style={styles.credValue}>{result.tempPassword}</Text>
-          </View>
-          <Button title="Done" onPress={() => navigation.goBack()} fullWidth />
+      <FormLayout
+        title="Invite created"
+        subtitle="Share credentials securely"
+        subtitleIcon="checkmark-circle-outline"
+        onBack={() => navigation.goBack()}
+        footer={<Button title="Done" onPress={() => navigation.goBack()} fullWidth />}
+      >
+        <Text style={styles.successBody}>
+          Share these temporary credentials with {name.split(' ')[0] || 'them'} — they&apos;ll be asked to set a new
+          password on first login.
+        </Text>
+        <View style={styles.credBox}>
+          <Text style={styles.credLabel}>Email</Text>
+          <Text style={styles.credValue}>{email.trim().toLowerCase()}</Text>
+          <Text style={styles.credLabel}>Temporary password</Text>
+          <Text style={styles.credValue}>{result.tempPassword}</Text>
         </View>
-      </Screen>
+      </FormLayout>
     )
   }
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <Input label="Full name" value={name} onChangeText={setName} error={errors.name} />
-        <Input
-          label="Email"
-          autoCapitalize="none"
-          keyboardType="email-address"
-          value={email}
-          onChangeText={setEmail}
-          error={errors.email}
-        />
-
-        <Text style={styles.label}>Role</Text>
-        <View style={styles.roleGrid}>
-          {INVITE_ROLE_OPTIONS.map((opt) => (
-            <Pressable
-              key={opt.value}
-              onPress={() => setRole(opt.value)}
-              style={[styles.roleChip, role === opt.value && styles.roleChipActive]}
-            >
-              <Text style={[styles.roleChipText, role === opt.value && styles.roleChipTextActive]}>{opt.label}</Text>
-            </Pressable>
-          ))}
-        </View>
-
-        {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
-
+    <FormLayout
+      title="Invite person"
+      subtitle="Add someone to your workspace"
+      subtitleIcon="person-add-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Send invite"
           onPress={() => {
@@ -93,24 +78,55 @@ export function InvitePersonScreen({ navigation }: Props) {
           loading={mutation.isPending}
           fullWidth
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      <Input label="Full name" value={name} onChangeText={setName} error={errors.name} />
+      <Input
+        label="Email"
+        autoCapitalize="none"
+        keyboardType="email-address"
+        value={email}
+        onChangeText={setEmail}
+        error={errors.email}
+      />
+
+      <Text style={styles.label}>Role</Text>
+      <View style={styles.roleGrid}>
+        {INVITE_ROLE_OPTIONS.map((opt) => (
+          <Pressable
+            key={opt.value}
+            onPress={() => setRole(opt.value)}
+            style={[styles.roleChip, role === opt.value && styles.roleChipActive]}
+          >
+            <Text style={[styles.roleChipText, role === opt.value && styles.roleChipTextActive]}>{opt.label}</Text>
+          </Pressable>
+        ))}
+      </View>
+
+      {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  label: { ...typography.captionStrong, color: colors.textSecondary },
-  roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
-  roleChip: { paddingHorizontal: spacing.md, paddingVertical: spacing.sm, borderRadius: radius.full, backgroundColor: colors.surfaceRaised },
-  roleChipActive: { backgroundColor: colors.rail },
-  roleChipText: { ...typography.caption, color: colors.textSecondary },
-  roleChipTextActive: { color: '#fff', fontWeight: '700' },
-  error: { ...typography.caption, color: colors.danger },
-  successCard: { gap: spacing.md, paddingTop: spacing.xl },
-  successTitle: { ...typography.h2, color: colors.textPrimary },
-  successBody: { ...typography.body, color: colors.textSecondary },
-  credBox: { backgroundColor: colors.surfaceRaised, borderRadius: radius.lg, padding: spacing.lg, gap: 4 },
-  credLabel: { ...typography.micro, color: colors.textMuted, textTransform: 'uppercase', marginTop: spacing.sm },
-  credValue: { ...typography.bodyStrong, color: colors.textPrimary },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    label: { ...typography.captionStrong, color: c.textSecondary },
+    roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
+    roleChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    roleChipActive: { backgroundColor: c.accent, borderColor: c.accent },
+    roleChipText: { ...typography.caption, color: c.textSecondary },
+    roleChipTextActive: { color: c.textOnAccent, fontWeight: '700' },
+    error: { ...typography.caption, color: c.danger },
+    successBody: { ...typography.body, color: c.textSecondary },
+    credBox: { gap: 4, marginTop: spacing.sm },
+    credLabel: { ...typography.micro, color: c.textMuted, textTransform: 'uppercase', marginTop: spacing.sm },
+    credValue: { ...typography.bodyStrong, color: c.textPrimary },
+  })
+}

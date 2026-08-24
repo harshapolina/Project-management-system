@@ -2,11 +2,12 @@ import { useMemo, useState } from 'react'
 import { ScrollView, StyleSheet, Text } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import * as DocumentPicker from 'expo-document-picker'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { VendorPicker } from '../../components/VendorPicker'
-import { colors, spacing, typography } from '../../constants/theme'
+import { spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { billingApi } from '../../api/billing'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -15,6 +16,9 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'CreateInvoice'>
 
 export function CreateInvoiceScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const qc = useQueryClient()
   const [invoiceNumber, setInvoiceNumber] = useState('')
   const [vendorId, setVendorId] = useState('')
@@ -66,32 +70,12 @@ export function CreateInvoiceScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        <Input label="Invoice number" placeholder="INV-1042" value={invoiceNumber} onChangeText={setInvoiceNumber} />
-        <VendorPicker label="Vendor" value={vendorId} onChange={(id) => { setVendorId(id); setPurchaseOrderId('') }} />
-        {vendorPos.length ? (
-          <>
-            <Text style={styles.label}>Purchase order (optional)</Text>
-            <ScrollChips
-              items={vendorPos.map((po) => ({ id: po._id, label: po.poNumber }))}
-              value={purchaseOrderId}
-              onChange={setPurchaseOrderId}
-            />
-          </>
-        ) : null}
-        <Input label="Amount" keyboardType="numeric" placeholder="0" value={amount} onChangeText={setAmount} />
-        <Input label="Invoice date (YYYY-MM-DD)" value={invoiceDate} onChangeText={setInvoiceDate} />
-        <Input label="Due date (optional)" placeholder="YYYY-MM-DD" value={dueDate} onChangeText={setDueDate} />
-        <Input
-          label="Notes (optional)"
-          value={notes}
-          onChangeText={setNotes}
-          multiline
-          style={{ minHeight: 72, textAlignVertical: 'top' }}
-        />
-        <Button title={file ? file.name : 'Attach PDF or photo'} variant="secondary" onPress={pickFile} fullWidth />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+    <FormLayout
+      title="New invoice"
+      subtitle="Vendor billing"
+      subtitleIcon="receipt-outline"
+      onBack={() => navigation.goBack()}
+      footer={
         <Button
           title="Save invoice"
           fullWidth
@@ -104,8 +88,40 @@ export function CreateInvoiceScreen({ navigation }: Props) {
             mutation.mutate()
           }}
         />
-      </ScrollView>
-    </Screen>
+      }
+    >
+      <Input label="Invoice number" placeholder="INV-1042" value={invoiceNumber} onChangeText={setInvoiceNumber} />
+      <VendorPicker
+        label="Vendor"
+        value={vendorId}
+        onChange={(id) => {
+          setVendorId(id)
+          setPurchaseOrderId('')
+        }}
+      />
+      {vendorPos.length ? (
+        <>
+          <Text style={styles.label}>Purchase order (optional)</Text>
+          <ScrollChips
+            items={vendorPos.map((po) => ({ id: po._id, label: po.poNumber }))}
+            value={purchaseOrderId}
+            onChange={setPurchaseOrderId}
+          />
+        </>
+      ) : null}
+      <Input label="Amount" keyboardType="numeric" placeholder="0" value={amount} onChangeText={setAmount} />
+      <Input label="Invoice date (YYYY-MM-DD)" value={invoiceDate} onChangeText={setInvoiceDate} />
+      <Input label="Due date (optional)" placeholder="YYYY-MM-DD" value={dueDate} onChangeText={setDueDate} />
+      <Input
+        label="Notes (optional)"
+        value={notes}
+        onChangeText={setNotes}
+        multiline
+        style={{ minHeight: 72, textAlignVertical: 'top' }}
+      />
+      <Button title={file ? file.name : 'Attach PDF or photo'} variant="secondary" onPress={pickFile} fullWidth />
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+    </FormLayout>
   )
 }
 
@@ -118,6 +134,8 @@ function ScrollChips({
   value: string
   onChange: (id: string) => void
 }) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   return (
     <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 8, paddingVertical: 2 }}>
       {items.map((item) => (
@@ -133,18 +151,19 @@ function ScrollChips({
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  label: { ...typography.captionStrong, color: colors.textSecondary },
-  error: { ...typography.caption, color: colors.danger },
-  chip: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  chipActive: { backgroundColor: colors.rail, color: '#fff' },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    label: { ...typography.captionStrong, color: c.textSecondary },
+    error: { ...typography.caption, color: c.danger },
+    chip: {
+      ...typography.caption,
+      color: c.textSecondary,
+      backgroundColor: c.surfaceRaised,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: 999,
+      overflow: 'hidden',
+    },
+    chipActive: { backgroundColor: c.accent, color: c.textOnAccent },
+  })
+}

@@ -1,6 +1,9 @@
+import { useMemo } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
+import { Bone } from './Skeleton'
 import { projectsApi } from '../api/projects'
 
 interface ProjectPickerProps {
@@ -10,17 +13,21 @@ interface ProjectPickerProps {
   error?: string
 }
 
-/** Horizontal chip picker for the project a record (PO, expense, BOQ, site
- * update…) belongs to. A native `<select>` doesn't exist in RN — this
- * matches the chip pattern already used for status/type pickers elsewhere. */
+/** Horizontal chip picker for the project a record belongs to. */
 export function ProjectPicker({ label = 'Project', value, onChange, error }: ProjectPickerProps) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const { data, isLoading } = useQuery({ queryKey: ['projects'], queryFn: () => projectsApi.list() })
 
   return (
     <View style={styles.wrap}>
       <Text style={styles.label}>{label}</Text>
       {isLoading ? (
-        <Text style={styles.hint}>Loading projects…</Text>
+        <View style={styles.skelRow}>
+          <Bone width={110} height={32} radius={radius.full} />
+          <Bone width={96} height={32} radius={radius.full} />
+          <Bone width={120} height={32} radius={radius.full} />
+        </View>
       ) : !data?.length ? (
         <Text style={styles.hint}>No projects available.</Text>
       ) : (
@@ -47,21 +54,24 @@ export function ProjectPicker({ label = 'Project', value, onChange, error }: Pro
   )
 }
 
-const styles = StyleSheet.create({
-  wrap: { gap: 6 },
-  label: { ...typography.captionStrong, color: colors.textSecondary },
-  hint: { ...typography.caption, color: colors.textMuted },
-  row: { gap: spacing.sm, paddingVertical: 2 },
-  chip: {
-    ...typography.caption,
-    color: colors.textSecondary,
-    backgroundColor: colors.surfaceRaised,
-    paddingHorizontal: spacing.md,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-    overflow: 'hidden',
-    maxWidth: 220,
-  },
-  chipActive: { backgroundColor: colors.rail, color: '#fff' },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    wrap: { gap: 6 },
+    label: { ...typography.captionStrong, color: c.textSecondary },
+    hint: { ...typography.caption, color: c.textMuted },
+    row: { gap: spacing.sm, paddingVertical: 2 },
+    skelRow: { flexDirection: 'row', gap: spacing.sm, paddingVertical: 2 },
+    chip: {
+      ...typography.caption,
+      color: c.textSecondary,
+      backgroundColor: c.surfaceRaised,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      overflow: 'hidden',
+      maxWidth: 220,
+    },
+    chipActive: { backgroundColor: c.textPrimary, color: c.canvas },
+    error: { ...typography.caption, color: c.danger },
+  })
+}

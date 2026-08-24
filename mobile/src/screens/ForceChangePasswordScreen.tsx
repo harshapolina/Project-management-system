@@ -1,18 +1,20 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { useMutation } from '@tanstack/react-query'
-import { Screen } from '../components/Screen'
+import { AuthLayout } from '../components/AuthLayout'
 import { Input } from '../components/Input'
 import { Button } from '../components/Button'
-import { colors, spacing, typography } from '../constants/theme'
+import { typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
 import { authApi } from '../api/auth'
 import { useAuthStore } from '../store/authStore'
 import { isApiError } from '../api/client'
 
-/** Gate shown when the server flags mustChangePassword (e.g. after an admin
- * invite with a temp password) — mirrors the web app sending these users
- * straight to /settings before anything else is reachable. */
+/** Gate shown when the server flags mustChangePassword. */
 export function ForceChangePasswordScreen() {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
+
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const [next, setNext] = useState('')
@@ -36,30 +38,26 @@ export function ForceChangePasswordScreen() {
   }
 
   return (
-    <Screen keyboardAvoiding padded={false} background={colors.canvas}>
-      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
-        <Text style={styles.heading}>Set a new password</Text>
-        <Text style={styles.subheading}>
-          Your account was created with a temporary password. Choose a new one to continue.
-        </Text>
-        <Input label="New password" secureTextEntry value={next} onChangeText={setNext} error={errors.next} />
-        <Input
-          label="Confirm new password"
-          secureTextEntry
-          value={confirm}
-          onChangeText={setConfirm}
-          error={errors.confirm}
-        />
-        {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
-        <Button title="Continue" onPress={onSubmit} loading={mutation.isPending} fullWidth />
-      </ScrollView>
-    </Screen>
+    <AuthLayout
+      title="Set a new password"
+      subtitle="Your account was created with a temporary password. Choose a new one to continue."
+      footer={<Button title="Continue" onPress={onSubmit} loading={mutation.isPending} fullWidth />}
+    >
+      <Input label="New password" secureTextEntry value={next} onChangeText={setNext} error={errors.next} />
+      <Input
+        label="Confirm new password"
+        secureTextEntry
+        value={confirm}
+        onChangeText={setConfirm}
+        error={errors.confirm}
+      />
+      {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+    </AuthLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { flexGrow: 1, justifyContent: 'center', padding: spacing.xl, gap: spacing.md },
-  heading: { ...typography.h2, color: colors.textPrimary },
-  subheading: { ...typography.body, color: colors.textSecondary, marginBottom: spacing.sm },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    error: { ...typography.caption, color: c.danger },
+  })
+}

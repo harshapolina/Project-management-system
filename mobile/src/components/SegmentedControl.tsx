@@ -1,20 +1,32 @@
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { colors, radius, spacing, typography } from '../constants/theme'
+import { useMemo } from 'react'
+import { Pressable, ScrollView, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native'
+import { radius, spacing, typography, type AppColors } from '../constants/theme'
+import { useColors } from '../theme/useColors'
+import { useResponsive } from '../theme/useResponsive'
 
 export function SegmentedControl<T extends string>({
   options,
   value,
   onChange,
+  /** When false, parent owns horizontal padding. */
+  inset = true,
+  style,
 }: {
   options: { key: T; label: string }[]
   value: T
   onChange: (key: T) => void
+  inset?: boolean
+  style?: StyleProp<ViewStyle>
 }) {
+  const colors = useColors()
+  const { pagePadding } = useResponsive()
+  const styles = useMemo(() => createStyles(colors, pagePadding, inset), [colors, pagePadding, inset])
+
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={styles.row}
+      contentContainerStyle={[styles.row, style]}
     >
       {options.map((opt) => {
         const active = opt.key === value
@@ -26,29 +38,37 @@ export function SegmentedControl<T extends string>({
             accessibilityState={{ selected: active }}
             style={[styles.chip, active && styles.chipActive]}
           >
-            <Text style={[styles.label, active && styles.labelActive]}>{opt.label}</Text>
+            <Text style={[styles.label, active && styles.labelActive]} numberOfLines={1}>
+              {opt.label}
+            </Text>
           </Pressable>
         )
       })}
-      <View style={{ width: spacing.lg }} />
+      {inset ? <View style={{ width: pagePadding }} /> : null}
     </ScrollView>
   )
 }
 
-const styles = StyleSheet.create({
-  row: { paddingHorizontal: spacing.lg, gap: 8, paddingBottom: spacing.sm },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: radius.full,
-    backgroundColor: colors.surface,
-    borderWidth: 1,
-    borderColor: colors.border,
-  },
-  chipActive: {
-    backgroundColor: colors.textPrimary,
-    borderColor: colors.textPrimary,
-  },
-  label: { ...typography.captionStrong, color: colors.textSecondary },
-  labelActive: { color: '#fff' },
-})
+function createStyles(c: AppColors, pagePadding: number, inset: boolean) {
+  return StyleSheet.create({
+    row: {
+      paddingHorizontal: inset ? pagePadding : 0,
+      gap: 8,
+      paddingBottom: spacing.sm,
+    },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    chipActive: {
+      backgroundColor: c.textPrimary,
+      borderColor: c.textPrimary,
+    },
+    label: { ...typography.captionStrong, color: c.textSecondary },
+    labelActive: { color: c.canvas },
+  })
+}

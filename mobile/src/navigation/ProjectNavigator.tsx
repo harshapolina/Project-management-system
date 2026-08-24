@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ProjectsListScreen } from '../screens/projects/ProjectsListScreen'
 import { CreateProjectScreen } from '../screens/projects/CreateProjectScreen'
@@ -12,41 +13,48 @@ import { PurchaseOrdersScreen } from '../screens/procurement/PurchaseOrdersScree
 import { CreatePurchaseOrderScreen } from '../screens/procurement/CreatePurchaseOrderScreen'
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen'
 import { CreateTaskScreen } from '../screens/tasks/CreateTaskScreen'
-import { stackScreenOptions } from './options'
+import { formSheetOptions, stackScreenOptions } from './options'
+import { useColors } from '../theme/useColors'
 import type { ProjectStackParamList } from './types'
 
 const Stack = createNativeStackNavigator<ProjectStackParamList>()
 
 export function ProjectNavigator() {
+  const colors = useColors()
+  const options = useMemo(() => stackScreenOptions(colors), [colors])
   return (
-    <Stack.Navigator screenOptions={stackScreenOptions}>
+    <Stack.Navigator screenOptions={options}>
       <Stack.Screen name="ProjectsList" component={ProjectsListScreen} options={{ headerShown: false }} />
       <Stack.Screen
         name="CreateProject"
         component={CreateProjectScreen}
-        options={{ presentation: 'modal', title: 'New project' }}
+        options={formSheetOptions(colors, 'New project')}
       />
-      <Stack.Screen name="ProjectOverview" component={ProjectOverviewScreen} options={{ title: 'Project' }} />
-      <Stack.Screen name="ProjectTasks" component={ProjectTasksScreen} options={{ title: 'Tasks' }} />
-      <Stack.Screen name="ProjectFiles" component={ProjectFilesScreen} options={{ title: 'Files' }} />
-      <Stack.Screen name="ProjectTeam" component={ProjectTeamScreen} options={{ title: 'Team' }} />
-      <Stack.Screen name="ProjectNotes" component={ProjectNotesScreen} options={{ title: 'Notes' }} />
+      <Stack.Screen name="ProjectOverview" component={ProjectOverviewScreen} options={{ headerShown: false, title: 'Project' }} />
+      <Stack.Screen name="ProjectTasks" component={ProjectTasksScreen} options={{ headerShown: false, title: 'Tasks' }} />
+      <Stack.Screen name="ProjectFiles" component={ProjectFilesScreen} options={{ headerShown: false, title: 'Files' }} />
+      <Stack.Screen name="ProjectTeam" component={ProjectTeamScreen} options={{ headerShown: false, title: 'Team' }} />
+      <Stack.Screen name="ProjectNotes" component={ProjectNotesScreen} options={{ headerShown: false, title: 'Notes' }} />
       {/* Same route names + components the top-level "More" hub registers
           (see SharedOpsParamList) — the project's id is pre-filled via
           route params here instead of picked via ProjectPicker there. */}
-      <Stack.Screen name="SiteFeed" component={SiteFeedScreen} options={{ title: 'Site Feed' }} />
-      <Stack.Screen name="PostSiteUpdate" component={PostSiteUpdateScreen} options={{ presentation: 'modal', title: 'Post update' }} />
-      <Stack.Screen name="PurchaseOrders" component={PurchaseOrdersScreen} options={{ title: 'Purchase Orders' }} />
+      <Stack.Screen name="SiteFeed" component={SiteFeedScreen} options={{ headerShown: false, title: 'Site Feed' }} />
+      <Stack.Screen
+        name="PostSiteUpdate"
+        component={PostSiteUpdateScreen}
+        options={formSheetOptions(colors, 'Post update')}
+      />
+      <Stack.Screen name="PurchaseOrders" component={PurchaseOrdersScreen} options={{ headerShown: false, title: 'Purchase Orders' }} />
       <Stack.Screen
         name="CreatePurchaseOrder"
         component={CreatePurchaseOrderScreen}
-        options={{ presentation: 'modal', title: 'New purchase order' }}
+        options={formSheetOptions(colors, 'New purchase order')}
       />
-      <Stack.Screen name="TaskDetail" component={TaskDetailScreen} options={{ title: 'Task' }} />
+      <Stack.Screen name="TaskDetail" component={TaskDetailScreen} options={{ headerShown: false, title: 'Task' }} />
       <Stack.Screen
         name="CreateTask"
         component={CreateTaskScreen}
-        options={{ presentation: 'modal', title: 'New task' }}
+        options={formSheetOptions(colors, 'New task')}
       />
     </Stack.Navigator>
   )

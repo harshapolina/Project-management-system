@@ -1,10 +1,11 @@
-import { useState } from 'react'
-import { ScrollView, StyleSheet, Text } from 'react-native'
+import { useMemo, useState } from 'react'
+import { StyleSheet, Text } from 'react-native'
 import { useMutation } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { colors, spacing, typography } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { useColors } from '../../theme/useColors'
 import { authApi } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
 import { isApiError } from '../../api/client'
@@ -14,6 +15,8 @@ import type { ProfileStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<ProfileStackParamList, 'ChangePassword'>
 
 export function ChangePasswordScreen({ navigation }: Props) {
+  const colors = useColors()
+  const styles = useMemo(() => createStyles(colors), [colors])
   const user = useAuthStore((s) => s.user)
   const setUser = useAuthStore((s) => s.setUser)
   const [current, setCurrent] = useState('')
@@ -44,36 +47,47 @@ export function ChangePasswordScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen keyboardAvoiding>
-      <ScrollView keyboardShouldPersistTaps="handled" contentContainerStyle={styles.scroll}>
-        {user?.mustChangePassword ? (
-          <Text style={styles.notice}>Your account requires a password change before continuing.</Text>
-        ) : (
-          <Input
-            label="Current password"
-            secureTextEntry
-            value={current}
-            onChangeText={setCurrent}
-            error={errors.current}
-          />
-        )}
-        <Input label="New password" secureTextEntry value={next} onChangeText={setNext} error={errors.next} />
+    <FormLayout
+      title="Password"
+      subtitle="Update your sign-in credentials"
+      subtitleIcon="lock-closed-outline"
+      variant="page"
+      onBack={() => navigation.goBack()}
+      footer={<Button title="Update password" onPress={onSubmit} loading={mutation.isPending} fullWidth />}
+    >
+      {user?.mustChangePassword ? (
+        <Text style={styles.notice}>Your account requires a password change before continuing.</Text>
+      ) : (
         <Input
-          label="Confirm new password"
+          label="Current password"
           secureTextEntry
-          value={confirm}
-          onChangeText={setConfirm}
-          error={errors.confirm}
+          value={current}
+          onChangeText={setCurrent}
+          error={errors.current}
         />
-        {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
-        <Button title="Update password" onPress={onSubmit} loading={mutation.isPending} fullWidth />
-      </ScrollView>
-    </Screen>
+      )}
+      <Input label="New password" secureTextEntry value={next} onChangeText={setNext} error={errors.next} />
+      <Input
+        label="Confirm new password"
+        secureTextEntry
+        value={confirm}
+        onChangeText={setConfirm}
+        error={errors.confirm}
+      />
+      {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
+    </FormLayout>
   )
 }
 
-const styles = StyleSheet.create({
-  scroll: { gap: spacing.md, paddingBottom: spacing.xxl },
-  notice: { ...typography.caption, color: colors.warning, backgroundColor: colors.warningSoft, padding: spacing.md, borderRadius: 12 },
-  error: { ...typography.caption, color: colors.danger },
-})
+function createStyles(c: AppColors) {
+  return StyleSheet.create({
+    notice: {
+      ...typography.caption,
+      color: c.warning,
+      backgroundColor: c.warningSoft,
+      padding: spacing.md,
+      borderRadius: radius.lg,
+    },
+    error: { ...typography.caption, color: c.danger },
+  })
+}

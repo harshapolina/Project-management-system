@@ -1,125 +1,190 @@
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import { BlurView } from 'expo-blur'
+import { useMemo, useState } from 'react'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import type { BottomTabBarProps } from '@react-navigation/bottom-tabs'
-import { colors, shadows, typography } from '../constants/theme'
+import type { BottomTabBarProps, BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
+import { typography, radius, type AppColors } from '../constants/theme'
+import { useColors, useShadows } from '../theme/useColors'
+import { useResponsive } from '../theme/useResponsive'
+import { QuickCreateSheet } from './QuickCreateSheet'
+import type { RootTabParamList } from '../navigation/types'
 
+/** Home · Projects · center FAB · Activity · More */
 const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }> = {
-  Home: { on: 'checkmark-circle', off: 'checkmark-circle-outline', label: 'Work' },
-  Projects: { on: 'folder', off: 'folder-outline', label: 'Projects' },
-  Inbox: { on: 'chatbubble', off: 'chatbubble-outline', label: 'Inbox' },
+  Home: { on: 'home', off: 'home-outline', label: 'Home' },
+  Projects: { on: 'business', off: 'business-outline', label: 'Projects' },
+  Inbox: { on: 'pulse', off: 'pulse-outline', label: 'Activity' },
   More: { on: 'grid', off: 'grid-outline', label: 'More' },
 }
 
-export const TAB_BAR_CLEARANCE = 98
+export const TAB_BAR_CLEARANCE = 96
 
 export function GlassyTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
+  const colors = useColors()
+  const shadows = useShadows()
+  const { isCompact, pagePadding } = useResponsive()
+  const styles = useMemo(
+    () => createStyles(colors, shadows, pagePadding, isCompact),
+    [colors, shadows, pagePadding, isCompact],
+  )
+  const bottomPad = Math.max(insets.bottom, 10)
+  const [createOpen, setCreateOpen] = useState(false)
+
+  const leftRoutes = state.routes.filter((r) => r.name === 'Home' || r.name === 'Projects')
+  const rightRoutes = state.routes.filter((r) => r.name === 'Inbox' || r.name === 'More')
+
+  const renderTab = (route: (typeof state.routes)[number]) => {
+    const index = state.routes.findIndex((r) => r.key === route.key)
+    const focused = state.index === index
+    const meta = ICONS[route.name] || ICONS.More
+
+    return (
+      <Pressable
+        key={route.key}
+        onPress={() => {
+          const event = navigation.emit({
+            type: 'tabPress',
+            target: route.key,
+            canPreventDefault: true,
+          })
+          if (!focused && !event.defaultPrevented) {
+            navigation.navigate(route.name, route.params)
+          }
+        }}
+        accessibilityRole="button"
+        accessibilityState={{ selected: focused }}
+        accessibilityLabel={meta.label}
+        hitSlop={{ top: 8, bottom: 8, left: 10, right: 10 }}
+        style={({ pressed }) => [styles.item, pressed && { opacity: 0.7 }]}
+      >
+        <Ionicons
+          name={focused ? meta.on : meta.off}
+          size={isCompact ? 21 : 23}
+          color={focused ? colors.accent : colors.textMuted}
+        />
+        <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
+          {meta.label}
+        </Text>
+      </Pressable>
+    )
+  }
 
   return (
-    <View pointerEvents="box-none" style={[styles.dock, { bottom: Math.max(insets.bottom, 8) + 4 }]}>
-      <View style={styles.pill}>
-        {Platform.OS === 'web' ? (
-          <View style={[StyleSheet.absoluteFill, styles.webFill]} />
-        ) : (
-          <BlurView intensity={55} tint="light" style={StyleSheet.absoluteFill} />
-        )}
-        <View style={styles.glassTint} />
-        <View style={styles.row}>
-          {state.routes.map((route, index) => {
-            const focused = state.index === index
-            const meta = ICONS[route.name] || ICONS.More
-            const label = meta.label
+    <View pointerEvents="box-none" style={[styles.dock, { paddingBottom: bottomPad }]}>
+      <View style={styles.bar}>
+        {/* Left pair — equal columns */}
+        <View style={styles.pair}>
+          {leftRoutes.map((route) => (
+            <View key={route.key} style={styles.slot}>
+              {renderTab(route)}
+            </View>
+          ))}
+          {/* Keep grid balanced if Projects tab is gated off */}
+          {leftRoutes.length === 1 ? <View style={styles.slot} /> : null}
+        </View>
 
-            const onPress = () => {
-              const event = navigation.emit({
-                type: 'tabPress',
-                target: route.key,
-                canPreventDefault: true,
-              })
-              if (!focused && !event.defaultPrevented) {
-                navigation.navigate(route.name, route.params)
-              }
-            }
+        {/* Center FAB — opens create action sheet */}
+        <View style={styles.fabSlot}>
+          <Pressable
+            style={({ pressed }) => [styles.fab, pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] }]}
+            onPress={() => setCreateOpen(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Quick create"
+          >
+            <Ionicons name="add" size={30} color={colors.textOnAccent} />
+          </Pressable>
+        </View>
 
-            return (
-              <Pressable
-                key={route.key}
-                onPress={onPress}
-                accessibilityRole="button"
-                accessibilityState={{ selected: focused }}
-                accessibilityLabel={label}
-                style={styles.item}
-              >
-                <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
-                  <Ionicons
-                    name={focused ? meta.on : meta.off}
-                    size={20}
-                    color={focused ? colors.accent : colors.textMuted}
-                  />
-                </View>
-                <Text style={[styles.label, focused && styles.labelActive]}>{label}</Text>
-              </Pressable>
-            )
-          })}
+        {/* Right pair — mirrors left */}
+        <View style={styles.pair}>
+          {rightRoutes.map((route) => (
+            <View key={route.key} style={styles.slot}>
+              {renderTab(route)}
+            </View>
+          ))}
         </View>
       </View>
+
+      <QuickCreateSheet
+        visible={createOpen}
+        onClose={() => setCreateOpen(false)}
+        navigation={navigation as unknown as BottomTabNavigationProp<RootTabParamList>}
+      />
     </View>
   )
 }
 
-const styles = StyleSheet.create({
-  dock: {
-    position: 'absolute',
-    left: 20,
-    right: 20,
-  },
-  pill: {
-    borderRadius: 28,
-    overflow: 'hidden',
-    borderWidth: StyleSheet.hairlineWidth,
-    borderColor: 'rgba(255,255,255,0.7)',
-    ...shadows.floating,
-  },
-  webFill: {
-    backgroundColor: 'rgba(255,255,255,0.82)',
-  },
-  glassTint: {
-    position: 'absolute',
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    backgroundColor: 'rgba(255,255,255,0.38)',
-  },
-  row: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    paddingVertical: 8,
-    paddingHorizontal: 6,
-  },
-  item: {
-    flex: 1,
-    alignItems: 'center',
-    gap: 2,
-  },
-  iconWrap: {
-    width: 40,
-    height: 32,
-    borderRadius: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconWrapActive: {
-    backgroundColor: 'rgba(37,99,235,0.12)',
-  },
-  label: {
-    ...typography.micro,
-    color: colors.textMuted,
-  },
-  labelActive: {
-    color: colors.accent,
-  },
-})
+function createStyles(
+  c: AppColors,
+  shadows: ReturnType<typeof useShadows>,
+  pagePadding: number,
+  isCompact: boolean,
+) {
+  const edge = Math.max(pagePadding - 2, 12)
+
+  return StyleSheet.create({
+    dock: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: c.surface,
+      borderTopWidth: StyleSheet.hairlineWidth,
+      borderTopColor: c.border,
+      ...shadows.card,
+    },
+    bar: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      paddingHorizontal: edge,
+      paddingTop: 12,
+      minHeight: 60,
+    },
+    pair: {
+      flex: 1,
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    slot: {
+      flex: 1,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
+    item: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 4,
+      minWidth: 56,
+      paddingVertical: 2,
+    },
+    label: {
+      ...typography.micro,
+      fontSize: 11,
+      lineHeight: 13,
+      letterSpacing: 0.2,
+      color: c.textMuted,
+      textAlign: 'center',
+    },
+    labelActive: {
+      color: c.accent,
+      fontWeight: '700',
+    },
+    fabSlot: {
+      width: isCompact ? 76 : 84,
+      alignItems: 'center',
+      justifyContent: 'flex-start',
+      marginTop: -32,
+      flexShrink: 0,
+    },
+    fab: {
+      width: isCompact ? 56 : 60,
+      height: isCompact ? 56 : 60,
+      borderRadius: radius.full,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      ...shadows.floating,
+    },
+  })
+}
