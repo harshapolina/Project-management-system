@@ -349,7 +349,7 @@ export function HomeScreen({ navigation }: Props) {
   const updatePhotos = recentUpdate?.photos || []
   const updateThumb = updatePhotos[0]?.url ? assetUrl(updatePhotos[0].url) : null
 
-  const coverRange = Math.max(heroHeight * 0.75, 160)
+  const coverRange = Math.max(heroHeight * 0.85, 180)
   const heroOpacity = scrollY.interpolate({
     inputRange: [0, coverRange * 0.55, coverRange],
     outputRange: [1, 0.45, 0],
@@ -365,42 +365,59 @@ export function HomeScreen({ navigation }: Props) {
     outputRange: [36, 12],
     extrapolate: 'clamp',
   })
-  /** How far the white curve overlaps onto empty green padding (not content) */
-  const SHEET_OVERLAP = 14
-  const sheetLift = scrollY.interpolate({
-    inputRange: [0, coverRange],
-    outputRange: [0, -12],
-    extrapolate: 'clamp',
-  })
+  /** Slight tuck of white curve under Active project (still clickable above) */
+  const SHEET_OVERLAP = 8
 
   return (
     <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
       <AppNavBar variant="hero" scrollY={scrollY} coverRange={coverRange} />
       <View style={styles.root}>
-        {/* Green only under the hero + curve — bottom stays locked white above tabs */}
+        {/* Green canvas behind hero + curve (non-interactive) */}
         <View
           pointerEvents="none"
           style={[
             styles.heroBleed,
-            { height: Math.max((heroHeight || 320) + 48, 360) },
+            { height: Math.max((heroHeight || 320) + 48, Math.round(windowHeight * 0.55)) },
           ]}
         />
-        {/* Fixed green hero below soft navbar */}
-        <Animated.View
-          pointerEvents="box-none"
-          style={[
-            styles.heroFixed,
-            {
-              opacity: heroOpacity,
-              transform: [{ scale: heroScale }],
-            },
-          ]}
-          onLayout={(e) => {
-            const next = Math.ceil(e.nativeEvent.layout.height)
-            if (next > 0 && Math.abs(next - heroHeight) > 2) setHeroHeight(next)
-          }}
+
+        <Animated.ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scroll}
+          showsVerticalScrollIndicator={false}
+          scrollEventThrottle={16}
+          keyboardShouldPersistTaps="handled"
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
+            useNativeDriver: false,
+          })}
+          refreshControl={
+            <RefreshControl
+              refreshing={isRefetching}
+              onRefresh={() => {
+                refetch()
+                alerts.refetch()
+                siteUpdates.refetch()
+                snags.refetch()
+                projects.refetch()
+              }}
+              tintColor={HERO.lime}
+            />
+          }
         >
-          <View style={styles.heroInner}>
+          {/* Hero lives in the scroll so CTAs stay tappable */}
+          <Animated.View
+            style={[
+              styles.heroInner,
+              {
+                opacity: heroOpacity,
+                transform: [{ scale: heroScale }],
+              },
+            ]}
+            onLayout={(e) => {
+              const next = Math.ceil(e.nativeEvent.layout.height)
+              if (next > 0 && Math.abs(next - heroHeight) > 2) setHeroHeight(next)
+            }}
+          >
             <Text style={styles.heroHelloLine}>
               Hello, <Text style={styles.heroHelloName}>{firstName(user?.name)}</Text>
             </Text>
@@ -466,46 +483,16 @@ export function HomeScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             ) : null}
-          </View>
-        </Animated.View>
+          </Animated.View>
 
-        <Animated.ScrollView
-          style={styles.scrollView}
-          pointerEvents="box-none"
-          contentContainerStyle={styles.scroll}
-          showsVerticalScrollIndicator={false}
-          scrollEventThrottle={16}
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: false,
-          })}
-          refreshControl={
-            <RefreshControl
-              refreshing={isRefetching}
-              onRefresh={() => {
-                refetch()
-                alerts.refetch()
-                siteUpdates.refetch()
-                snags.refetch()
-                projects.refetch()
-              }}
-              tintColor={HERO.lime}
-            />
-          }
-        >
-          {/* Spacer ends early so the white curve rests on the green */}
-          <View
-            pointerEvents="none"
-            style={{ height: Math.max((heroHeight || 320) - SHEET_OVERLAP, 200) }}
-          />
-
-          {/* White sheet with curved top overlapping green */}
+          {/* Green under rounded corners; sheet scrolls up over the hero */}
+          <View style={[styles.sheetStack, { marginTop: -SHEET_OVERLAP }]}>
           <Animated.View
             style={[
               styles.sheet,
               {
                 borderTopLeftRadius: sheetRadius,
                 borderTopRightRadius: sheetRadius,
-                transform: [{ translateY: sheetLift }],
               },
             ]}
           >
@@ -773,6 +760,7 @@ export function HomeScreen({ navigation }: Props) {
             </>
           ) : null}
           </Animated.View>
+          </View>
         </Animated.ScrollView>
 
         <Modal visible={pickerOpen} transparent animationType="fade" onRequestClose={() => setPickerOpen(false)}>
@@ -914,33 +902,18 @@ function createStyles(
     scrollView: {
       flex: 1,
       backgroundColor: 'transparent',
-      // Above the fixed green hero so the white sheet covers it while scrolling
-      zIndex: 5,
-      elevation: 5,
+      zIndex: 2,
       ...(Platform.OS === 'web' ? { position: 'relative' as const } : null),
     },
     scroll: {
       flexGrow: 1,
-      // Clearance lives inside the white sheet so green never peeks above tabs
       paddingBottom: 0,
       backgroundColor: 'transparent',
-    },
-    heroFixed: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      // Sit under the white sheet — sheet scrolls over green, not under it
-      zIndex: 1,
-      elevation: 1,
-      backgroundColor: HERO.bg,
-      // Tall empty green band so the white curve never clips the project card
-      paddingBottom: spacing.xxl + 40,
-      marginTop: -2,
     },
     heroInner: {
       paddingHorizontal: pagePadding,
       paddingTop: spacing.md,
+      paddingBottom: spacing.xl,
       gap: spacing.lg + 4,
     },
     heroHelloLine: {
@@ -1003,7 +976,7 @@ function createStyles(
     },
     heroPanel: {
       marginTop: spacing.sm,
-      marginBottom: spacing.md,
+      marginBottom: spacing.sm,
       backgroundColor: HERO.panel,
       borderRadius: radius.xl,
       borderWidth: StyleSheet.hairlineWidth,
@@ -1030,16 +1003,16 @@ function createStyles(
       flex: 1,
       minWidth: 0,
     },
+    sheetStack: {
+      backgroundColor: HERO.bg,
+    },
     sheet: {
       backgroundColor: c.canvas,
       paddingHorizontal: pagePadding,
       paddingTop: spacing.xl + 4,
-      // Extend white sheet through tab-bar clearance (locks bottom white)
       paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,
       gap: spacing.md,
       minHeight: Math.max(windowHeight - 80, 520),
-      zIndex: 6,
-      elevation: 6,
       overflow: 'hidden',
       borderCurve: 'continuous',
       ...(Platform.OS === 'web' ? { position: 'relative' as const } : null),
