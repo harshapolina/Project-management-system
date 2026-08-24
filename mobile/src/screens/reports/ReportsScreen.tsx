@@ -6,6 +6,7 @@ import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { SectionLabel } from '../../components/SectionLabel'
@@ -43,17 +44,20 @@ export function ReportsScreen() {
   }
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Reports"
       subtitle="Progress snapshot"
       subtitleIcon="bar-chart-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Crunching reports…" variant="dashboard" />
       </Screen>
@@ -61,7 +65,7 @@ export function ReportsScreen() {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -69,7 +73,7 @@ export function ReportsScreen() {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <ScrollView
         contentContainerStyle={listContent}

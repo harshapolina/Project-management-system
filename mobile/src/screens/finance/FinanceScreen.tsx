@@ -5,6 +5,7 @@ import { Screen } from '../../components/Screen'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { StatCard } from '../../components/StatCard'
 import { Pill } from '../../components/Badge'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { IconButton } from '../../components/IconButton'
@@ -48,7 +49,8 @@ export function FinanceScreen({ navigation }: Props) {
 
   if (summary.isLoading || expenses.isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
+        <AppNavBar />
         <PageHeader
           title="Revenue"
           subtitle="Expenses and payments"
@@ -61,7 +63,8 @@ export function FinanceScreen({ navigation }: Props) {
   }
   if (summary.isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
+        <AppNavBar />
         <PageHeader
           title="Revenue"
           subtitle="Expenses and payments"
@@ -76,7 +79,8 @@ export function FinanceScreen({ navigation }: Props) {
   const data = summary.data!
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
       <PageHeader
         title="Revenue"
         subtitle="Expenses and payments"

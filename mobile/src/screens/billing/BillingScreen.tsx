@@ -3,6 +3,7 @@ import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -85,17 +86,20 @@ export function BillingScreen({ navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Billing"
       subtitle="Vendor invoices"
       subtitleIcon="receipt-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (summary.isLoading && list.isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading invoices…" variant="dashboard" />
       </Screen>
@@ -103,7 +107,7 @@ export function BillingScreen({ navigation }: Props) {
   }
   if (summary.isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState
           message={isApiError(summary.error) ? summary.error.message : undefined}
@@ -117,7 +121,7 @@ export function BillingScreen({ navigation }: Props) {
   const invoices = list.data || []
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <ScrollView
         contentContainerStyle={listContent}

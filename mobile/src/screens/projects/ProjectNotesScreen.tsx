@@ -3,6 +3,7 @@ import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -55,17 +56,20 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
   })
 
   const header = (
-    <PageHeader
-      title="Notes"
-      subtitle={projectName || 'Meeting notes'}
-      subtitleIcon="chatbubble-ellipses-outline"
-      onBack={() => navigation.goBack()}
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title="Notes"
+        subtitle={projectName || 'Meeting notes'}
+        subtitleIcon="chatbubble-ellipses-outline"
+        onBack={() => navigation.goBack()}
+      />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <LoadingState label="Loading notes…" variant="list" />
       </Screen>
@@ -73,7 +77,7 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -83,7 +87,7 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
   const notes = [...(data.project.meetingNotes || [])].reverse()
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']} keyboardAvoiding>
+    <Screen padded={false} edges={['left', 'right']} keyboardAvoiding>
       {header}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList

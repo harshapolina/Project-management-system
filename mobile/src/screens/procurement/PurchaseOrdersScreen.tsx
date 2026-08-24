@@ -3,6 +3,7 @@ import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } 
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
@@ -43,16 +44,19 @@ export function PurchaseOrdersScreen({ route, navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Purchase orders"
       subtitle="Material orders"
       subtitleIcon="cart-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       {isLoading ? (
         <LoadingState label="Loading purchase orders…" variant="list" />

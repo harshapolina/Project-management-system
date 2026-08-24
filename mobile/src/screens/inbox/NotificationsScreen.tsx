@@ -5,6 +5,7 @@ import { CompositeNavigationProp, useNavigation } from '@react-navigation/native
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
@@ -125,17 +126,20 @@ export function NotificationsScreen() {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Alerts"
       subtitle="Assignments and mentions"
       subtitleIcon="notifications-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading alerts…" variant="rows" />
       </Screen>
@@ -143,7 +147,7 @@ export function NotificationsScreen() {
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -154,7 +158,7 @@ export function NotificationsScreen() {
   const unread = items.filter((n) => !n.read).length
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <ScrollView
         contentContainerStyle={listContent}

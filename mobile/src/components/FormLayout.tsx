@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Screen } from './Screen'
+import { AppNavBar } from './AppNavBar'
 import { PageHeader } from './PageHeader'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
@@ -61,7 +62,7 @@ export function FormLayout({
   return (
     <Screen
       padded={false}
-      edges={isSheet ? ['left', 'right'] : ['top', 'left', 'right']}
+      edges={['left', 'right']}
       keyboardAvoiding
       background={colors.canvas}
     >
@@ -95,7 +96,10 @@ export function FormLayout({
           </View>
         </View>
       ) : (
-        <PageHeader title={title} subtitle={subtitle} subtitleIcon={subtitleIcon} onBack={onBack} />
+        <>
+          <AppNavBar />
+          <PageHeader title={title} subtitle={subtitle} subtitleIcon={subtitleIcon} onBack={onBack} />
+        </>
       )}
 
       <KeyboardAvoidingView

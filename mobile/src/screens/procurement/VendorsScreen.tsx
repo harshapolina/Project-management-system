@@ -3,6 +3,7 @@ import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-nati
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -26,17 +27,20 @@ export function VendorsScreen({ navigation }: Props) {
   const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ['vendors'], queryFn: vendorsApi.list })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Vendors"
       subtitle="Supplier directory"
       subtitleIcon="business-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading vendors…" variant="list" />
       </Screen>
@@ -44,7 +48,7 @@ export function VendorsScreen({ navigation }: Props) {
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -52,7 +56,7 @@ export function VendorsScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <FlatList
         data={data}

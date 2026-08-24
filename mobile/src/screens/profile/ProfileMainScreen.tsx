@@ -3,6 +3,7 @@ import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { Screen } from '../../components/Screen'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { NavRow, NavSection } from '../../components/NavRow'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -50,7 +51,8 @@ export function ProfileMainScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
       <PageHeader
         title="You"
         subtitle="Account and company"

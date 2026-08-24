@@ -3,6 +3,7 @@ import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -56,17 +57,20 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   })
 
   const header = (
-    <PageHeader
-      title={quotation?.title || 'Quotation'}
-      subtitle={quotation ? `${quotation.versionLabel} · BOQ` : 'Bill of quantities'}
-      subtitleIcon="document-text-outline"
-      onBack={() => navigation.goBack()}
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title={quotation?.title || 'Quotation'}
+        subtitle={quotation ? `${quotation.versionLabel} · BOQ` : 'Bill of quantities'}
+        subtitleIcon="document-text-outline"
+        onBack={() => navigation.goBack()}
+      />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <LoadingState label="Loading quotation…" variant="detail" />
       </Screen>
@@ -74,7 +78,7 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   }
   if (isError || !quotation) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -105,7 +109,7 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right', 'bottom']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {header}
       <FlatList
         data={quotation.items}

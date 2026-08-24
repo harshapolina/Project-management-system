@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -33,6 +34,8 @@ export function PlatformAdminScreen({ navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Workspaces"
       subtitle="Companies on Cubic"
@@ -47,11 +50,12 @@ export function PlatformAdminScreen({ navigation }: Props) {
         />
       }
     />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading workspaces…" variant="list" />
       </Screen>
@@ -59,7 +63,7 @@ export function PlatformAdminScreen({ navigation }: Props) {
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -69,7 +73,7 @@ export function PlatformAdminScreen({ navigation }: Props) {
   const tenants = data || []
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <FlatList
         data={tenants}

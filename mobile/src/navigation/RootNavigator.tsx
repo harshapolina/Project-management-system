@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native'
 import { StatusBar } from 'expo-status-bar'
 import { View } from 'react-native'
@@ -6,7 +6,7 @@ import { AuthNavigator } from './AuthNavigator'
 import { AppNavigator } from './AppNavigator'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
 import { ForceChangePasswordScreen } from '../screens/ForceChangePasswordScreen'
-import { LoadingState } from '../components/States'
+import { SplashScreen, SPLASH_BG } from '../components/SplashScreen'
 import { useColors, useThemeMode } from '../theme/useColors'
 import { useUiStore } from '../store/uiStore'
 import { useAuthStore } from '../store/authStore'
@@ -20,6 +20,10 @@ export function RootNavigator() {
   const { isRestoring } = useSessionRestore()
   const colors = useColors()
   const mode = useThemeMode()
+  const [splashDone, setSplashDone] = useState(false)
+
+  const bootReady = authHydrated && uiHydrated && !isRestoring
+  const showSplash = !splashDone
 
   const navTheme = useMemo(
     () => ({
@@ -36,29 +40,26 @@ export function RootNavigator() {
     [colors, mode],
   )
 
-  if (!authHydrated || !uiHydrated || isRestoring) {
-    return (
-      <View style={{ flex: 1, backgroundColor: colors.canvas }}>
-        <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-        <LoadingState variant="boot" label="Loading Cubic…" />
-      </View>
-    )
-  }
-
   const isAuthed = !!user && !!accessToken
 
   return (
-    <NavigationContainer theme={navTheme}>
-      <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
-      {!isAuthed ? (
-        <AuthNavigator />
-      ) : user.mustChangePassword ? (
-        <ForceChangePasswordScreen />
-      ) : !user.onboardingCompleted ? (
-        <OnboardingScreen />
+    <View style={{ flex: 1, backgroundColor: showSplash ? SPLASH_BG : colors.canvas }}>
+      {showSplash ? (
+        <SplashScreen hold={!bootReady} onFinished={() => setSplashDone(true)} />
       ) : (
-        <AppNavigator />
+        <NavigationContainer theme={navTheme}>
+          <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
+          {!isAuthed ? (
+            <AuthNavigator />
+          ) : user.mustChangePassword ? (
+            <ForceChangePasswordScreen />
+          ) : !user.onboardingCompleted ? (
+            <OnboardingScreen />
+          ) : (
+            <AppNavigator />
+          )}
+        </NavigationContainer>
       )}
-    </NavigationContainer>
+    </View>
   )
 }

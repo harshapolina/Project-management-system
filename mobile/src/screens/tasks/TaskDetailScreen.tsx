@@ -3,6 +3,7 @@ import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, 
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useNavigation } from '@react-navigation/native'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -96,17 +97,20 @@ export function TaskDetailScreen({ route }: Props) {
   }, [data])
 
   const header = (
-    <PageHeader
-      title="Task"
-      subtitle="Details & discussion"
-      subtitleIcon="checkbox-outline"
-      onBack={() => navigation.goBack()}
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title="Task"
+        subtitle="Details & discussion"
+        subtitleIcon="checkbox-outline"
+        onBack={() => navigation.goBack()}
+      />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <LoadingState label="Loading task…" variant="detail" />
       </Screen>
@@ -114,7 +118,7 @@ export function TaskDetailScreen({ route }: Props) {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -124,7 +128,7 @@ export function TaskDetailScreen({ route }: Props) {
   const { task, comments, activity } = data
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']} keyboardAvoiding>
+    <Screen padded={false} edges={['left', 'right']} keyboardAvoiding>
       {header}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList

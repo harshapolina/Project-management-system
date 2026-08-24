@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -70,17 +71,20 @@ export function PersonAccessScreen({ route, navigation }: Props) {
   })
 
   const header = (
-    <PageHeader
-      title="Access"
-      subtitle="Permissions & account"
-      subtitleIcon="shield-checkmark-outline"
-      onBack={() => navigation.goBack()}
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title="Access"
+        subtitle="Permissions & account"
+        subtitleIcon="shield-checkmark-outline"
+        onBack={() => navigation.goBack()}
+      />
+    </>
   )
 
   if (summary.isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <LoadingState label="Loading access…" variant="form" />
       </Screen>
@@ -88,7 +92,7 @@ export function PersonAccessScreen({ route, navigation }: Props) {
   }
   if (summary.isError || !member) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <ErrorState
           message={isApiError(summary.error) ? summary.error.message : 'Person not found'}
@@ -101,7 +105,7 @@ export function PersonAccessScreen({ route, navigation }: Props) {
   const user = member.user
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right', 'bottom']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {header}
       <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
         <SurfaceCard style={styles.identity}>

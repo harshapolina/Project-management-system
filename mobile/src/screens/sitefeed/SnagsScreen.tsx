@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Avatar } from '../../components/Avatar'
@@ -48,17 +49,20 @@ export function SnagsScreen({ route, navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Snags"
       subtitle="Issues to fix"
       subtitleIcon="alert-circle-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading snags…" variant="list" />
       </Screen>
@@ -66,7 +70,7 @@ export function SnagsScreen({ route, navigation }: Props) {
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -74,7 +78,7 @@ export function SnagsScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <FlatList
         data={data}

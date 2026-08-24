@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -55,7 +56,8 @@ export function ProjectTasksScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
       <PageHeader
         title="Tasks"
         subtitle={projectName || 'Project tasks'}

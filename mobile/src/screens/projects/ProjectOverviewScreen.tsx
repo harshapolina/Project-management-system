@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { CompositeNavigationProp } from '@react-navigation/native'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -53,17 +54,20 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   const nameForNav = projectName || data?.project.name
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title={title}
       subtitle={subtitle}
       subtitleIcon="folder-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading project…" variant="detail" />
       </Screen>
@@ -71,7 +75,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -101,7 +105,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <ScrollView
         contentContainerStyle={listContent}

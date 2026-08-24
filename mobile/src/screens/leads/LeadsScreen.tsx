@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
 import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
@@ -98,7 +99,8 @@ export function LeadsScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
+      <AppNavBar />
       <PageHeader
         title="Enquiries"
         subtitle="Assign and follow up"

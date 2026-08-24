@@ -14,6 +14,7 @@ import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -97,22 +98,25 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
   }
 
   const header = (
-    <PageHeader
-      title="Team"
-      subtitle={projectName || 'Project team'}
-      subtitleIcon="people-outline"
-      onBack={() => navigation.goBack()}
-      right={
-        caps.manageProjects ? (
-          <IconButton icon="person-add-outline" label="Add member" tone="ghost" onPress={openAdd} />
-        ) : null
-      }
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title="Team"
+        subtitle={projectName || 'Project team'}
+        subtitleIcon="people-outline"
+        onBack={() => navigation.goBack()}
+        right={
+          caps.manageProjects ? (
+            <IconButton icon="person-add-outline" label="Add member" tone="ghost" onPress={openAdd} />
+          ) : null
+        }
+      />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <LoadingState label="Loading team…" variant="rows" />
       </Screen>
@@ -120,7 +124,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -132,7 +136,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
   const candidates = (users.data || []).filter((u) => !memberIds.has(u._id))
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {header}
       <FlatList
         data={members}

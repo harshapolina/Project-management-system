@@ -10,7 +10,7 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#f4f4f5"
+      "backgroundColor": "#004838"
     },
     "ios": {
       "supportsTablet": true,
@@ -19,7 +19,7 @@
     "android": {
       "package": "studio.cubic.mobile",
       "adaptiveIcon": {
-        "backgroundColor": "#f4f4f5",
+        "backgroundColor": "#004838",
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundImage": "./assets/android-icon-background.png",
         "monochromeImage": "./assets/android-icon-monochrome.png"
@@ -28,7 +28,7 @@
     },
     "web": {
       "favicon": "./assets/favicon.png",
-      "backgroundColor": "#f4f4f5"
+      "backgroundColor": "#004838"
     },
     "plugins": [
       "expo-secure-store",

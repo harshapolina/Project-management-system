@@ -3,6 +3,7 @@ import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } fr
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { StatCard } from '../../components/StatCard'
@@ -43,17 +44,20 @@ export function InventoryScreen({ navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Inventory"
       subtitle="Stock on hand"
       subtitleIcon="cube-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (summary.isLoading || items.isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading inventory…" variant="dashboard" />
       </Screen>
@@ -61,7 +65,7 @@ export function InventoryScreen({ navigation }: Props) {
   }
   if (summary.isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(summary.error) ? summary.error.message : undefined} onRetry={() => summary.refetch()} />
       </Screen>
@@ -115,7 +119,7 @@ export function InventoryScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <FlatList
         data={list}

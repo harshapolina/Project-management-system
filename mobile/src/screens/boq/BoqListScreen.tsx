@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
@@ -41,16 +42,19 @@ export function BoqListScreen({ route, navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="BOQ / Quotes"
       subtitle="Estimates and versions"
       subtitleIcon="document-text-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       {isLoading ? (
         <LoadingState label="Loading quotations…" variant="list" />

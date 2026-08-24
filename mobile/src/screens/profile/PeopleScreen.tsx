@@ -3,6 +3,7 @@ import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
@@ -68,27 +69,30 @@ export function PeopleScreen({ navigation }: Props) {
   const isRefetching = caps.people ? summary.isRefetching : directory.isRefetching
 
   const pageHeader = (
-    <PageHeader
-      title="People"
-      subtitle="Teammates in this company"
-      subtitleIcon="people-outline"
-      onBack={() => navigation.goBack()}
-      right={
-        caps.managePeople ? (
-          <IconButton
-            icon="person-add-outline"
-            label="Invite person"
-            tone="ghost"
-            onPress={() => navigation.navigate('InvitePerson')}
-          />
-        ) : null
-      }
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title="People"
+        subtitle="Teammates in this company"
+        subtitleIcon="people-outline"
+        onBack={() => navigation.goBack()}
+        right={
+          caps.managePeople ? (
+            <IconButton
+              icon="person-add-outline"
+              label="Invite person"
+              tone="ghost"
+              onPress={() => navigation.navigate('InvitePerson')}
+            />
+          ) : null
+        }
+      />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading directory…" variant="rows" />
       </Screen>
@@ -96,7 +100,7 @@ export function PeopleScreen({ navigation }: Props) {
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -104,7 +108,7 @@ export function PeopleScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <SearchField value={search} onChangeText={setSearch} placeholder="Search people or roles" />
       <FlatList

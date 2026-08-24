@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FlatList, KeyboardAvoidingView, Platform, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
@@ -43,17 +44,20 @@ export function ConversationScreen({ route, navigation }: Props) {
   })
 
   const header = (
-    <PageHeader
-      title={userName}
-      subtitle="Direct message"
-      subtitleIcon="chatbubble-outline"
-      onBack={() => navigation.goBack()}
-    />
+    <>
+      <AppNavBar />
+      <PageHeader
+        title={userName}
+        subtitle="Direct message"
+        subtitleIcon="chatbubble-outline"
+        onBack={() => navigation.goBack()}
+      />
+    </>
   )
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <LoadingState label="Loading conversation…" variant="chat" />
       </Screen>
@@ -61,7 +65,7 @@ export function ConversationScreen({ route, navigation }: Props) {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {header}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -69,7 +73,7 @@ export function ConversationScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']} keyboardAvoiding>
+    <Screen padded={false} edges={['left', 'right']} keyboardAvoiding>
       {header}
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <FlatList

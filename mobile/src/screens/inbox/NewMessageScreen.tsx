@@ -1,9 +1,8 @@
 import { useMemo } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { FormLayout } from '../../components/FormLayout'
 import { Avatar } from '../../components/Avatar'
-import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { spacing, typography, type AppColors } from '../../constants/theme'
@@ -28,40 +27,45 @@ export function NewMessageScreen({ navigation }: Props) {
     queryFn: mailApi.directory,
   })
 
-  const pageHeader = (
-    <PageHeader
-      title="New message"
-      subtitle="Pick a teammate to chat with"
-      subtitleIcon="chatbubble-ellipses-outline"
-      onBack={() => navigation.goBack()}
-      backLabel="Close"
-    />
-  )
-
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']} background={colors.canvas}>
-        {pageHeader}
+      <FormLayout
+        title="New message"
+        subtitle="Pick a teammate to chat with"
+        subtitleIcon="chatbubble-ellipses-outline"
+        onBack={() => navigation.goBack()}
+        card={false}
+      >
         <LoadingState label="Loading directory…" variant="rows" />
-      </Screen>
+      </FormLayout>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']} background={colors.canvas}>
-        {pageHeader}
+      <FormLayout
+        title="New message"
+        subtitle="Pick a teammate to chat with"
+        subtitleIcon="chatbubble-ellipses-outline"
+        onBack={() => navigation.goBack()}
+        card={false}
+      >
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      </FormLayout>
     )
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']} background={colors.canvas}>
-      {pageHeader}
+    <FormLayout
+      title="New message"
+      subtitle="Pick a teammate to chat with"
+      subtitleIcon="chatbubble-ellipses-outline"
+      onBack={() => navigation.goBack()}
+      card={false}
+    >
       <FlatList
         data={data}
         keyExtractor={(u) => u._id}
-        contentContainerStyle={listContent}
+        contentContainerStyle={[listContent, { paddingHorizontal: 0 }]}
         renderItem={({ item }) => (
           <SurfaceCard
             onPress={() => navigation.replace('Conversation', { userId: item._id, userName: item.name })}
@@ -72,16 +76,17 @@ export function NewMessageScreen({ navigation }: Props) {
                 <Text style={styles.name} numberOfLines={1}>
                   {item.name}
                 </Text>
-                <Text style={styles.role} numberOfLines={1}>
-                  {item.title || (item.role ? ROLE_LABELS[item.role as Role] || item.role : '')}
+                <Text style={styles.meta} numberOfLines={1}>
+                  {ROLE_LABELS[item.role as Role] || item.role}
+                  {item.email ? ` · ${item.email}` : ''}
                 </Text>
               </View>
             </View>
           </SurfaceCard>
         )}
-        ListEmptyComponent={<EmptyState title="No teammates found" />}
+        ListEmptyComponent={<EmptyState title="No teammates" body="Invite people to start messaging." />}
       />
-    </Screen>
+    </FormLayout>
   )
 }
 
@@ -89,6 +94,6 @@ function createStyles(c: AppColors) {
   return StyleSheet.create({
     row: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
     name: { ...typography.bodyStrong, color: c.textPrimary },
-    role: { ...typography.caption, color: c.textSecondary, textTransform: 'capitalize' },
+    meta: { ...typography.caption, color: c.textMuted },
   })
 }

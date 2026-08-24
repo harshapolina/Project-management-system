@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -33,17 +34,20 @@ export function ImpactScreen({ navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Impact"
       subtitle="Points earned for finishing work well"
       subtitleIcon="trophy-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (!caps.impact) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <EmptyState title="Impact Points" body="This isn’t enabled for your role yet." />
       </Screen>
@@ -52,7 +56,7 @@ export function ImpactScreen({ navigation }: Props) {
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading your score…" variant="dashboard" />
       </Screen>
@@ -60,7 +64,7 @@ export function ImpactScreen({ navigation }: Props) {
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -68,7 +72,7 @@ export function ImpactScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <ScrollView
         contentContainerStyle={listContent}

@@ -4,6 +4,7 @@ import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -69,17 +70,20 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Files"
       subtitle={projectName || 'Project files'}
       subtitleIcon="folder-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   if (!caps.manageFiles) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <EmptyState title="Files aren't available" body="Your role doesn't have access to project files." />
       </Screen>
@@ -88,7 +92,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <LoadingState label="Loading files…" variant="list" />
       </Screen>
@@ -96,7 +100,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['top', 'left', 'right']}>
+      <Screen padded={false} edges={['left', 'right']}>
         {pageHeader}
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </Screen>
@@ -130,7 +134,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       <FlatList
         data={files}

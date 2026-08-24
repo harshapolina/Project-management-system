@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import { FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Screen } from '../../components/Screen'
+import { AppNavBar } from '../../components/AppNavBar'
 import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Avatar } from '../../components/Avatar'
@@ -40,12 +41,15 @@ export function SiteFeedScreen({ route, navigation }: Props) {
   })
 
   const pageHeader = (
+    <>
+      <AppNavBar />
     <PageHeader
       title="Site updates"
       subtitle="Photos and daily logs"
       subtitleIcon="camera-outline"
       onBack={() => navigation.goBack()}
     />
+    </>
   )
 
   const selectedProjectName =
@@ -53,7 +57,7 @@ export function SiteFeedScreen({ route, navigation }: Props) {
   const photoCount = selected?.photos?.length ?? 0
 
   return (
-    <Screen padded={false} edges={['top', 'left', 'right']}>
+    <Screen padded={false} edges={['left', 'right']}>
       {pageHeader}
       {isLoading ? (
         <LoadingState label="Loading site feed…" variant="cards" />
