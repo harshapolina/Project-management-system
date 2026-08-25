@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Cubic API</title>
+    <style>
+      :root { color-scheme: light dark; }
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: center;
+        background: #0e1513;
+        color: #e8efec;
+        font: 15px/1.6 ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+        padding: 2rem;
+      }
+      main { max-width: 28rem; }
+      h1 {
+        font-size: 1.15rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+        margin: 0 0 0.5rem;
+      }
+      p { margin: 0 0 1.25rem; color: #a2b3b0; }
+      .dot {
+        display: inline-block;
+        width: 0.5rem;
+        height: 0.5rem;
+        border-radius: 50%;
+        background: #4fc48c;
+        margin-right: 0.5rem;
+        vertical-align: 0.05rem;
+      }
+      a {
+        color: #4fc48c;
+        text-decoration: none;
+        font-family: ui-monospace, "SF Mono", Menlo, monospace;
+        font-size: 0.85rem;
+      }
+      a:hover, a:focus-visible { text-decoration: underline; }
+      a:focus-visible { outline: 2px solid #4fc48c; outline-offset: 3px; }
+    </style>
+  </head>
+  <body>
+    <main>
+      <h1><span class="dot"></span>Cubic API</h1>
+      <p>
+        This host serves the API only — there is no site here. The application
+        runs on its own domain and calls this service behind the scenes.
+      </p>
+      <a href="/api/health">Check service health &rarr;</a>
+    </main>
+  </body>
+</html>
