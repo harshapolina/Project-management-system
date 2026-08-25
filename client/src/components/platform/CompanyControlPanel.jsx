@@ -6,6 +6,8 @@ import {
   ExternalLink,
   ImagePlus,
   KeyRound,
+  Lock,
+  Megaphone,
   Save,
   ShieldOff,
   ShieldCheck,
@@ -23,6 +25,124 @@ import {
   normalizeTenantFeatures,
 } from '../../lib/tenantFeatures'
 import { cn } from '../../lib/utils'
+
+/** A spread of hues that read well behind a logo in both themes. */
+const BRAND_SWATCHES = [
+  '#0F766E',
+  '#1D4ED8',
+  '#7C3AED',
+  '#BE185D',
+  '#B45309',
+  '#15803D',
+  '#334155',
+  '#0A0A0A',
+]
+
+const NOTICE_VARIANTS = [
+  { value: 'info', label: 'Info — general announcement' },
+  { value: 'warning', label: 'Warning — renewal due soon' },
+  { value: 'urgent', label: 'Urgent — action needed now' },
+]
+
+/**
+ * Composes the message a company sees inside their own app.
+ *
+ * Three levels, in increasing severity: a banner they can dismiss, a banner
+ * pinned in place, and a full block that freezes the app until it's lifted.
+ * Blocking is deliberately its own switch rather than the top of the variant
+ * scale — "urgent" is about tone, blocking is about access, and conflating them
+ * makes it too easy to lock a customer out by picking a colour.
+ */
+function NoticeComposer({ draft, setDraft }) {
+  const notice = draft.notice
+  const set = (patch) => setDraft((st) => ({ ...st, notice: { ...st.notice, ...patch } }))
+
+  return (
+    <div className="rounded-[10px] border border-border bg-surface-raised p-3.5">
+      <label className="flex items-start gap-2.5">
+        <input
+          type="checkbox"
+          checked={notice.active}
+          onChange={(e) => set({ active: e.target.checked })}
+          className="mt-0.5 h-4 w-4 accent-[#3ecf8e]"
+        />
+        <span className="min-w-0">
+          <span className="flex items-center gap-1.5 text-[13px] font-semibold text-primary">
+            <Megaphone className="h-3.5 w-3.5" />
+            Show a message in their app
+          </span>
+          <span className="mt-0.5 block text-[11px] text-secondary">
+            Renewal reminders, payment chases, scheduled downtime.
+          </span>
+        </span>
+      </label>
+
+      {notice.active && (
+        <div className="mt-3 space-y-3">
+          <Input
+            label="Title"
+            light
+            placeholder="Subscription renewal due"
+            value={notice.title}
+            onChange={(e) => set({ title: e.target.value })}
+          />
+          <label className="flex w-full flex-col gap-1.5">
+            <span className="text-xs font-semibold text-primary">Message</span>
+            <textarea
+              rows={3}
+              placeholder="Your plan renews on 30 September. Please settle the outstanding invoice to avoid interruption."
+              value={notice.message}
+              onChange={(e) => set({ message: e.target.value })}
+              className="w-full rounded-[6px] border border-border bg-surface px-3 py-2 text-sm text-primary outline-none transition focus:border-accent/50 focus:ring-2 focus:ring-accent/15"
+            />
+          </label>
+          <Select
+            label="Severity"
+            light
+            value={notice.variant}
+            onChange={(e) => set({ variant: e.target.value })}
+            options={NOTICE_VARIANTS}
+          />
+
+          <label className="flex items-center gap-2.5">
+            <input
+              type="checkbox"
+              checked={notice.dismissible}
+              disabled={notice.blocking}
+              onChange={(e) => set({ dismissible: e.target.checked })}
+              className="h-4 w-4 accent-[#3ecf8e] disabled:opacity-40"
+            />
+            <span className="text-[12px] text-secondary">
+              Let them dismiss it
+              {notice.blocking && ' — not available while the app is locked'}
+            </span>
+          </label>
+
+          <label className="flex items-start gap-2.5 rounded-[8px] bg-status-delayed/10 p-2.5">
+            <input
+              type="checkbox"
+              checked={notice.blocking}
+              onChange={(e) =>
+                set({ blocking: e.target.checked, dismissible: e.target.checked ? false : true })
+              }
+              className="mt-0.5 h-4 w-4 accent-[#ef4444]"
+            />
+            <span className="min-w-0">
+              <span className="flex items-center gap-1.5 text-[12px] font-semibold text-status-delayed">
+                <Lock className="h-3.5 w-3.5" />
+                Lock the app until this is lifted
+              </span>
+              <span className="mt-0.5 block text-[11px] text-secondary">
+                They can still sign in and read the message, but nothing else works.
+                Use for non-payment. Untick to release them.
+              </span>
+            </span>
+          </label>
+        </div>
+      )}
+    </div>
+  )
+}
 
 function companyLoginUrl(workspace, portal = 'admin') {
   const origin = window.location.origin
@@ -53,6 +173,14 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
     subscriptionPlan: tenant.subscriptionPlan || 'pro',
     notes: tenant.notes || '',
     features: normalizeTenantFeatures(tenant.features),
+    brandColor: tenant.brandColor || '',
+    notice: {
+      active: tenant.notice?.active ?? false,
+      title: tenant.notice?.title || '',
+      message: tenant.notice?.message || '',
+      variant: tenant.notice?.variant || 'info',
+      dismissible: tenant.notice?.dismissible !== false,
+    },
   })
   const [invite, setInvite] = useState({
     name: '',
@@ -101,6 +229,12 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
           subscriptionPlan: draft.subscriptionPlan,
           notes: draft.notes.trim(),
           features: draft.features,
+          brandColor: draft.brandColor,
+          notice: {
+            ...draft.notice,
+            title: draft.notice.title.trim(),
+            message: draft.notice.message.trim(),
+          },
         }),
       }),
     onSuccess: () => {
@@ -373,7 +507,13 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
                     (uploadLogo.isPending || removeLogo.isPending) && 'pointer-events-none opacity-60',
                   )}
                 >
-                  <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[6px] border border-border bg-surface">
+                  <div
+                    className={cn(
+                      'flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-[6px] border border-border',
+                      !draft.brandColor && 'bg-surface',
+                    )}
+                    style={draft.brandColor ? { backgroundColor: draft.brandColor } : undefined}
+                  >
                     {tenant.logoUrl ? (
                       <img
                         src={assetUrl(tenant.logoUrl)}
@@ -426,6 +566,48 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
                 value={draft.name}
                 onChange={(e) => setDraft((s) => ({ ...s, name: e.target.value }))}
               />
+
+              <div>
+                <span className="text-xs font-semibold text-primary">Brand colour</span>
+                <p className="mt-0.5 text-[11px] text-secondary">
+                  Sits behind their logo. Leave empty for a neutral surface.
+                </p>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {BRAND_SWATCHES.map((hex) => (
+                    <button
+                      key={hex}
+                      type="button"
+                      aria-label={`Use ${hex}`}
+                      onClick={() => setDraft((st) => ({ ...st, brandColor: hex }))}
+                      style={{ backgroundColor: hex }}
+                      className={cn(
+                        'h-7 w-7 rounded-full border transition',
+                        draft.brandColor?.toLowerCase() === hex.toLowerCase()
+                          ? 'border-primary ring-2 ring-accent/40'
+                          : 'border-border hover:scale-105',
+                      )}
+                    />
+                  ))}
+                  <input
+                    type="color"
+                    aria-label="Pick a custom brand colour"
+                    value={draft.brandColor || '#3ecf8e'}
+                    onChange={(e) => setDraft((st) => ({ ...st, brandColor: e.target.value }))}
+                    className="h-7 w-9 cursor-pointer rounded border border-border bg-transparent p-0.5"
+                  />
+                  {draft.brandColor && (
+                    <button
+                      type="button"
+                      onClick={() => setDraft((st) => ({ ...st, brandColor: '' }))}
+                      className="text-[11px] font-semibold text-secondary hover:text-primary"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+              </div>
+
+              <NoticeComposer draft={draft} setDraft={setDraft} />
               <div className="grid gap-3 sm:grid-cols-2">
                 <Select
                   label="Status"
@@ -666,6 +848,25 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex justify-end gap-2">
+                            <Button
+                              size="sm"
+                              variant="secondary"
+                              onClick={() => {
+                                // Email is the sign-in identifier, so changing it
+                                // ends their existing sessions server-side.
+                                const next = window.prompt(
+                                  `New sign-in email for ${u.name}.\nThey will be signed out and must use the new address.`,
+                                  u.email,
+                                )
+                                if (!next || next.trim().toLowerCase() === u.email) return
+                                patchUser.mutate({
+                                  userId: u.id,
+                                  body: { email: next.trim().toLowerCase() },
+                                })
+                              }}
+                            >
+                              Change email
+                            </Button>
                             <Button
                               size="sm"
                               variant="secondary"

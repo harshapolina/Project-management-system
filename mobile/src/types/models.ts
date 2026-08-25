@@ -26,12 +26,27 @@ export interface User {
   createdAt?: string
 }
 
+/** A message the platform owner is showing this whole workspace. */
+export interface TenantNotice {
+  title: string
+  message: string
+  variant: 'info' | 'warning' | 'urgent'
+  dismissible: boolean
+  /** Freezes the app behind the message until the platform owner lifts it. */
+  blocking: boolean
+  /** Identity of this wording — a re-edit re-shows it to people who dismissed. */
+  updatedAt: string | null
+}
+
 export interface Tenant {
   id: string
   name: string
   slug: string
   status?: string
   seatLimit?: number
+  /** Sits behind the company logo; empty means use a neutral surface. */
+  brandColor?: string
+  notice?: TenantNotice | null
 }
 
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done'
