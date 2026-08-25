@@ -1,12 +1,16 @@
 import { useMemo, useState } from 'react'
-import { StyleSheet, Text } from 'react-native'
+import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation } from '@tanstack/react-query'
+import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
-import { typography, type AppColors } from '../../constants/theme'
+import { Avatar } from '../../components/Avatar'
+import { spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { authApi } from '../../api/auth'
+import { mediaApi } from '../../api/media'
 import { useAuthStore } from '../../store/authStore'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -25,6 +29,66 @@ export function EditProfileScreen({ navigation }: Props) {
   const [company, setCompany] = useState(user?.company || '')
   const [error, setError] = useState('')
 
+  /**
+   * The photo saves on its own rather than waiting for "Save changes".
+   * Picking an image is a deliberate act with visible feedback, and the upload
+   * has to finish before we have a URL to store anyway — so holding it back
+   * behind the form's save button would only add a way to lose it.
+   */
+  const avatarMutation = useMutation({
+    mutationFn: async (asset: { uri: string; name: string; mimeType?: string }) => {
+      const media = await mediaApi.uploadImage(asset)
+      return authApi.updateMe({ avatar: media.url })
+    },
+    onSuccess: (data) => {
+      setUser(data.user)
+      setError('')
+    },
+    onError: (err) =>
+      setError(isApiError(err) ? err.message : 'Could not update your photo'),
+  })
+
+  const removeAvatar = useMutation({
+    mutationFn: () => authApi.updateMe({ avatar: '' }),
+    onSuccess: (data) => setUser(data.user),
+    onError: (err) =>
+      setError(isApiError(err) ? err.message : 'Could not remove your photo'),
+  })
+
+  const pickAvatar = async () => {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync()
+    if (!permission.granted) {
+      Alert.alert(
+        'Photo access needed',
+        'Allow photo access in Settings to choose a profile picture.',
+      )
+      return
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      // A square crop up front means the picture matches the circle it's shown
+      // in everywhere, instead of being centre-cropped unpredictably later.
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 1,
+    })
+    if (result.canceled || !result.assets?.[0]) return
+
+    const asset = result.assets[0]
+    avatarMutation.mutate({
+      uri: asset.uri,
+      name: asset.fileName || 'profile.jpg',
+      mimeType: asset.mimeType || 'image/jpeg',
+    })
+  }
+
+  const confirmRemove = () =>
+    Alert.alert('Remove your photo?', 'Your initials will be shown instead.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Remove', style: 'destructive', onPress: () => removeAvatar.mutate() },
+    ])
+
   const mutation = useMutation({
     mutationFn: () =>
       authApi.updateMe({
@@ -40,10 +104,12 @@ export function EditProfileScreen({ navigation }: Props) {
     onError: (err) => setError(isApiError(err) ? err.message : 'Could not update profile'),
   })
 
+  const busy = avatarMutation.isPending || removeAvatar.isPending
+
   return (
     <FormLayout
       title="Edit profile"
-      subtitle="Name, title, and contact"
+      subtitle="Photo, name, and contact"
       subtitleIcon="person-outline"
       variant="page"
       onBack={() => navigation.goBack()}
@@ -63,6 +129,41 @@ export function EditProfileScreen({ navigation }: Props) {
         />
       }
     >
+      <View style={styles.avatarBlock}>
+        <Pressable
+          onPress={pickAvatar}
+          disabled={busy}
+          style={styles.avatarWrap}
+          accessibilityRole="button"
+          accessibilityLabel="Change profile photo"
+        >
+          <Avatar name={user?.name} uri={user?.avatar} size={88} />
+          <View style={styles.avatarBadge}>
+            {avatarMutation.isPending ? (
+              <ActivityIndicator size="small" color={colors.textOnAccent} />
+            ) : (
+              <Ionicons name="camera" size={15} color={colors.textOnAccent} />
+            )}
+          </View>
+        </Pressable>
+
+        <View style={styles.avatarActions}>
+          <Pressable onPress={pickAvatar} disabled={busy} hitSlop={6}>
+            <Text style={styles.avatarAction}>
+              {user?.avatar ? 'Change photo' : 'Add a photo'}
+            </Text>
+          </Pressable>
+          {!!user?.avatar && (
+            <>
+              <Text style={styles.avatarDivider}>·</Text>
+              <Pressable onPress={confirmRemove} disabled={busy} hitSlop={6}>
+                <Text style={styles.avatarRemove}>Remove</Text>
+              </Pressable>
+            </>
+          )}
+        </View>
+      </View>
+
       <Input label="Name" value={name} onChangeText={setName} />
       <Input label="Title" placeholder="e.g. Senior Project Manager" value={title} onChangeText={setTitle} />
       <Input label="Company" value={company} onChangeText={setCompany} />
@@ -74,6 +175,26 @@ export function EditProfileScreen({ navigation }: Props) {
 
 function createStyles(c: AppColors) {
   return StyleSheet.create({
-    error: { ...typography.caption, color: c.danger },
+    avatarBlock: { alignItems: 'center', gap: spacing.sm, paddingVertical: spacing.md },
+    avatarWrap: { position: 'relative' },
+    avatarBadge: {
+      position: 'absolute',
+      right: -2,
+      bottom: -2,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      backgroundColor: c.accent,
+      alignItems: 'center',
+      justifyContent: 'center',
+      borderWidth: 2,
+      borderColor: c.surface,
+    },
+    avatarActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    avatarAction: { ...typography.captionStrong, color: c.accent },
+    avatarDivider: { ...typography.caption, color: c.textMuted },
+    avatarRemove: { ...typography.captionStrong, color: c.danger },
+
+    error: { ...typography.caption, color: c.danger, marginTop: spacing.sm },
   })
 }

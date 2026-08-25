@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 import { formatDistanceToNow } from 'date-fns'
@@ -102,6 +102,8 @@ export function SettingsPage() {
   const user = useAuthStore((s) => s.user)
   const tenant = useAuthStore((s) => s.tenant)
   const setUser = useAuthStore((s) => s.setUser)
+  const avatarInputRef = useRef(null)
+  const [avatarBusy, setAvatarBusy] = useState(false)
   const [name, setName] = useStateSafe(user?.name || '')
   const [title, setTitle] = useStateSafe(user?.title || '')
   const [invite, setInvite] = useState({
@@ -114,6 +116,56 @@ export function SettingsPage() {
   const canInvite =
     user?.isPlatformAdmin ||
     ['admin', 'owner', 'hr', 'project_manager'].includes(user?.role)
+
+  /**
+   * The photo saves as soon as it's chosen rather than waiting for "Save
+   * changes": the upload has to complete before there's a URL to store, and
+   * deferring it would only create a way to lose the picture.
+   *
+   * The file goes through api(), so it's compressed on the way out like every
+   * other upload — a 6MB selfie lands as a few hundred KB.
+   */
+  const uploadAvatar = async (file) => {
+    if (!file) return
+    if (!file.type?.startsWith('image/')) {
+      toast('Choose an image file', { type: 'error' })
+      return
+    }
+    setAvatarBusy(true)
+    try {
+      const fd = new FormData()
+      fd.append('file', file)
+      const media = await api('/media?imagesOnly=1', { method: 'POST', body: fd })
+      const data = await api('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ avatar: media.url }),
+      })
+      setUser(data.user)
+      toast('Profile photo updated', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
+    } finally {
+      setAvatarBusy(false)
+      // Let the same file be picked again after a failure.
+      if (avatarInputRef.current) avatarInputRef.current.value = ''
+    }
+  }
+
+  const removeAvatar = async () => {
+    setAvatarBusy(true)
+    try {
+      const data = await api('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ avatar: '' }),
+      })
+      setUser(data.user)
+      toast('Profile photo removed', { type: 'success' })
+    } catch (e) {
+      toast(e.message, { type: 'error' })
+    } finally {
+      setAvatarBusy(false)
+    }
+  }
 
   const save = async () => {
     try {
@@ -221,9 +273,30 @@ export function SettingsPage() {
         title="Profile"
         description="How you appear across projects and comments"
       >
-        <div className="flex items-center gap-3 rounded-[10px] border border-border bg-surface-raised px-3.5 py-3">
-          <Avatar src={user?.avatar} name={user?.name} size="lg" />
-          <div className="min-w-0">
+        <div className="flex flex-wrap items-center gap-3 rounded-[10px] border border-border bg-surface-raised px-3.5 py-3">
+          <button
+            type="button"
+            onClick={() => avatarInputRef.current?.click()}
+            disabled={avatarBusy}
+            aria-label="Change profile photo"
+            className={cn(
+              'group relative shrink-0 rounded-full outline-none',
+              'focus-visible:ring-2 focus-visible:ring-accent/40',
+              avatarBusy ? 'cursor-wait opacity-70' : 'cursor-pointer',
+            )}
+          >
+            <Avatar src={user?.avatar} name={user?.name} size="lg" />
+            <span
+              className={cn(
+                'absolute inset-0 grid place-items-center rounded-full bg-black/45 text-white transition-opacity',
+                avatarBusy ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+              )}
+            >
+              <Camera className="h-4 w-4" />
+            </span>
+          </button>
+
+          <div className="min-w-0 flex-1">
             <p className="truncate text-[14px] font-semibold text-primary">
               {user?.email}
             </p>
@@ -231,7 +304,41 @@ export function SettingsPage() {
               {(user?.role || '').replace(/_/g, ' ')}
               {user?.isPlatformAdmin ? ' · platform admin' : ''}
             </p>
+            <div className="mt-1.5 flex items-center gap-2 text-[12px]">
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={avatarBusy}
+                className="font-semibold text-accent hover:underline disabled:opacity-50"
+              >
+                {avatarBusy
+                  ? 'Uploading…'
+                  : user?.avatar
+                    ? 'Change photo'
+                    : 'Add a photo'}
+              </button>
+              {user?.avatar && !avatarBusy && (
+                <>
+                  <span className="text-muted">·</span>
+                  <button
+                    type="button"
+                    onClick={removeAvatar}
+                    className="font-semibold text-status-delayed hover:underline"
+                  >
+                    Remove
+                  </button>
+                </>
+              )}
+            </div>
           </div>
+
+          <input
+            ref={avatarInputRef}
+            type="file"
+            accept="image/*"
+            className="hidden"
+            onChange={(e) => uploadAvatar(e.target.files?.[0])}
+          />
         </div>
         <div className="grid gap-3 sm:grid-cols-2">
           <Input

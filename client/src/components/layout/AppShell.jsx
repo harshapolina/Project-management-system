@@ -630,9 +630,17 @@ export function AppShell({ children }) {
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 onClick={() => setProfileMenuOpen((open) => !open)}
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-accent text-[11px] font-bold text-[#171717]"
+                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-accent text-[11px] font-bold text-[#171717]"
               >
-                {initials}
+                {user?.avatar ? (
+                  <img
+                    src={assetUrl(user.avatar)}
+                    alt={user?.name || 'Profile'}
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  initials
+                )}
               </button>
 
               {profileMenuOpen && (
