@@ -19,6 +19,7 @@ import calendarRoutes from './routes/calendar.js'
 import spacesRoutes from './routes/spaces.js'
 import channelsRoutes from './routes/channels.js'
 import customFieldsRoutes from './routes/customFields.js'
+import approvalRoutes from './routes/approvals.js'
 import companyAdminRoutes from './routes/companyAdmin.js'
 import impactRoutes from './routes/impact.js'
 import inventoryRoutes from './routes/inventory.js'
@@ -142,6 +143,7 @@ export function createApp({ enableSockets = true } = {}) {
   app.use('/api/projects', projectRoutes)
   app.use('/api/tasks', taskRoutes)
   app.use('/api/custom-fields', customFieldsRoutes)
+  app.use('/api/approvals', approvalRoutes)
   app.use('/api/company-admin', companyAdminRoutes)
   app.use('/api', moduleRoutes)
   app.use('/api', impactRoutes)

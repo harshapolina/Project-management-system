@@ -40,6 +40,7 @@ import { FinancePage } from './pages/MoneyPage'
 import { MaterialsPage } from './pages/MaterialsPage'
 import { BillingPage } from './pages/BillingPage'
 import { ReportsPage } from './pages/ReportsPage'
+import { ApprovalsPage } from './pages/ApprovalsPage'
 import {
   SettingsPage,
   MobileSupervisorPage,
@@ -154,6 +155,16 @@ export default function App() {
                     <SiteFeedPage />
                   </PagePad>
                 </CapabilityGate>
+              }
+            />
+            <Route
+              path="/approvals"
+              element={
+                <RoleGate roles={COMPANY_ADMIN_ROLES}>
+                  <PagePad>
+                    <ApprovalsPage />
+                  </PagePad>
+                </RoleGate>
               }
             />
             <Route

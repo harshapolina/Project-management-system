@@ -1,3 +1,4 @@
+import { assetUrl } from '../../lib/api'
 import { cn } from '../../lib/utils'
 
 const sizeMap = {
@@ -24,11 +25,17 @@ export function Avatar({
   className,
   online,
 }) {
+  // Stored avatars are relative links like `/api/media/:id`. Resolving here
+  // rather than at each call site means every avatar in the app works when the
+  // SPA and API are on different origins. assetUrl leaves absolute URLs alone,
+  // so passing an already-resolved src is harmless.
+  const resolved = assetUrl(src)
+
   return (
     <div className={cn('relative inline-flex shrink-0', className)}>
-      {src ? (
+      {resolved ? (
         <img
-          src={src}
+          src={resolved}
           alt={name}
           className={cn(
             'rounded-full object-cover ring-2 ring-canvas',

@@ -37,6 +37,7 @@ import type { HomeStackParamList, RootTabParamList } from '../../navigation/type
 import { openProjectScreen, openMoreScreen } from '../../navigation/openProject'
 import type { HomeData, Task } from '../../types/models'
 import type { SiteUpdate, Snag } from '../../types/ops'
+import { timeAgo } from '../../utils/time'
 
 /** Deep green hero + lime accents (home mock). */
 const HERO = {
@@ -66,16 +67,6 @@ function timeGreeting(now = new Date()) {
   if (h < 12) return 'Good morning'
   if (h < 17) return 'Good afternoon'
   return 'Good evening'
-}
-
-function timeAgo(date?: string) {
-  if (!date) return ''
-  const mins = Math.floor((Date.now() - new Date(date).getTime()) / 60000)
-  if (mins < 1) return 'just now'
-  if (mins < 60) return `${mins}m ago`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
 }
 
 function taskProgress(task: Task) {
@@ -192,7 +183,7 @@ export function HomeScreen({ navigation }: Props) {
   const materialsPending = (data?.approvals || []).length
   const issuesOpen = openSnags.length
 
-  const goMore = (screen: string, params?: object, fromHome = false) => {
+  const goMore = (screen: string, params?: Record<string, unknown>, fromHome = false) => {
     if (fromHome) {
       openMoreScreen(navigation, screen as never, params, { fromHome: true })
       return
@@ -213,7 +204,7 @@ export function HomeScreen({ navigation }: Props) {
 
   const openMyTasks = () => setTasksOpen(true)
 
-  const goProject = (screen: string, params?: object) => {
+  const goProject = (screen: string, params?: Record<string, unknown>) => {
     if (!activeProjectId) {
       navigation.navigate('Projects' as never)
       return

@@ -1,19 +1,28 @@
 import { http } from './client'
 import type { ProjectFile } from '../types/models'
+import { compressImageAsset } from '../lib/compressImage'
 
 export const filesApi = {
   list: (projectId: string) =>
     http.get<{ success: true; files: ProjectFile[] }>('/files', { params: { projectId } }).then((r) => r.data.files),
 
-  upload: (projectId: string, file: { uri: string; name: string; mimeType?: string }, folder = 'concepts') => {
+  upload: async (
+    projectId: string,
+    file: { uri: string; name: string; mimeType?: string },
+    folder = 'concepts',
+  ) => {
+    // Shrink photos on the device — a site connection uploads the small file.
+    // Non-images and anything that fails to compress pass through untouched.
+    const asset = await compressImageAsset(file)
+
     const form = new FormData()
     form.append('projectId', projectId)
     form.append('folder', folder)
     // React Native's fetch/XHR FormData accepts this {uri,name,type} shape directly.
     form.append('file', {
-      uri: file.uri,
-      name: file.name,
-      type: file.mimeType || 'application/octet-stream',
+      uri: asset.uri,
+      name: asset.name,
+      type: asset.mimeType || 'application/octet-stream',
     } as unknown as Blob)
 
     return http

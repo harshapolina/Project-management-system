@@ -29,6 +29,12 @@ import { ProfileNavigator } from './ProfileNavigator'
 import { BillingScreen } from '../screens/billing/BillingScreen'
 import { CreateInvoiceScreen } from '../screens/billing/CreateInvoiceScreen'
 import { NotificationsScreen } from '../screens/inbox/NotificationsScreen'
+import { AssignedCommentsScreen } from '../screens/more/AssignedCommentsScreen'
+import { ApprovalsScreen } from '../screens/approvals/ApprovalsScreen'
+import { CreateApprovalRuleScreen } from '../screens/approvals/CreateApprovalRuleScreen'
+import { CreateApprovalTypeScreen } from '../screens/approvals/CreateApprovalTypeScreen'
+import { CustomFieldsScreen } from '../screens/more/CustomFieldsScreen'
+import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen'
 import { formSheetOptions, stackScreenOptions } from './options'
 import { useColors } from '../theme/useColors'
 import type { MoreStackParamList } from './types'
@@ -93,6 +99,32 @@ export function MoreNavigator() {
       <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: false, title: 'Billing' }} />
       <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} options={formSheetOptions(colors, 'Add invoice')} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false, title: 'Alerts' }} />
+      <Stack.Screen
+        name="AssignedComments"
+        component={AssignedCommentsScreen}
+        options={{ headerShown: false, title: 'Assigned comments' }}
+      />
+      <Stack.Screen
+        name="CustomFields"
+        component={CustomFieldsScreen}
+        options={{ headerShown: false, title: 'Custom fields' }}
+      />
+      <Stack.Screen
+        name="Approvals"
+        component={ApprovalsScreen}
+        options={{ headerShown: false, title: 'Approvals' }}
+      />
+      <Stack.Screen
+        name="CreateApprovalRule"
+        component={CreateApprovalRuleScreen}
+        options={formSheetOptions(colors, 'Add routing')}
+      />
+      <Stack.Screen
+        name="CreateApprovalType"
+        component={CreateApprovalTypeScreen}
+        options={formSheetOptions(colors, 'New approval type')}
+      />
+      <Stack.Screen name="TaskDetail" component={TaskDetailScreen} options={{ headerShown: false, title: 'Task' }} />
     </Stack.Navigator>
   )
 }

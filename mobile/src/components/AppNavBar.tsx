@@ -16,7 +16,7 @@ import type { NavigationProp } from '@react-navigation/native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useQuery } from '@tanstack/react-query'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
-import { useColors, useShadows, useThemeMode } from '../theme/useColors'
+import { useColors, useShadows } from '../theme/useColors'
 import { useAuthStore } from '../store/authStore'
 import { capabilitiesForUser, ROLE_LABELS } from '../utils/roles'
 import { projectsApi } from '../api/projects'
@@ -27,6 +27,7 @@ import { vendorsApi } from '../api/procurement'
 import type { RootDrawerParamList } from '../navigation/types'
 import type { Task } from '../types/models'
 import { Avatar } from './Avatar'
+import { isDarkColor } from '../utils/color'
 
 /** Matches HomeScreen deep-green hero */
 export const NAV_HERO_BG = '#004838'
@@ -51,6 +52,12 @@ type AppNavBarProps = {
   scrollY?: Animated.Value
   /** Distance where navbar fully matches the page canvas. */
   coverRange?: number
+  /**
+   * Background to sit on, when a screen isn't using the theme canvas.
+   * The bar reads its own contrast off this, so a screen only has to say what
+   * colour it is — not which foreground to use.
+   */
+  background?: string
 }
 
 /**
@@ -61,15 +68,22 @@ export function AppNavBar({
   variant = 'default',
   scrollY,
   coverRange = 180,
+  background,
 }: AppNavBarProps = {}) {
   const colors = useColors()
   const shadows = useShadows()
-  const mode = useThemeMode()
   const insets = useSafeAreaInsets()
   const navigation = useNavigation<NavigationProp<RootDrawerParamList>>()
   const [heroActive, setHeroActive] = useState(variant === 'hero')
   const onHero = variant === 'hero' && heroActive
-  const styles = useMemo(() => createStyles(colors, shadows, onHero), [colors, shadows, onHero])
+  /**
+   * The colour actually behind the bar right now. During the Home hero scroll
+   * `shellBg` is an animated interpolation, so contrast follows `heroActive`
+   * — the same flag that decides which end of that animation we're at.
+   */
+  const resolvedBg = onHero ? NAV_HERO_BG : (background ?? colors.canvas)
+  const onDark = isDarkColor(resolvedBg)
+  const styles = useMemo(() => createStyles(colors, shadows, onDark), [colors, shadows, onDark])
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
   const [searchOpen, setSearchOpen] = useState(false)
@@ -97,7 +111,7 @@ export function AppNavBar({
         })
       : onHero
         ? NAV_HERO_BG
-        : colors.canvas
+        : (background ?? colors.canvas)
 
   const home = useQuery({
     queryKey: ['home'],
@@ -405,10 +419,12 @@ export function AppNavBar({
     return rows
   }, [results])
 
-  const iconColor = onHero ? '#ffffff' : colors.textPrimary
-  const searchIconColor = onHero ? 'rgba(255,255,255,0.75)' : colors.textMuted
-  const searchTextColor = onHero ? 'rgba(255,255,255,0.7)' : colors.textMuted
-  const statusStyle = onHero ? 'light' : mode === 'dark' ? 'light' : 'dark'
+  // Deliberately not theme tokens: a light background in dark mode would take a
+  // light `textPrimary` and disappear. Contrast is against the actual colour.
+  const iconColor = onDark ? '#ffffff' : '#18181b'
+  const searchIconColor = onDark ? 'rgba(255,255,255,0.75)' : '#a1a1aa'
+  const searchTextColor = onDark ? 'rgba(255,255,255,0.7)' : '#a1a1aa'
+  const statusStyle = onDark ? 'light' : 'dark'
 
   return (
     <>
@@ -448,7 +464,7 @@ export function AppNavBar({
                 icon="stats-chart-outline"
                 label="Reports"
                 onPress={openReports}
-                onHero={onHero}
+                onDark={onDark}
                 iconColor={iconColor}
                 colors={colors}
                 shadows={shadows}
@@ -458,7 +474,7 @@ export function AppNavBar({
               icon={caps.finance ? 'card-outline' : 'notifications-outline'}
               label={caps.finance ? 'Billing' : 'Notifications'}
               onPress={openBilling}
-              onHero={onHero}
+              onDark={onDark}
               iconColor={iconColor}
               colors={colors}
               shadows={shadows}
@@ -542,7 +558,7 @@ function CircleAction({
   icon,
   label,
   onPress,
-  onHero,
+  onDark,
   iconColor,
   colors,
   shadows,
@@ -550,7 +566,7 @@ function CircleAction({
   icon: keyof typeof Ionicons.glyphMap
   label: string
   onPress: () => void
-  onHero: boolean
+  onDark: boolean
   iconColor: string
   colors: AppColors
   shadows: ReturnType<typeof useShadows>
@@ -565,10 +581,10 @@ function CircleAction({
           width: 40,
           height: 40,
           borderRadius: 20,
-          backgroundColor: onHero ? HERO_WELL : colors.surface,
+          backgroundColor: onDark ? HERO_WELL : colors.surface,
           alignItems: 'center',
           justifyContent: 'center',
-          ...(onHero ? {} : shadows.card),
+          ...(onDark ? {} : shadows.card),
         },
         pressed && { opacity: 0.85 },
       ]}

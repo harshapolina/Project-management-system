@@ -75,6 +75,15 @@ const purchaseOrderSchema = new mongoose.Schema(
     sentVia: { type: String, enum: ['whatsapp', 'email', 'manual', ''], default: '' },
     deliveryPhotos: [{ url: String, name: String }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    /* Approval routing — set from the workspace's rules when the PO is raised. */
+    approvalStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
+    approver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvalRule: { type: mongoose.Schema.Types.ObjectId, ref: 'ApprovalRule', default: null },
+    approvedAt: { type: Date, default: null },
   },
   { timestamps: true },
 )
@@ -177,6 +186,9 @@ const expenseSchema = new mongoose.Schema(
     },
     submittedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     approvedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    /* Who it was routed to; `approvedBy` records who actually actioned it. */
+    approver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvalRule: { type: mongoose.Schema.Types.ObjectId, ref: 'ApprovalRule', default: null },
   },
   { timestamps: true },
 )

@@ -1,5 +1,6 @@
 import { http } from './client'
 import type { BillingSummary, PurchaseOrder, Vendor, VendorInvoice } from '../types/ops'
+import { compressImageAsset } from '../lib/compressImage'
 
 export const billingApi = {
   summary: () =>
@@ -15,7 +16,7 @@ export const billingApi = {
       .get<{ success: true; vendors: Vendor[]; purchaseOrders: PurchaseOrder[] }>('/billing/options')
       .then((r) => r.data),
 
-  create: (payload: {
+  create: async (payload: {
     invoiceNumber: string
     vendorId: string
     purchaseOrderId?: string
@@ -36,10 +37,13 @@ export const billingApi = {
     if (payload.notes) form.append('notes', payload.notes)
     form.append('status', payload.status || 'unpaid')
     if (payload.file) {
+      // A photographed invoice is usually a multi-megabyte camera shot; a PDF
+      // passes through untouched.
+      const asset = await compressImageAsset(payload.file)
       form.append('file', {
-        uri: payload.file.uri,
-        name: payload.file.name,
-        type: payload.file.mimeType || 'application/octet-stream',
+        uri: asset.uri,
+        name: asset.name,
+        type: asset.mimeType || 'application/octet-stream',
       } as unknown as Blob)
     }
     return http

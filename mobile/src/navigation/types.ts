@@ -81,6 +81,13 @@ export type MoreStackParamList = SharedOpsParamList & {
   Billing: undefined
   CreateInvoice: undefined
   Notifications: undefined
+  AssignedComments: undefined
+  CustomFields: undefined
+  Approvals: undefined
+  CreateApprovalRule: { entityType: string; typeLabel: string; hasAmount: boolean }
+  CreateApprovalType: undefined
+  // Reached from an assigned comment, which names the task it belongs to.
+  TaskDetail: { taskId: string }
 }
 
 export type RootTabParamList = {

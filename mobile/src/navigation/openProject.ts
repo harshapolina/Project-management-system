@@ -4,11 +4,24 @@ import type { MoreStackParamList, ProjectStackParamList, RootTabParamList } from
 type ProjectParams = { projectId: string; projectName?: string; returnTo?: 'home' }
 
 /**
+ * Minimal surface these helpers need to jump between root tabs.
+ *
+ * Screens inside a tab hold a `CompositeNavigationProp` (their stack + the tab
+ * navigator), which react-navigation does not consider assignable to a plain
+ * `NavigationProp<RootTabParamList>` — the state and dispatch generics differ.
+ * Both shapes can navigate to a tab, so accept that structurally instead of
+ * forcing every caller to cast.
+ */
+export type TabNavigation = {
+  navigate(screen: keyof RootTabParamList, params?: object): void
+}
+
+/**
  * Open a screen inside the Projects tab with a clean stack.
  * When `fromHome` is set, Back returns to Home (not Projects list / overview).
  */
 export function openProjectScreen(
-  navigation: NavigationProp<RootTabParamList>,
+  navigation: TabNavigation,
   screen: keyof ProjectStackParamList,
   params?: ProjectParams & Record<string, unknown>,
   opts?: { fromHome?: boolean },
@@ -63,7 +76,7 @@ export function openProjectScreen(
 
 /** Open a More-tab screen; with `fromHome`, Back returns to Home. */
 export function openMoreScreen(
-  navigation: NavigationProp<RootTabParamList>,
+  navigation: TabNavigation,
   screen: keyof MoreStackParamList,
   params?: Record<string, unknown>,
   opts?: { fromHome?: boolean },

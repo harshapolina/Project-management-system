@@ -53,6 +53,7 @@ import {
 } from '../models/index.js'
 import { Tenant } from '../models/Tenant.js'
 import { ROLES } from '../models/User.js'
+import { resolveApproval } from '../lib/approvals.js'
 
 const router = express.Router()
 
@@ -526,6 +527,10 @@ router.post(
       discount,
     })
 
+    // The lead-conversion path above creates an empty placeholder quotation;
+    // only a real BOQ with a value is worth routing for sign-off.
+    const boqApproval = await resolveApproval(req.tenantId, 'boq', grandTotal)
+
     const quotation = await Quotation.create(
       withTenant(req, {
         ...req.body,
@@ -537,8 +542,12 @@ router.post(
         discount,
         grandTotal,
         createdBy: req.user._id,
+        approvalStatus: boqApproval.rule ? 'pending' : 'none',
+        approver: boqApproval.approver,
+        approvalRule: boqApproval.rule?._id || null,
       }),
     )
+    await quotation.populate('approver', 'name email avatar role')
     res.status(201).json({ success: true, quotation })
   }),
 )
@@ -911,8 +920,19 @@ router.post(
       req.body.value != null
         ? Number(req.body.value)
         : items.reduce((s, i) => s + (Number(i.amount) || 0), 0)
+    // Route it through the workspace's approval rules. No rule for POs means
+    // approvals aren't switched on, and the PO carries on as before.
+    const poApproval = await resolveApproval(
+      req.tenantId,
+      'purchase_order',
+      Number.isFinite(value) ? value : 0,
+    )
+
     const po = await PurchaseOrder.create(
       withTenant(req, {
+        approvalStatus: poApproval.rule ? 'pending' : 'none',
+        approver: poApproval.approver,
+        approvalRule: poApproval.rule?._id || null,
         projectId: req.body.projectId,
         vendor: req.body.vendor || undefined,
         items,
@@ -927,6 +947,7 @@ router.post(
       }),
     )
     await po.populate('vendor', 'name contact phone gst')
+    await po.populate('approver', 'name email avatar role')
     res.status(201).json({ success: true, purchaseOrder: po })
   }),
 )
@@ -989,14 +1010,19 @@ router.post(
     if (!Number.isFinite(amount) || amount <= 0) {
       throw new AppError('Expense amount must be greater than zero', 400)
     }
+    const expenseApproval = await resolveApproval(req.tenantId, 'expense', amount)
+
     const expense = await Expense.create(
       withTenant(req, {
         ...req.body,
         amount,
         status: 'pending',
         submittedBy: req.user._id,
+        approver: expenseApproval.approver,
+        approvalRule: expenseApproval.rule?._id || null,
       }),
     )
+    await expense.populate('approver', 'name email avatar role')
     res.status(201).json({ success: true, expense })
   }),
 )
