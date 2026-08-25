@@ -1,5 +1,6 @@
 import { http } from './client'
 import type { BoqItem, Quotation } from '../types/ops'
+import { compressImageAsset } from '../lib/compressImage'
 
 export interface CreateQuotationPayload {
   title: string
@@ -26,9 +27,10 @@ export const boqApi = {
 
   remove: (id: string) => http.delete<{ success: true }>(`/quotations/${id}`).then((r) => r.data),
 
-  uploadImage: (file: { uri: string; name: string; mimeType?: string }) => {
+  uploadImage: async (file: { uri: string; name: string; mimeType?: string }) => {
+    const asset = await compressImageAsset(file)
     const form = new FormData()
-    form.append('file', { uri: file.uri, name: file.name, type: file.mimeType || 'image/jpeg' } as unknown as Blob)
+    form.append('file', { uri: asset.uri, name: asset.name, type: asset.mimeType || 'image/jpeg' } as unknown as Blob)
     return http
       .post<{ success: true; url: string; name: string; mime: string }>('/quotations/upload-image', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
