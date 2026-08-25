@@ -38,14 +38,18 @@ export function errorHandler(err, _req, res, _next) {
     message = 'Already exists'
   }
 
-  if (process.env.NODE_ENV !== 'production') {
-    console.error(err)
-  }
+  // Vercel does not set NODE_ENV for you, so a deploy that forgets it would
+  // otherwise serve stack traces — absolute paths and all — to the public.
+  const isProduction =
+    process.env.NODE_ENV === 'production' || process.env.VERCEL === '1'
+
+  // Always log server-side; only the response is trimmed in production.
+  console.error(err)
 
   res.status(status).json({
     success: false,
     message,
-    ...(process.env.NODE_ENV !== 'production' && { stack: err.stack }),
+    ...(!isProduction && { stack: err.stack }),
   })
 }
 
