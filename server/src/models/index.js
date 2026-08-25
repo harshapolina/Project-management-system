@@ -19,5 +19,11 @@ export { VendorInvoice } from './VendorInvoice.js'
 export { Message } from './Message.js'
 export { WorkspaceSettings } from './WorkspaceSettings.js'
 export { CustomFieldDefinition } from './CustomField.js'
+export {
+  ApprovalRule,
+  ApprovalType,
+  BUILTIN_APPROVAL_TYPES,
+  BUILTIN_APPROVAL_TYPE_KEYS,
+} from './Approval.js'
 export { ImpactRule, ImpactLedger, ImpactScore } from './Impact.js'
 export { InventoryItem, InventoryMovement } from './Inventory.js'

@@ -78,6 +78,84 @@ export interface Comment {
   createdAt: string
 }
 
+/**
+ * A comment as returned by `/comments/assigned`, where the server populates
+ * the parent task (and its project) so the list can show context without a
+ * second round-trip. Plain `Comment` stays the shape used inside a task.
+ */
+export interface AssignedComment extends Comment {
+  mentions?: { _id: string; name: string; avatar?: string }[]
+  taskId?: {
+    _id: string
+    title: string
+    status?: string
+    projectId?: { _id: string; name: string } | string
+  } | null
+}
+
+/** Shared shape for a populated user reference across approval payloads. */
+export interface UserSummary {
+  _id: string
+  name: string
+  email?: string
+  avatar?: string
+  role?: string
+}
+
+export interface ApprovalType {
+  _id: string | null
+  key: string
+  label: string
+  description?: string
+  /** Field the thresholds compare against; null means the type has no amount. */
+  amountPath: string | null
+  isBuiltin: boolean
+  isActive?: boolean
+}
+
+export interface ApprovalRule {
+  _id: string
+  entityType: string
+  minAmount: number
+  maxAmount: number | null
+  approverRole: string
+  approverUser?: UserSummary | null
+  isActive?: boolean
+  /** Role resolved to a real person, or null when nobody holds that role. */
+  resolvedApprover?: UserSummary | null
+}
+
+/**
+ * One stretch of amounts and who handles it. The server collapses overlapping
+ * rules into these, so clients never re-implement the routing logic.
+ * `max: null` means "and above"; `shadowed` marks a rule that never fires.
+ */
+export interface ApprovalBand {
+  ruleId: string
+  min: number
+  max: number | null
+  shadowed: boolean
+  rule: ApprovalRule | null
+}
+
+export interface ApprovalFlowType extends ApprovalType {
+  rules: ApprovalRule[]
+  bands: ApprovalBand[]
+}
+
+export type CustomFieldType = 'text' | 'number' | 'select' | 'user'
+
+export interface CustomFieldDefinition {
+  _id: string
+  name: string
+  slug: string
+  type: CustomFieldType
+  options?: string[]
+  order?: number
+  isActive?: boolean
+  createdAt?: string
+}
+
 export interface ActivityLogItem {
   _id: string
   type: string

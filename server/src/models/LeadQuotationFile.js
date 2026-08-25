@@ -98,6 +98,14 @@ const quotationSchema = new mongoose.Schema(
     sentAt: Date,
     viewedAt: Date,
     approvedAt: Date,
+    /* Internal sign-off routing, distinct from the client-facing `status`. */
+    approvalStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
+    approver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvalRule: { type: mongoose.Schema.Types.ObjectId, ref: 'ApprovalRule', default: null },
   },
   { timestamps: true },
 )

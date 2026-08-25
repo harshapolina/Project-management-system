@@ -21,18 +21,20 @@ export function useResponsive() {
   const titleSize = isCompact ? 26 : 30
   const statsColumns = width < 340 ? 1 : 2
 
-  /** Nested list / detail / form scroll — clears global tab bar. */
+  /**
+   * Scroll content padding for any screen under the global tab bar.
+   *
+   * The glassy dock renders above every screen — nested stack screens
+   * included — so both roots and pushed screens need the same bottom
+   * clearance. `tabListContent` is kept as an alias so the two can't drift
+   * apart silently; prefer `listContent` in new code.
+   */
   const listContent = {
     paddingHorizontal: pagePadding,
     gap: spacing.md,
     paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,
   }
-  /** Tab-root scroll content that clears the glassy dock. */
-  const tabListContent = {
-    paddingHorizontal: pagePadding,
-    gap: spacing.md,
-    paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,
-  }
+  const tabListContent = listContent
 
   return {
     width,

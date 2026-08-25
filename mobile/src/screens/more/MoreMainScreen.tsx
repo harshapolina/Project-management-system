@@ -107,6 +107,13 @@ export function MoreMainScreen({ navigation }: Props) {
             onPress={() => navigation.navigate('Notifications')}
           />
           <NavRow
+            icon="chatbox-ellipses-outline"
+            label="Assigned comments"
+            hint="Comments waiting on you"
+            tone={2}
+            onPress={() => navigation.navigate('AssignedComments')}
+          />
+          <NavRow
             icon="chatbubbles-outline"
             label="Messages"
             hint="Team inbox"
@@ -241,17 +248,26 @@ export function MoreMainScreen({ navigation }: Props) {
         ) : null}
 
         {/* Company */}
-        {caps.companyAdmin || caps.inventory || caps.people || caps.managePeople ? (
+        {caps.companyAdmin || caps.inventory || caps.people || caps.managePeople || caps.manageTasks ? (
           <NavSection title="Company">
             {caps.companyAdmin ? (
-              <NavRow
-                icon="stats-chart-outline"
-                label="Company dashboard"
-                hint="Team overview"
-                tone={0}
-                last={!caps.people && !caps.managePeople && !caps.inventory}
-                onPress={() => navigation.navigate('CompanyAdminDashboard')}
-              />
+              <>
+                <NavRow
+                  icon="stats-chart-outline"
+                  label="Company dashboard"
+                  hint="Team overview"
+                  tone={0}
+                  onPress={() => navigation.navigate('CompanyAdminDashboard')}
+                />
+                <NavRow
+                  icon="shield-checkmark-outline"
+                  label="Approvals"
+                  hint="Who signs off on what"
+                  tone={2}
+                  last={!caps.people && !caps.managePeople && !caps.inventory && !caps.manageTasks}
+                  onPress={() => navigation.navigate('Approvals')}
+                />
+              </>
             ) : null}
             {caps.people || caps.managePeople ? (
               <NavRow
@@ -259,7 +275,7 @@ export function MoreMainScreen({ navigation }: Props) {
                 label="People"
                 hint="Team and access"
                 tone={1}
-                last={!caps.managePeople && !caps.inventory}
+                last={!caps.managePeople && !caps.inventory && !caps.manageTasks}
                 onPress={() => navigation.navigate('ProfileHub', { screen: 'People' })}
               />
             ) : null}
@@ -269,7 +285,7 @@ export function MoreMainScreen({ navigation }: Props) {
                 label="Invite teammate"
                 hint="Add someone to this workspace"
                 tone={0}
-                last={!caps.inventory}
+                last={!caps.inventory && !caps.manageTasks}
                 onPress={() => navigation.navigate('ProfileHub', { screen: 'InvitePerson' })}
               />
             ) : null}
@@ -287,10 +303,20 @@ export function MoreMainScreen({ navigation }: Props) {
                   label="Stock log"
                   hint="In and out movements"
                   tone={4}
-                  last
+                  last={!caps.manageTasks}
                   onPress={() => navigation.navigate('InventoryMovements')}
                 />
               </>
+            ) : null}
+            {caps.manageTasks ? (
+              <NavRow
+                icon="options-outline"
+                label="Custom fields"
+                hint="Extra fields on tasks"
+                tone={2}
+                last
+                onPress={() => navigation.navigate('CustomFields')}
+              />
             ) : null}
           </NavSection>
         ) : null}

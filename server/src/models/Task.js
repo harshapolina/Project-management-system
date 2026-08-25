@@ -58,6 +58,8 @@ const taskSchema = new mongoose.Schema(
       enum: ['none', 'pending', 'approved', 'rejected'],
       default: 'none',
     },
+    approver: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+    approvalRule: { type: mongoose.Schema.Types.ObjectId, ref: 'ApprovalRule', default: null },
     dependsOn: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Task' }],
     isMilestone: { type: Boolean, default: false },
     tags: [{ type: String }],

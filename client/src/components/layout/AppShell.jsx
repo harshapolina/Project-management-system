@@ -30,6 +30,7 @@ import {
   ChevronRight,
   Moon,
   Sun,
+  ShieldCheck,
 } from 'lucide-react'
 import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { useUiStore } from '../../store/uiStore'
@@ -61,6 +62,12 @@ const ALL_PRIMARY_NAV = [
     to: '/company-admin',
     label: 'Company',
     icon: Gauge,
+    capability: 'companyAdmin',
+  },
+  {
+    to: '/approvals',
+    label: 'Approvals',
+    icon: ShieldCheck,
     capability: 'companyAdmin',
   },
   {

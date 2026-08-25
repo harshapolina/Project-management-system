@@ -16,16 +16,9 @@ import { isApiError } from '../../api/client'
 import type { SiteUpdate } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { SharedOpsParamList } from '../../navigation/types'
+import { timeAgo } from '../../utils/time'
 
 type Props = NativeStackScreenProps<SharedOpsParamList, 'SiteFeed'>
-
-function timeAgo(date: string) {
-  const diff = Date.now() - new Date(date).getTime()
-  const hrs = Math.floor(diff / 3600000)
-  if (hrs < 1) return 'just now'
-  if (hrs < 24) return `${hrs}h ago`
-  return `${Math.floor(hrs / 24)}d ago`
-}
 
 export function SiteFeedScreen({ route, navigation }: Props) {
   const colors = useColors()
