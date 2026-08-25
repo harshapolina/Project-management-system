@@ -10,6 +10,7 @@ import { ActivityLog, Notification, Comment } from '../models/Activity.js'
 import {
   Vendor,
   PurchaseOrder,
+  Rfq,
   Expense,
   Payment,
   SiteUpdate,
@@ -131,6 +132,7 @@ export async function ensureDefaultTenant({ skipBackfill = false } = {}) {
     backfillTenantId(Comment, id),
     backfillTenantId(Vendor, id),
     backfillTenantId(PurchaseOrder, id),
+    backfillTenantId(Rfq, id),
     backfillTenantId(Expense, id),
     backfillTenantId(Payment, id),
     backfillTenantId(SiteUpdate, id),

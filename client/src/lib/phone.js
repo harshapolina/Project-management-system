@@ -75,3 +75,40 @@ export function poWhatsappLink(po) {
 
   return whatsappLink(vendor.phone, message)
 }
+
+/**
+ * WhatsApp link that asks a vendor to quote an RFQ. Sends the item list with
+ * quantities but deliberately without our BOQ rates — the point of an RFQ is
+ * to find out what the vendor charges, not to anchor them to our number.
+ */
+export function rfqWhatsappLink(rfq, vendor) {
+  if (!vendor?.phone) return ''
+
+  const lines = (rfq?.items || []).map((it, i) => {
+    const qty = Number(it.qty) || 0
+    return `${i + 1}. ${it.description || 'Item'} — ${qty} ${it.unit || 'nos'}`
+  })
+
+  const project = rfq?.projectId?.name ? ` for ${rfq.projectId.name}` : ''
+  const closing = rfq?.closingDate
+    ? `\nPlease send your quote by ${new Date(rfq.closingDate).toLocaleDateString('en-IN')}.`
+    : ''
+
+  const message = [
+    `Hello ${vendor.contact || vendor.name},`,
+    '',
+    `Request for quotation ${rfq?.rfqNumber || ''}${project}:`,
+    '',
+    ...(lines.length ? lines : ['(item list attached separately)']),
+    '',
+    'Kindly quote your best rate per unit, including GST, freight, loading and installation where applicable.',
+    rfq?.notes ? `\nNotes: ${rfq.notes}` : '',
+    closing,
+    '',
+    'Thank you!',
+  ]
+    .filter((l) => l !== '')
+    .join('\n')
+
+  return whatsappLink(vendor.phone, message)
+}

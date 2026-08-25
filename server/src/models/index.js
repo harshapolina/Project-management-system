@@ -10,6 +10,7 @@ export { Lead, Quotation, ProjectFile } from './LeadQuotationFile.js'
 export {
   Vendor,
   PurchaseOrder,
+  Rfq,
   Expense,
   Payment,
   SiteUpdate,

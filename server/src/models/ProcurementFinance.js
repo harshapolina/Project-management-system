@@ -51,6 +51,28 @@ const purchaseOrderSchema = new mongoose.Schema(
       enum: ['draft', 'approved', 'ordered', 'in_transit', 'delivered'],
       default: 'draft',
     },
+    /** Set when the PO came from a won RFQ, so the trail back to the
+     *  comparison that justified this vendor stays intact. */
+    rfq: { type: mongoose.Schema.Types.ObjectId, ref: 'Rfq' },
+    /** Charges carried over from the awarded quote */
+    gstPercent: { type: Number, default: 18 },
+    freight: { type: Number, default: 0 },
+    loading: { type: Number, default: 0 },
+    installation: { type: Number, default: 0 },
+    otherCharges: { type: Number, default: 0 },
+    deliveryDate: Date,
+    deliveryLocation: { type: String, default: '' },
+    paymentTerms: { type: String, default: '' },
+    /** Proforma the vendor raises against this PO, before the tax invoice */
+    proforma: {
+      number: { type: String, default: '' },
+      date: Date,
+      amount: { type: Number, default: 0 },
+      fileUrl: { type: String, default: '' },
+      receivedAt: Date,
+    },
+    sentAt: Date,
+    sentVia: { type: String, enum: ['whatsapp', 'email', 'manual', ''], default: '' },
     deliveryPhotos: [{ url: String, name: String }],
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   },
@@ -58,6 +80,78 @@ const purchaseOrderSchema = new mongoose.Schema(
 )
 
 export const PurchaseOrder = mongoose.model('PurchaseOrder', purchaseOrderSchema)
+
+/* ── RFQ: ask several vendors to price the same list ──────────────────────
+ * Sits between an approved BOQ and a purchase order. One RFQ carries the item
+ * list once and a quote per vendor, so the rates can be compared side by side
+ * before any one vendor is awarded the work.
+ */
+const rfqVendorSchema = new mongoose.Schema(
+  {
+    vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+    sentAt: Date,
+    sentVia: { type: String, enum: ['whatsapp', 'email', 'manual', ''], default: '' },
+    status: {
+      type: String,
+      enum: ['pending', 'sent', 'quoted', 'declined'],
+      default: 'pending',
+    },
+    /** Vendor's price for each RFQ line, in the same order as items[] */
+    rates: [{ type: Number }],
+    /** Charges quoted on top of the line rates */
+    gstPercent: { type: Number, default: 18 },
+    freight: { type: Number, default: 0 },
+    loading: { type: Number, default: 0 },
+    installation: { type: Number, default: 0 },
+    otherCharges: { type: Number, default: 0 },
+    /** Final landed cost — what the comparison actually ranks on */
+    landedCost: { type: Number, default: 0 },
+    validUntil: Date,
+    remarks: { type: String, default: '' },
+    quotedAt: Date,
+  },
+  { _id: true },
+)
+
+const rfqSchema = new mongoose.Schema(
+  {
+    tenantId: { type: mongoose.Schema.Types.ObjectId, ref: 'Tenant', index: true },
+    projectId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Project',
+      required: true,
+      index: true,
+    },
+    rfqNumber: { type: String, required: true },
+    quotationId: { type: mongoose.Schema.Types.ObjectId, ref: 'Quotation' },
+    items: [
+      {
+        description: String,
+        unit: { type: String, default: 'nos' },
+        qty: { type: Number, default: 0 },
+        /** BOQ rate, kept as the benchmark to compare vendor rates against */
+        boqRate: { type: Number, default: 0 },
+        boqItemId: mongoose.Schema.Types.ObjectId,
+      },
+    ],
+    vendors: [rfqVendorSchema],
+    closingDate: Date,
+    notes: { type: String, default: '' },
+    status: {
+      type: String,
+      enum: ['draft', 'sent', 'comparing', 'awarded', 'cancelled'],
+      default: 'draft',
+    },
+    awardedVendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
+    awardReason: { type: String, default: '' },
+    purchaseOrder: { type: mongoose.Schema.Types.ObjectId, ref: 'PurchaseOrder' },
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+  },
+  { timestamps: true },
+)
+
+export const Rfq = mongoose.model('Rfq', rfqSchema)
+
 
 const expenseSchema = new mongoose.Schema(
   {

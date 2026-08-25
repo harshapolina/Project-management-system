@@ -22,6 +22,7 @@ import customFieldsRoutes from './routes/customFields.js'
 import companyAdminRoutes from './routes/companyAdmin.js'
 import impactRoutes from './routes/impact.js'
 import inventoryRoutes from './routes/inventory.js'
+import rfqRoutes from './routes/rfq.js'
 import billingRoutes from './routes/billing.js'
 import mediaRoutes from './routes/media.js'
 
@@ -145,6 +146,7 @@ export function createApp({ enableSockets = true } = {}) {
   app.use('/api', moduleRoutes)
   app.use('/api', impactRoutes)
   app.use('/api', inventoryRoutes)
+  app.use('/api', rfqRoutes)
   app.use('/api', billingRoutes)
   app.use('/api', mailRoutes)
   app.use('/api', calendarRoutes)

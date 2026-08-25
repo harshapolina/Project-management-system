@@ -17,6 +17,7 @@ import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { formatInr } from '../../lib/format'
 import { COUNTRY_CODES, buildPhone } from '../../lib/phone'
 import { SendPoButton } from '../../components/VendorBits'
+import { RfqPanel } from '../../components/procurement/RfqPanel'
 import {
   Avatar,
   AvatarStack,
@@ -51,6 +52,7 @@ export function ProjectProcurement() {
   const qc = useQueryClient()
   const [open, setOpen] = useState(false)
   const [selected, setSelected] = useState(() => new Set())
+  const [rfqOpen, setRfqOpen] = useState(false)
 
   const create = useMutation({
     mutationFn: (body) =>
@@ -149,13 +151,13 @@ export function ProjectProcurement() {
             Materials & orders
           </h2>
           <p className="text-[13px] text-secondary">
-            Items from the approved quote, then purchase orders to vendors
+            Approved BOQ items → RFQ to vendors → compare → award → purchase order
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {selectedItems.length > 0 && (
-            <Button onClick={openPoFromSelection}>
-              Raise PO · {selectedItems.length} item
+            <Button onClick={() => setRfqOpen(true)}>
+              Raise RFQ · {selectedItems.length} item
               {selectedItems.length === 1 ? '' : 's'} ({formatInr(selectedValue)})
             </Button>
           )}
@@ -229,11 +231,11 @@ export function ProjectProcurement() {
               </button>
               <button
                 type="button"
-                onClick={openPoFromSelection}
+                onClick={() => setRfqOpen(true)}
                 disabled={!selectedItems.length}
                 className="rounded-lg bg-[#3ecf8e] px-2.5 py-1.5 text-[11px] font-semibold text-white hover:bg-[#24b47e] disabled:opacity-40"
               >
-                Raise PO from selected
+                Raise RFQ from selected
               </button>
             </div>
           )}
@@ -353,6 +355,18 @@ export function ProjectProcurement() {
         )}
       </Card>
 
+      <Card className="!bg-surface shadow-sm">
+        <RfqPanel
+          createOpen={rfqOpen}
+          onCreateOpenChange={setRfqOpen}
+          projectId={id}
+          quotationId={approvedQuote?._id}
+          selectedItems={selectedItems}
+          vendors={vendors}
+          onCleared={() => setSelected(new Set())}
+        />
+      </Card>
+
       <Card padding={false} className="overflow-hidden !bg-surface shadow-sm">
         <div className="border-b border-border px-4 py-3">
           <p className="text-[13px] font-semibold text-primary">
@@ -419,7 +433,7 @@ export function ProjectProcurement() {
               },
             ]}
             data={pos}
-            emptyMessage="No purchase orders yet — select quote items above and raise a PO."
+            emptyMessage="No purchase orders yet — award an RFQ above and the PO is raised for you."
           />
         )}
       </Card>

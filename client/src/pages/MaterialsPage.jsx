@@ -9,6 +9,7 @@ import {
   CheckCircle2,
   MessageCircle,
   Package,
+  Send,
   Pencil,
   Plus,
   Search,
@@ -50,6 +51,7 @@ const PO_STATUSES = [
 const PO_FLOW = ['draft', 'approved', 'ordered', 'in_transit', 'delivered']
 
 const TABS = [
+  { id: 'rfqs', label: 'RFQs', icon: Send },
   { id: 'orders', label: 'Purchase orders', icon: Package },
   { id: 'vendors', label: 'Vendors', icon: Store },
 ]
@@ -91,6 +93,14 @@ export function MaterialsPage() {
     queryKey: ['all-pos'],
     queryFn: () => api('/purchase-orders'),
   })
+
+  // Every project's RFQs, so the sidebar Materials page shows the stage before
+  // a PO exists rather than only finished orders.
+  const { data: rfqData, isLoading: rfqsLoading } = useQuery({
+    queryKey: ['all-rfqs'],
+    queryFn: () => api('/rfqs'),
+  })
+  const rfqs = rfqData?.rfqs || []
 
   const {
     data: vendorsData,
@@ -302,9 +312,11 @@ export function MaterialsPage() {
                           : 'bg-black/[0.04] text-secondary',
                       )}
                     >
-                      {t.id === 'orders'
-                        ? purchaseOrders.length
-                        : vendorList.length}
+                      {t.id === 'rfqs'
+                        ? rfqs.length
+                        : t.id === 'orders'
+                          ? purchaseOrders.length
+                          : vendorList.length}
                     </span>
                   </button>
                 )
@@ -356,7 +368,9 @@ export function MaterialsPage() {
         />
       </section>
 
-      {tab === 'orders' ? (
+      {tab === 'rfqs' ? (
+        <AllRfqsPanel rfqs={rfqs} loading={rfqsLoading} />
+      ) : tab === 'orders' ? (
         <OrdersPanel
           orders={filteredPos}
           total={purchaseOrders.length}
@@ -1421,4 +1435,98 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
 /** @deprecated Prefer MaterialsPage — kept for older imports */
 export function ProcurementPage() {
   return <MaterialsPage />
+}
+
+/**
+ * RFQs across every project. Read-only on purpose — sending, quoting and
+ * awarding all need the project's BOQ context, so each row links through to
+ * the project's Materials tab rather than duplicating that flow here.
+ */
+function AllRfqsPanel({ rfqs, loading }) {
+  const RFQ_STATUS = {
+    draft: { label: 'Draft', cls: 'bg-[#f4f7fb] text-[#5b6b80]' },
+    sent: { label: 'Awaiting quotes', cls: 'bg-[#fff8ed] text-[#a2620f]' },
+    comparing: { label: 'Comparing', cls: 'bg-[#eef4ff] text-[#24b47e]' },
+    awarded: { label: 'Awarded', cls: 'bg-[#ecfdf5] text-[#0b7a52]' },
+    cancelled: { label: 'Cancelled', cls: 'bg-[#fdf2f2] text-[#b42318]' },
+  }
+
+  if (loading) {
+    return <div className="h-40 animate-pulse rounded-2xl bg-surface" />
+  }
+
+  if (!rfqs.length) {
+    return (
+      <section className="rounded-2xl border border-dashed border-border bg-surface px-6 py-12 text-center">
+        <Send className="mx-auto h-7 w-7 text-[#c3cbd6]" />
+        <p className="mt-3 text-[15px] font-semibold text-primary">No RFQs yet</p>
+        <p className="mx-auto mt-1 max-w-md text-[13px] text-secondary">
+          RFQs start from an approved BOQ. Open a project, go to its Materials
+          tab, tick the items you need priced, then hit Raise RFQ.
+        </p>
+      </section>
+    )
+  }
+
+  return (
+    <section className="overflow-hidden rounded-2xl border border-border bg-surface">
+      <div className="border-b border-border px-4 py-3">
+        <p className="text-[13px] font-semibold text-primary">
+          Requests for quotation
+        </p>
+        <p className="text-[11px] text-secondary">
+          Open one in its project to send, record quotes and award
+        </p>
+      </div>
+      <div className="divide-y divide-border">
+        {rfqs.map((r) => {
+          const meta = RFQ_STATUS[r.status] || RFQ_STATUS.draft
+          const quoted = (r.vendors || []).filter((v) => v.status === 'quoted')
+          const best = quoted.reduce(
+            (lo, v) => (lo == null || v.landedCost < lo ? v.landedCost : lo),
+            null,
+          )
+          return (
+            <Link
+              key={r._id}
+              to={`/projects/${r.projectId?._id || r.projectId}/procurement`}
+              className="flex flex-wrap items-center gap-3 px-4 py-3 transition hover:bg-surface-raised"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <span className="text-[13px] font-semibold text-primary">
+                    {r.rfqNumber}
+                  </span>
+                  <span
+                    className={cn(
+                      'rounded-md px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-[0.06em]',
+                      meta.cls,
+                    )}
+                  >
+                    {meta.label}
+                  </span>
+                </div>
+                <p className="mt-0.5 truncate text-[11.5px] text-secondary">
+                  {r.projectId?.name || 'Project'} · {r.items?.length || 0} item
+                  {r.items?.length === 1 ? '' : 's'} · {quoted.length}/
+                  {r.vendors?.length || 0} quoted
+                  {r.awardedVendor ? ` · ${r.awardedVendor.name}` : ''}
+                </p>
+              </div>
+              {best != null && (
+                <div className="shrink-0 text-right">
+                  <p className="text-[9.5px] font-bold uppercase tracking-[0.1em] text-[#9aa7ba]">
+                    Lowest
+                  </p>
+                  <p className="text-[13px] font-semibold tabular-nums text-primary">
+                    {formatInr(best)}
+                  </p>
+                </div>
+              )}
+            </Link>
+          )
+        })}
+      </div>
+    </section>
+  )
 }
