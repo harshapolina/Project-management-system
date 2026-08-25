@@ -10,7 +10,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://project-management-system-msmw.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://project-management-backend-nine-tau.vercel.app",
         "EXPO_PUBLIC_TENANT_SLUG": "cubic"
       }
     },
@@ -20,7 +20,7 @@
         "buildType": "apk"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://project-management-system-msmw.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://project-management-backend-nine-tau.vercel.app",
         "EXPO_PUBLIC_TENANT_SLUG": "cubic"
       }
     },
@@ -30,7 +30,7 @@
         "buildType": "app-bundle"
       },
       "env": {
-        "EXPO_PUBLIC_API_URL": "https://project-management-system-msmw.vercel.app",
+        "EXPO_PUBLIC_API_URL": "https://project-management-backend-nine-tau.vercel.app",
         "EXPO_PUBLIC_TENANT_SLUG": "cubic"
       }
     }

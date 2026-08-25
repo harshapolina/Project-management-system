@@ -51,7 +51,7 @@ export function setTenantSlug(slug) {
   else localStorage.removeItem('cubic-tenant-slug')
 }
 
-/** Origin of the API host (no trailing slash), e.g. https://project-management-system-msmw.vercel.app */
+/** Origin of the API host (no trailing slash), e.g. https://project-management-backend-nine-tau.vercel.app */
 export function apiOrigin() {
   const raw = (import.meta.env.VITE_API_URL || '').trim()
   if (!raw || raw.startsWith('/')) {
