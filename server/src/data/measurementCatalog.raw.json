@@ -1,0 +1,3242 @@
+{
+  "commercial": {
+    "meta": {
+      "title": "Measurement take-off",
+      "columns": [
+        "Description",
+        "Units",
+        "No's",
+        "L",
+        "W",
+        "Qty"
+      ],
+      "note": "Item totals drive the quantity of the matching BOQ line."
+    },
+    "spaces": [
+      {
+        "name": "Reception Area",
+        "uses": 21
+      },
+      {
+        "name": "Training Room",
+        "uses": 21
+      },
+      {
+        "name": "11 Pax Conference Room-1",
+        "uses": 18
+      },
+      {
+        "name": "Pantry",
+        "uses": 13
+      },
+      {
+        "name": "11 Pax Conference Room-2",
+        "uses": 12
+      },
+      {
+        "name": "6 Pax Conference Room-1",
+        "uses": 12
+      },
+      {
+        "name": "8 Pax Conference Room",
+        "uses": 12
+      },
+      {
+        "name": "6 Pax Conference Room-2",
+        "uses": 11
+      },
+      {
+        "name": "Linear Work Station",
+        "uses": 11
+      },
+      {
+        "name": "Cabins",
+        "uses": 10
+      },
+      {
+        "name": "Conference Room",
+        "uses": 10
+      },
+      {
+        "name": "Interview Rooms",
+        "uses": 10
+      },
+      {
+        "name": "Reception Arae",
+        "uses": 10
+      },
+      {
+        "name": "Full Office",
+        "uses": 8
+      },
+      {
+        "name": "Travel Desk/Visiting Dir",
+        "uses": 8
+      },
+      {
+        "name": "Executive Cabin",
+        "uses": 7
+      },
+      {
+        "name": "Linear work Station",
+        "uses": 6
+      },
+      {
+        "name": "4 Pax Conference Room",
+        "uses": 5
+      },
+      {
+        "name": "8Pax Conference Room",
+        "uses": 5
+      },
+      {
+        "name": "Linear Work station",
+        "uses": 5
+      },
+      {
+        "name": "Linear Work Station Area",
+        "uses": 5
+      },
+      {
+        "name": "Office",
+        "uses": 5
+      },
+      {
+        "name": "Utility Beside Room",
+        "uses": 5
+      },
+      {
+        "name": "Lounge",
+        "uses": 3
+      },
+      {
+        "name": "Entrance",
+        "uses": 2
+      },
+      {
+        "name": "Linear Work Station Area-Corridor",
+        "uses": 2
+      },
+      {
+        "name": "New Work Station Arae",
+        "uses": 2
+      },
+      {
+        "name": "Corridor",
+        "uses": 1
+      },
+      {
+        "name": "Corridor-1",
+        "uses": 1
+      },
+      {
+        "name": "Corridor-2",
+        "uses": 1
+      },
+      {
+        "name": "Cubicle",
+        "uses": 1
+      },
+      {
+        "name": "Discussion Room",
+        "uses": 1
+      },
+      {
+        "name": "Entry Door",
+        "uses": 1
+      },
+      {
+        "name": "Fire Exit Beside",
+        "uses": 1
+      },
+      {
+        "name": "Main Door",
+        "uses": 1
+      },
+      {
+        "name": "Manager Cabin",
+        "uses": 1
+      },
+      {
+        "name": "Work Station",
+        "uses": 1
+      },
+      {
+        "name": "Work Station Arae",
+        "uses": 1
+      }
+    ],
+    "items": [
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Paritions",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 10,
+            "qty": 55
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 25.5,
+            "width": 10,
+            "qty": 255
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18,
+            "width": 10,
+            "qty": 180
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 25.75,
+            "width": 10,
+            "qty": 258
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 10,
+            "qty": 225
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 2,
+            "length": 22.25,
+            "width": 10,
+            "qty": 445
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 10,
+            "qty": 225
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 18.25,
+            "width": 10,
+            "qty": 365
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 3,
+            "length": 11.25,
+            "width": 10,
+            "qty": 338
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 2,
+            "length": 26.25,
+            "width": 10,
+            "qty": 525
+          },
+          {
+            "space": "Utility Beside Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 9.5,
+            "width": 10,
+            "qty": 95
+          },
+          {
+            "space": "8Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10.75,
+            "width": 10,
+            "qty": 108
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 27.5,
+            "width": 10,
+            "qty": 275
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 13,
+            "width": 10,
+            "qty": 130
+          }
+        ],
+        "total": 3478,
+        "boqRef": {
+          "index": 0,
+          "slNo": "1.1",
+          "section": "Dismantling Work",
+          "label": "Partitions",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Brick Wall",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 10,
+            "qty": 55
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 1,
+          "slNo": "2",
+          "section": "Dismantling Work",
+          "label": "Brick Wall",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Columns",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 8,
+            "length": 2.5,
+            "width": 10,
+            "qty": 200
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 8,
+            "length": 2.5,
+            "width": 10,
+            "qty": 200
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 7,
+            "length": 2.5,
+            "width": 10,
+            "qty": 175
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 7,
+            "length": 2.5,
+            "width": 10,
+            "qty": 175
+          }
+        ],
+        "total": 750,
+        "boqRef": {
+          "index": 2,
+          "slNo": "2.9",
+          "section": "Dismantling Work",
+          "label": "Column Cladding",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Wall Panelling",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Linear Work Station Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 4,
+            "width": 8.25,
+            "qty": 33
+          },
+          {
+            "space": "Linear Work Station Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 51.5,
+            "width": 8.25,
+            "qty": 425
+          },
+          {
+            "space": "Linear Work Station Area-Corridor",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6,
+            "width": 8.25,
+            "qty": 50
+          }
+        ],
+        "total": 507,
+        "boqRef": {
+          "index": 3,
+          "slNo": "3.8",
+          "section": "Dismantling Work",
+          "label": "Wall Paneling",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "False Ceiling",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 4,
+            "qty": 22
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 25.5,
+            "width": 4,
+            "qty": 102
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18,
+            "width": 4,
+            "qty": 72
+          },
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 25.75,
+            "width": 4,
+            "qty": 103
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 4,
+            "qty": 90
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 2,
+            "length": 22.25,
+            "width": 4,
+            "qty": 178
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 4,
+            "qty": 90
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 18.25,
+            "width": 4,
+            "qty": 146
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 3,
+            "length": 11.25,
+            "width": 4,
+            "qty": 135
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 2,
+            "length": 26.25,
+            "width": 4,
+            "qty": 210
+          },
+          {
+            "space": "Utility Beside Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 9.5,
+            "width": 4,
+            "qty": 38
+          },
+          {
+            "space": "8Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10.75,
+            "width": 4,
+            "qty": 43
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 27.5,
+            "width": 4,
+            "qty": 110
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 13,
+            "width": 4,
+            "qty": 52
+          }
+        ],
+        "total": 1391,
+        "boqRef": {
+          "index": 4,
+          "slNo": "4.7",
+          "section": "Dismantling Work",
+          "label": "False ceiling",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Furniture",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 5,
+          "slNo": "5.6",
+          "section": "Dismantling Work",
+          "label": "Furniture",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Carpet",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 1,
+            "length": 21.75,
+            "width": 11.25,
+            "qty": 245
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 1,
+            "length": 11.5,
+            "width": 18,
+            "qty": 207
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 1,
+            "length": 26,
+            "width": 10.75,
+            "qty": 280
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 17.75,
+            "width": 10.75,
+            "qty": 191
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1172,
+            "width": 1,
+            "qty": 1172
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 6,
+          "slNo": "6.5",
+          "section": "Dismantling Work",
+          "label": "Carpet",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Lights",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 7,
+          "slNo": "8",
+          "section": "Dismantling Work",
+          "label": "Lights",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Shifting",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 8,
+          "slNo": "9",
+          "section": "Dismantling Work",
+          "label": "Shifting of debris/materials such as carpet, gypsum material, glass partitions, cabin tabl",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Load",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Office",
+            "unit": "sft",
+            "nos": 15,
+            "length": 1,
+            "width": 1,
+            "qty": 15
+          }
+        ],
+        "total": 15,
+        "boqRef": {
+          "index": 9,
+          "slNo": "10",
+          "section": "Dismantling Work",
+          "label": "Carting of dismantled debris from the stacked area and disposing the same approximately 10",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Dismantling Work",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Doors",
+        "unit": "nos",
+        "rows": [
+          {
+            "space": "Entry Door",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "nos",
+            "nos": 2,
+            "length": 1,
+            "width": 1,
+            "qty": 2
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "nos",
+            "nos": 2,
+            "length": 1,
+            "width": 1,
+            "qty": 2
+          },
+          {
+            "space": "Cabins",
+            "unit": "nos",
+            "nos": 3,
+            "length": 1,
+            "width": 1,
+            "qty": 3
+          },
+          {
+            "space": "Utility Beside Room",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "Conference Room",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "8Pax Conference Room",
+            "unit": "nos",
+            "nos": 3,
+            "length": 1,
+            "width": 1,
+            "qty": 3
+          }
+        ],
+        "total": 13,
+        "boqRef": {
+          "index": 10,
+          "slNo": "11",
+          "section": "Dismantling Work",
+          "label": "Removing of existing doors and door frames and stacking the materials at the location inst",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "1",
+        "sectionName": "Granite Work",
+        "no": "",
+        "name": "Pantry",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 14.25,
+            "width": 2,
+            "qty": 29
+          }
+        ],
+        "total": 29,
+        "boqRef": {
+          "index": 12,
+          "slNo": "1.1",
+          "section": "Granite Work",
+          "label": "Granite for Counter Top (Pantry Area)",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "2",
+        "sectionName": "Plumbing Works",
+        "no": "2",
+        "name": "Plumbing Works",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 13,
+          "slNo": "2.1",
+          "section": "Plumbing Works",
+          "label": "Plumbing Works",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "3.1",
+        "sectionName": "Sanitary Fixtures",
+        "no": "",
+        "name": "SS Sink",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 14,
+          "slNo": "3.1",
+          "section": "Sanitary Fixtures",
+          "label": "SS Sink- 24\"X18\"X8\" - AS per selection",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "3.1",
+        "sectionName": "Sanitary Fixtures",
+        "no": "3.2",
+        "name": "Sink Cock",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 15,
+          "slNo": "3.2",
+          "section": "Sanitary Fixtures",
+          "label": "Sink Cock ",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "4",
+        "sectionName": "Floor Chipping",
+        "no": "4",
+        "name": "Floor Chipping",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 16,
+          "slNo": "4.1",
+          "section": "Floor Chipping",
+          "label": "Drainage Pipeline",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "5",
+        "sectionName": "Flooring Work",
+        "no": "5",
+        "name": "Flooring Work",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Entrance",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 17,
+          "slNo": "5.1",
+          "section": "Flooring Work",
+          "label": "Flooring Work near the entrance",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Civil Works",
+        "sectionNo": "6",
+        "sectionName": "Trap door",
+        "no": "6",
+        "name": "Trap door",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Entrance",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 18,
+          "slNo": "6.1",
+          "section": "Trap Door",
+          "label": "Providing and fixing of trap door including all necessary hardware, fittings and finishing",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Modular Glass Works",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "1.1",
+        "name": "Glass Partition",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 1,
+            "length": 7,
+            "width": 7,
+            "qty": 49
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10,
+            "width": 7,
+            "qty": 70
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22.25,
+            "width": 7,
+            "qty": 156
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 2,
+            "length": 3.5,
+            "width": 7,
+            "qty": 49
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 15.75,
+            "width": 7,
+            "qty": 110
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 14.5,
+            "width": 7,
+            "qty": 102
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 7,
+            "qty": 39
+          },
+          {
+            "space": "Executive Cabin",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.75,
+            "width": 7,
+            "qty": 40
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 7,
+            "qty": 39
+          }
+        ],
+        "total": 653,
+        "boqRef": {
+          "index": 19,
+          "slNo": "1.1",
+          "section": "Glass Work",
+          "label": "Glass Partition - Upto  2100mm height  from FFL",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Modular Glass Works",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "1.2",
+        "name": "Glass Film",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 1,
+            "length": 7,
+            "width": 5,
+            "qty": 35
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10,
+            "width": 5,
+            "qty": 50
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22.25,
+            "width": 5,
+            "qty": 111
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 2,
+            "length": 3.5,
+            "width": 5,
+            "qty": 35
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 15.75,
+            "width": 5,
+            "qty": 79
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 14.5,
+            "width": 5,
+            "qty": 73
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 5,
+            "qty": 28
+          },
+          {
+            "space": "Executive Cabin",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.75,
+            "width": 5,
+            "qty": 29
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 5.5,
+            "width": 5,
+            "qty": 28
+          }
+        ],
+        "total": 466,
+        "boqRef": {
+          "index": 20,
+          "slNo": "1.2",
+          "section": "Glass Work",
+          "label": "Frosted Glass Film",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Modular Glass Works",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "1.3",
+        "name": "Glass Door-Single Leaf",
+        "unit": "nos",
+        "rows": [
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "Executive Cabin",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "nos",
+            "nos": 2,
+            "length": 1,
+            "width": 0,
+            "qty": 2
+          }
+        ],
+        "total": 8,
+        "boqRef": {
+          "index": 21,
+          "slNo": "",
+          "section": "Glass Work",
+          "label": "Glass Door ",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Modular Glass Works",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "1.4",
+        "name": "Glass Door-Double Leaf-2700x2100mm",
+        "unit": "nos",
+        "rows": [
+          {
+            "space": "Main Door",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 22,
+          "slNo": "",
+          "section": "Glass Work",
+          "label": "Glass Door ",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Modular Glass Works",
+        "sectionNo": "",
+        "sectionName": "",
+        "no": "",
+        "name": "Glass Door-Double Leaf-1800x2100mm",
+        "unit": "nos",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 23,
+          "slNo": "",
+          "section": "Glass Work",
+          "label": "Glass Door ",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "1",
+        "sectionName": "False Ceiling",
+        "no": "1.1",
+        "name": "Gypsum Ceiling",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 12.5,
+            "qty": 275
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 12.5,
+            "qty": 275
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18.75,
+            "width": 53.75,
+            "qty": 1008
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6.5,
+            "width": 17.25,
+            "qty": 112
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 32.5,
+            "width": 26,
+            "qty": 845
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 26,
+            "width": 25.75,
+            "qty": 670
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 4,
+            "qty": 90
+          },
+          {
+            "space": "Travel Desk/Visiting Dir",
+            "unit": "sft",
+            "nos": 2,
+            "length": 22.25,
+            "width": 4,
+            "qty": 178
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 4,
+            "qty": 90
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 18.25,
+            "width": 4,
+            "qty": 146
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 3,
+            "length": 11.25,
+            "width": 4,
+            "qty": 135
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 2,
+            "length": 26.25,
+            "width": 4,
+            "qty": 210
+          },
+          {
+            "space": "Utility Beside Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 9.5,
+            "width": 4,
+            "qty": 38
+          },
+          {
+            "space": "8Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10.75,
+            "width": 4,
+            "qty": 43
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 27.5,
+            "width": 4,
+            "qty": 110
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 13,
+            "width": 4,
+            "qty": 52
+          }
+        ],
+        "total": 4918,
+        "boqRef": {
+          "index": 24,
+          "slNo": "1.1",
+          "section": "False Ceiling",
+          "label": "Gypsum ceilng ",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "2",
+        "sectionName": "Internal Partitions",
+        "no": "2.1",
+        "name": "Gypsum Partition",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 1,
+            "length": 13,
+            "width": 3,
+            "qty": 39
+          },
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 1,
+            "length": 9,
+            "width": 3,
+            "qty": 27
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 12.75,
+            "width": 3,
+            "qty": 38
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22.25,
+            "width": 3,
+            "qty": 67
+          },
+          {
+            "space": "Corridor",
+            "unit": "sft",
+            "nos": 2,
+            "length": 6.5,
+            "width": 3,
+            "qty": 39
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 19.25,
+            "width": 3,
+            "qty": 58
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18,
+            "width": 3,
+            "qty": 54
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10,
+            "width": 3,
+            "qty": 30
+          },
+          {
+            "space": "Executive Cabin",
+            "unit": "sft",
+            "nos": 1,
+            "length": 8.75,
+            "width": 3,
+            "qty": 26
+          },
+          {
+            "space": "Executive Cabin",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 10,
+            "qty": 10
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 8.5,
+            "width": 3,
+            "qty": 26
+          },
+          {
+            "space": "Lounge",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10.75,
+            "width": 10,
+            "qty": 108
+          },
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18.25,
+            "width": 10,
+            "qty": 183
+          },
+          {
+            "space": "Linear work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6.5,
+            "width": 10,
+            "qty": 65
+          },
+          {
+            "space": "Linear work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 17.25,
+            "width": 10,
+            "qty": 173
+          },
+          {
+            "space": "Linear work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 19,
+            "width": 10,
+            "qty": 190
+          }
+        ],
+        "total": 1301,
+        "boqRef": {
+          "index": 25,
+          "slNo": "2.1",
+          "section": "Internal Partitions",
+          "label": "Gypsum Partition - 100 mm thick 2 sided double gypsum partition ",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "2",
+        "sectionName": "Internal Partitions",
+        "no": "2.2",
+        "name": "Wooden Ply Paneling",
+        "unit": "nos",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "nos",
+            "nos": 1,
+            "length": 10,
+            "width": 5,
+            "qty": 50
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "nos",
+            "nos": 1,
+            "length": 8,
+            "width": 5,
+            "qty": 40
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "nos",
+            "nos": 1,
+            "length": 6,
+            "width": 5,
+            "qty": 30
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "nos",
+            "nos": 1,
+            "length": 6,
+            "width": 5,
+            "qty": 30
+          },
+          {
+            "space": "Training Room",
+            "unit": "nos",
+            "nos": 1,
+            "length": 15,
+            "width": 5,
+            "qty": 75
+          }
+        ],
+        "total": 225,
+        "boqRef": {
+          "index": 26,
+          "slNo": "2.2",
+          "section": "Internal Partitions",
+          "label": "Ply Panelling Work",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "3",
+        "sectionName": "Doors",
+        "no": "3.1",
+        "name": "Flush Door - 900x2100mm",
+        "unit": "nos",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          },
+          {
+            "space": "Pantry",
+            "unit": "nos",
+            "nos": 1,
+            "length": 1,
+            "width": 0,
+            "qty": 1
+          }
+        ],
+        "total": 2,
+        "boqRef": {
+          "index": 27,
+          "slNo": "3.1",
+          "section": "Doors",
+          "label": "Opening Size ",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "4",
+        "sectionName": "Flooring",
+        "no": "4.1",
+        "name": "Carpet",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 0,
+            "length": 22,
+            "width": 12.5,
+            "qty": 0
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 12.5,
+            "qty": 275
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18.75,
+            "width": 53.75,
+            "qty": 1008
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6.5,
+            "width": 17.25,
+            "qty": 112
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 32.5,
+            "width": 26,
+            "qty": 845
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 26,
+            "width": 25.75,
+            "qty": 670
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 20.25,
+            "width": 10.75,
+            "qty": 218
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 15.75,
+            "width": 10.75,
+            "qty": 169
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 19.25,
+            "width": 8.75,
+            "qty": 168
+          },
+          {
+            "space": "Executive Cabin",
+            "unit": "sft",
+            "nos": 1,
+            "length": 11,
+            "width": 9.25,
+            "qty": 102
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 8.75,
+            "width": 13.25,
+            "qty": 116
+          },
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 16.25,
+            "width": 16.25,
+            "qty": 264
+          },
+          {
+            "space": "Corridor-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22.25,
+            "width": 6.25,
+            "qty": 139
+          },
+          {
+            "space": "Corridor-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 19.25,
+            "width": 5,
+            "qty": 96
+          }
+        ],
+        "total": 4182,
+        "boqRef": {
+          "index": 28,
+          "slNo": "4.1",
+          "section": "Flooring",
+          "label": "Carpet",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "4",
+        "sectionName": "Flooring",
+        "no": "4.2",
+        "name": "Skirting",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Arae",
+            "unit": "rft",
+            "nos": 1,
+            "length": 6.5,
+            "width": 0,
+            "qty": 7
+          },
+          {
+            "space": "Reception Arae",
+            "unit": "rft",
+            "nos": 1,
+            "length": 22,
+            "width": 0,
+            "qty": 22
+          },
+          {
+            "space": "Reception Arae",
+            "unit": "rft",
+            "nos": 1,
+            "length": 12.5,
+            "width": 0,
+            "qty": 13
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "rft",
+            "nos": 1,
+            "length": 22,
+            "width": 0,
+            "qty": 22
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "rft",
+            "nos": 1,
+            "length": 12.5,
+            "width": 0,
+            "qty": 13
+          },
+          {
+            "space": "Linear Work station",
+            "unit": "rft",
+            "nos": 2,
+            "length": 3.5,
+            "width": 0,
+            "qty": 7
+          },
+          {
+            "space": "Linear Work station",
+            "unit": "rft",
+            "nos": 2,
+            "length": 17.25,
+            "width": 0,
+            "qty": 35
+          },
+          {
+            "space": "Linear Work station",
+            "unit": "rft",
+            "nos": 1,
+            "length": 13,
+            "width": 0,
+            "qty": 13
+          },
+          {
+            "space": "Linear Work station",
+            "unit": "rft",
+            "nos": 1,
+            "length": 53.75,
+            "width": 0,
+            "qty": 54
+          },
+          {
+            "space": "Linear Work station",
+            "unit": "rft",
+            "nos": 1,
+            "length": 19,
+            "width": 0,
+            "qty": 19
+          },
+          {
+            "space": "Training Room",
+            "unit": "rft",
+            "nos": 2,
+            "length": 26,
+            "width": 0,
+            "qty": 52
+          },
+          {
+            "space": "Training Room",
+            "unit": "rft",
+            "nos": 2,
+            "length": 56,
+            "width": 0,
+            "qty": 112
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "rft",
+            "nos": 2,
+            "length": 10.75,
+            "width": 0,
+            "qty": 22
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "rft",
+            "nos": 1,
+            "length": 17,
+            "width": 0,
+            "qty": 17
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 2,
+            "length": 10.75,
+            "width": 0,
+            "qty": 22
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 17.75,
+            "width": 0,
+            "qty": 18
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 19.25,
+            "width": 0,
+            "qty": 19
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 2,
+            "length": 8.75,
+            "width": 0,
+            "qty": 18
+          },
+          {
+            "space": "4 Pax Conference Room",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11,
+            "width": 0,
+            "qty": 22
+          },
+          {
+            "space": "4 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 9,
+            "width": 0,
+            "qty": 9
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 13.25,
+            "width": 0,
+            "qty": 13
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 8.75,
+            "width": 0,
+            "qty": 9
+          }
+        ],
+        "total": 534,
+        "boqRef": {
+          "index": 29,
+          "slNo": "4.2",
+          "section": "Flooring",
+          "label": "Skirting 50mm wide ",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "5",
+        "sectionName": "Paint",
+        "no": "",
+        "name": "Gypsum Partition",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 2,
+            "length": 16.25,
+            "width": 3,
+            "qty": 98
+          },
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 2,
+            "length": 13,
+            "width": 3,
+            "qty": 78
+          },
+          {
+            "space": "Reception Arae",
+            "unit": "sft",
+            "nos": 2,
+            "length": 22,
+            "width": 10,
+            "qty": 440
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 2,
+            "length": 12.75,
+            "width": 3,
+            "qty": 77
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 2,
+            "length": 22.25,
+            "width": 3,
+            "qty": 134
+          },
+          {
+            "space": "Manager Cabin",
+            "unit": "sft",
+            "nos": 2,
+            "length": 8.75,
+            "width": 3,
+            "qty": 53
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 2,
+            "length": 19.25,
+            "width": 3,
+            "qty": 116
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 2,
+            "length": 18,
+            "width": 3,
+            "qty": 108
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 2,
+            "length": 10,
+            "width": 3,
+            "qty": 60
+          },
+          {
+            "space": "4 Pax Conference Room",
+            "unit": "sft",
+            "nos": 2,
+            "length": 8.75,
+            "width": 3,
+            "qty": 53
+          },
+          {
+            "space": "4 Pax Conference Room",
+            "unit": "sft",
+            "nos": 2,
+            "length": 1,
+            "width": 10,
+            "qty": 20
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 2,
+            "length": 8.5,
+            "width": 3,
+            "qty": 51
+          },
+          {
+            "space": "Lounge",
+            "unit": "sft",
+            "nos": 2,
+            "length": 10.75,
+            "width": 10,
+            "qty": 215
+          },
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 2,
+            "length": 18.25,
+            "width": 10,
+            "qty": 365
+          },
+          {
+            "space": "Linear work Station",
+            "unit": "sft",
+            "nos": 2,
+            "length": 6.5,
+            "width": 10,
+            "qty": 130
+          },
+          {
+            "space": "Linear work Station",
+            "unit": "sft",
+            "nos": 2,
+            "length": 17.25,
+            "width": 10,
+            "qty": 345
+          },
+          {
+            "space": "Linear work Station",
+            "unit": "sft",
+            "nos": 2,
+            "length": 19,
+            "width": 10,
+            "qty": 380
+          }
+        ],
+        "total": 2720,
+        "boqTotal": 9532,
+        "boqTotalLabel": "TOTAL PAINT QUANTITY",
+        "boqRef": {
+          "index": 30,
+          "slNo": "5.1",
+          "section": "Painting",
+          "label": "Painting - Enclosed areas",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "5",
+        "sectionName": "Paint",
+        "no": "",
+        "name": "Gypsum Ceiling",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 12.5,
+            "qty": 275
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 12.5,
+            "qty": 275
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18.75,
+            "width": 53.75,
+            "qty": 1008
+          },
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6.5,
+            "width": 17.25,
+            "qty": 112
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 32.5,
+            "width": 26,
+            "qty": 845
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 26,
+            "width": 25.75,
+            "qty": 670
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 20.25,
+            "width": 10.75,
+            "qty": 218
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 15.75,
+            "width": 10.75,
+            "qty": 169
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 19.25,
+            "width": 8.75,
+            "qty": 168
+          },
+          {
+            "space": "4 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 11,
+            "width": 9.25,
+            "qty": 102
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 8.75,
+            "width": 13.25,
+            "qty": 116
+          },
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 1,
+            "length": 16.25,
+            "width": 16.25,
+            "qty": 264
+          },
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 2,
+            "length": 22.25,
+            "width": 4,
+            "qty": 178
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 11.25,
+            "width": 4,
+            "qty": 90
+          },
+          {
+            "space": "Interview Rooms",
+            "unit": "sft",
+            "nos": 2,
+            "length": 18.25,
+            "width": 4,
+            "qty": 146
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 3,
+            "length": 11.25,
+            "width": 4,
+            "qty": 135
+          },
+          {
+            "space": "Cabins",
+            "unit": "sft",
+            "nos": 2,
+            "length": 26.25,
+            "width": 4,
+            "qty": 210
+          },
+          {
+            "space": "Utility Beside Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 9.5,
+            "width": 4,
+            "qty": 38
+          },
+          {
+            "space": "8Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 10.75,
+            "width": 4,
+            "qty": 43
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 27.5,
+            "width": 4,
+            "qty": 110
+          },
+          {
+            "space": "Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 13,
+            "width": 4,
+            "qty": 52
+          }
+        ],
+        "total": 5224,
+        "boqRef": null
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.1",
+        "name": "Reception Table",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6,
+            "width": 4,
+            "qty": 24
+          }
+        ],
+        "total": 24,
+        "boqRef": {
+          "index": 31,
+          "slNo": "6.1",
+          "section": "Modular Furniture",
+          "label": "Reception Table",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.2",
+        "name": "Conference Table-11 Pax",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 0,
+            "length": 1,
+            "width": 1,
+            "qty": 0
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 32,
+          "slNo": "6.2",
+          "section": "Modular Furniture",
+          "label": "Conference Table",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.3",
+        "name": "Conference Table-8 Pax",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 33,
+          "slNo": "6.3",
+          "section": "Modular Furniture",
+          "label": "Conference Table",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.4",
+        "name": "Conference Table-6 Pax",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 2,
+        "boqRef": {
+          "index": 34,
+          "slNo": "6.4",
+          "section": "Modular Furniture",
+          "label": "Conference Table",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.5",
+        "name": "Manager Cabin table",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Executive Cabin",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 35,
+          "slNo": "6.5",
+          "section": "Modular Furniture",
+          "label": "Manager Cabin table",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.6",
+        "name": "Worrk station-Sharing",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 38,
+            "length": 1,
+            "width": 1,
+            "qty": 38
+          },
+          {
+            "space": "New Work Station Arae",
+            "unit": "sft",
+            "nos": 78,
+            "length": 1,
+            "width": 1,
+            "qty": 78
+          }
+        ],
+        "total": 116,
+        "boqRef": {
+          "index": 36,
+          "slNo": "6.6",
+          "section": "Modular Furniture",
+          "label": "Desking Workstation - Sharing",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.7",
+        "name": "Worrk station- Non Sharing",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Linear Work Station",
+            "unit": "sft",
+            "nos": 3,
+            "length": 1,
+            "width": 1,
+            "qty": 3
+          },
+          {
+            "space": "New Work Station Arae",
+            "unit": "sft",
+            "nos": 15,
+            "length": 1,
+            "width": 1,
+            "qty": 15
+          },
+          {
+            "space": "Work Station Arae",
+            "unit": "sft",
+            "nos": 6,
+            "length": 1,
+            "width": 1,
+            "qty": 6
+          }
+        ],
+        "total": 24,
+        "boqRef": {
+          "index": 37,
+          "slNo": "6.7",
+          "section": "Modular Furniture",
+          "label": "Desking Workstation - Non-Sharing",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.8",
+        "name": "Work station-Sharing",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 39,
+            "length": 1,
+            "width": 1,
+            "qty": 39
+          }
+        ],
+        "total": 39,
+        "boqRef": {
+          "index": 38,
+          "slNo": "6.8",
+          "section": "Modular Furniture",
+          "label": "Desking Workstation -Training Room",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.9",
+        "name": "Round Table",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 2,
+            "length": 1,
+            "width": 1,
+            "qty": 2
+          }
+        ],
+        "total": 3,
+        "boqRef": {
+          "index": 39,
+          "slNo": "6.9",
+          "section": "Modular Furniture",
+          "label": "Round Table",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "6",
+        "sectionName": "Modular Furniture",
+        "no": "6.1",
+        "name": "Speakers Podium",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 40,
+          "slNo": "6.1",
+          "section": "Modular Furniture",
+          "label": "Speakers Podium",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "7",
+        "sectionName": "Loose Furniture",
+        "no": "7.1",
+        "name": "Chairs",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          },
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 11,
+            "length": 1,
+            "width": 1,
+            "qty": 11
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 11,
+            "length": 1,
+            "width": 1,
+            "qty": 11
+          },
+          {
+            "space": "8 Pax Conference Room",
+            "unit": "sft",
+            "nos": 8,
+            "length": 1,
+            "width": 1,
+            "qty": 8
+          },
+          {
+            "space": "6 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 6,
+            "length": 1,
+            "width": 1,
+            "qty": 6
+          },
+          {
+            "space": "6 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 6,
+            "length": 1,
+            "width": 1,
+            "qty": 6
+          },
+          {
+            "space": "Discussion Room",
+            "unit": "sft",
+            "nos": 3,
+            "length": 1,
+            "width": 1,
+            "qty": 3
+          },
+          {
+            "space": "Work Station",
+            "unit": "sft",
+            "nos": 356,
+            "length": 1,
+            "width": 1,
+            "qty": 356
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 39,
+            "length": 1,
+            "width": 1,
+            "qty": 39
+          },
+          {
+            "space": "Cubicle",
+            "unit": "sft",
+            "nos": 43,
+            "length": 1,
+            "width": 1,
+            "qty": 43
+          }
+        ],
+        "total": 441,
+        "boqRef": {
+          "index": 41,
+          "slNo": "7.1",
+          "section": "Loose Furniture",
+          "label": "Chairs",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "7",
+        "sectionName": "Loose Furniture",
+        "no": "7.2",
+        "name": "Pantry Chairs",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Pantry",
+            "unit": "sft",
+            "nos": 8,
+            "length": 1,
+            "width": 1,
+            "qty": 8
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 4,
+            "length": 1,
+            "width": 1,
+            "qty": 4
+          }
+        ],
+        "total": 12,
+        "boqRef": {
+          "index": 42,
+          "slNo": "7.2",
+          "section": "Loose Furniture",
+          "label": "Pantry Chairs",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "7",
+        "sectionName": "Loose Furniture",
+        "no": "8.1",
+        "name": "Wall Paneling",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Reception Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 9,
+            "qty": 198
+          }
+        ],
+        "total": 198,
+        "boqRef": {
+          "index": 44,
+          "slNo": "8.1",
+          "section": "Wall Paneling",
+          "label": "Panelling Works",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "7",
+        "sectionName": "Loose Furniture",
+        "no": "8.2",
+        "name": "Laminate Work",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Linear Work Station Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 4,
+            "width": 8.25,
+            "qty": 33
+          },
+          {
+            "space": "Linear Work Station Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 51.5,
+            "width": 8.25,
+            "qty": 425
+          },
+          {
+            "space": "Linear Work Station Area-Corridor",
+            "unit": "sft",
+            "nos": 1,
+            "length": 6,
+            "width": 8.25,
+            "qty": 50
+          }
+        ],
+        "total": 507,
+        "boqRef": {
+          "index": 45,
+          "slNo": "8.2",
+          "section": "Wall Paneling",
+          "label": "Laminate Work",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "7",
+        "sectionName": "Loose Furniture",
+        "no": "8.3",
+        "name": "Acoustic Panels",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 33,
+            "width": 9,
+            "qty": 297
+          },
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 46.75,
+            "width": 9,
+            "qty": 421
+          }
+        ],
+        "total": 718,
+        "boqRef": {
+          "index": 46,
+          "slNo": "8.3",
+          "section": "Wall Paneling",
+          "label": "Acoustic Panels",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "9",
+        "sectionName": "Ply Deck",
+        "no": "9",
+        "name": "Ply Deck",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Linear Work Station Area",
+            "unit": "sft",
+            "nos": 1,
+            "length": 38.25,
+            "width": 1,
+            "qty": 38
+          },
+          {
+            "space": "Fire Exit Beside",
+            "unit": "sft",
+            "nos": 1,
+            "length": 15,
+            "width": 3,
+            "qty": 45
+          }
+        ],
+        "total": 83,
+        "boqRef": {
+          "index": 47,
+          "slNo": "",
+          "section": "Ply Deck",
+          "label": "18mm Ply Deck Work",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "10",
+        "sectionName": "Logo",
+        "no": "10",
+        "name": "Logo",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 50,
+          "slNo": "10.1",
+          "section": "LOGO",
+          "label": "Logo Work",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "11",
+        "sectionName": "Wall Paper",
+        "no": "11",
+        "name": "Wall Paper",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "11 Pax Conference Room-1",
+            "unit": "sft",
+            "nos": 1,
+            "length": 22,
+            "width": 9,
+            "qty": 198
+          },
+          {
+            "space": "11 Pax Conference Room-2",
+            "unit": "sft",
+            "nos": 1,
+            "length": 20,
+            "width": 9,
+            "qty": 180
+          },
+          {
+            "space": "Lounge",
+            "unit": "sft",
+            "nos": 1,
+            "length": 12,
+            "width": 9,
+            "qty": 108
+          }
+        ],
+        "total": 486,
+        "boqRef": {
+          "index": 51,
+          "slNo": "11.1",
+          "section": "Wall Paper",
+          "label": "Wall Paper",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "12",
+        "sectionName": "Lacquered Glass",
+        "no": "12",
+        "name": "Lacquered Glass",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 6,
+            "length": 6,
+            "width": 4,
+            "qty": 144
+          }
+        ],
+        "total": 144,
+        "boqRef": {
+          "index": 52,
+          "slNo": "12.1",
+          "section": "Laquered Glass",
+          "label": "Supply and fixing of laquered glass 6mm thick over ply panelling of 12mm thick including c",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "13",
+        "sectionName": "Blinds",
+        "no": "13",
+        "name": "Blinds",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 46,
+            "width": 6,
+            "qty": 276
+          }
+        ],
+        "total": 276,
+        "boqRef": {
+          "index": 53,
+          "slNo": "13.1",
+          "section": "Blinds in Training Room",
+          "label": "Window Roller Blinds",
+          "matchedBy": "qty"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "14",
+        "sectionName": "Storage Shutter Work",
+        "no": "14",
+        "name": "Storage Shutter Work",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 54,
+          "slNo": "14.1",
+          "section": "Storage Shutter Work",
+          "label": "Adjustment and alignment of existing storage shutters including necessary fittings and smo",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "15",
+        "sectionName": "Electrical",
+        "no": "15",
+        "name": "Electrical",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 55,
+          "slNo": "15.1",
+          "section": "Electrical Works- Main wiring",
+          "label": "Providing, supplying, and fixing of electrical wiring for the complete office space, inclu",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "16",
+        "sectionName": "HVAC",
+        "no": "16",
+        "name": "HVAC",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 56,
+          "slNo": "16.1",
+          "section": "HVAC",
+          "label": "Supply  Installation and Testing commissioning of AC works for the said project Toshiba, W",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "17",
+        "sectionName": "FA, PA, RRS, WLDS",
+        "no": "17",
+        "name": "FA, PA, RRS, WLDS",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 57,
+          "slNo": "17.1",
+          "section": "FA, PA, RRS, WLDS",
+          "label": "Providing, fixing and commissioning of Fire alarm System, Public address System, Rodent Re",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "18",
+        "sectionName": "Sprinkler",
+        "no": "18",
+        "name": "Sprinkler",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": null
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "19",
+        "sectionName": "AV System",
+        "no": "19",
+        "name": "AV System",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Training Room",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 58,
+          "slNo": "19.1",
+          "section": "AV System",
+          "label": "Providing and installation of AV system for training room including Interactive Screen bra",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "20",
+        "sectionName": "Deep Cleaing",
+        "no": "20",
+        "name": "Deep Cleaing",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 59,
+          "slNo": "20.1",
+          "section": "Deep Cleaning Work",
+          "label": "Complete deep cleaning of floors, walls, windows, furniture and work areas using suitable ",
+          "matchedBy": "name"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "21",
+        "sectionName": "House Keeping",
+        "no": "21",
+        "name": "House Keeping",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 1,
+            "width": 1,
+            "qty": 1
+          }
+        ],
+        "total": 1,
+        "boqRef": {
+          "index": 60,
+          "slNo": "21.1",
+          "section": "HouseKeeping Work",
+          "label": "Regular cleaning and maintenance of floor, workstations, and common areas by housekeeping ",
+          "matchedBy": "override"
+        }
+      },
+      {
+        "group": "Interior Works",
+        "sectionNo": "22",
+        "sectionName": "Floor Protection",
+        "no": "22",
+        "name": "Floor Protection",
+        "unit": "sft",
+        "rows": [
+          {
+            "space": "Full Office",
+            "unit": "sft",
+            "nos": 1,
+            "length": 18500,
+            "width": 1,
+            "qty": 18500
+          }
+        ],
+        "total": 18500,
+        "boqRef": {
+          "index": 61,
+          "slNo": "22.1",
+          "section": "Floor Protection",
+          "label": "Providing and laying floor protection using foam sheet/board to avoid damage during site w",
+          "matchedBy": "name"
+        }
+      }
+    ]
+  }
+}

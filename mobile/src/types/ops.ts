@@ -38,19 +38,34 @@ export interface BoqItem {
   measureNo?: number
   width?: number
   height?: number
+  /** Source hierarchy from the Cubic quotation template (group › section › item) */
+  slNo?: string
+  group?: string
+  section?: string
+  sectionNo?: string
+  unitLabel?: string
+  note?: string
+  sortIndex?: number
 }
+
+export type BoqType = 'residential' | 'commercial' | 'general'
 
 export type QuotationStatus = 'draft' | 'sent' | 'viewed' | 'approved' | 'rejected'
 
 export interface Quotation {
   _id: string
-  projectId?: { _id: string; name: string; clientName?: string } | string
+  projectId?:
+    | { _id: string; name: string; clientName?: string; location?: string; type?: string }
+    | string
   leadId?: { _id: string; clientName: string } | string
   title: string
   versionLabel?: string
+  boqType?: BoqType
   status: QuotationStatus
   items: BoqItem[]
   subtotal: number
+  chargesPercent?: number
+  chargesLabel?: string
   gstPercent: number
   discount: number
   grandTotal: number

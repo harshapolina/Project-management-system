@@ -108,6 +108,17 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     updateItems.mutate(nextItems)
   }
 
+  // Same order the quotation sheets total in: subtotal → handling → GST → discount
+  const chargesAmount = (quotation.subtotal * (quotation.chargesPercent || 0)) / 100
+  const gstAmount =
+    ((quotation.subtotal + chargesAmount) * (quotation.gstPercent || 0)) / 100
+  const propertyType =
+    quotation.boqType === 'commercial'
+      ? 'Commercial'
+      : quotation.boqType === 'residential'
+        ? 'Residential'
+        : null
+
   return (
     <Screen padded={false} edges={['left', 'right']}>
       {header}
@@ -120,6 +131,9 @@ export function BoqDetailScreen({ route, navigation }: Props) {
             <SurfaceCard style={styles.statusCard}>
               <View style={styles.badgeRow}>
                 <Pill label={quotation.status} bg={colors.accentSoft} color={colors.accent} />
+                {propertyType ? (
+                  <Pill label={propertyType} bg={colors.muted} color={colors.textSecondary} />
+                ) : null}
                 <Text style={styles.versionLabel}>{quotation.versionLabel}</Text>
               </View>
               <SectionLabel>Status</SectionLabel>
@@ -187,9 +201,17 @@ export function BoqDetailScreen({ route, navigation }: Props) {
                 <Text style={styles.totalLabel}>Subtotal</Text>
                 <Text style={styles.totalValue}>{formatInr(quotation.subtotal)}</Text>
               </View>
+              {chargesAmount > 0 ? (
+                <View style={styles.totalRow}>
+                  <Text style={styles.totalLabel} numberOfLines={1}>
+                    {quotation.chargesLabel || `Design & handling (${quotation.chargesPercent}%)`}
+                  </Text>
+                  <Text style={styles.totalValue}>{formatInr(chargesAmount)}</Text>
+                </View>
+              ) : null}
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>GST ({quotation.gstPercent}%)</Text>
-                <Text style={styles.totalValue}>{formatInr((quotation.subtotal * quotation.gstPercent) / 100)}</Text>
+                <Text style={styles.totalValue}>{formatInr(gstAmount)}</Text>
               </View>
               {quotation.discount ? (
                 <View style={styles.totalRow}>

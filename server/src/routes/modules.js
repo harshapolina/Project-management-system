@@ -23,7 +23,17 @@ import {
   templateItemsForType,
   BOQ_TYPE_META,
 } from '../data/plywoodMaterialCatalog.js'
-import { interiorCatalogItems, INTERIOR_BOQ_META } from '../data/quotationCatalog.js'
+import {
+  interiorCatalogItems,
+  interiorCatalogTemplate,
+  isInteriorBoqType,
+  INTERIOR_BOQ_META,
+} from '../data/quotationCatalog.js'
+import {
+  hasMeasurementSheet,
+  measurementTemplate,
+  measurementTotals,
+} from '../data/measurementCatalog.js'
 import {
   Lead,
   Quotation,
@@ -401,7 +411,33 @@ router.get(
       boqType,
       count: items.length,
       meta: INTERIOR_BOQ_META[boqType],
+      template: interiorCatalogTemplate(boqType),
       items,
+    })
+  }),
+)
+
+/**
+ * Commercial measurement take-off. `spaces` (comma separated) narrows the
+ * seeded rows to the rooms this office actually has.
+ */
+router.get(
+  '/measurement-catalog/:boqType',
+  requireAuth,
+  requirePermission('boq'),
+  asyncHandler(async (req, res) => {
+    const { boqType } = req.params
+    if (!hasMeasurementSheet(boqType)) {
+      throw new AppError('No measurement sheet for this property type', 400)
+    }
+    const spaces = String(req.query.spaces || '')
+      .split(',')
+      .map((s) => s.trim())
+      .filter(Boolean)
+    res.json({
+      success: true,
+      boqType,
+      ...measurementTemplate(boqType, { spaces }),
     })
   }),
 )
@@ -446,6 +482,25 @@ router.get(
   }),
 )
 
+/**
+ * Subtotal → design/handling charges → GST → discount, matching the order the
+ * Cubic quotation sheets total in.
+ */
+function quotationTotals({ items = [], chargesPercent = 0, gstPercent = 18, discount = 0 }) {
+  const subtotal = items.reduce(
+    (s, i) =>
+      s + (Number(i.amount) || (Number(i.qty) || 0) * (Number(i.rate) || 0) || 0),
+    0,
+  )
+  const charges = (subtotal * (Number(chargesPercent) || 0)) / 100
+  const taxable = subtotal + charges
+  const gst = (taxable * (Number(gstPercent) || 0)) / 100
+  return {
+    subtotal,
+    grandTotal: taxable + gst - (Number(discount) || 0),
+  }
+}
+
 router.post(
   '/quotations',
   requireAuth,
@@ -453,23 +508,31 @@ router.post(
   asyncHandler(async (req, res) => {
     let items = req.body.items || []
     const boqType = req.body.boqType || 'general'
-    if (
-      (!items.length || req.body.seedCatalog) &&
-      (boqType === 'residential' || boqType === 'commercial')
-    ) {
+    const interior = isInteriorBoqType(boqType)
+    if ((!items.length || req.body.seedCatalog) && interior) {
       items = interiorCatalogItems(boqType)
     }
     if (req.body.projectId) await assertProjectAccess(req, req.body.projectId)
-    const subtotal = items.reduce((s, i) => s + (i.amount || i.qty * i.rate || 0), 0)
+
+    const templateCharge = interior ? interiorCatalogTemplate(boqType).charges[0] : null
+    const chargesPercent = req.body.chargesPercent ?? templateCharge?.percent ?? 0
+    const chargesLabel = req.body.chargesLabel ?? templateCharge?.label ?? ''
     const gstPercent = req.body.gstPercent ?? 18
     const discount = req.body.discount || 0
-    const grandTotal = subtotal + (subtotal * gstPercent) / 100 - discount
+    const { subtotal, grandTotal } = quotationTotals({
+      items,
+      chargesPercent,
+      gstPercent,
+      discount,
+    })
 
     const quotation = await Quotation.create(
       withTenant(req, {
         ...req.body,
         items,
         subtotal,
+        chargesPercent,
+        chargesLabel,
         gstPercent,
         discount,
         grandTotal,
@@ -495,6 +558,11 @@ router.patch(
       'status',
       'items',
       'attachments',
+      'docMeta',
+      'spaces',
+      'measurements',
+      'chargesPercent',
+      'chargesLabel',
       'gstPercent',
       'discount',
       'subtotal',
@@ -504,23 +572,40 @@ router.patch(
       if (req.body[key] !== undefined) quotation[key] = req.body[key]
     }
 
+    /**
+     * The take-off is upstream of the BOQ: an item's measured total becomes the
+     * quantity of the line it feeds. Applied here so the web and mobile clients
+     * cannot drift apart on the arithmetic.
+     */
+    if (req.body.measurements !== undefined) {
+      const totals = measurementTotals(quotation.measurements || [])
+      for (const item of quotation.items || []) {
+        const hit = totals.get(item.sortIndex)
+        if (!hit) continue
+        // Lump-sum lines are measured for reference but priced as one unit —
+        // 18,500 sft of floor protection is still a single LS charge.
+        if (item.unit === 'ls') continue
+        item.qty = hit.total
+        item.amount = hit.total * (Number(item.rate) || 0)
+      }
+    }
+
     const shouldRecalc =
       req.body.items !== undefined ||
+      req.body.measurements !== undefined ||
+      req.body.chargesPercent !== undefined ||
       req.body.gstPercent !== undefined ||
       req.body.discount !== undefined
 
     if (shouldRecalc) {
-      quotation.subtotal = (quotation.items || []).reduce((s, i) => {
-        const amount =
-          Number(i.amount) ||
-          (Number(i.qty) || 0) * (Number(i.rate) || 0) ||
-          0
-        return s + amount
-      }, 0)
-      quotation.grandTotal =
-        quotation.subtotal +
-        (quotation.subtotal * (Number(quotation.gstPercent) || 0)) / 100 -
-        (Number(quotation.discount) || 0)
+      const totals = quotationTotals({
+        items: quotation.items || [],
+        chargesPercent: quotation.chargesPercent,
+        gstPercent: quotation.gstPercent,
+        discount: quotation.discount,
+      })
+      quotation.subtotal = totals.subtotal
+      quotation.grandTotal = totals.grandTotal
     }
 
     if (req.body.status === 'sent') quotation.sentAt = new Date()

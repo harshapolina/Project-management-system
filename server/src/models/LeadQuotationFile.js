@@ -48,6 +48,14 @@ const boqItemSchema = new mongoose.Schema(
     measureNo: { type: Number, default: 0 },
     width: { type: Number, default: 0 },
     height: { type: Number, default: 0 },
+    /** Source hierarchy from the Cubic quotation template (group › section › item) */
+    slNo: { type: String, default: '' },
+    group: { type: String, default: '' },
+    section: { type: String, default: '' },
+    sectionNo: { type: String, default: '' },
+    unitLabel: { type: String, default: '' },
+    note: { type: String, default: '' },
+    sortIndex: { type: Number, default: 0 },
     /** Material specification (plywood master template) */
     materialFamily: { type: String, default: '' },
     materialName: { type: String, default: '' },
@@ -68,6 +76,67 @@ const quotationAttachmentSchema = new mongoose.Schema(
     createdAt: { type: Date, default: Date.now },
   },
   { _id: true },
+)
+
+/**
+ * Letterhead fields printed on the quotation. They default from the tenant and
+ * the project but stay editable per quote — the client logo and address on a
+ * commercial estimate rarely match what is stored on the project record.
+ */
+const quotationDocMetaSchema = new mongoose.Schema(
+  {
+    customerName: { type: String, default: '' },
+    clientAddress: { type: String, default: '' },
+    clientLogo: { type: String, default: '' },
+    companyLogo: { type: String, default: '' },
+    companyAddress: { type: String, default: '' },
+    companyPhone: { type: String, default: '' },
+    quoteNo: { type: String, default: '' },
+    quoteDate: { type: String, default: '' },
+    architect: { type: String, default: '' },
+    emailId: { type: String, default: '' },
+    contactNo: { type: String, default: '' },
+  },
+  { _id: false },
+)
+
+/**
+ * Commercial take-off: one row per space measured, grouped under the work item
+ * whose total feeds a BOQ line.
+ */
+const measurementRowSchema = new mongoose.Schema(
+  {
+    space: { type: String, default: '' },
+    unit: { type: String, default: 'sft' },
+    nos: { type: Number, default: 0 },
+    length: { type: Number, default: 0 },
+    width: { type: Number, default: 0 },
+    qty: { type: Number, default: 0 },
+  },
+  { _id: false },
+)
+
+const measurementItemSchema = new mongoose.Schema(
+  {
+    group: { type: String, default: '' },
+    sectionNo: { type: String, default: '' },
+    sectionName: { type: String, default: '' },
+    no: { type: String, default: '' },
+    name: { type: String, default: '' },
+    unit: { type: String, default: 'sft' },
+    rows: [measurementRowSchema],
+    /** Set when the sheet carries a figure its own rows do not add up to */
+    overrideTotal: { type: Number, default: null },
+    boqTotal: { type: Number, default: null },
+    boqTotalLabel: { type: String, default: '' },
+    boqRef: {
+      index: { type: Number, default: -1 },
+      slNo: { type: String, default: '' },
+      section: { type: String, default: '' },
+      label: { type: String, default: '' },
+    },
+  },
+  { _id: false },
 )
 
 const quotationSchema = new mongoose.Schema(
@@ -93,8 +162,15 @@ const quotationSchema = new mongoose.Schema(
       default: 'draft',
     },
     items: [boqItemSchema],
+    /** Spaces this office has — drives which measurement rows are seeded */
+    spaces: [{ type: String }],
+    measurements: [measurementItemSchema],
+    docMeta: { type: quotationDocMetaSchema, default: () => ({}) },
     attachments: [quotationAttachmentSchema],
     subtotal: { type: Number, default: 0 },
+    /** Design & handling charges levied on the subtotal before GST (Cubic templates use 8%) */
+    chargesPercent: { type: Number, default: 0 },
+    chargesLabel: { type: String, default: '' },
     gstPercent: { type: Number, default: 18 },
     discount: { type: Number, default: 0 },
     grandTotal: { type: Number, default: 0 },

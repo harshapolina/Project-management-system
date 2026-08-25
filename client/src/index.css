@@ -790,10 +790,76 @@ body {
   animation-delay: -3.5s;
 }
 
+/* ── Cubic quotation sheets ──────────────────────────────────────────────
+ * Each <article class="cubic-sheet"> is one printed page. On screen the sheet
+ * only takes the height it needs on phones and locks to A4 proportions from
+ * tablet up; printing always forces a true A4 page break.
+ */
+.cubic-sheet {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Browsers drop background fills when printing or saving to PDF. The banded
+ * header, the table head and the group rows carry meaning through colour, so
+ * opt the whole sheet back in. */
+.cubic-sheet,
+.cubic-sheet * {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+
+/* A4 minus the @page margin below. Screen and paper use the same figure so the
+ * preview is what prints, and so the footer's margin-top:auto has a full page
+ * to push against instead of riding up under the last row. */
+@media (min-width: 640px) {
+  .cubic-sheet {
+    min-height: 281mm;
+  }
+}
+
 @media print {
   @page {
-    margin: 14mm 12mm;
-    size: A4;
+    margin: 8mm;
+    size: A4 portrait;
+  }
+
+  .cubic-quote {
+    display: block !important;
+  }
+
+  .cubic-sheet {
+    box-shadow: none !important;
+    break-after: page;
+    page-break-after: always;
+    /* deliberately not break-inside:avoid — a sheet that runs slightly long
+       should spill onto an extra page rather than be clipped */
+    margin: 0 !important;
+    max-width: none !important;
+    min-height: 281mm;
+    outline: none !important;
+    ring: 0;
+    width: 100% !important;
+  }
+
+  .cubic-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
+  .cubic-sheet .break-inside-avoid,
+  .cubic-sheet tr {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* the phone-only measurement caption must never reach paper */
+  .cubic-sheet .sm\:hidden {
+    display: none !important;
+  }
+
+  .cubic-sheet .sm\:table-cell {
+    display: table-cell !important;
   }
 
   html,
@@ -802,6 +868,8 @@ body {
     color: #171717 !important;
     height: auto !important;
     overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
 
   .print\:hidden {

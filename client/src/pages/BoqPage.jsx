@@ -5,10 +5,13 @@ import {
   ArrowLeft,
   ArrowRight,
   Check,
+  ChevronRight,
   Copy,
   FileSpreadsheet,
   Image as ImageIcon,
   Layers,
+  Maximize2,
+  MoreHorizontal,
   Plus,
   Printer,
   Save,
@@ -28,6 +31,10 @@ import {
   unitLabel,
 } from '../lib/boqImport'
 import { CubicQuoteDocument, lineQty } from '../components/boq/CubicQuoteDocument'
+import {
+  MeasurementSheet,
+  itemTotal as measureItemTotal,
+} from '../components/boq/MeasurementSheet'
 import { toast } from '../components/ui'
 import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
 import {
@@ -74,6 +81,11 @@ const STATUS_META = {
 const CARD =
   'on-dark rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]'
 
+/** Only the commercial template derives its quantities from a take-off sheet. */
+function boqTypeLeadsWithMeasurements(boqType) {
+  return boqType === 'commercial'
+}
+
 function uid() {
   return `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`
 }
@@ -116,6 +128,19 @@ function normalizeItems(items = []) {
       measureNo: Number(it.measureNo) || 0,
       width: Number(it.width) || 0,
       height: Number(it.height) || 0,
+      /**
+       * Source hierarchy from the Cubic template. This rebuilds each row from a
+       * whitelist, so anything missing here is silently dropped when a saved
+       * sheet is reopened — that blanked the Sl. column and, worse, lost the
+       * sortIndex that links a BOQ line to its measurement total.
+       */
+      slNo: it.slNo || '',
+      group: it.group || '',
+      section: it.section || '',
+      sectionNo: it.sectionNo || '',
+      unitLabel: it.unitLabel || '',
+      note: it.note || '',
+      sortIndex: Number.isFinite(Number(it.sortIndex)) ? Number(it.sortIndex) : i,
       ...normalizeMaterialFields(it),
     }
     if (!row.qty) row.qty = lineQty(row)
@@ -533,99 +558,79 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
         onPick={startDraft}
         projectType={project?.type}
       />
-      <header className="shrink-0 border-b border-[#e1e8f1] bg-surface px-4 pt-4 print:hidden sm:px-6">
+      {/* One row: back · sheet switcher · new. The project name and total live
+          in the sheet's own command bar, so nothing is repeated here. */}
+      <header className="flex shrink-0 items-center gap-2 border-b border-[#e1e8f1] bg-surface px-3 py-2 print:hidden sm:px-5">
         <button
           type="button"
           onClick={onBack}
           title="Back to all projects"
-          className="group inline-flex items-center gap-1.5 text-[10.5px] font-bold uppercase tracking-[0.12em] text-[#9aa7ba] transition hover:text-[#24b47e]"
+          aria-label="Back to all projects"
+          className="group flex h-8 w-8 shrink-0 items-center justify-center rounded-lg text-[#9aa7ba] transition hover:bg-[#f2f6fb] hover:text-[#24b47e]"
         >
-          <ArrowLeft className="h-3.5 w-3.5 transition-transform duration-150 group-hover:-translate-x-0.5" />
-          BOQ &amp; Quotes
+          <ArrowLeft className="h-4 w-4 transition-transform duration-150 group-hover:-translate-x-0.5" />
         </button>
 
-        <div className="mt-1.5 flex flex-wrap items-center gap-3">
-          <div className="min-w-0 flex-1">
-            <h2 className="truncate text-[20px] font-semibold leading-tight tracking-[-0.022em] text-[#0b1220]">
-              {project?.name || 'Project'}
-            </h2>
-            <p className="mt-0.5 truncate text-[12px] text-[#8a98ac]">
-              {project?.clientName || 'No client'}
-              {project?.location ? ` · ${project.location}` : ''} ·{' '}
-              <span className="font-semibold text-secondary tabular-nums">
-                {formatInr(projectTotal)}
-              </span>{' '}
-              across {quotes.length} {quotes.length === 1 ? 'sheet' : 'sheets'}
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() =>
-              project?.type === 'blank' ? setTypeModalOpen(true) : startDraft()
-            }
-            className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-xl bg-[#3ecf8e] px-3.5 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(37,99,235,0.75)] transition hover:bg-[#24b47e]"
-          >
-            <Plus className="h-4 w-4" />
-            New sheet
-          </button>
-        </div>
-
-        {(quotes.length > 0 || draft) && (
-          <div className="-mx-1 mt-3 flex gap-1.5 overflow-x-auto px-1 pb-2.5">
-            {quotes.map((q) => {
-              const meta = STATUS_META[q.status] || STATUS_META.draft
-              const active = !draft && String(q._id) === String(activeId)
-              return (
-                <button
-                  key={q._id}
-                  type="button"
-                  onClick={() => {
-                    setDraft(false)
-                    setActiveId(String(q._id))
-                  }}
+        <div className="-mx-1 flex min-w-0 flex-1 items-center gap-1.5 overflow-x-auto px-1 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {quotes.map((q) => {
+            const meta = STATUS_META[q.status] || STATUS_META.draft
+            const active = !draft && String(q._id) === String(activeId)
+            return (
+              <button
+                key={q._id}
+                type="button"
+                onClick={() => {
+                  setDraft(false)
+                  setActiveId(String(q._id))
+                }}
+                title={`${q.title} · ${BOQ_TYPE_META[q.boqType]?.label || 'Standard'} · ${formatInr(q.grandTotal || 0)}`}
+                className={cn(
+                  'flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-2.5 text-left transition-all duration-150',
+                  active
+                    ? 'border-[#c7dbfb] bg-[#eef4ff] shadow-[0_1px_2px_rgba(37,99,235,0.10)]'
+                    : 'border-[#e9eef6] bg-surface hover:border-[#d7e0ec] hover:bg-[#f9fbfd]',
+                )}
+              >
+                <span className={cn('h-1.5 w-1.5 shrink-0 rounded-full', meta.dot)} />
+                <span
                   className={cn(
-                    'flex shrink-0 items-center gap-2 rounded-xl border px-3 py-1.5 text-left transition-all duration-150',
-                    active
-                      ? 'border-[#c7dbfb] bg-[#eef4ff] shadow-[0_1px_2px_rgba(37,99,235,0.10)]'
-                      : 'border-[#e9eef6] bg-surface hover:border-[#d7e0ec] hover:bg-[#f9fbfd]',
+                    'max-w-[170px] truncate text-[12px] font-semibold leading-none tracking-[-0.005em]',
+                    active ? 'text-[#24b47e]' : 'text-[#0b1220]',
                   )}
                 >
-                  <span
-                    className={cn('h-1.5 w-1.5 shrink-0 rounded-full', meta.dot)}
-                  />
-                  <span className="min-w-0">
-                    <span
-                      className={cn(
-                        'block max-w-[180px] truncate text-[12.5px] font-semibold tracking-[-0.005em]',
-                        active ? 'text-[#24b47e]' : 'text-[#0b1220]',
-                      )}
-                    >
-                      {q.title}
-                    </span>
-                    <span className="mt-[1px] block text-[10.5px] tabular-nums text-[#8a98ac]">
-                      {BOQ_TYPE_META[q.boqType]?.label || q.versionLabel || 'Standard'} ·{' '}
-                      {formatInr(q.grandTotal || 0)}
-                    </span>
-                  </span>
-                </button>
-              )
-            })}
-            {draft && draftType && (
-              <span className="flex shrink-0 items-center gap-2 rounded-xl border border-dashed border-[#b6cef7] bg-[#f5f9ff] px-3 py-2 text-[12px] font-semibold text-[#24b47e]">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3ecf8e]" />
-                New {BOQ_TYPE_META[draftType]?.label} sheet · unsaved
-              </span>
-            )}
-          </div>
-        )}
+                  {q.title}
+                </span>
+                <span className="shrink-0 text-[11px] leading-none tabular-nums text-[#9aa7ba]">
+                  {formatInr(q.grandTotal || 0)}
+                </span>
+              </button>
+            )
+          })}
+          {draft && draftType && (
+            <span className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-dashed border-[#b6cef7] bg-[#f5f9ff] px-2.5 text-[12px] font-semibold leading-none text-[#24b47e]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3ecf8e]" />
+              New {BOQ_TYPE_META[draftType]?.label} · unsaved
+            </span>
+          )}
+        </div>
+
+        <button
+          type="button"
+          onClick={() =>
+            project?.type === 'blank' ? setTypeModalOpen(true) : startDraft()
+          }
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg bg-[#3ecf8e] px-3 text-[12px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(37,99,235,0.75)] transition hover:bg-[#24b47e]"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">New sheet</span>
+        </button>
       </header>
 
       <div className="min-h-0 flex-1 print:h-auto print:overflow-visible">
         {loading ? (
           <div className="m-5 h-64 animate-pulse rounded-2xl bg-surface" />
         ) : !activeQuote && !draft ? (
-          <EmptyProject onCreate={() => startDraft()} />
+          <EmptyProject onCreate={() => startDraft()} projectType={project?.type} />
         ) : (
           <BoqSheet
             key={activeQuote?._id || `draft-${draftType}`}
@@ -651,7 +656,8 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
   )
 }
 
-function EmptyProject({ onCreate }) {
+function EmptyProject({ onCreate, projectType }) {
+  const label = projectType === 'commercial' ? 'commercial' : 'residential'
   return (
     <div className="flex h-full items-center justify-center p-6">
       <div className={cn(CARD, 'max-w-lg px-10 py-12 text-center')}>
@@ -662,9 +668,9 @@ function EmptyProject({ onCreate }) {
           No quotation for this project yet
         </p>
         <p className="mx-auto mt-1.5 max-w-sm text-[13px] leading-relaxed text-[#8a98ac]">
-          We&apos;ll load the full {''}
-          {''} interior schedule — every row from the Cubic quotation template —
-          so you can take off quantities and approve the budget.
+          We&apos;ll load the full {label} interior schedule — every row from the
+          Cubic quotation template — so you can take off quantities and approve
+          the budget.
         </p>
         <button
           type="button"
@@ -703,9 +709,10 @@ function BoqSheet({
       ? quotation.boqType
       : draftBoqType || (project?.type === 'commercial' ? 'commercial' : 'residential')
 
-  const [boqType] = useState(initialBoqType)
+  const [boqType, setBoqType] = useState(initialBoqType)
   const [catalogOpen, setCatalogOpen] = useState(false)
-  const [quoteView, setQuoteView] = useState(quotation?.status === 'approved')
+  const [fullQuote, setFullQuote] = useState(false)
+  const [menuOpen, setMenuOpen] = useState(false)
   const [title, setTitle] = useState(
     quotation?.title || 'QUOTATION FOR INTERIOR & EXECUTION',
   )
@@ -720,8 +727,29 @@ function BoqSheet({
   )
   const [discount, setDiscount] = useState(quotation?.discount || 0)
   const [gst, setGst] = useState(quotation?.gstPercent ?? 18)
+  const [chargesPercent, setChargesPercent] = useState(
+    quotation?.chargesPercent ?? 0,
+  )
   const [dirty, setDirty] = useState(false)
   const [focusIdx, setFocusIdx] = useState(null)
+  const [focusRoomIdx, setFocusRoomIdx] = useState(null)
+  const [docMeta, setDocMeta] = useState(() => ({ ...(quotation?.docMeta || {}) }))
+  const [headerOpen, setHeaderOpen] = useState(false)
+  const [measurements, setMeasurements] = useState(
+    () => quotation?.measurements?.map((m) => ({ ...m })) || [],
+  )
+  const [spaces, setSpaces] = useState(() => quotation?.spaces || [])
+  /**
+   * One navigation model for the sheet: quantities → pricing → the document.
+   * Commercial starts on the take-off since that is where its numbers come
+   * from; an approved sheet opens on the finished quotation.
+   */
+  const [tab, setTab] = useState(() => {
+    if (quotation?.status === 'approved') return 'quote'
+    if (boqTypeLeadsWithMeasurements(initialBoqType) && !quotation?.items?.length)
+      return 'measure'
+    return 'boq'
+  })
   const [importing, setImporting] = useState(false)
   const [uploading, setUploading] = useState(false)
   const [dragOver, setDragOver] = useState(false)
@@ -734,12 +762,150 @@ function BoqSheet({
   const materialMode = !interiorMode && isMaterialSpecSheet(boqType, items)
   const roomSuggestions = roomSuggestionsForType(boqType)
 
+  /** Template chrome for this property type: columns, charges, terms, annexures. */
+  const { data: catalogData } = useQuery({
+    queryKey: ['boq-catalog', boqType],
+    queryFn: () => api(`/boq-catalog/${boqType}`),
+    enabled: interiorMode,
+    staleTime: 60 * 60 * 1000,
+  })
+  const template = catalogData?.template || null
+  const chargesLabel =
+    quotation?.chargesLabel || template?.charges?.[0]?.label || ''
+
+  // A sheet created before charges existed still has to pick up the template rate
+  useEffect(() => {
+    if (!interiorMode || !template) return
+    if (quotation?.chargesPercent !== undefined && quotation?.chargesPercent !== null)
+      return
+    setChargesPercent(template.charges?.[0]?.percent ?? 0)
+  }, [interiorMode, template, quotation?.chargesPercent])
+
+  const measureMode = boqTypeLeadsWithMeasurements(boqType)
+  const quoteView = interiorMode && tab === 'quote'
+
+  /** The steps this sheet actually has, in the order the work happens. */
+  const steps = useMemo(
+    () =>
+      [
+        measureMode && {
+          key: 'measure',
+          label: 'Measurements',
+          hint: 'Derive quantities',
+        },
+        { key: 'boq', label: 'BOQ', hint: 'Rates & amounts' },
+        interiorMode && { key: 'quote', label: 'Quotation', hint: 'The document' },
+      ].filter(Boolean),
+    [measureMode, interiorMode],
+  )
+
+  /** Full take-off template — the sheet shows every row from the off. */
+  const { data: measureCatalog } = useQuery({
+    queryKey: ['measurement-catalog', boqType],
+    queryFn: () => api(`/measurement-catalog/${boqType}`),
+    enabled: measureMode,
+    staleTime: 60 * 60 * 1000,
+  })
+
+  // Seed a brand new commercial sheet with the whole take-off. Narrowing to a
+  // subset of rooms is a filter on top of it, not a gate in front of it.
+  useEffect(() => {
+    if (!measureMode || !measureCatalog?.items?.length) return
+    if (quotation?.measurements?.length || measurements.length) return
+    setMeasurements(measureCatalog.items.map((m) => ({ ...m })))
+    setSpaces((measureCatalog.spaces || []).map((s) => s.name))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [measureMode, measureCatalog])
+
+  /** Seed the sheet for the chosen rooms, keeping edits to rows we already had. */
+  const pickSpaces = async (picked) => {
+    try {
+      const res = await api(
+        `/measurement-catalog/${boqType}?spaces=${encodeURIComponent(picked.join(','))}`,
+      )
+      const seeded = res.items || []
+      setMeasurements((prev) => {
+        if (!prev.length) return seeded
+        // preserve any row the user has already touched for a kept space
+        const byName = new Map(prev.map((p) => [`${p.group}|${p.name}`, p]))
+        return seeded.map((s) => {
+          const old = byName.get(`${s.group}|${s.name}`)
+          if (!old) return s
+          const keep = new Set(picked)
+          const edited = old.rows.filter((r) => keep.has(r.space))
+          return { ...s, rows: edited.length ? edited : s.rows, overrideTotal: old.overrideTotal }
+        })
+      })
+      setSpaces(picked)
+      markDirty()
+      toast(`Take-off seeded for ${picked.length} spaces`, { type: 'success' })
+    } catch (e) {
+      toast(e.message || 'Could not load the measurement sheet', { type: 'error' })
+    }
+  }
+
+  const updateMeasurement = (index, next) => {
+    if (locked) return
+    markDirty()
+    setMeasurements((prev) => prev.map((m, i) => (i === index ? next : m)))
+  }
+
+  /**
+   * Copies every measured total onto the BOQ line it feeds. Lump-sum lines keep
+   * their quantity of 1 — the measurement is context for the rate, not a count.
+   */
+  const applyMeasurementsToBoq = () => {
+    if (locked) return
+    const bySortIndex = new Map()
+    const sectionSums = new Map()
+    for (const m of measurements) {
+      const key = `${m.group}|${m.sectionName}`
+      sectionSums.set(key, (sectionSums.get(key) || 0) + measureItemTotal(m))
+      if (m.boqRef?.index >= 0) bySortIndex.set(m.boqRef.index, measureItemTotal(m))
+    }
+    for (const m of measurements) {
+      if (!m.boqTotalLabel || !(m.boqRef?.index >= 0)) continue
+      const key = `${m.group}|${m.sectionName}`
+      bySortIndex.set(
+        m.boqRef.index,
+        m.boqTotal == null || m.boqTotal === ''
+          ? sectionSums.get(key) || 0
+          : Number(m.boqTotal) || 0,
+      )
+    }
+
+    let touched = 0
+    setItems((prev) =>
+      prev.map((it) => {
+        const total = bySortIndex.get(it.sortIndex)
+        if (total == null || it.unit === 'ls') return it
+        touched += 1
+        return { ...it, qty: total, measureNo: 0, width: 0, height: 0 }
+      }),
+    )
+    markDirty()
+    setTab('boq')
+    toast(`Updated ${touched} BOQ quantities from the take-off`, { type: 'success' })
+  }
+
+  /** Logos are stored as upload paths — the document needs servable URLs. */
+  const docMetaResolved = useMemo(
+    () => ({
+      ...docMeta,
+      clientLogo: docMeta.clientLogo ? assetUrl(docMeta.clientLogo) : '',
+      companyLogo: docMeta.companyLogo ? assetUrl(docMeta.companyLogo) : '',
+    }),
+    [docMeta],
+  )
+
   const subtotal = useMemo(
     () => items.reduce((s, i) => s + lineAmount(i), 0),
     [items],
   )
-  const gstAmount = (subtotal * (Number(gst) || 0)) / 100
-  const grand = Math.max(0, subtotal + gstAmount - (Number(discount) || 0))
+  const chargesAmount = (subtotal * (Number(chargesPercent) || 0)) / 100
+  const taxable = subtotal + chargesAmount
+  const gstAmount = (taxable * (Number(gst) || 0)) / 100
+  const grand = Math.max(0, taxable + gstAmount - (Number(discount) || 0))
 
   /** Contiguous runs of the same room, so the sheet reads like a real BOQ. */
   const groups = useMemo(() => {
@@ -799,6 +965,26 @@ function BoqSheet({
     setFocusIdx(afterIdx == null ? items.length : afterIdx + 1)
   }
 
+  /**
+   * Adds a whole new category (the bold section band), not just a row inside an
+   * existing one. Names are kept unique so two fresh categories don't merge into
+   * a single band before they've been renamed.
+   */
+  const addCategory = (afterIdx) => {
+    if (locked) return
+    const taken = new Set(items.map((it) => (it.room || '').trim().toUpperCase()))
+    let name = 'NEW CATEGORY'
+    for (let n = 2; taken.has(name.toUpperCase()); n += 1) name = `NEW CATEGORY ${n}`
+    const insertAt = afterIdx == null ? items.length : afterIdx + 1
+    markDirty()
+    setItems((prev) => {
+      const next = [...prev]
+      next.splice(insertAt, 0, blankLine(name, { material: materialMode }))
+      return next
+    })
+    setFocusRoomIdx(insertAt)
+  }
+
   const removeLine = (idx) => {
     if (locked) return
     markDirty()
@@ -840,8 +1026,36 @@ function BoqSheet({
         '',
       unit: i.unit || 'nos',
       image: i.image || '',
+      // source hierarchy, so the quotation can redraw the template headings
+      slNo: i.slNo || '',
+      group: i.group || '',
+      section: i.section || '',
+      sectionNo: i.sectionNo || '',
+      unitLabel: i.unitLabel || '',
+      note: i.note || '',
+      // stated explicitly: this is what ties a line to its measurement total
+      sortIndex: Number.isFinite(Number(i.sortIndex)) ? Number(i.sortIndex) : 0,
     })),
     attachments: attachments.map(({ _id, ...a }) => a),
+    docMeta,
+    spaces,
+    measurements: measurements.map((m) => ({
+      ...m,
+      overrideTotal:
+        m.overrideTotal === '' || m.overrideTotal == null
+          ? null
+          : Number(m.overrideTotal),
+      rows: (m.rows || []).map((r) => ({
+        space: r.space || '',
+        unit: r.unit || m.unit || 'sft',
+        nos: Number(r.nos) || 0,
+        length: Number(r.length) || 0,
+        width: Number(r.width) || 0,
+        qty: Number(r.qty) || 0,
+      })),
+    })),
+    chargesPercent: Number(chargesPercent) || 0,
+    chargesLabel,
     gstPercent: Number(gst) || 0,
     discount: Number(discount) || 0,
     subtotal,
@@ -849,9 +1063,10 @@ function BoqSheet({
     ...extra,
   })
 
-  const loadInteriorCatalog = async ({ silent } = {}) => {
+  const loadInteriorCatalog = async ({ silent, boqType: override } = {}) => {
+    const type = override || boqType
     try {
-      const res = await api(`/boq-catalog/${boqType}`)
+      const res = await api(`/boq-catalog/${type}`)
       const lines = (res.items || []).map((row, i) => ({
         _key: uid(),
         ...row,
@@ -863,7 +1078,7 @@ function BoqSheet({
       setItems(lines)
       if (!quotation?._id) markDirty()
       if (!silent) {
-        toast(`Loaded ${lines.length} ${BOQ_TYPE_META[boqType]?.label} quotation lines`, {
+        toast(`Loaded ${lines.length} ${BOQ_TYPE_META[type]?.label} quotation lines`, {
           type: 'success',
         })
       }
@@ -878,6 +1093,26 @@ function BoqSheet({
     loadInteriorCatalog({ silent: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [boqType])
+
+  /**
+   * Switching a sheet between residential and commercial swaps the whole
+   * schedule, so confirm before discarding lines the user has already worked on.
+   */
+  const changeBoqType = async (next) => {
+    if (locked || next === boqType) return
+    const label = BOQ_TYPE_META[next]?.label || next
+    if (
+      items.length &&
+      !window.confirm(
+        `Switch this sheet to ${label}?\n\nThe ${items.length} current lines will be replaced with the ${label} quotation template.`,
+      )
+    )
+      return
+    setBoqType(next)
+    setVersionLabel(label)
+    markDirty()
+    await loadInteriorCatalog({ boqType: next })
+  }
 
   const loadMaterialTemplate = async () => {
     if (locked) return
@@ -934,7 +1169,7 @@ function BoqSheet({
       if (next === 'sent')
         toast('Marked as sent to the client', { type: 'success' })
       else if (next === 'approved') {
-        setQuoteView(true)
+        setTab('quote')
         toast('Approved — budget set. Opening quotation.', { type: 'success' })
       }
       else if (next === 'draft')
@@ -960,6 +1195,7 @@ function BoqSheet({
         e.preventDefault()
         if (!locked && !save.isPending) save.mutate(payload())
       }
+      if (e.key === 'Escape') setFullQuote(false)
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
@@ -972,6 +1208,15 @@ function BoqSheet({
     row?.querySelector('[data-field="materialName"], input[data-field="description"]')?.focus()
     setFocusIdx(null)
   }, [focusIdx, items.length])
+
+  // A freshly added category opens with its name selected, ready to be typed over
+  useEffect(() => {
+    if (focusRoomIdx == null) return
+    const input = tableRef.current?.querySelector(`[data-room="${focusRoomIdx}"]`)
+    input?.focus()
+    input?.select()
+    setFocusRoomIdx(null)
+  }, [focusRoomIdx, items.length])
 
   /* ── Excel import / export ── */
   const lineHasContent = (it) =>
@@ -1075,6 +1320,50 @@ function BoqSheet({
     return api('/quotations/upload-image', { method: 'POST', body: form })
   }
 
+  /**
+   * Chrome stamps the document title into its own print header. Left alone it
+   * prints "EPM — Editco Project Management" across a client-facing quotation,
+   * so borrow the title for the duration of the print and put it back after.
+   */
+  const printSheet = () => {
+    const previous = document.title
+    const name =
+      [title?.trim(), project?.clientName?.trim()].filter(Boolean).join(' — ') ||
+      'Quotation'
+    document.title = name
+    const restore = () => {
+      document.title = previous
+      window.removeEventListener('afterprint', restore)
+    }
+    window.addEventListener('afterprint', restore)
+    window.print()
+    // Safari fires afterprint unreliably; make sure the title comes back
+    setTimeout(restore, 1000)
+  }
+
+  const setDoc = (key, value) => {
+    markDirty()
+    setDocMeta((prev) => ({ ...prev, [key]: value }))
+  }
+
+  /** Client / company logo for the quotation letterhead. */
+  const uploadLogo = async (key, file) => {
+    if (!file || !file.type?.startsWith('image/')) {
+      toast('Pick an image file', { type: 'error' })
+      return
+    }
+    setUploading(true)
+    try {
+      const res = await uploadImage(file)
+      setDoc(key, res.url)
+      toast('Logo updated', { type: 'success' })
+    } catch (e) {
+      toast(e.message || 'Upload failed', { type: 'error' })
+    } finally {
+      setUploading(false)
+    }
+  }
+
   const addGalleryImages = async (files) => {
     const images = Array.from(files || []).filter((f) =>
       f.type.startsWith('image/'),
@@ -1175,162 +1464,285 @@ function BoqSheet({
 
         {/* Sheet */}
         <div className="flex min-h-[480px] min-w-0 flex-1 flex-col overflow-hidden rounded-2xl border border-[#e2eaf5] bg-surface shadow-[0_2px_4px_rgba(16,24,40,0.03),0_16px_40px_-24px_rgba(16,24,40,0.25)] lg:min-h-0">
-          {/* Action bar */}
-          <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-2 border-b border-[#edf1f7] px-4 py-3 sm:px-5">
-            {interiorMode ? (
-              <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-[#eadfce] bg-[#fbf8f4] px-3 py-2 text-[12px] text-[#5c5148]">
-                <span className="font-semibold text-[#1c1917]">
-                  {BOQ_TYPE_META[boqType]?.label} quotation
-                </span>
-                <span>
-                  · Cubic interior schedule preloaded · edit No / W / H / Rate, then approve
-                </span>
-                <button
-                  type="button"
-                  onClick={() => loadInteriorCatalog()}
-                  className="ml-auto rounded-lg bg-[#1c1917] px-2.5 py-1 text-[11px] font-semibold text-[#f4efe6] hover:bg-black"
+          {/* ── Command bar: what this is, what it's worth, how to save it ── */}
+          <header className="flex shrink-0 items-center gap-3 border-b border-[#edf1f7] px-3 py-2.5 sm:px-4">
+            <div className="min-w-0 flex-1">
+              <div className="flex items-center gap-1.5">
+                <input
+                  value={title}
+                  disabled={locked}
+                  onChange={(e) => {
+                    markDirty()
+                    setTitle(e.target.value)
+                  }}
+                  className="h-7 min-w-[120px] max-w-full flex-1 rounded-lg border border-transparent bg-transparent px-1.5 text-[16px] font-semibold leading-tight tracking-[-0.022em] text-[#0b1220] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-surface placeholder:text-[#b4c0d0] disabled:opacity-70"
+                  placeholder="Sheet title"
+                />
+                <span
+                  className={cn(
+                    'inline-flex h-[19px] shrink-0 items-center gap-1 rounded-md px-1.5 text-[9.5px] font-bold uppercase tracking-[0.06em] ring-1 ring-inset',
+                    statusMeta.pill,
+                  )}
                 >
-                  Reload template
-                </button>
-              </div>
-            ) : materialMode && !locked ? (
-              <div className="flex w-full flex-wrap items-center gap-2 rounded-xl border border-[#dbe7fb] bg-[#f5f9ff] px-3 py-2 text-[12px] text-[#3b6fd4]">
-                <span className="font-semibold text-[#24b47e]">
-                  {BOQ_TYPE_META[boqType]?.label}
+                  <span className={cn('h-1 w-1 rounded-full', statusMeta.dot)} />
+                  {statusMeta.label}
                 </span>
-                <span>
-                  · Same columns as commercial &amp; residential · import data
-                  rows only, headers optional
-                </span>
-                <button
-                  type="button"
-                  onClick={loadMaterialTemplate}
-                  className="ml-auto rounded-lg bg-[#3ecf8e] px-2.5 py-1 text-[11px] font-semibold text-white hover:bg-[#24b47e]"
-                >
-                  Load {BOQ_TYPE_META[boqType]?.gradeLabel} pack
-                </button>
-              </div>
-            ) : null}
-            <div className="flex flex-1 items-center gap-2">
-              <input
-                value={title}
-                disabled={locked}
-                onChange={(e) => {
-                  markDirty()
-                  setTitle(e.target.value)
-                }}
-                className="h-[34px] min-w-[140px] flex-1 rounded-lg border border-transparent bg-transparent px-2 text-[16px] font-semibold tracking-[-0.02em] text-[#0b1220] outline-none transition hover:bg-[#f4f7fb] focus:border-[#b6cef7] focus:bg-surface placeholder:text-[#b4c0d0] disabled:opacity-70"
-                placeholder="Sheet title"
-              />
-              <span
-                className={cn(
-                  'inline-flex h-6 shrink-0 items-center gap-1.5 rounded-md px-2 text-[10.5px] font-bold uppercase tracking-[0.06em] ring-1 ring-inset',
-                  statusMeta.pill,
+                {dirty && !locked && (
+                  <span
+                    title="Unsaved changes"
+                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-amber-500"
+                  />
                 )}
+              </div>
+              <p className="truncate px-1.5 text-[11px] leading-tight text-[#9aa7ba]">
+                {BOQ_TYPE_META[boqType]?.label || 'Standard'}
+                {project?.name ? ` · ${project.name}` : ''}
+                {project?.clientName ? ` · ${project.clientName}` : ''}
+              </p>
+            </div>
+
+            {/* Grand total and Save live in the right rail, which also carries
+                the breakdown — no second copy here. */}
+            <div className="relative shrink-0">
+              <button
+                type="button"
+                onClick={() => setMenuOpen((v) => !v)}
+                aria-label="More actions"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e4eaf3] bg-surface text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
               >
-                <span className={cn('h-1.5 w-1.5 rounded-full', statusMeta.dot)} />
-                {statusMeta.label}
-              </span>
-              {dirty && !locked && (
-                <span className="inline-flex h-6 shrink-0 items-center rounded-md bg-amber-50 px-2 text-[10.5px] font-bold uppercase tracking-[0.06em] text-amber-700 ring-1 ring-inset ring-amber-200">
-                  Unsaved
-                </span>
-              )}
-              {locked && (
-                <span className="inline-flex h-6 shrink-0 items-center rounded-md bg-emerald-50 px-2 text-[10.5px] font-bold uppercase tracking-[0.06em] text-emerald-700 ring-1 ring-inset ring-emerald-200">
-                  Locked
-                </span>
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+              {menuOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-20"
+                    onClick={() => setMenuOpen(false)}
+                    role="presentation"
+                  />
+                  <div className="absolute right-0 top-9 z-30 w-60 overflow-hidden rounded-xl border border-[#e1e8f1] bg-surface py-1 shadow-[0_20px_50px_-20px_rgba(11,18,32,0.35)]">
+                    {[
+                      {
+                        label: importing ? 'Reading…' : 'Import Excel / CSV',
+                        icon: Upload,
+                        disabled: locked || importing,
+                        run: () => excelInputRef.current?.click(),
+                      },
+                      {
+                        label: 'Download Excel template',
+                        icon: FileSpreadsheet,
+                        run: exportTemplate,
+                      },
+                      interiorMode && {
+                        label: 'Reload Cubic template',
+                        icon: Layers,
+                        disabled: locked,
+                        run: () => loadInteriorCatalog(),
+                      },
+                      materialMode && {
+                        label: 'Material catalog',
+                        icon: Layers,
+                        disabled: locked,
+                        run: () => setCatalogOpen(true),
+                      },
+                      { label: 'Print / PDF', icon: Printer, run: printSheet },
+                      onCancelDraft && {
+                        label: 'Discard draft',
+                        icon: X,
+                        danger: true,
+                        run: onCancelDraft,
+                      },
+                    ]
+                      .filter(Boolean)
+                      .map((a) => (
+                        <button
+                          key={a.label}
+                          type="button"
+                          disabled={a.disabled}
+                          onClick={() => {
+                            setMenuOpen(false)
+                            a.run()
+                          }}
+                          className={cn(
+                            'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-medium transition disabled:opacity-40',
+                            a.danger
+                              ? 'text-red-600 hover:bg-red-50'
+                              : 'text-[#0b1220] hover:bg-[#f4f7fb]',
+                          )}
+                        >
+                          <a.icon className="h-3.5 w-3.5 shrink-0 text-[#9aa7ba]" />
+                          {a.label}
+                        </button>
+                      ))}
+                  </div>
+                </>
               )}
             </div>
 
-            <div className="ml-auto flex shrink-0 flex-wrap items-center justify-end gap-1.5">
-              <input
-                value={versionLabel}
-                disabled={locked}
-                onChange={(e) => {
-                  markDirty()
-                  setVersionLabel(e.target.value)
-                }}
-                className="h-[34px] w-28 rounded-xl border border-[#e4eaf3] bg-[#f7f9fc] px-2.5 text-[12px] font-medium text-secondary outline-none transition focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
-                placeholder="Version"
-              />
-              <input
-                ref={excelInputRef}
-                type="file"
-                accept=".xlsx,.xls,.csv"
-                hidden
-                onChange={(e) => {
-                  importExcel(e.target.files?.[0])
-                  e.target.value = ''
-                }}
-              />
-              <button
-                type="button"
-                disabled={locked || importing}
-                onClick={() => excelInputRef.current?.click()}
-                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 text-[12px] font-semibold text-[#24b47e] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
-              >
-                <Upload className="h-3.5 w-3.5" />
-                {importing ? 'Reading…' : 'Import Excel'}
-              </button>
-              <button
-                type="button"
-                onClick={exportTemplate}
-                className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-surface px-3 text-[12px] font-semibold text-secondary transition hover:border-[#c7dbfb] hover:text-[#24b47e]"
-              >
-                <FileSpreadsheet className="h-3.5 w-3.5" />
-                Excel template
-              </button>
-              {materialMode ? (
-                <button
-                  type="button"
-                  disabled={locked}
-                  onClick={() => setCatalogOpen(true)}
-                  className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#d7e5fc] bg-[#eef4ff] px-3 text-[12px] font-semibold text-[#24b47e] transition hover:border-[#b6cef7] hover:bg-[#e0ebff] disabled:opacity-40"
-                >
-                  <Layers className="h-3.5 w-3.5" />
-                  Materials
-                </button>
-              ) : null}
-              <button
-                type="button"
-                onClick={() => setQuoteView((v) => !v)}
-                className={cn(
-                  'inline-flex h-[34px] items-center gap-1.5 rounded-xl px-3 text-[12px] font-semibold transition',
-                  quoteView
-                    ? 'bg-[#1c1917] text-[#f4efe6]'
-                    : 'border border-[#eadfce] bg-[#fbf8f4] text-[#5c5148] hover:border-[#c47a62]',
-                )}
-              >
-                {quoteView ? 'Hide quotation' : 'Quotation preview'}
-              </button>
-              <div className="flex h-[34px] items-center rounded-xl border border-[#e4eaf3] bg-surface px-0.5">
-                <ToolButton
-                  label="Add line"
-                  disabled={locked}
-                  onClick={() => addLine()}
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                </ToolButton>
-                <ToolButton label="Print / PDF" onClick={() => window.print()}>
-                  <Printer className="h-3.5 w-3.5" />
-                </ToolButton>
-              </div>
-              {onCancelDraft && (
-                <button
-                  type="button"
-                  onClick={onCancelDraft}
-                  className="inline-flex h-[34px] items-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-surface px-3 text-[12px] font-semibold text-secondary transition hover:bg-[#f4f7fb] hover:text-[#0b1220]"
-                >
-                  <X className="h-3.5 w-3.5" />
-                  Discard
-                </button>
+            <input
+              ref={excelInputRef}
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              hidden
+              onChange={(e) => {
+                importExcel(e.target.files?.[0])
+                e.target.value = ''
+              }}
+            />
+          </header>
+
+          {/* ── Steps: quantities → pricing → document, plus this step's tools ── */}
+          <nav className="flex shrink-0 items-center gap-2 border-b border-[#edf1f7] bg-[#fafcfe] px-3 py-1.5 print:hidden sm:px-4">
+            <div className="flex items-center gap-0.5 rounded-xl bg-[#eef2f7] p-0.5">
+              {steps.map((s, i) => {
+                const active = tab === s.key
+                return (
+                  <Fragment key={s.key}>
+                    {i ? (
+                      <ChevronRight className="h-3 w-3 shrink-0 text-[#c3cbd6]" />
+                    ) : null}
+                    <button
+                      type="button"
+                      onClick={() => setTab(s.key)}
+                      title={s.hint}
+                      className={cn(
+                        'rounded-[9px] px-2.5 py-1 text-[12.5px] font-semibold transition',
+                        active
+                          ? 'bg-surface text-[#0b1220] shadow-[0_1px_2px_rgba(16,24,40,0.12)]'
+                          : 'text-[#7c8ba0] hover:text-[#0b1220]',
+                      )}
+                    >
+                      {s.label}
+                    </button>
+                  </Fragment>
+                )
+              })}
+            </div>
+
+            {/* only the tools this step needs */}
+            <div className="ml-auto flex items-center gap-1.5">
+              {tab === 'boq' && (
+                <>
+                  {interiorMode && (
+                    <select
+                      value={boqType}
+                      disabled={locked}
+                      onChange={(e) => changeBoqType(e.target.value)}
+                      title="Property type — switching reloads the template"
+                      className="h-8 cursor-pointer rounded-lg border border-[#e4eaf3] bg-surface px-2 text-[12px] font-semibold text-[#5b6b80] outline-none transition hover:border-[#c7dbfb] disabled:opacity-60"
+                    >
+                      <option value="residential">Residential</option>
+                      <option value="commercial">Commercial</option>
+                    </select>
+                  )}
+                  {!locked && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={() => addLine()}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e4eaf3] bg-surface px-2.5 text-[12px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Row
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => addCategory()}
+                        className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e4eaf3] bg-surface px-2.5 text-[12px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
+                      >
+                        <Layers className="h-3.5 w-3.5" />
+                        Category
+                      </button>
+                    </>
+                  )}
+                </>
+              )}
+
+              {tab === 'quote' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => setHeaderOpen((v) => !v)}
+                    className={cn(
+                      'inline-flex h-8 items-center gap-1.5 rounded-lg border px-2.5 text-[12px] font-semibold transition',
+                      headerOpen
+                        ? 'border-[#0b1220] bg-[#0b1220] text-[#f8fafc]'
+                        : 'border-[#e4eaf3] bg-surface text-[#5b6b80] hover:border-[#c7dbfb]',
+                    )}
+                  >
+                    <ImageIcon className="h-3.5 w-3.5" />
+                    Letterhead
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFullQuote(true)}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e4eaf3] bg-surface px-2.5 text-[12px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb]"
+                  >
+                    <Maximize2 className="h-3.5 w-3.5" />
+                    Full view
+                  </button>
+                  {/* the right rail is hidden on this step, so saving and
+                      approving belong here */}
+                  {!locked && (
+                    <button
+                      type="button"
+                      disabled={save.isPending}
+                      onClick={() => save.mutate(payload())}
+                      className={cn(
+                        'inline-flex h-8 items-center gap-1.5 rounded-lg px-3 text-[12px] font-semibold transition disabled:opacity-50',
+                        dirty
+                          ? 'bg-[#0b1220] text-[#f8fafc] hover:bg-[#1f2937]'
+                          : 'border border-[#e4eaf3] bg-surface text-[#5b6b80] hover:border-[#c7dbfb]',
+                      )}
+                    >
+                      <Save className="h-3.5 w-3.5" />
+                      {save.isPending ? 'Saving…' : dirty ? 'Save' : 'Saved'}
+                    </button>
+                  )}
+                  {status !== 'approved' && (
+                    <button
+                      type="button"
+                      disabled={save.isPending}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            `Approve this BOQ?\n\nProject budget will be set to ${formatInr(grand)}.`,
+                          )
+                        )
+                          return
+                        save.mutate(payload({ status: 'approved' }))
+                      }}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg bg-[#3ecf8e] px-3 text-[12px] font-semibold text-white transition hover:bg-[#24b47e] disabled:opacity-50"
+                    >
+                      <Check className="h-3.5 w-3.5" />
+                      Approve
+                    </button>
+                  )}
+                </>
               )}
             </div>
-          </div>
+          </nav>
+          {measureMode && tab === 'measure' ? (
+            <div className="min-h-0 flex-1 overflow-hidden print:hidden">
+              <MeasurementSheet
+                measurements={measurements}
+                spaces={measureCatalog?.spaces || []}
+                selectedSpaces={spaces}
+                locked={locked}
+                onChange={updateMeasurement}
+                onPickSpaces={pickSpaces}
+                onPushToBoq={applyMeasurementsToBoq}
+              />
+            </div>
+          ) : null}
 
           {/* Table */}
-          <div className="min-h-0 flex-1 overflow-auto" ref={tableRef}>
+          <div
+            className={cn(
+              'min-h-0 flex-1 overflow-auto',
+              tab !== 'boq' && 'hidden',
+            )}
+            ref={tableRef}
+          >
             <input
               ref={rowImageInputRef}
               type="file"
@@ -1436,7 +1848,9 @@ function BoqSheet({
                           <span className="h-3.5 w-[3px] rounded-full bg-[#3ecf8e]" />
                           <input
                             list="boq-rooms"
+                            data-room={g.startIdx}
                             disabled={locked}
+                            title={items[g.startIdx]?.room || ''}
                             value={items[g.startIdx]?.room || ''}
                             onChange={(e) => {
                               const value = e.target.value
@@ -1450,24 +1864,34 @@ function BoqSheet({
                                 ),
                               )
                             }}
-                            className="min-w-[180px] rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[12px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-surface focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
+                            className="min-w-0 flex-1 rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[12px] font-bold uppercase tracking-[0.08em] text-[#1e3a8a] outline-none transition hover:bg-surface focus:border-[#b6cef7] focus:bg-surface disabled:opacity-70"
                           />
-                          <span className="rounded-full bg-surface px-2 py-[2px] text-[10px] font-semibold tabular-nums text-[#8a98ac] ring-1 ring-inset ring-[#e4eaf3]">
+                          <span className="shrink-0 rounded-full bg-surface px-2 py-[2px] text-[10px] font-semibold tabular-nums text-[#8a98ac] ring-1 ring-inset ring-[#e4eaf3]">
                             {g.endIdx - g.startIdx + 1}{' '}
                             {g.endIdx - g.startIdx === 0 ? 'row' : 'rows'}
                           </span>
-                          <span className="ml-auto text-[12px] font-bold tabular-nums text-primary">
+                          <span className="shrink-0 text-[12px] font-bold tabular-nums text-primary">
                             {formatInr(g.total)}
                           </span>
                           {!locked && (
-                            <button
-                              type="button"
-                              title={`Add a line to ${g.room}`}
-                              onClick={() => addLine(g.endIdx, g.room)}
-                              className="rounded-md p-1 text-[#9aa7ba] transition hover:bg-surface hover:text-[#3ecf8e]"
-                            >
-                              <Plus className="h-3.5 w-3.5" />
-                            </button>
+                            <span className="flex shrink-0 items-center gap-0.5">
+                              <button
+                                type="button"
+                                title={`Add a line to ${g.room}`}
+                                onClick={() => addLine(g.endIdx, g.room)}
+                                className="rounded-md p-1 text-[#9aa7ba] transition hover:bg-surface hover:text-[#3ecf8e]"
+                              >
+                                <Plus className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                title="Add a new category below"
+                                onClick={() => addCategory(g.endIdx)}
+                                className="rounded-md p-1 text-[#9aa7ba] transition hover:bg-surface hover:text-[#3ecf8e]"
+                              >
+                                <Layers className="h-3.5 w-3.5" />
+                              </button>
+                            </span>
                           )}
                         </div>
                       </td>
@@ -1783,19 +2207,32 @@ function BoqSheet({
             </datalist>
 
             {!locked && (
-              <button
-                type="button"
-                onClick={() => addLine()}
-                className="flex w-full items-center gap-2 px-4 py-3 text-left text-[12.5px] font-semibold text-[#3ecf8e] transition hover:bg-[#f7faff]"
-              >
-                <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#eef4ff]">
-                  <Plus className="h-3.5 w-3.5" />
-                </span>
-                Add row
-                <span className="font-normal text-[#b4c0d0]">
+              <div className="flex flex-wrap items-center gap-1 px-4 py-3">
+                <button
+                  type="button"
+                  onClick={() => addLine()}
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-[12.5px] font-semibold text-[#3ecf8e] transition hover:bg-[#f7faff]"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#eef4ff]">
+                    <Plus className="h-3.5 w-3.5" />
+                  </span>
+                  Add row
+                </button>
+                <button
+                  type="button"
+                  onClick={() => addCategory()}
+                  title="Start a new category band at the end of the sheet"
+                  className="flex items-center gap-2 rounded-lg px-2 py-1 text-left text-[12.5px] font-semibold text-[#3ecf8e] transition hover:bg-[#f7faff]"
+                >
+                  <span className="flex h-5 w-5 items-center justify-center rounded-md bg-[#eef4ff]">
+                    <Layers className="h-3.5 w-3.5" />
+                  </span>
+                  Add category
+                </button>
+                <span className="text-[12.5px] font-normal text-[#b4c0d0]">
                   · import Excel/CSV with the same columns (headers optional)
                 </span>
-              </button>
+              </div>
             )}
           </div>
 
@@ -1813,66 +2250,28 @@ function BoqSheet({
               </span>{' '}
               {byRoom.length === 1 ? 'section' : 'sections'}
             </span>
-            <span className="ml-auto">
-              Subtotal{' '}
-              <span className="font-semibold tabular-nums text-[#0b1220]">
-                {formatInr(subtotal)}
-              </span>
-            </span>
+            {/* the subtotal is already broken down in the right rail */}
           </div>
-        </div>
 
         {quoteView && interiorMode ? (
-          <div className="min-h-[420px] min-w-0 overflow-y-auto rounded-2xl bg-[#ebe4d8] p-3 sm:p-5 lg:w-[52%] lg:min-h-0">
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-              <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#8a7d70]">
-                Quotation · page wise
-              </p>
-              <div className="flex items-center gap-2">
-                <span className="text-[13px] font-semibold tabular-nums text-[#1c1917]">
-                  {formatInr(grand)}
-                </span>
-                <button
-                  type="button"
-                  disabled={save.isPending}
-                  onClick={() => save.mutate(payload())}
-                  className="h-8 rounded-lg bg-[#1c1917] px-3 text-[11px] font-semibold text-[#f4efe6]"
-                >
-                  Save
-                </button>
-                {status !== 'approved' ? (
-                  <button
-                    type="button"
-                    disabled={save.isPending}
-                    onClick={() => {
-                      if (
-                        !window.confirm(
-                          `Approve this BOQ?\n\nProject budget will be set to ${formatInr(grand)}.`,
-                        )
-                      )
-                        return
-                      save.mutate(payload({ status: 'approved' }))
-                      setQuoteView(true)
-                    }}
-                    className="h-8 rounded-lg bg-[#3ecf8e] px-3 text-[11px] font-semibold text-white"
-                  >
-                    Approve &amp; set budget
-                  </button>
-                ) : null}
-              </div>
-            </div>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#ebe4d8] p-3 print:hidden sm:p-4">
             <CubicQuoteDocument
               title={title}
               project={project}
               tenant={tenant}
               boqType={boqType}
               items={items}
+              template={template}
               gst={gst}
+              chargesPercent={chargesPercent}
+              chargesLabel={chargesLabel}
               discount={discount}
               status={status}
+              docMeta={docMetaResolved}
             />
           </div>
         ) : null}
+        </div>
 
         {/* Right panel */}
         <aside
@@ -1903,6 +2302,39 @@ function BoqSheet({
                   {formatInr(subtotal)}
                 </span>
               </div>
+              {interiorMode && (
+                <div className="flex items-center justify-between gap-2">
+                  <span
+                    className="truncate text-[#8a98ac]"
+                    title={chargesLabel || 'Design & handling charges'}
+                  >
+                    {chargesLabel
+                      ? chargesLabel.replace(/\s*[\d.]+\s*%\s*$/, '')
+                      : 'Design & handling'}
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="relative">
+                      <input
+                        type="number"
+                        min="0"
+                        disabled={locked}
+                        value={chargesPercent}
+                        onChange={(e) => {
+                          markDirty()
+                          setChargesPercent(Number(e.target.value))
+                        }}
+                        className="h-7 w-16 rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] pl-2 pr-5 text-right text-[12px] tabular-nums text-primary outline-none transition focus:border-[#b6cef7] focus:bg-surface focus:ring-2 focus:ring-[#3ecf8e]/10 disabled:opacity-50"
+                      />
+                      <span className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 text-[10.5px] text-[#9aa7ba]">
+                        %
+                      </span>
+                    </div>
+                    <span className="w-[84px] text-right font-semibold tabular-nums text-primary">
+                      {formatInr(chargesAmount)}
+                    </span>
+                  </div>
+                </div>
+              )}
               <div className="flex items-center justify-between gap-2">
                 <span className="text-[#8a98ac]">GST</span>
                 <div className="flex items-center gap-2">
@@ -2032,7 +2464,7 @@ function BoqSheet({
                       )
                         return
                       save.mutate(payload({ status: 'approved' }))
-                      setQuoteView(true)
+                      setTab('quote')
                     }}
                     className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl bg-emerald-600 text-[12.5px] font-semibold text-white shadow-[0_6px_16px_-8px_rgba(5,150,105,0.8)] transition hover:bg-emerald-700 disabled:opacity-40"
                   >
@@ -2205,23 +2637,292 @@ function BoqSheet({
         </div>
       )}
 
-      <BoqPrintView
-        title={title}
-        versionLabel={versionLabel}
-        project={project}
-        status={status}
-        items={items}
-        attachments={attachments}
-        subtotal={subtotal}
-        gst={gst}
-        gstAmount={gstAmount}
-        discount={discount}
-        grand={grand}
-        byRoom={byRoom}
-        materialMode={materialMode}
-        boqType={boqType}
-      />
+      {headerOpen && interiorMode && (
+        <QuoteHeaderEditor
+          docMeta={docMeta}
+          setDoc={setDoc}
+          onUploadLogo={uploadLogo}
+          uploading={uploading}
+          locked={locked}
+          project={project}
+          tenant={tenant}
+          measured={boqType !== 'commercial'}
+          onClose={() => setHeaderOpen(false)}
+        />
+      )}
+
+      {/* Full-bleed reader for the whole quotation — the docked panel only gets
+          about half the width, which is too tight for a 9-column sheet. */}
+      {fullQuote && interiorMode && (
+        <div className="fixed inset-0 z-[90] flex flex-col bg-[#1c1917]/60 backdrop-blur-sm print:hidden">
+          <header className="flex shrink-0 items-center gap-3 border-b border-[#cfc2b0] bg-[#faf6f0] px-4 py-2.5 sm:px-6">
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-[13px] font-semibold leading-tight text-[#1c1917]">
+                {title || 'Quotation'}
+              </p>
+              <p className="mt-0.5 truncate text-[11px] leading-tight text-[#8a7d70]">
+                {BOQ_TYPE_META[boqType]?.label || 'Interior'} ·{' '}
+                {project?.name || 'Project'} · {items.length} lines ·{' '}
+                <span className="font-semibold tabular-nums text-[#1c1917]">
+                  {formatInr(grand)}
+                </span>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setHeaderOpen((v) => !v)}
+              className={cn(
+                'inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border px-3 text-[12px] font-semibold transition',
+                headerOpen
+                  ? 'border-[#1c1917] bg-[#1c1917] text-[#f4efe6]'
+                  : 'border-[#cfc2b0] bg-white text-[#1c1917] hover:bg-[#f2ece2]',
+              )}
+            >
+              <ImageIcon className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Letterhead</span>
+            </button>
+            <button
+              type="button"
+              onClick={printSheet}
+              className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#cfc2b0] bg-white px-3 text-[12px] font-semibold text-[#1c1917] transition hover:bg-[#f2ece2]"
+            >
+              <Printer className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Print / PDF</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setFullQuote(false)}
+              aria-label="Close quotation viewer"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1c1917] text-[#f4efe6] transition hover:bg-[#3d352e]"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </header>
+          <div className="min-h-0 flex-1 overflow-y-auto bg-[#ebe4d8] px-3 py-5 sm:px-6 sm:py-8">
+            <CubicQuoteDocument
+              title={title}
+              project={project}
+              tenant={tenant}
+              boqType={boqType}
+              items={items}
+              template={template}
+              gst={gst}
+              chargesPercent={chargesPercent}
+              chargesLabel={chargesLabel}
+              discount={discount}
+              status={status}
+              docMeta={docMetaResolved}
+            />
+          </div>
+        </div>
+      )}
+
+      {/* Interior sheets print as the Cubic quotation; everything else keeps the
+          generic BOQ print layout. Exactly one of the two reaches paper. */}
+      {interiorMode ? (
+        <div className="hidden print:block">
+          <CubicQuoteDocument
+            title={title}
+            project={project}
+            tenant={tenant}
+            boqType={boqType}
+            items={items}
+            template={template}
+            gst={gst}
+            chargesPercent={chargesPercent}
+            chargesLabel={chargesLabel}
+            discount={discount}
+            status={status}
+            docMeta={docMetaResolved}
+          />
+        </div>
+      ) : (
+        <BoqPrintView
+          title={title}
+          versionLabel={versionLabel}
+          project={project}
+          status={status}
+          items={items}
+          attachments={attachments}
+          subtotal={subtotal}
+          gst={gst}
+          gstAmount={gstAmount}
+          discount={discount}
+          grand={grand}
+          byRoom={byRoom}
+          materialMode={materialMode}
+          boqType={boqType}
+        />
+      )}
     </>
+  )
+}
+
+/** Editable letterhead: client logo + the details printed above the table. */
+function QuoteHeaderEditor({
+  docMeta,
+  setDoc,
+  onUploadLogo,
+  uploading,
+  locked,
+  project,
+  tenant,
+  measured,
+  onClose,
+}) {
+  const logoInput = useRef(null)
+  const companyInput = useRef(null)
+
+  const Text = ({ label, k, placeholder, wide }) => (
+    <label className={cn('block', wide && 'sm:col-span-2')}>
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#a3988a]">
+        {label}
+      </span>
+      <input
+        disabled={locked}
+        value={docMeta[k] || ''}
+        onChange={(e) => setDoc(k, e.target.value)}
+        placeholder={placeholder}
+        className="mt-0.5 h-8 w-full rounded-lg border border-[#e0d6c8] bg-white px-2 text-[12px] text-[#1c1917] outline-none transition focus:border-[#c47a62] disabled:opacity-60"
+      />
+    </label>
+  )
+
+  const LogoRow = ({ label, k, inputRef, fallback }) => (
+    <div className="flex items-center gap-3 rounded-xl border border-[#e0d6c8] bg-white p-2.5">
+      <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#faf6f0] ring-1 ring-inset ring-[#efe6d8]">
+        {docMeta[k] ? (
+          <img
+            src={assetUrl(docMeta[k])}
+            alt={label}
+            className="max-h-full max-w-full object-contain"
+          />
+        ) : (
+          <span className="px-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#b8ab9c]">
+            {fallback}
+          </span>
+        )}
+      </div>
+      <div className="min-w-0 flex-1">
+        <p className="text-[11.5px] font-semibold text-[#1c1917]">{label}</p>
+        <div className="mt-1 flex flex-wrap gap-1.5">
+          <button
+            type="button"
+            disabled={locked || uploading}
+            onClick={() => inputRef.current?.click()}
+            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#cfc2b0] bg-white px-2.5 text-[11px] font-semibold text-[#1c1917] transition hover:bg-[#faf6f0] disabled:opacity-50"
+          >
+            <Upload className="h-3 w-3" />
+            {uploading ? 'Uploading…' : docMeta[k] ? 'Replace' : 'Upload'}
+          </button>
+          {docMeta[k] ? (
+            <button
+              type="button"
+              disabled={locked}
+              onClick={() => setDoc(k, '')}
+              className="inline-flex h-7 items-center rounded-lg px-2 text-[11px] font-semibold text-[#b0705c] transition hover:bg-[#f7ece7] disabled:opacity-50"
+            >
+              Remove
+            </button>
+          ) : null}
+        </div>
+        <input
+          ref={inputRef}
+          type="file"
+          accept="image/*"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            e.target.value = ''
+            if (f) onUploadLogo(k, f)
+          }}
+        />
+      </div>
+    </div>
+  )
+
+  return (
+    <div
+      className="fixed inset-0 z-[95] flex items-start justify-center overflow-y-auto bg-[#1c1917]/55 p-4 backdrop-blur-sm print:hidden sm:p-8"
+      role="presentation"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose()
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-label="Letterhead"
+        className="my-auto w-full max-w-[640px] rounded-2xl border border-[#e0d6c8] bg-[#faf6f0] p-4 shadow-[0_30px_70px_-25px_rgba(28,25,23,0.6)] sm:p-5"
+      >
+      <div className="flex items-center gap-2">
+        <div className="min-w-0">
+          <p className="text-[13px] font-semibold text-[#1c1917]">Letterhead</p>
+          <p className="text-[11.5px] text-[#a3988a]">
+            Printed above the table on page 1
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={onClose}
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-[#a3988a] transition hover:bg-white hover:text-[#1c1917]"
+          aria-label="Close letterhead editor"
+        >
+          <X className="h-4 w-4" />
+        </button>
+      </div>
+
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <LogoRow
+          label="Company logo"
+          k="companyLogo"
+          inputRef={companyInput}
+          fallback={tenant?.name || 'Your logo'}
+        />
+        <LogoRow
+          label="Client logo"
+          k="clientLogo"
+          inputRef={logoInput}
+          fallback="Client logo"
+        />
+      </div>
+
+      <div className="mt-2.5 grid gap-2 sm:grid-cols-2">
+        <Text label="Customer" k="customerName" placeholder={project?.clientName || 'Client name'} />
+        <Text label="Quote no." k="quoteNo" placeholder="C2604-110" />
+        <Text
+          label="Client address"
+          k="clientAddress"
+          placeholder={project?.location || 'Site address'}
+          wide
+        />
+        <Text label="Date" k="quoteDate" placeholder="30-04-2026" />
+        <Text
+          label="Company address"
+          k="companyAddress"
+          placeholder={tenant?.address || 'Registered address'}
+        />
+        <Text label="Company phone" k="companyPhone" placeholder="040-40047888" />
+        {measured ? (
+          <>
+            <Text label="Architect" k="architect" placeholder="Mr. Rajiv" />
+            <Text label="Email id" k="emailId" placeholder="name@cubicassociates.com" />
+            <Text label="Contact no." k="contactNo" placeholder="+91 99085 50665" />
+          </>
+        ) : null}
+      </div>
+
+      <div className="mt-4 flex justify-end">
+        <button
+          type="button"
+          onClick={onClose}
+          className="h-9 rounded-lg bg-[#1c1917] px-4 text-[12.5px] font-semibold text-[#f4efe6] transition hover:bg-black"
+        >
+          Done
+        </button>
+      </div>
+      </section>
+    </div>
   )
 }
 
