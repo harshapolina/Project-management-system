@@ -1,7 +1,14 @@
 import { useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useParams } from 'react-router-dom'
-import { FolderOpen, Upload as UploadIcon } from 'lucide-react'
+import {
+  Eye,
+  EyeOff,
+  FolderOpen,
+  Pencil,
+  Trash2,
+  Upload as UploadIcon,
+} from 'lucide-react'
 import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { capabilitiesForUser } from '../../lib/roles'
 import {
@@ -31,6 +38,7 @@ export function ProjectFiles() {
   const [folder, setFolder] = useState('drawings')
   const [dragging, setDragging] = useState(false)
   const inputRef = useRef(null)
+  const [editing, setEditing] = useState(null)
   const qc = useQueryClient()
   const user = useAuthStore((s) => s.user)
   const tenant = useAuthStore((s) => s.tenant)
@@ -88,6 +96,26 @@ const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1)
       for (const f of failures) {
         toast(`${f.name} — ${f.reason}`, { type: 'error' })
       }
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const renameFile = useMutation({
+    mutationFn: ({ fileId, ...body }) =>
+      api(`/files/${fileId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['files', id] })
+      setEditing(null)
+      toast('File updated', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const removeFile = useMutation({
+    mutationFn: (fileId) => api(`/files/${fileId}`, { method: 'DELETE' }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['files', id] })
+      toast('File deleted', { type: 'success' })
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
@@ -203,11 +231,104 @@ const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1)
                         window.open(assetUrl(latest.url), '_blank')
                     }}
                   />
-                  {f.clientVisible && (
-                    <div className="flex flex-wrap gap-1.5 p-3">
-                      <StatusChip status="completed" label="Client visible" />
-                    </div>
-                  )}
+                  <div className="flex items-center gap-1.5 p-3">
+                    {editing === f._id ? (
+                      <form
+                        className="flex w-full items-center gap-1.5"
+                        onSubmit={(e) => {
+                          e.preventDefault()
+                          const name = new FormData(e.currentTarget)
+                            .get('name')
+                            ?.toString()
+                            .trim()
+                          if (!name) return
+                          renameFile.mutate({ fileId: f._id, name })
+                        }}
+                      >
+                        <input
+                          name="name"
+                          defaultValue={f.name}
+                          autoFocus
+                          onKeyDown={(e) => {
+                            if (e.key === 'Escape') setEditing(null)
+                          }}
+                          className="min-w-0 flex-1 rounded-lg border border-[#c7dbfb] bg-surface px-2 py-1 text-[12px] text-primary outline-none"
+                        />
+                        <button
+                          type="submit"
+                          disabled={renameFile.isPending}
+                          className="rounded-lg bg-[#3ecf8e] px-2.5 py-1 text-[11px] font-semibold text-white disabled:opacity-50"
+                        >
+                          Save
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setEditing(null)}
+                          className="rounded-lg px-2 py-1 text-[11px] font-semibold text-secondary"
+                        >
+                          Cancel
+                        </button>
+                      </form>
+                    ) : (
+                      <>
+                        {f.clientVisible && (
+                          <StatusChip status="completed" label="Client visible" />
+                        )}
+                        {canManage && (
+                          <div className="ml-auto flex items-center gap-0.5">
+                            <button
+                              type="button"
+                              title="Rename"
+                              onClick={() => setEditing(f._id)}
+                              className="rounded-md p-1.5 text-secondary transition hover:bg-surface hover:text-primary"
+                            >
+                              <Pencil className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              title={
+                                f.clientVisible
+                                  ? 'Hide from the client portal'
+                                  : 'Show in the client portal'
+                              }
+                              onClick={() =>
+                                renameFile.mutate({
+                                  fileId: f._id,
+                                  clientVisible: !f.clientVisible,
+                                })
+                              }
+                              className="rounded-md p-1.5 text-secondary transition hover:bg-surface hover:text-primary"
+                            >
+                              {f.clientVisible ? (
+                                <Eye className="h-3.5 w-3.5" />
+                              ) : (
+                                <EyeOff className="h-3.5 w-3.5" />
+                              )}
+                            </button>
+                            <button
+                              type="button"
+                              title="Delete"
+                              disabled={removeFile.isPending}
+                              onClick={() => {
+                                if (
+                                  !window.confirm(
+                                    `Delete ${f.name}?
+
+All ${f.versions?.length || 1} version(s) go with it. This cannot be undone.`,
+                                  )
+                                )
+                                  return
+                                removeFile.mutate(f._id)
+                              }}
+                              className="rounded-md p-1.5 text-secondary transition hover:bg-red-50 hover:text-red-600 disabled:opacity-40"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
               )
             })}

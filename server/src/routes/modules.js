@@ -813,6 +813,35 @@ router.patch(
   }),
 )
 
+/**
+ * Removes the record and every version of it. The stored blobs are left in
+ * place deliberately — a version URL may already be referenced from an
+ * activity entry or a shared link, and a dangling file is a smaller problem
+ * than a broken one.
+ */
+router.delete(
+  '/files/:id',
+  requireAuth,
+  requirePermission('files.manage'),
+  asyncHandler(async (req, res) => {
+    const file = await ProjectFile.findById(req.params.id)
+    assertTenantDoc(file, req, 'File')
+
+    const { name, projectId } = file
+    await file.deleteOne()
+
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId,
+        actor: req.user._id,
+        type: 'file_deleted',
+        message: `${req.user.name} deleted ${name}`,
+      }),
+    )
+    res.json({ success: true })
+  }),
+)
+
 /* ─── Procurement ─── */
 router.get(
   '/vendors',
