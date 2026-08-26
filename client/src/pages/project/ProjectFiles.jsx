@@ -41,13 +41,30 @@ export function ProjectFiles() {
     queryFn: () => api(`/files?projectId=${id}&folder=${folder}`),
   })
 
+/**
+ * Serverless functions cap the request body at 4.5 MB, so a larger file fails
+ * at the platform before any of our code runs — the person just sees a generic
+ * failure. Catch it here and say so plainly.
+ */
+const MAX_UPLOAD_BYTES = 4 * 1024 * 1024
+const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1)
+
   const upload = useMutation({
     mutationFn: async (fileList) => {
       const files = Array.from(fileList || [])
       if (!files.length) return { ok: 0, fail: 0 }
       let ok = 0
-      let fail = 0
+      // Keep why each file failed — "1 failed" with no reason leaves the person
+      // holding a rejected drawing with nothing to act on.
+      const failures = []
       for (const file of files) {
+        if (file.size > MAX_UPLOAD_BYTES) {
+          failures.push({
+            name: file.name,
+            reason: `${mb(file.size)} MB — too large. The hosting limit is ${mb(MAX_UPLOAD_BYTES)} MB per file.`,
+          })
+          continue
+        }
         try {
           const fd = new FormData()
           fd.append('file', file)
@@ -56,16 +73,21 @@ export function ProjectFiles() {
           fd.append('name', file.name)
           await api('/files', { method: 'POST', body: fd })
           ok += 1
-        } catch {
-          fail += 1
+        } catch (err) {
+          failures.push({
+            name: file.name,
+            reason: err?.message || 'Upload failed',
+          })
         }
       }
-      return { ok, fail }
+      return { ok, failures }
     },
-    onSuccess: ({ ok, fail }) => {
+    onSuccess: ({ ok, failures }) => {
       qc.invalidateQueries({ queryKey: ['files', id] })
       if (ok) toast(`${ok} file${ok > 1 ? 's' : ''} uploaded`, { type: 'success' })
-      if (fail) toast(`${fail} failed`, { type: 'error' })
+      for (const f of failures) {
+        toast(`${f.name} — ${f.reason}`, { type: 'error' })
+      }
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
