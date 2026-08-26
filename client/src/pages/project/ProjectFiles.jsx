@@ -92,15 +92,6 @@ const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1)
     onError: (e) => toast(e.message, { type: 'error' }),
   })
 
-  const updateStatus = useMutation({
-    mutationFn: ({ fileId, status }) =>
-      api(`/files/${fileId}`, {
-        method: 'PATCH',
-        body: JSON.stringify({ status }),
-      }),
-    onSuccess: () => qc.invalidateQueries({ queryKey: ['files', id] }),
-  })
-
   const files = data?.files || []
   const openPicker = () => inputRef.current?.click()
   const onPick = (e) => {
@@ -212,28 +203,11 @@ const mb = (bytes) => (bytes / (1024 * 1024)).toFixed(1)
                         window.open(assetUrl(latest.url), '_blank')
                     }}
                   />
-                  <div className="flex flex-wrap gap-1.5 p-3">
-                    {canManage && ['draft', 'sent', 'approved', 'rejected'].map((s) => (
-                      <button
-                        key={s}
-                        type="button"
-                        onClick={() =>
-                          updateStatus.mutate({ fileId: f._id, status: s })
-                        }
-                        className={cn(
-                          'rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize transition',
-                          f.status === s
-                            ? PILL_ACTIVE
-                            : 'bg-[#ebebed] text-[#6e6e73]',
-                        )}
-                      >
-                        {s}
-                      </button>
-                    ))}
-                    {f.clientVisible && (
+                  {f.clientVisible && (
+                    <div className="flex flex-wrap gap-1.5 p-3">
                       <StatusChip status="completed" label="Client visible" />
-                    )}
-                  </div>
+                    </div>
+                  )}
                 </div>
               )
             })}
