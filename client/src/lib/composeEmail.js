@@ -53,7 +53,7 @@ export function poEmailDraft(po) {
 export function rfqEmailDraft(rfq, vendor) {
   const lines = (rfq?.items || []).map((it, i) => {
     const qty = Number(it.qty) || 0
-    return `${i + 1}. ${it.description || 'Item'} — ${qty} ${it.unit || 'nos'}`
+    return `${i + 1}. ${it.description || 'Item'} — Qty ${qty} ${it.unit || 'nos'}`
   })
   const project = rfq?.projectId?.name ? ` for ${rfq.projectId.name}` : ''
   const closing = rfq?.closingDate
@@ -64,6 +64,7 @@ export function rfqEmailDraft(rfq, vendor) {
     '',
     `Request for quotation ${rfq?.rfqNumber || ''}${project}:`,
     '',
+    'Materials (please quote your rate — our BOQ rates are not shared):',
     ...(lines.length ? lines : ['(item list attached separately)']),
     '',
     'Kindly quote your best rate per unit, including GST, freight, loading and installation where applicable.',

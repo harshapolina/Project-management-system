@@ -61,9 +61,60 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
   const [picked, setPicked] = useState(() => new Set())
   const [closing, setClosing] = useState('')
   const [notes, setNotes] = useState('')
+  const [extraRows, setExtraRows] = useState([])
   if (!open) return null
 
-  const total = items.reduce((s, i) => s + num(i.amount), 0)
+  const materialLines = [
+    ...items.map((it) => ({
+      key: it._key || it._id,
+      description: it.description || 'Item',
+      qty: num(it.qty),
+      unit: it.unit || 'nos',
+      fromBoq: true,
+    })),
+    ...extraRows,
+  ]
+
+  const addMaterialRow = () => {
+    setExtraRows((rows) => [
+      ...rows,
+      {
+        key: `extra-${Date.now()}-${rows.length}`,
+        description: '',
+        qty: 1,
+        unit: 'nos',
+        fromBoq: false,
+      },
+    ])
+  }
+
+  const updateExtra = (key, patch) => {
+    setExtraRows((rows) =>
+      rows.map((r) => (r.key === key ? { ...r, ...patch } : r)),
+    )
+  }
+
+  const removeExtra = (key) => {
+    setExtraRows((rows) => rows.filter((r) => r.key !== key))
+  }
+
+  const submitItems = materialLines
+    .filter((l) => String(l.description || '').trim())
+    .map((l) => {
+      if (l.fromBoq) {
+        const src = items.find((i) => (i._key || i._id) === l.key)
+        return src
+      }
+      return {
+        _key: l.key,
+        description: l.description.trim(),
+        qty: num(l.qty) || 1,
+        unit: l.unit || 'nos',
+        rate: 0,
+        amount: 0,
+      }
+    })
+    .filter(Boolean)
 
   return (
     <div
@@ -74,7 +125,7 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
       <section
         role="dialog"
         aria-modal="true"
-        className="my-auto w-full max-w-[560px] rounded-2xl border border-[#e1e8f1] bg-surface p-5 shadow-[0_30px_70px_-25px_rgba(11,18,32,0.6)]"
+        className="my-auto w-full max-w-[640px] rounded-2xl border border-[#e1e8f1] bg-surface p-5 shadow-[0_30px_70px_-25px_rgba(11,18,32,0.6)]"
       >
         <div className="flex items-start gap-3">
           <div className="min-w-0">
@@ -82,8 +133,9 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
               Request for quotation
             </h3>
             <p className="mt-0.5 text-[12px] text-[#8a98ac]">
-              {items.length} item{items.length === 1 ? '' : 's'} ·{' '}
-              {formatInr(total)} at BOQ rates
+              {materialLines.length} material line
+              {materialLines.length === 1 ? '' : 's'} · BOQ amounts are not
+              shared with vendors
             </p>
           </div>
           <button
@@ -96,17 +148,107 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
           </button>
         </div>
 
-        <div className="mt-4 max-h-[26vh] overflow-y-auto rounded-xl border border-[#e9eef6] bg-[#fbfcfe] p-2">
-          {items.map((it) => (
-            <div key={it._key} className="flex gap-2 px-1 py-1 text-[12px]">
-              <span className="min-w-0 flex-1 truncate text-[#0b1220]">
-                {it.description}
-              </span>
-              <span className="shrink-0 tabular-nums text-[#8a98ac]">
-                {num(it.qty)} {it.unit || 'nos'}
-              </span>
-            </div>
-          ))}
+        <div className="mt-4 overflow-hidden rounded-xl border border-[#e9eef6]">
+          <div className="flex items-center justify-between gap-2 border-b border-[#e9eef6] bg-[#f4f7fb] px-3 py-2">
+            <p className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9aa7ba]">
+              Materials to send
+            </p>
+            <button
+              type="button"
+              onClick={addMaterialRow}
+              className="inline-flex items-center gap-1 rounded-lg border border-[#e4eaf3] bg-surface px-2 py-1 text-[11px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb]"
+            >
+              <Plus className="h-3 w-3" />
+              Add row
+            </button>
+          </div>
+          <div className="max-h-[32vh] overflow-auto">
+            <table className="w-full border-collapse text-[12px]">
+              <thead>
+                <tr className="bg-[#fbfcfe] text-[10px] font-bold uppercase tracking-[0.06em] text-[#7c8ba0] [&>th]:px-2.5 [&>th]:py-1.5 [&>th]:text-left">
+                  <th>Item</th>
+                  <th className="w-20 text-right">Qty</th>
+                  <th className="w-16">Unit</th>
+                  <th className="w-24 text-right">Vendor rate</th>
+                  <th className="w-8" />
+                </tr>
+              </thead>
+              <tbody>
+                {materialLines.map((line) => (
+                  <tr
+                    key={line.key}
+                    className="[&>td]:border-t [&>td]:border-[#eef2f7] [&>td]:px-2.5 [&>td]:py-1.5"
+                  >
+                    <td>
+                      {line.fromBoq ? (
+                        <span className="text-[#0b1220]">{line.description}</span>
+                      ) : (
+                        <input
+                          value={line.description}
+                          onChange={(e) =>
+                            updateExtra(line.key, {
+                              description: e.target.value,
+                            })
+                          }
+                          placeholder="Material / work description"
+                          className="h-8 w-full rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-[12px] outline-none focus:border-[#b6cef7] focus:bg-surface"
+                        />
+                      )}
+                    </td>
+                    <td className="text-right">
+                      {line.fromBoq ? (
+                        <span className="tabular-nums text-[#5b6b80]">
+                          {line.qty}
+                        </span>
+                      ) : (
+                        <input
+                          type="number"
+                          step="any"
+                          value={line.qty}
+                          onChange={(e) =>
+                            updateExtra(line.key, { qty: e.target.value })
+                          }
+                          className="h-8 w-full rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-right text-[12px] tabular-nums outline-none focus:border-[#b6cef7] focus:bg-surface"
+                        />
+                      )}
+                    </td>
+                    <td>
+                      {line.fromBoq ? (
+                        <span className="text-[#5b6b80]">{line.unit}</span>
+                      ) : (
+                        <input
+                          value={line.unit}
+                          onChange={(e) =>
+                            updateExtra(line.key, { unit: e.target.value })
+                          }
+                          className="h-8 w-full rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-[12px] outline-none focus:border-[#b6cef7] focus:bg-surface"
+                        />
+                      )}
+                    </td>
+                    <td className="text-right text-[11px] font-medium text-[#9aa7ba]">
+                      —
+                    </td>
+                    <td>
+                      {!line.fromBoq ? (
+                        <button
+                          type="button"
+                          onClick={() => removeExtra(line.key)}
+                          aria-label="Remove row"
+                          className="flex h-7 w-7 items-center justify-center rounded-md text-[#9aa7ba] hover:bg-[#fdf2f2] hover:text-[#b42318]"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      ) : null}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+          <p className="border-t border-[#e9eef6] bg-[#ecfdf5] px-3 py-2 text-[11px] text-[#0b7a52]">
+            Vendors only receive Item, Qty and Unit — your BOQ rate and amount
+            stay internal.
+          </p>
         </div>
 
         <p className="mt-4 text-[11px] font-bold uppercase tracking-[0.1em] text-[#9aa7ba]">
@@ -182,42 +324,45 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
               type="date"
               value={closing}
               onChange={(e) => setClosing(e.target.value)}
-              className="mt-1 h-9 w-full rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-[12.5px] outline-none focus:border-[#b6cef7] focus:bg-surface"
+              className="mt-1 h-9 w-full rounded-xl border border-[#e4eaf3] bg-[#f7f9fc] px-3 text-[12.5px] outline-none focus:border-[#b6cef7] focus:bg-surface"
             />
           </label>
-          <label className="block">
+          <label className="block sm:col-span-1">
             <span className="text-[11px] font-bold uppercase tracking-[0.1em] text-[#9aa7ba]">
               Notes to vendor
             </span>
             <input
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Delivery to site, GST inclusive…"
-              className="mt-1 h-9 w-full rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-[12.5px] outline-none focus:border-[#b6cef7] focus:bg-surface"
+              placeholder="Optional note (no pricing)"
+              className="mt-1 h-9 w-full rounded-xl border border-[#e4eaf3] bg-[#f7f9fc] px-3 text-[12.5px] outline-none focus:border-[#b6cef7] focus:bg-surface"
             />
           </label>
         </div>
 
-        {picked.size > 0 && picked.size < 3 && (
-          <p className="mt-3 rounded-lg bg-[#fff8ed] px-3 py-2 text-[11.5px] text-[#a2620f]">
+        {picked.size > 0 && picked.size < 3 ? (
+          <p className="mt-3 text-[11.5px] text-[#a2620f]">
             Only {picked.size} vendor{picked.size === 1 ? '' : 's'} selected — three
-            or more gives you a real comparison.
+            or more gives a fairer L1 comparison.
           </p>
-        )}
+        ) : null}
 
         <button
           type="button"
-          disabled={!picked.size || saving}
+          disabled={saving || picked.size === 0 || submitItems.length === 0}
           onClick={() =>
             onCreate({
               vendorIds: [...picked],
               closingDate: closing || undefined,
-              notes,
+              notes: notes.trim() || undefined,
+              items: submitItems,
             })
           }
-          className="mt-4 h-10 w-full rounded-xl bg-[#3ecf8e] text-[13px] font-semibold text-white transition hover:bg-[#24b47e] disabled:opacity-50"
+          className="mt-4 inline-flex h-10 w-full items-center justify-center rounded-xl bg-[#3ecf8e] text-[13px] font-semibold text-white transition hover:bg-[#24b47e] disabled:opacity-40"
         >
-          {saving ? 'Creating…' : `Create RFQ for ${picked.size || 'no'} vendor${picked.size === 1 ? '' : 's'}`}
+          {saving
+            ? 'Creating…'
+            : `Create RFQ for ${picked.size || 'no'} vendor${picked.size === 1 ? '' : 's'}`}
         </button>
       </section>
     </div>
@@ -300,7 +445,9 @@ function QuoteModal({ rfq, entry, onClose, onSave, saving }) {
               <tr className="bg-[#f4f7fb] text-[10px] font-bold uppercase tracking-[0.06em] text-[#7c8ba0] [&>th]:px-2 [&>th]:py-1.5 [&>th]:text-left">
                 <th>Item</th>
                 <th className="w-16 text-right">Qty</th>
-                <th className="w-20 text-right">BOQ rate</th>
+                <th className="w-24 text-right" title="Internal only — not sent to vendors">
+                  Internal BOQ
+                </th>
                 <th className="w-24 text-right">Their rate</th>
               </tr>
             </thead>
@@ -668,27 +815,35 @@ export function RfqPanel({
   }
 
   const create = useMutation({
-    mutationFn: (body) =>
-      api('/rfqs', {
+    mutationFn: (body) => {
+      const sourceItems = Array.isArray(body.items) && body.items.length
+        ? body.items
+        : selectedItems
+      const { items: _ignored, ...rest } = body
+      return api('/rfqs', {
         method: 'POST',
         body: JSON.stringify({
           projectId,
           quotationId,
-          items: selectedItems.map((i) => ({
+          items: sourceItems.map((i) => ({
             description: i.description,
             unit: i.unit,
             qty: i.qty,
-            boqRate: i.rate,
-            boqItemId: i._id,
+            // Kept server-side for internal L1 vs BOQ — never sent to vendors
+            boqRate: Number(i.boqRate ?? i.rate) || 0,
+            boqItemId: i._id || i.boqItemId || undefined,
           })),
-          ...body,
+          ...rest,
         }),
-      }),
+      })
+    },
     onSuccess: () => {
       refresh()
       setCreateOpen(false)
       onCleared?.()
-      toast('RFQ created — send it to the vendors', { type: 'success' })
+      toast('RFQ created — send it to the vendors (no BOQ amounts)', {
+        type: 'success',
+      })
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
