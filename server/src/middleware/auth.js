@@ -1,6 +1,7 @@
 import jwt from 'jsonwebtoken'
 import { AppError } from './errorHandler.js'
 import { User } from '../models/User.js'
+import { Tenant } from '../models/Tenant.js'
 
 export function signAccessToken(user) {
   return jwt.sign(
@@ -36,14 +37,21 @@ export async function requireAuth(req, _res, next) {
     const user = await User.findById(payload.sub).select('-password')
     if (!user || !user.isActive) throw new AppError('User not found', 401)
 
-    // Platform admins can operate across tenants
+    // Platform admins can operate across tenants. Everyone else must stay in
+    // their home workspace — if the client still has a stale X-Tenant-Slug
+    // (e.g. default "cubic"), snap back to the account's real company.
     if (
       !user.isPlatformAdmin &&
       req.tenantId &&
       user.tenantId &&
       String(user.tenantId) !== String(req.tenantId)
     ) {
-      throw new AppError('Wrong workspace for this account', 403)
+      const home = await Tenant.findById(user.tenantId)
+      if (!home) {
+        throw new AppError('Wrong workspace for this account', 403)
+      }
+      req.tenant = home
+      req.tenantId = home._id
     }
 
     req.user = user

@@ -117,15 +117,32 @@ export const useAuthStore = create(
       accessToken: null,
       refreshToken: null,
       tenant: null,
-      setAuth: ({ user, accessToken, refreshToken, tenant }) =>
+      setAuth: ({ user, accessToken, refreshToken, tenant }) => {
+        if (tenant?.slug) {
+          try {
+            setTenantSlug(tenant.slug)
+          } catch {
+            /* ignore */
+          }
+        }
         set({
           user,
           accessToken,
           refreshToken,
           ...(tenant !== undefined ? { tenant } : {}),
-        }),
+        })
+      },
       setUser: (user) => set({ user }),
-      setTenant: (tenant) => set({ tenant }),
+      setTenant: (tenant) => {
+        if (tenant?.slug) {
+          try {
+            setTenantSlug(tenant.slug)
+          } catch {
+            /* ignore */
+          }
+        }
+        set({ tenant })
+      },
       logout: () => {
         try {
           // Dynamic to avoid circular import at module load
@@ -147,7 +164,13 @@ export const useAuthStore = create(
 )
 
 function tenantHeaders() {
-  return { 'X-Tenant-Slug': getTenantSlug() }
+  // Prefer the logged-in workspace from auth state so a stale localStorage /
+  // VITE_TENANT_SLUG default (often "cubic") cannot 403 every API call.
+  const fromAuth = useAuthStore.getState().tenant?.slug
+  const slug = String(fromAuth || getTenantSlug() || 'cubic')
+    .trim()
+    .toLowerCase()
+  return { 'X-Tenant-Slug': slug }
 }
 
 /**
