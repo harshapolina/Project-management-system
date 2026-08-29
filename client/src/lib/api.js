@@ -51,6 +51,31 @@ export function setTenantSlug(slug) {
   else localStorage.removeItem('cubic-tenant-slug')
 }
 
+/**
+ * Public app origin for shareable login links.
+ * Prefer VITE_PUBLIC_APP_URL so localhost platform creates still copy the live URL.
+ */
+export function publicAppOrigin() {
+  const fromEnv = String(import.meta.env.VITE_PUBLIC_APP_URL || '')
+    .trim()
+    .replace(/\/$/, '')
+  if (fromEnv) return fromEnv
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
+}
+
+/** Company login link with workspace (+ optional admin portal). */
+export function companyLoginUrl(workspace, portal = 'staff') {
+  const origin = publicAppOrigin()
+  const slug = String(workspace || getTenantSlug() || 'cubic')
+    .trim()
+    .toLowerCase()
+  const params = new URLSearchParams()
+  if (portal === 'admin') params.set('portal', 'admin')
+  params.set('tenant', slug)
+  return `${origin}/login?${params.toString()}`
+}
+
 /** Origin of the API host (no trailing slash), e.g. https://project-management-backend-nine-tau.vercel.app */
 export function apiOrigin() {
   const raw = (import.meta.env.VITE_API_URL || '').trim()

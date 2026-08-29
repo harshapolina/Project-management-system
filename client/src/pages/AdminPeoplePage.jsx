@@ -11,7 +11,7 @@ import {
   ChevronRight,
   KeyRound,
 } from 'lucide-react'
-import { api, getTenantSlug, useAuthStore } from '../lib/api'
+import { api, getTenantSlug, useAuthStore, companyLoginUrl } from '../lib/api'
 import {
   canInviteUsers,
   capabilitiesForUser,
@@ -97,7 +97,10 @@ export function AdminPeoplePage() {
         workspace: tenant?.slug || getTenantSlug(),
         email: res.user.email,
         tempPassword: res.tempPassword,
-        loginUrl: `${window.location.origin}/login`,
+        loginUrl: companyLoginUrl(
+          tenant?.slug || getTenantSlug(),
+          ['admin', 'owner', 'hr'].includes(invite.role) ? 'admin' : 'staff',
+        ),
       })
       setInvite({ name: '', email: '', role: 'designer' })
       qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
@@ -221,7 +224,12 @@ export function AdminPeoplePage() {
         workspace: tenant?.slug || getTenantSlug(),
         email: res.user.email,
         tempPassword: res.tempPassword,
-        loginUrl: `${window.location.origin}/login`,
+        loginUrl: companyLoginUrl(
+          tenant?.slug || getTenantSlug(),
+          ['admin', 'owner', 'hr'].includes(selected?.user?.role)
+            ? 'admin'
+            : 'staff',
+        ),
       })
       toast('Temporary password created', { type: 'success' })
     },

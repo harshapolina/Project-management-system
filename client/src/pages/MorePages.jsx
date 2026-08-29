@@ -16,7 +16,7 @@ import {
   SlidersHorizontal,
   Mail,
 } from 'lucide-react'
-import { api, getTenantSlug, useAuthStore } from '../lib/api'
+import { api, getTenantSlug, useAuthStore, companyLoginUrl } from '../lib/api'
 import { InviteDetailsModal } from '../components/layout/GlobalChrome'
 import { PageToolbar } from '../components/layout/PageToolbar'
 import { MailAndAlertsSettings } from '../components/settings/MailAndAlertsSettings'
@@ -200,7 +200,10 @@ export function SettingsPage() {
         workspace: tenant?.slug || getTenantSlug(),
         email: data.user.email,
         tempPassword: data.tempPassword,
-        loginUrl: window.location.origin + '/login',
+        loginUrl: companyLoginUrl(
+          tenant?.slug || getTenantSlug(),
+          ['admin', 'owner', 'hr'].includes(invite.role) ? 'admin' : 'staff',
+        ),
       })
       setInvite({ name: '', email: '', role: 'project_manager' })
       toast('Invite created', { type: 'success' })

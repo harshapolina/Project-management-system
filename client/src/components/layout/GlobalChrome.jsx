@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { AnimatePresence, motion } from 'framer-motion'
 import {
   Search,
@@ -18,7 +18,7 @@ import {
   ListChecks,
   SlidersHorizontal,
 } from 'lucide-react'
-import { api, getTenantSlug, useAuthStore } from '../../lib/api'
+import { api, getTenantSlug, useAuthStore, companyLoginUrl } from '../../lib/api'
 import { canInviteUsers, inviteRoleOptions, NEW_CUSTOM_ROLE_VALUE, customRoleBaseOptions } from '../../lib/roles'
 import { Modal, Drawer, toast, Button, Input, Select } from '../ui'
 import { cn } from '../../lib/utils'
@@ -356,7 +356,8 @@ export function InviteDetailsModal({ open, onClose, details }) {
       <div className="space-y-3 text-sm">
         <p className="text-xs text-secondary">
           Send this to the company (WhatsApp / email). They use the company login
-          page — not the Editco platform portal.
+          page — not the Editco platform portal. Open the live site URL below
+          (not localhost) if they are signing in on production.
         </p>
         <div className="space-y-2 rounded-xl border border-border bg-surface-raised px-3 py-3 font-mono text-[12px]">
           {details.companyName && (
@@ -413,6 +414,7 @@ export function InviteModal({ open, onClose }) {
   const tenant = useAuthStore((s) => s.tenant)
   const setTenant = useAuthStore((s) => s.setTenant)
   const user = useAuthStore((s) => s.user)
+  const qc = useQueryClient()
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState('project_manager')
@@ -472,8 +474,13 @@ export function InviteModal({ open, onClose }) {
         workspace: tenant?.slug || getTenantSlug(),
         email: data.user.email,
         tempPassword: data.tempPassword,
-        loginUrl: window.location.origin + '/login',
+        loginUrl: companyLoginUrl(
+          tenant?.slug || getTenantSlug(),
+          ['admin', 'owner', 'hr'].includes(role) ? 'admin' : 'staff',
+        ),
       })
+      qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
+      qc.invalidateQueries({ queryKey: ['users'] })
       toast('Invite created', { type: 'success' })
     } catch (e) {
       toast(e.message || 'Invite failed', { type: 'error' })

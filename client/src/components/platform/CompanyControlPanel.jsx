@@ -13,7 +13,7 @@ import {
   UserMinus,
   UserPlus,
 } from 'lucide-react'
-import { api, assetUrl } from '../../lib/api'
+import { api, assetUrl, companyLoginUrl } from '../../lib/api'
 import { InviteDetailsModal } from '../layout/GlobalChrome'
 import { Button, Input, Select, StatusChip, toast } from '../ui'
 import { INVITE_ROLE_OPTIONS, ROLE_LABELS } from '../../lib/roles'
@@ -23,11 +23,6 @@ import {
   normalizeTenantFeatures,
 } from '../../lib/tenantFeatures'
 import { cn } from '../../lib/utils'
-
-function companyLoginUrl(workspace, portal = 'admin') {
-  const origin = window.location.origin
-  return `${origin}/login?portal=${portal}&tenant=${encodeURIComponent(workspace)}`
-}
 
 function generatePassword() {
   const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#'
