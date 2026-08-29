@@ -16,7 +16,7 @@ import {
   canInviteUsers,
   capabilitiesForUser,
   ACCESS_TOGGLES,
-  CUSTOM_ROLE_BASE_OPTIONS,
+  customRoleBaseOptions,
   NEW_CUSTOM_ROLE_VALUE,
   inviteRoleOptions,
   roleLabelFor,
@@ -695,8 +695,9 @@ export function AdminPeoplePage() {
           }}
         >
           <p className="text-[13px] leading-relaxed text-secondary">
-            Create a company role for invites. Access starts from a base
-            template — you can fine-tune permissions after inviting.
+            Create a company role for invites. Base it on a built-in role, a
+            custom department, or another custom role — then fine-tune access
+            after inviting.
           </p>
           <Input
             label="Role name"
@@ -713,7 +714,7 @@ export function AdminPeoplePage() {
             onChange={(e) =>
               setCustomRoleForm((s) => ({ ...s, basedOn: e.target.value }))
             }
-            options={CUSTOM_ROLE_BASE_OPTIONS}
+            options={customRoleBaseOptions(customRoles)}
           />
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button

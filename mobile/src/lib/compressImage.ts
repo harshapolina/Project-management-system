@@ -16,10 +16,10 @@ export interface UploadAsset {
  * we would be storing detail nobody ever sees — on an Atlas free tier shared
  * with every other collection.
  */
-const MAX_EDGE = 2560
+const MAX_EDGE = 1920
 
-/** Visually indistinguishable from the source at any size the app renders. */
-const QUALITY = 0.85
+/** Still looks clean on phone/tablet; much smaller than camera originals. */
+const QUALITY = 0.72
 
 /**
  * Formats we deliberately leave alone.

@@ -19,7 +19,7 @@ import {
   SlidersHorizontal,
 } from 'lucide-react'
 import { api, getTenantSlug, useAuthStore } from '../../lib/api'
-import { canInviteUsers, inviteRoleOptions, NEW_CUSTOM_ROLE_VALUE, CUSTOM_ROLE_BASE_OPTIONS } from '../../lib/roles'
+import { canInviteUsers, inviteRoleOptions, NEW_CUSTOM_ROLE_VALUE, customRoleBaseOptions } from '../../lib/roles'
 import { Modal, Drawer, toast, Button, Input, Select } from '../ui'
 import { cn } from '../../lib/utils'
 
@@ -610,7 +610,8 @@ export function InviteModal({ open, onClose }) {
       >
         <div className="space-y-4">
           <p className="text-[13px] text-secondary">
-            Name the role and pick a base template for starting permissions.
+            Name the role and pick a base — built-in role, department, or an
+            existing custom role.
           </p>
           <Input
             label="Role name"
@@ -623,7 +624,7 @@ export function InviteModal({ open, onClose }) {
             label="Based on"
             value={customBasedOn}
             onChange={(e) => setCustomBasedOn(e.target.value)}
-            options={CUSTOM_ROLE_BASE_OPTIONS}
+            options={customRoleBaseOptions(tenant?.customRoles || [])}
           />
           <div className="flex justify-end gap-2">
             <Button

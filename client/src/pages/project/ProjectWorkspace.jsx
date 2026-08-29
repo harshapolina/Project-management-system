@@ -13,6 +13,8 @@ import {
   Users,
   Trash2,
   Truck,
+  Mail,
+  MessageCircle,
 } from 'lucide-react'
 import { api, useAuthStore } from '../../lib/api'
 import { Button, Modal, Skeleton, toast } from '../../components/ui'
@@ -24,6 +26,8 @@ import {
 } from '../../components/layout/PageToolbar'
 import { stageLabel } from '../../lib/format'
 import { whatsappLink } from '../../lib/phone'
+import { clientProjectEmailDraft } from '../../lib/composeEmail'
+import { openComposeEmail } from '../../store/composeEmailStore'
 import { capabilitiesForUser } from '../../lib/roles'
 
 /** Only what an interior studio needs inside a project */
@@ -184,8 +188,8 @@ export function ProjectWorkspace() {
               type="button"
               title={
                 project.clientPhone
-                  ? `WhatsApp ${project.clientName} · ${project.clientPhone}`
-                  : 'Add the client phone number to enable WhatsApp'
+                  ? `WhatsApp Web · ${project.clientPhone}`
+                  : 'Add the client phone number for WhatsApp Web'
               }
               onClick={() => {
                 const url = whatsappLink(
@@ -201,14 +205,23 @@ export function ProjectWorkspace() {
                 window.open(url, '_blank', 'noopener')
               }}
               className={cn(
-                'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-[#171717] shadow-sm transition',
+                'inline-flex h-8 items-center gap-1.5 rounded-full px-3 text-[12px] font-semibold text-white shadow-sm transition',
                 project.clientPhone
-                  ? 'bg-[#3ecf8e] hover:bg-[#24b47e]'
-                  : 'bg-[#c7f0d8] hover:bg-[#b5e9cb]',
+                  ? 'bg-[#25D366] hover:bg-[#1fb958]'
+                  : 'bg-[#a7dcbb] hover:bg-[#98d2ad]',
               )}
             >
-              <Send className="h-3.5 w-3.5" />
-              Send
+              <MessageCircle className="h-3.5 w-3.5" />
+              WhatsApp
+            </button>
+            <button
+              type="button"
+              title="Compose and send email to the client"
+              onClick={() => openComposeEmail(clientProjectEmailDraft(project))}
+              className="inline-flex h-8 items-center gap-1.5 rounded-full bg-[#3ecf8e] px-3 text-[12px] font-semibold text-[#171717] shadow-sm transition hover:bg-[#24b47e]"
+            >
+              <Mail className="h-3.5 w-3.5" />
+              Email
             </button>
           </div>
         </div>

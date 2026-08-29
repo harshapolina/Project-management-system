@@ -32,11 +32,20 @@ import {
 const PIPELINE = [
   'new_enquiry',
   'site_visit',
+  'mood_board',
   'quotation_sent',
   'negotiation',
-  'won',
-  'lost',
+  'hot',
+  'dead',
 ]
+
+const CLOSED_STAGES = ['hot', 'dead', 'won', 'lost']
+
+function normalizeStage(stage) {
+  if (stage === 'won') return 'hot'
+  if (stage === 'lost') return 'dead'
+  return stage
+}
 
 const FILTERS = [
   { key: 'all', label: 'All' },
@@ -105,6 +114,12 @@ export function LeadsPage() {
       api(`/leads/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
     onSuccess: (res) => {
       qc.invalidateQueries({ queryKey: ['leads'] })
+      if (res?.converted && res?.project?._id) {
+        qc.invalidateQueries({ queryKey: ['projects'] })
+        toast('Marked Hot — added to Projects', { type: 'success' })
+        navigate(`/projects/${res.project._id}`)
+        return
+      }
       if (res?.lead) {
         setSelected((prev) =>
           prev && String(prev._id) === String(res.lead._id) ? res.lead : prev,
@@ -137,7 +152,7 @@ export function LeadsPage() {
         navigate(`/projects/${res.project._id}`)
         return
       }
-      toast('Converted to project', { type: 'success' })
+      toast('Marked Hot — added to Projects', { type: 'success' })
       navigate(`/projects/${res.project._id}`)
     },
     onError: (e) => toast(e.message, { type: 'error' }),
@@ -158,7 +173,7 @@ export function LeadsPage() {
   const leads = data?.leads || []
 
   const stats = useMemo(() => {
-    const active = leads.filter((l) => !['won', 'lost'].includes(l.stage))
+    const active = leads.filter((l) => !CLOSED_STAGES.includes(l.stage))
     const unassigned = leads.filter((l) => !ownerIdOf(l))
     const pipelineValue = active.reduce(
       (s, l) => s + (Number(l.estimatedValue) || 0),
@@ -180,7 +195,7 @@ export function LeadsPage() {
       const oid = ownerIdOf(lead)
       if (filter === 'unassigned' && oid) return false
       if (filter === 'mine' && oid !== meId) return false
-      if (filter === 'active' && ['won', 'lost'].includes(lead.stage)) return false
+      if (filter === 'active' && CLOSED_STAGES.includes(lead.stage)) return false
       if (!needle) return true
       const hay = [
         lead.clientName,
@@ -323,7 +338,9 @@ export function LeadsPage() {
       ) : (
         <div className="flex gap-3 overflow-x-auto pb-2">
           {PIPELINE.map((stage) => {
-            const column = filtered.filter((l) => l.stage === stage)
+            const column = filtered.filter(
+              (l) => normalizeStage(l.stage) === stage,
+            )
             return (
               <div
                 key={stage}
@@ -358,6 +375,7 @@ export function LeadsPage() {
                             body: { stage: nextStage },
                           })
                         }
+                        onHot={() => convert.mutate(lead._id)}
                       />
                     ))
                   )}
@@ -590,19 +608,23 @@ function EnquiryDetail({
           Move to stage
         </p>
         <div className="flex flex-wrap gap-1.5">
-          {PIPELINE.filter((s) => s !== lead.stage).map((s) => (
+          {PIPELINE.filter((s) => s !== normalizeStage(lead.stage)).map((s) => (
             <button
               key={s}
               type="button"
               className={cn(
                 'rounded-lg px-2.5 py-1.5 text-[11px] font-semibold transition',
-                s === 'won'
+                s === 'hot'
                   ? 'bg-accent/15 text-accent hover:bg-accent/25'
-                  : s === 'lost'
+                  : s === 'dead'
                     ? 'bg-red-500/15 text-red-500 hover:bg-red-500/25'
                     : 'border border-border bg-surface-raised text-primary hover:border-accent/40',
               )}
-              onClick={() =>
+              onClick={() => {
+                if (s === 'hot') {
+                  convert.mutate(lead._id)
+                  return
+                }
                 patch.mutate(
                   { id: lead._id, body: { stage: s } },
                   {
@@ -610,26 +632,29 @@ function EnquiryDetail({
                       onSaved(res?.lead || { ...lead, stage: s }),
                   },
                 )
-              }
+              }}
             >
               {stageLabel(s)}
             </button>
           ))}
         </div>
         <div className="mt-2">
-          <StatusChip status={lead.stage} label={stageLabel(lead.stage)} />
+          <StatusChip
+            status={normalizeStage(lead.stage)}
+            label={stageLabel(lead.stage)}
+          />
         </div>
       </div>
 
-      {lead.stage !== 'lost' && (
+      {normalizeStage(lead.stage) !== 'dead' && (
         <Button
           className="w-full"
           loading={convert.isPending}
           onClick={() => convert.mutate(lead._id)}
         >
-          {lead.convertedProjectId || lead.stage === 'won'
-            ? 'Open / convert to project'
-            : 'Convert to project'}
+          {lead.convertedProjectId || normalizeStage(lead.stage) === 'hot'
+            ? 'Open project'
+            : 'Mark Hot → add to Projects'}
         </Button>
       )}
 
@@ -704,12 +729,14 @@ function EnquiryCard({
   onOpen,
   onAssign,
   onStage,
+  onHot,
 }) {
-  const stage = lead.stage
+  const stage = normalizeStage(lead.stage)
   const idx = PIPELINE.indexOf(stage)
   const next =
     idx >= 0 && idx < PIPELINE.length - 2 ? PIPELINE[idx + 1] : null
   const needsOwner = !ownerIdOf(lead)
+  const isClosed = CLOSED_STAGES.includes(lead.stage)
 
   return (
     <div
@@ -769,7 +796,7 @@ function EnquiryCard({
         className="mt-2.5 flex flex-wrap gap-1"
         onClick={(e) => e.stopPropagation()}
       >
-        {next && next !== 'lost' && (
+        {next && next !== 'dead' && (
           <button
             type="button"
             className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:bg-accent/25"
@@ -778,21 +805,21 @@ function EnquiryCard({
             → {stageLabel(next).split(' ')[0]}
           </button>
         )}
-        {stage !== 'won' && stage !== 'lost' && (
+        {!isClosed && (
           <>
             <button
               type="button"
               className="rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-semibold text-accent hover:bg-accent/25"
-              onClick={() => onStage('won')}
+              onClick={() => onHot()}
             >
-              Won
+              Hot
             </button>
             <button
               type="button"
               className="rounded-md bg-red-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-red-500 hover:bg-red-500/25"
-              onClick={() => onStage('lost')}
+              onClick={() => onStage('dead')}
             >
-              Lost
+              Dead
             </button>
           </>
         )}

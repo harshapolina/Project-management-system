@@ -16,7 +16,13 @@ export const PROJECT_STATUSES = [
   'delayed',
 ]
 
-export const PROJECT_TYPES = ['residential', 'commercial', 'blank']
+export const PROJECT_TYPES = [
+  'residential',
+  'commercial',
+  'renovation',
+  'custom',
+  'blank', // legacy alias of custom
+]
 
 const stageSchema = new mongoose.Schema(
   {

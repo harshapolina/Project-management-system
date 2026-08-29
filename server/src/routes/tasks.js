@@ -10,7 +10,7 @@ import {
 } from '../models/index.js'
 import { CustomFieldDefinition } from '../models/CustomField.js'
 import { parseMentionsFromBody } from '../lib/mentions.js'
-import { notifyUser, actorSummary } from '../lib/notify.js'
+import { notifyUser, notifyTaskAssignment, notifyTaskMoved, actorSummary } from '../lib/notify.js'
 import { hasPermission } from '../lib/permissions.js'
 import { assertProjectAccess } from '../lib/projectScope.js'
 import { scoreTaskCompletion } from '../lib/impactEngine.js'
@@ -339,6 +339,172 @@ router.get(
   }),
 )
 
+/** Live team board — open tasks by person, priority, assigner */
+router.get(
+  '/live-board',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (['client', 'vendor'].includes(req.user.role)) {
+      throw new AppError('Not allowed', 403)
+    }
+
+    const now = new Date()
+    const openFilter = tenantFilter(req, {
+      isPersonal: { $ne: true },
+      status: { $ne: 'done' },
+    })
+
+    const PRIORITY_RANK = { urgent: 0, high: 1, medium: 2, low: 3 }
+
+    const [openTasks, people] = await Promise.all([
+      Task.find(openFilter)
+        .populate('assignee', 'name avatar role title')
+        .populate('createdBy', 'name avatar')
+        .populate('projectId', 'name')
+        .select(
+          'title status priority assignee createdBy projectId dueDate updatedAt stage',
+        )
+        .lean(),
+      User.find(
+        tenantFilter(req, {
+          isActive: { $ne: false },
+          isPlatformAdmin: { $ne: true },
+          role: { $nin: ['client', 'vendor'] },
+        }),
+      )
+        .select('name avatar role title')
+        .sort({ name: 1 })
+        .lean(),
+    ])
+
+    openTasks.sort((a, b) => {
+      const pa = PRIORITY_RANK[a.priority] ?? 2
+      const pb = PRIORITY_RANK[b.priority] ?? 2
+      if (pa !== pb) return pa - pb
+      const da = a.dueDate ? new Date(a.dueDate).getTime() : Infinity
+      const db = b.dueDate ? new Date(b.dueDate).getTime() : Infinity
+      if (da !== db) return da - db
+      return new Date(b.updatedAt) - new Date(a.updatedAt)
+    })
+
+    const byUser = new Map()
+    for (const u of people) {
+      byUser.set(String(u._id), {
+        user: u,
+        open: 0,
+        todo: 0,
+        in_progress: 0,
+        review: 0,
+        urgent: 0,
+        high: 0,
+        overdue: 0,
+      })
+    }
+
+    let unassigned = 0
+    let overdue = 0
+    let urgent = 0
+    let inProgress = 0
+    let review = 0
+    let todo = 0
+
+    for (const t of openTasks) {
+      if (t.status === 'todo') todo += 1
+      else if (t.status === 'in_progress') inProgress += 1
+      else if (t.status === 'review') review += 1
+      if (t.priority === 'urgent') urgent += 1
+      const isOverdue = t.dueDate && new Date(t.dueDate) < now
+      if (isOverdue) overdue += 1
+
+      const aid = t.assignee?._id ? String(t.assignee._id) : null
+      if (!aid) {
+        unassigned += 1
+        continue
+      }
+      let row = byUser.get(aid)
+      if (!row) {
+        row = {
+          user: t.assignee,
+          open: 0,
+          todo: 0,
+          in_progress: 0,
+          review: 0,
+          urgent: 0,
+          high: 0,
+          overdue: 0,
+        }
+        byUser.set(aid, row)
+      }
+      row.open += 1
+      if (t.status === 'todo') row.todo += 1
+      else if (t.status === 'in_progress') row.in_progress += 1
+      else if (t.status === 'review') row.review += 1
+      if (t.priority === 'urgent') row.urgent += 1
+      if (t.priority === 'high') row.high += 1
+      if (isOverdue) row.overdue += 1
+    }
+
+    const team = [...byUser.values()].sort(
+      (a, b) =>
+        b.open - a.open ||
+        String(a.user?.name || '').localeCompare(String(b.user?.name || '')),
+    )
+
+    const maxOpen = Math.max(1, ...team.map((r) => r.open), 1)
+
+    res.json({
+      success: true,
+      data: {
+        generatedAt: now.toISOString(),
+        counts: {
+          open: openTasks.length,
+          todo,
+          in_progress: inProgress,
+          review,
+          urgent,
+          overdue,
+          unassigned,
+          peopleWithWork: team.filter((r) => r.open > 0).length,
+        },
+        team: team.map((r) => ({
+          ...r,
+          load: Math.min(100, Math.round((r.open / maxOpen) * 100)),
+        })),
+        tasks: openTasks.map((t) => ({
+          _id: t._id,
+          title: t.title,
+          status: t.status,
+          priority: t.priority || 'medium',
+          stage: t.stage,
+          dueDate: t.dueDate || null,
+          updatedAt: t.updatedAt,
+          overdue: !!(t.dueDate && new Date(t.dueDate) < now),
+          project: t.projectId
+            ? { _id: t.projectId._id, name: t.projectId.name }
+            : null,
+          assignee: t.assignee
+            ? {
+                _id: t.assignee._id,
+                name: t.assignee.name,
+                avatar: t.assignee.avatar,
+              }
+            : null,
+          assignedBy: t.createdBy
+            ? {
+                _id: t.createdBy._id,
+                name: t.createdBy.name,
+                avatar: t.createdBy.avatar,
+              }
+            : null,
+          link: t.projectId?._id
+            ? `/projects/${t.projectId._id}/tasks?task=${t._id}`
+            : '/?view=assigned',
+        })),
+      },
+    })
+  }),
+)
+
 router.get(
   '/:id',
   requireAuth,
@@ -431,11 +597,9 @@ router.post(
     )
 
     if (!isPersonal && task.assignee) {
-      await notifyUser(req, {
-        userId: task.assignee._id || task.assignee,
-        type: 'task_assigned',
-        title: `${req.user.name} assigned you a task`,
-        body: task.title,
+      await notifyTaskAssignment(req, {
+        assigneeId: task.assignee._id || task.assignee,
+        taskTitle: task.title,
         projectId: task.projectId?._id || task.projectId,
         link: taskLink(task),
         meta: taskMeta(task, req),
@@ -455,6 +619,8 @@ router.patch(
 
     const prevAssigneeId = task.assignee ? String(task.assignee) : null
     const previousStatus = task.status
+    const previousStage = task.stage
+    const previousDue = task.dueDate ? new Date(task.dueDate).getTime() : null
     const canManage = hasPermission(req.user, 'tasks.manage')
     if (!canManage && !isTaskWorker(task, req.user)) {
       throw new AppError('Task not found', 404)
@@ -591,12 +757,45 @@ router.patch(
       nextAssigneeId &&
       nextAssigneeId !== prevAssigneeId
     ) {
-      await notifyUser(req, {
-        userId: nextAssigneeId,
-        type: 'task_assigned',
-        title: `${req.user.name} assigned you a task`,
-        body: task.title,
+      await notifyTaskAssignment(req, {
+        assigneeId: nextAssigneeId,
+        taskTitle: task.title,
         projectId: task.projectId?._id || task.projectId,
+        link: taskLink(task),
+        meta: taskMeta(task, req),
+      })
+    }
+
+    // Status / stage / due-date moves → popup + email to assignee, mover, admins
+    const moveChanges = []
+    if (
+      req.body.status !== undefined &&
+      String(task.status) !== String(previousStatus)
+    ) {
+      moveChanges.push(
+        `status ${STATUS_LABELS[previousStatus] || previousStatus || '—'} → ${STATUS_LABELS[task.status] || task.status}`,
+      )
+    }
+    if (
+      req.body.stage !== undefined &&
+      String(task.stage || '') !== String(previousStage || '')
+    ) {
+      moveChanges.push(
+        `stage ${(previousStage || '—').replace(/_/g, ' ')} → ${(task.stage || '—').replace(/_/g, ' ')}`,
+      )
+    }
+    if (req.body.dueDate !== undefined) {
+      const nextDue = task.dueDate ? new Date(task.dueDate).getTime() : null
+      if (nextDue !== previousDue) {
+        moveChanges.push(
+          `due ${formatDateVal(previousDue ? new Date(previousDue) : null)} → ${formatDateVal(task.dueDate)}`,
+        )
+      }
+    }
+    if (moveChanges.length) {
+      await notifyTaskMoved(req, {
+        task,
+        changes: moveChanges,
         link: taskLink(task),
         meta: taskMeta(task, req),
       })

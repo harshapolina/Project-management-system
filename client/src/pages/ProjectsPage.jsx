@@ -368,7 +368,7 @@ function NewProjectModal({ open, onClose, onSubmit, loading }) {
           </div>
           <div className="flex-1">
             <Input
-              label="Client phone (WhatsApp)"
+              label="Client phone"
               type="tel"
               inputMode="numeric"
               placeholder="98765 43210"
@@ -382,15 +382,31 @@ function NewProjectModal({ open, onClose, onSubmit, loading }) {
             />
           </div>
         </div>
-        <Select
-          label="Property type"
-          value={form.type}
-          onChange={(e) => setForm({ ...form, type: e.target.value })}
-          options={[
-            { value: 'residential', label: 'Residential — home interior BOQ' },
-            { value: 'commercial', label: 'Commercial — office renovation BOQ' },
-          ]}
-        />
+        <div>
+          <p className="mb-1.5 text-[12px] font-medium text-primary">Property type</p>
+          <div className="grid grid-cols-2 gap-2">
+            {[
+              { value: 'residential', label: 'Residential', hint: 'Home interiors' },
+              { value: 'commercial', label: 'Commercial', hint: 'Offices & retail' },
+              { value: 'renovation', label: 'Renovation', hint: 'Remodel & retrofit' },
+              { value: 'custom', label: 'Custom', hint: 'Build your own schedule' },
+            ].map((opt) => (
+              <button
+                key={opt.value}
+                type="button"
+                onClick={() => setForm({ ...form, type: opt.value })}
+                className={
+                  form.type === opt.value
+                    ? 'rounded-[10px] border border-accent bg-accent/10 px-3 py-2.5 text-left'
+                    : 'rounded-[10px] border border-border bg-surface-raised px-3 py-2.5 text-left hover:border-accent/40'
+                }
+              >
+                <p className="text-[13px] font-semibold text-primary">{opt.label}</p>
+                <p className="mt-0.5 text-[11px] text-secondary">{opt.hint}</p>
+              </button>
+            ))}
+          </div>
+        </div>
         <Input
           label="Location"
           value={form.location}

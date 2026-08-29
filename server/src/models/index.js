@@ -16,9 +16,18 @@ export {
   SiteUpdate,
   Snag,
 } from './ProcurementFinance.js'
+export {
+  Grn,
+  QcInspection,
+  DebitNote,
+  MaterialRequest,
+  MaterialIssue,
+  VendorPayment,
+} from './ProcurementFlow.js'
 export { VendorInvoice } from './VendorInvoice.js'
 export { Message } from './Message.js'
 export { WorkspaceSettings } from './WorkspaceSettings.js'
+export { MailSettings, NOTIFICATION_EVENTS } from './MailSettings.js'
 export { CustomFieldDefinition } from './CustomField.js'
 export {
   ApprovalRule,

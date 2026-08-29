@@ -104,7 +104,7 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
             className="h-10 w-full rounded-lg border border-[#2e2e32] bg-[#121214] px-3 text-[13px] text-white outline-none"
           />
         </Field>
-        <Field label="Client phone (WhatsApp)">
+        <Field label="Client phone">
           <div className="flex gap-2">
             <select
               value={phoneCode}
@@ -130,8 +130,10 @@ export function CreateProjectModal({ open, onClose, defaultSpaceId }) {
         <Field label="Property type">
           <div className="grid grid-cols-2 gap-2">
             {[
-              { value: 'residential', label: 'Residential', hint: 'Home interior schedule' },
-              { value: 'commercial', label: 'Commercial', hint: 'Office renovation schedule' },
+              { value: 'residential', label: 'Residential', hint: 'Home interiors' },
+              { value: 'commercial', label: 'Commercial', hint: 'Offices & retail' },
+              { value: 'renovation', label: 'Renovation', hint: 'Remodel & retrofit' },
+              { value: 'custom', label: 'Custom', hint: 'Blank schedule — build your own' },
             ].map((opt) => (
               <button
                 key={opt.value}

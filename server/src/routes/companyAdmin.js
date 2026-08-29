@@ -127,9 +127,11 @@ router.get(
       ? leads.filter((l) => l.createdAt && new Date(l.createdAt) >= since)
       : leads
 
-    const activeLeads = leads.filter((l) => !['won', 'lost'].includes(l.stage))
+    const activeLeads = leads.filter(
+      (l) => !['hot', 'dead', 'won', 'lost'].includes(l.stage),
+    )
     const activeLeadsInRange = leadsInRange.filter(
-      (l) => !['won', 'lost'].includes(l.stage),
+      (l) => !['hot', 'dead', 'won', 'lost'].includes(l.stage),
     )
     const projectCounts = {
       total: projects.length,

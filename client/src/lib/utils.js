@@ -26,6 +26,11 @@ export const statusColorMap = {
   open: 'var(--status-delayed)',
   fixed: 'var(--status-in-progress)',
   verified: 'var(--status-completed)',
+  hot: 'var(--status-completed)',
+  won: 'var(--status-completed)',
+  dead: 'var(--status-delayed)',
+  lost: 'var(--status-delayed)',
+  mood_board: 'var(--status-in-progress)',
 }
 
 export function formatCurrency(value, currency = 'USD') {

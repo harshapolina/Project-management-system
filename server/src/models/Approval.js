@@ -42,6 +42,12 @@ export const BUILTIN_APPROVAL_TYPES = [
     description: 'Work marked as needing sign-off',
     amountPath: null,
   },
+  {
+    key: 'drawing',
+    label: 'Drawing / file',
+    description: 'Plans, concepts, and renders sent for sign-off',
+    amountPath: null,
+  },
 ]
 
 export const BUILTIN_APPROVAL_TYPE_KEYS = BUILTIN_APPROVAL_TYPES.map((t) => t.key)

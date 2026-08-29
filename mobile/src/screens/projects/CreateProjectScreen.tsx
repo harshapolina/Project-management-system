@@ -13,9 +13,14 @@ import type { ProjectStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'CreateProject'>
 
-const TYPES: { value: 'residential' | 'commercial'; label: string }[] = [
+const TYPES: {
+  value: 'residential' | 'commercial' | 'renovation' | 'custom'
+  label: string
+}[] = [
   { value: 'residential', label: 'Residential' },
   { value: 'commercial', label: 'Commercial' },
+  { value: 'renovation', label: 'Renovation' },
+  { value: 'custom', label: 'Custom' },
 ]
 
 export function CreateProjectScreen({ navigation }: Props) {
@@ -27,7 +32,9 @@ export function CreateProjectScreen({ navigation }: Props) {
   const [clientPhone, setClientPhone] = useState('')
   const [location, setLocation] = useState('')
   const [budget, setBudget] = useState('')
-  const [type, setType] = useState<'residential' | 'commercial'>('residential')
+  const [type, setType] = useState<'residential' | 'commercial' | 'renovation' | 'custom'>(
+    'residential',
+  )
   const [errors, setErrors] = useState<Record<string, string>>({})
 
   const mutation = useMutation({

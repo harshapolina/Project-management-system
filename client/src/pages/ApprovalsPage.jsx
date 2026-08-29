@@ -1,10 +1,12 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { Link, useSearchParams } from 'react-router-dom'
 import {
   ArrowRight,
   BadgeCheck,
   Building2,
   FileSpreadsheet,
+  FolderOpen,
   ListChecks,
   Plus,
   ShieldCheck,
@@ -13,16 +15,22 @@ import {
   UserRound,
   Wallet,
 } from 'lucide-react'
-import { api } from '../lib/api'
+import { api, assetUrl } from '../lib/api'
 import { formatInr } from '../lib/format'
 import { Avatar, Button, Input, Select, SkeletonCard, toast } from '../components/ui'
 import { cn } from '../lib/utils'
+import {
+  PILL_ACTIVE,
+  PILL_IDLE,
+  PILL_TRACK,
+} from '../components/layout/PageToolbar'
 
 const TYPE_ICONS = {
   purchase_order: Truck,
   boq: FileSpreadsheet,
   expense: Wallet,
   task: ListChecks,
+  drawing: FolderOpen,
 }
 
 const ROLE_LABELS = {
@@ -54,17 +62,30 @@ function bandLabel(band, hasAmount) {
 
 export function ApprovalsPage() {
   const qc = useQueryClient()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const tab = searchParams.get('tab') === 'inbox' ? 'inbox' : 'routing'
   const [openType, setOpenType] = useState(null)
   const [newType, setNewType] = useState(null)
+  const [inboxScope, setInboxScope] = useState('mine')
 
   const { data, isLoading } = useQuery({
     queryKey: ['approvals', 'flow'],
     queryFn: () => api('/approvals/flow'),
   })
 
+  const { data: inboxData, isLoading: inboxLoading } = useQuery({
+    queryKey: ['approvals', 'inbox', inboxScope],
+    queryFn: () =>
+      api(`/approvals/inbox?scope=${inboxScope === 'all' ? 'all' : 'mine'}`),
+    enabled: tab === 'inbox',
+    refetchInterval: tab === 'inbox' ? 8000 : false,
+  })
+
   const flow = data?.flow || []
   const members = data?.members || []
   const roles = data?.roles || []
+  const inboxItems = inboxData?.items || []
+  const inboxCounts = inboxData?.counts || { total: 0 }
 
   const invalidate = () => qc.invalidateQueries({ queryKey: ['approvals'] })
   const onError = (e) => toast(e.message, { type: 'error' })
@@ -114,11 +135,33 @@ export function ApprovalsPage() {
     onError,
   })
 
-  // Keyed off `data` rather than `flow`, which is a fresh array every render.
+  const decideFile = useMutation({
+    mutationFn: ({ id, decision }) =>
+      api(`/files/${id}/decide`, {
+        method: 'POST',
+        body: JSON.stringify({ decision }),
+      }),
+    onSuccess: (_res, vars) => {
+      invalidate()
+      qc.invalidateQueries({ queryKey: ['files'] })
+      toast(vars.decision === 'approved' ? 'Approved' : 'Rejected', {
+        type: 'success',
+      })
+    },
+    onError,
+  })
+
   const routedCount = useMemo(
     () => (data?.flow || []).reduce((n, t) => n + (t.rules?.length || 0), 0),
     [data],
   )
+
+  const setTab = (next) => {
+    const params = new URLSearchParams(searchParams)
+    if (next === 'inbox') params.set('tab', 'inbox')
+    else params.delete('tab')
+    setSearchParams(params, { replace: true })
+  }
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-5 pb-16">
@@ -128,70 +171,237 @@ export function ApprovalsPage() {
             Approvals
           </h1>
           <p className="mt-1 max-w-xl text-[13px] leading-relaxed text-secondary">
-            Who signs off on what, and above which amount. When someone raises one
-            of these it routes automatically to the approver whose band the amount
-            falls into — the most specific matching band wins, so you can layer an
-            escalation on top of a catch-all.
+            Build any approval type, decide who signs off, and act on what is
+            waiting for you. Drawing uploads route through “Drawing / file” and
+            pop up for the assigned employee.
           </p>
         </div>
-        <Button
-          size="sm"
-          variant="secondary"
-          onClick={() => setNewType({ label: '', description: '' })}
-        >
-          <Plus className="h-3.5 w-3.5" />
-          New type
-        </Button>
+        {tab === 'routing' && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={() => setNewType({ label: '', description: '' })}
+          >
+            <Plus className="h-3.5 w-3.5" />
+            New type
+          </Button>
+        )}
       </header>
 
-      {!isLoading && routedCount === 0 && (
-        <div className="flex items-start gap-3 rounded-[10px] border border-border bg-surface-raised px-4 py-3">
-          <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
-          <p className="text-[13px] leading-relaxed text-secondary">
-            No routing set up yet — nothing currently needs approval. Add a rule
-            to a type below and new records will start routing to that approver.
+      <div className={PILL_TRACK}>
+        <button
+          type="button"
+          onClick={() => setTab('routing')}
+          className={cn(
+            'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
+            tab === 'routing' ? PILL_ACTIVE : PILL_IDLE,
+          )}
+        >
+          Routing
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('inbox')}
+          className={cn(
+            'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
+            tab === 'inbox' ? PILL_ACTIVE : PILL_IDLE,
+          )}
+        >
+          Inbox
+          {tab === 'inbox' && inboxCounts.total > 0 ? (
+            <span className="ml-1.5 rounded-md bg-accent/15 px-1.5 py-0.5 text-[10px] font-bold text-accent">
+              {inboxCounts.total}
+            </span>
+          ) : null}
+        </button>
+      </div>
+
+      {tab === 'inbox' ? (
+        <InboxPanel
+          items={inboxItems}
+          loading={inboxLoading}
+          scope={inboxScope}
+          setScope={setInboxScope}
+          onDecideFile={(id, decision) => decideFile.mutate({ id, decision })}
+          deciding={decideFile.isPending}
+        />
+      ) : (
+        <>
+          {!isLoading && routedCount === 0 && (
+            <div className="flex items-start gap-3 rounded-[10px] border border-border bg-surface-raised px-4 py-3">
+              <ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-secondary" />
+              <p className="text-[13px] leading-relaxed text-secondary">
+                No routing set up yet. Add a rule under{' '}
+                <strong>Drawing / file</strong> so uploads can be sent for
+                approval — the assigned person gets a live popup.
+              </p>
+            </div>
+          )}
+
+          {newType && (
+            <NewTypeForm
+              draft={newType}
+              setDraft={setNewType}
+              onCancel={() => setNewType(null)}
+              onSubmit={() => addType.mutate(newType)}
+              pending={addType.isPending}
+            />
+          )}
+
+          {isLoading ? (
+            <div className="space-y-3">
+              <SkeletonCard />
+              <SkeletonCard />
+            </div>
+          ) : (
+            flow.map((type) => (
+              <TypeCard
+                key={type.key}
+                type={type}
+                roles={roles}
+                members={members}
+                isOpen={openType === type.key}
+                onToggle={() =>
+                  setOpenType(openType === type.key ? null : type.key)
+                }
+                onAddRule={(body) =>
+                  addRule.mutate({ ...body, entityType: type.key })
+                }
+                addPending={addRule.isPending}
+                onRemoveRule={(id) => removeRule.mutate(id)}
+                onRemoveType={() => {
+                  if (
+                    window.confirm(
+                      `Remove “${type.label}” and any routing on it? Records already routed keep their approver.`,
+                    )
+                  ) {
+                    removeType.mutate(type._id)
+                  }
+                }}
+              />
+            ))
+          )}
+        </>
+      )}
+    </div>
+  )
+}
+
+function InboxPanel({ items, loading, scope, setScope, onDecideFile, deciding }) {
+  return (
+    <div className="space-y-4">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-[13px] text-secondary">
+          Items waiting for sign-off. Drawing approvals also appear as a popup
+          for the assigned employee.
+        </p>
+        <div className={PILL_TRACK}>
+          <button
+            type="button"
+            onClick={() => setScope('mine')}
+            className={cn(
+              'rounded-full px-3 py-1 text-[12px] font-semibold transition',
+              scope === 'mine' ? PILL_ACTIVE : PILL_IDLE,
+            )}
+          >
+            Assigned to me
+          </button>
+          <button
+            type="button"
+            onClick={() => setScope('all')}
+            className={cn(
+              'rounded-full px-3 py-1 text-[12px] font-semibold transition',
+              scope === 'all' ? PILL_ACTIVE : PILL_IDLE,
+            )}
+          >
+            All pending
+          </button>
+        </div>
+      </div>
+
+      {loading ? (
+        <SkeletonCard />
+      ) : items.length === 0 ? (
+        <div className="rounded-[12px] border border-border bg-surface px-5 py-10 text-center">
+          <BadgeCheck className="mx-auto h-8 w-8 text-secondary" />
+          <p className="mt-3 text-[14px] font-semibold text-primary">
+            Nothing waiting
+          </p>
+          <p className="mt-1 text-[13px] text-secondary">
+            When someone sends a drawing for approval, it shows up here.
           </p>
         </div>
-      )}
-
-      {newType && (
-        <NewTypeForm
-          draft={newType}
-          setDraft={setNewType}
-          onCancel={() => setNewType(null)}
-          onSubmit={() => addType.mutate(newType)}
-          pending={addType.isPending}
-        />
-      )}
-
-      {isLoading ? (
-        <div className="space-y-3">
-          <SkeletonCard />
-          <SkeletonCard />
-        </div>
       ) : (
-        flow.map((type) => (
-          <TypeCard
-            key={type.key}
-            type={type}
-            roles={roles}
-            members={members}
-            isOpen={openType === type.key}
-            onToggle={() => setOpenType(openType === type.key ? null : type.key)}
-            onAddRule={(body) => addRule.mutate({ ...body, entityType: type.key })}
-            addPending={addRule.isPending}
-            onRemoveRule={(id) => removeRule.mutate(id)}
-            onRemoveType={() => {
-              if (
-                window.confirm(
-                  `Remove “${type.label}” and any routing on it? Records already routed keep their approver.`,
-                )
-              ) {
-                removeType.mutate(type._id)
-              }
-            }}
-          />
-        ))
+        <div className="space-y-2">
+          {items.map((item) => (
+            <div
+              key={`${item.kind}-${item.id}`}
+              className="flex flex-wrap items-center gap-3 rounded-[12px] border border-border bg-surface px-4 py-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="rounded-md bg-surface-raised px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-secondary">
+                    {item.kind}
+                  </span>
+                  <p className="truncate text-[14px] font-semibold text-primary">
+                    {item.title}
+                  </p>
+                </div>
+                <p className="mt-0.5 text-[12px] text-secondary">
+                  {item.subtitle}
+                  {item.requestedBy?.name
+                    ? ` · from ${item.requestedBy.name}`
+                    : ''}
+                  {item.amount != null ? ` · ${formatInr(item.amount)}` : ''}
+                </p>
+                {item.note ? (
+                  <p className="mt-1 text-[12px] italic text-secondary">
+                    “{item.note}”
+                  </p>
+                ) : null}
+              </div>
+              <div className="flex items-center gap-1.5">
+                {item.previewUrl ? (
+                  <button
+                    type="button"
+                    onClick={() =>
+                      window.open(assetUrl(item.previewUrl), '_blank')
+                    }
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-semibold text-secondary hover:border-accent/40"
+                  >
+                    Open
+                  </button>
+                ) : item.link ? (
+                  <Link
+                    to={item.link}
+                    className="rounded-lg border border-border px-2.5 py-1.5 text-[11px] font-semibold text-secondary hover:border-accent/40"
+                  >
+                    Open
+                  </Link>
+                ) : null}
+                {item.kind === 'file' && (
+                  <>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      disabled={deciding}
+                      onClick={() => onDecideFile(item.id, 'rejected')}
+                    >
+                      Reject
+                    </Button>
+                    <Button
+                      size="sm"
+                      disabled={deciding}
+                      onClick={() => onDecideFile(item.id, 'approved')}
+                    >
+                      Approve
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   )

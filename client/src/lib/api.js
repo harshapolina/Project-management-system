@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { compressFormDataImages } from './compressImage'
+import { compressFormDataUploads } from './compressImage'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api'
 
@@ -197,7 +197,7 @@ export async function api(path, options = {}) {
   // Shrink images once, here, so every upload in the app benefits without each
   // call site remembering to. Non-image parts are passed through untouched, and
   // a failed compression falls back to the original file.
-  const body = isFormData ? await compressFormDataImages(options.body) : options.body
+  const body = isFormData ? await compressFormDataUploads(options.body) : options.body
   const requestInit = { ...options, body, headers }
 
   let res = await fetch(`${API_URL}${path}`, requestInit)

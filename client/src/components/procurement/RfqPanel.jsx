@@ -4,6 +4,7 @@ import {
   Award,
   Check,
   ChevronRight,
+  Mail,
   MessageCircle,
   Plus,
   Send,
@@ -13,6 +14,8 @@ import {
 import { api } from '../../lib/api'
 import { formatInr } from '../../lib/format'
 import { rfqWhatsappLink } from '../../lib/phone'
+import { rfqEmailDraft } from '../../lib/composeEmail'
+import { openComposeEmail } from '../../store/composeEmailStore'
 import { toast } from '../ui'
 
 const cn = (...c) => c.filter(Boolean).join(' ')
@@ -517,11 +520,11 @@ function RfqCard({ rfq, onSend, onQuote, onAward, busy }) {
                         target="_blank"
                         rel="noreferrer"
                         onClick={() => onSend(rfq, v._id)}
-                        title={`Send ${rfq.rfqNumber} to ${v.name} on WhatsApp`}
+                        title={`Send ${rfq.rfqNumber} to ${v.name} on WhatsApp Web`}
                         className="inline-flex h-7 items-center gap-1 rounded-lg border border-[#b6e9d2] bg-[#ecfdf5] px-2 text-[11px] font-semibold text-[#0b7a52] transition hover:bg-[#d7f7e9]"
                       >
                         <MessageCircle className="h-3 w-3" />
-                        {entry.status === 'pending' ? 'Send' : 'Resend'}
+                        {entry.status === 'pending' ? 'WA' : 'WA again'}
                       </a>
                     ) : (
                       <span
@@ -531,6 +534,22 @@ function RfqCard({ rfq, onSend, onQuote, onAward, busy }) {
                         no phone
                       </span>
                     )}
+                    <button
+                      type="button"
+                      title={
+                        v.email
+                          ? `Email RFQ to ${v.name}`
+                          : 'Compose email — add vendor email if needed'
+                      }
+                      onClick={() => {
+                        openComposeEmail(rfqEmailDraft(rfq, v))
+                        onSend(rfq, v._id)
+                      }}
+                      className="inline-flex h-7 items-center gap-1 rounded-lg border border-accent/30 bg-accent/10 px-2 text-[11px] font-semibold text-accent transition hover:bg-accent/20"
+                    >
+                      <Mail className="h-3 w-3" />
+                      Mail
+                    </button>
                     <button
                       type="button"
                       onClick={() => onQuote(rfq, entry)}

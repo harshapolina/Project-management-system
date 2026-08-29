@@ -1,5 +1,6 @@
 import mongoose from 'mongoose'
 import { Readable } from 'stream'
+import { compressUploadBuffer } from './compressUpload.js'
 
 const BUCKET = 'media'
 
@@ -19,7 +20,9 @@ export async function storeFileBuffer(
 ) {
   if (!file?.buffer) throw new Error('No file buffer to store')
 
-  const filename = String(file.originalname || 'file').replace(
+  const compressed = await compressUploadBuffer(file)
+
+  const filename = String(compressed.originalname || 'file').replace(
     /[^a-zA-Z0-9._-]/g,
     '_',
   )
@@ -27,9 +30,9 @@ export async function storeFileBuffer(
     tenantId: tenantId ? String(tenantId) : null,
     uploadedBy: uploadedBy ? String(uploadedBy) : null,
     kind,
-    originalName: file.originalname || filename,
-    mimeType: file.mimetype || 'application/octet-stream',
-    size: file.size || file.buffer.length,
+    originalName: compressed.originalname || filename,
+    mimeType: compressed.mimetype || 'application/octet-stream',
+    size: compressed.size || compressed.buffer.length,
   }
 
   const id = await new Promise((resolve, reject) => {
@@ -39,7 +42,7 @@ export async function storeFileBuffer(
     })
     uploadStream.on('error', reject)
     uploadStream.on('finish', () => resolve(uploadStream.id))
-    Readable.from(file.buffer).pipe(uploadStream)
+    Readable.from(compressed.buffer).pipe(uploadStream)
   })
 
   const url = `/api/media/${id}`

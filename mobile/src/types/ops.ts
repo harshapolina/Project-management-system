@@ -5,6 +5,9 @@ export type LeadStage =
   | 'site_visit'
   | 'quotation_sent'
   | 'negotiation'
+  | 'mood_board'
+  | 'hot'
+  | 'dead'
   | 'won'
   | 'lost'
 

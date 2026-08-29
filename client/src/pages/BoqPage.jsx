@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Copy,
   FileSpreadsheet,
+  History,
   Image as ImageIcon,
   Layers,
   Maximize2,
@@ -100,6 +101,7 @@ function blankLine(room = 'General', { material = false } = {}) {
     amount: 0,
     room,
     image: '',
+    remarks: '',
     category: '',
     measureNo: 0,
     width: 1,
@@ -124,6 +126,7 @@ function normalizeItems(items = []) {
       amount: Number(it.amount) || 0,
       room: it.room || 'General',
       image: it.image || '',
+      remarks: it.remarks || it.note || '',
       category: it.category || '',
       measureNo: Number(it.measureNo) || 0,
       width: Number(it.width) || 0,
@@ -516,6 +519,7 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
   const [draft, setDraft] = useState(false)
   const [draftType, setDraftType] = useState(null)
   const [typeModalOpen, setTypeModalOpen] = useState(false)
+  const [historyOpen, setHistoryOpen] = useState(false)
 
   useEffect(() => {
     if (draft) return
@@ -616,6 +620,18 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
 
         <button
           type="button"
+          onClick={() => setHistoryOpen(true)}
+          title="All BOQ versions for this project"
+          className="inline-flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-[#e4eaf3] bg-surface px-2.5 text-[12px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
+        >
+          <History className="h-3.5 w-3.5" />
+          History
+          <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums text-[#64748b]">
+            {quotes.length || 0}
+          </span>
+        </button>
+        <button
+          type="button"
           onClick={() =>
             project?.type === 'blank' ? setTypeModalOpen(true) : startDraft()
           }
@@ -625,6 +641,27 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
           <span className="hidden sm:inline">New sheet</span>
         </button>
       </header>
+
+      {historyOpen ? (
+        <BoqHistoryPanel
+          quotes={quotes}
+          activeId={activeId}
+          onClose={() => setHistoryOpen(false)}
+          onSelect={(id) => {
+            setHistoryOpen(false)
+            setDraft(false)
+            setDraftType(null)
+            setActiveId(String(id))
+            const picked = quotes.find((q) => String(q._id) === String(id))
+            toast(
+              picked
+                ? `Opened · ${picked.title || 'BOQ version'}`
+                : 'Opened version',
+              { type: 'success' },
+            )
+          }}
+        />
+      ) : null}
 
       <div className="min-h-0 flex-1 print:h-auto print:overflow-visible">
         {loading ? (
@@ -637,7 +674,14 @@ function ProjectBoqBoard({ project, projectId, quotes, loading, onBack }) {
             quotation={activeQuote}
             project={project}
             projectId={projectId}
+            projectQuotes={quotes}
             draftBoqType={draft ? draftType : null}
+            onOpenHistory={() => setHistoryOpen(true)}
+            onSelectQuote={(id) => {
+              setDraft(false)
+              setDraftType(null)
+              setActiveId(String(id))
+            }}
             onCreated={(id) => {
               setDraft(false)
               setDraftType(null)
@@ -691,7 +735,10 @@ function BoqSheet({
   quotation,
   project,
   projectId,
+  projectQuotes = [],
   draftBoqType,
+  onOpenHistory,
+  onSelectQuote,
   onCreated,
   onDeleted,
   onCancelDraft,
@@ -755,7 +802,7 @@ function BoqSheet({
   const [dragOver, setDragOver] = useState(false)
   const [preview, setPreview] = useState(null)
 
-  const locked = false
+  const locked = (quotation?.status || 'draft') === 'approved'
   const status = quotation?.status || 'draft'
   const statusMeta = STATUS_META[status] || STATUS_META.draft
   const interiorMode = boqType === 'residential' || boqType === 'commercial'
@@ -893,9 +940,10 @@ function BoqSheet({
     () => ({
       ...docMeta,
       clientLogo: docMeta.clientLogo ? assetUrl(docMeta.clientLogo) : '',
-      companyLogo: docMeta.companyLogo ? assetUrl(docMeta.companyLogo) : '',
+      // Platform-admin company logo wins for the quotation letterhead mark.
+      companyLogo: assetUrl(tenant?.logoUrl || docMeta.companyLogo || '') || '',
     }),
-    [docMeta],
+    [docMeta, tenant?.logoUrl],
   )
 
   const subtotal = useMemo(
@@ -1026,6 +1074,8 @@ function BoqSheet({
         '',
       unit: i.unit || 'nos',
       image: i.image || '',
+      remarks: i.remarks || '',
+      note: i.remarks || i.note || '',
       // source hierarchy, so the quotation can redraw the template headings
       slNo: i.slNo || '',
       group: i.group || '',
@@ -1185,6 +1235,20 @@ function BoqSheet({
       onDeleted?.()
       await invalidate()
       toast('BOQ deleted', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const unlock = useMutation({
+    mutationFn: () =>
+      api(`/quotations/${quotation._id}/unlock`, { method: 'POST', body: {} }),
+    onSuccess: async (res) => {
+      await invalidate()
+      toast(
+        res?.message ||
+          'Unlocked for edits. Approved copy kept in History.',
+        { type: 'success' },
+      )
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
@@ -1501,81 +1565,99 @@ function BoqSheet({
               </p>
             </div>
 
-            {/* Grand total and Save live in the right rail, which also carries
-                the breakdown — no second copy here. */}
-            <div className="relative shrink-0">
+            {/* Actions stay on one horizontal row so History never stacks under ··· */}
+            <div className="flex shrink-0 items-center gap-1.5">
               <button
                 type="button"
-                onClick={() => setMenuOpen((v) => !v)}
-                aria-label="More actions"
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e4eaf3] bg-surface text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
+                onClick={() => onOpenHistory?.()}
+                title="All BOQ versions for this project"
+                className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e4eaf3] bg-surface px-2.5 text-[12px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <History className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">History</span>
+                <span className="rounded-md bg-[#f1f5f9] px-1.5 py-0.5 text-[10.5px] font-bold tabular-nums text-[#64748b]">
+                  {projectQuotes.length || 0}
+                </span>
               </button>
-              {menuOpen && (
-                <>
-                  <div
-                    className="fixed inset-0 z-20"
-                    onClick={() => setMenuOpen(false)}
-                    role="presentation"
-                  />
-                  <div className="absolute right-0 top-9 z-30 w-60 overflow-hidden rounded-xl border border-[#e1e8f1] bg-surface py-1 shadow-[0_20px_50px_-20px_rgba(11,18,32,0.35)]">
-                    {[
-                      {
-                        label: importing ? 'Reading…' : 'Import Excel / CSV',
-                        icon: Upload,
-                        disabled: locked || importing,
-                        run: () => excelInputRef.current?.click(),
-                      },
-                      {
-                        label: 'Download Excel template',
-                        icon: FileSpreadsheet,
-                        run: exportTemplate,
-                      },
-                      interiorMode && {
-                        label: 'Reload Cubic template',
-                        icon: Layers,
-                        disabled: locked,
-                        run: () => loadInteriorCatalog(),
-                      },
-                      materialMode && {
-                        label: 'Material catalog',
-                        icon: Layers,
-                        disabled: locked,
-                        run: () => setCatalogOpen(true),
-                      },
-                      { label: 'Print / PDF', icon: Printer, run: printSheet },
-                      onCancelDraft && {
-                        label: 'Discard draft',
-                        icon: X,
-                        danger: true,
-                        run: onCancelDraft,
-                      },
-                    ]
-                      .filter(Boolean)
-                      .map((a) => (
-                        <button
-                          key={a.label}
-                          type="button"
-                          disabled={a.disabled}
-                          onClick={() => {
-                            setMenuOpen(false)
-                            a.run()
-                          }}
-                          className={cn(
-                            'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-medium transition disabled:opacity-40',
-                            a.danger
-                              ? 'text-red-600 hover:bg-red-50'
-                              : 'text-[#0b1220] hover:bg-[#f4f7fb]',
-                          )}
-                        >
-                          <a.icon className="h-3.5 w-3.5 shrink-0 text-[#9aa7ba]" />
-                          {a.label}
-                        </button>
-                      ))}
-                  </div>
-                </>
-              )}
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setMenuOpen((v) => !v)}
+                  aria-label="More actions"
+                  className="flex h-8 w-8 items-center justify-center rounded-lg border border-[#e4eaf3] bg-surface text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220]"
+                >
+                  <MoreHorizontal className="h-4 w-4" />
+                </button>
+                {menuOpen && (
+                  <>
+                    <div
+                      className="fixed inset-0 z-20"
+                      onClick={() => setMenuOpen(false)}
+                      role="presentation"
+                    />
+                    <div className="absolute right-0 top-9 z-30 w-60 overflow-hidden rounded-xl border border-[#e1e8f1] bg-surface py-1 shadow-[0_20px_50px_-20px_rgba(11,18,32,0.35)]">
+                      {[
+                        {
+                          label: importing ? 'Reading…' : 'Import Excel / CSV',
+                          icon: Upload,
+                          disabled: locked || importing,
+                          run: () => excelInputRef.current?.click(),
+                        },
+                        {
+                          label: 'Download Excel template',
+                          icon: FileSpreadsheet,
+                          run: exportTemplate,
+                        },
+                        interiorMode && {
+                          label: 'Reload Cubic template',
+                          icon: Layers,
+                          disabled: locked,
+                          run: () => loadInteriorCatalog(),
+                        },
+                        materialMode && {
+                          label: 'Material catalog',
+                          icon: Layers,
+                          disabled: locked,
+                          run: () => setCatalogOpen(true),
+                        },
+                        { label: 'Print / PDF', icon: Printer, run: printSheet },
+                        {
+                          label: 'Version history',
+                          icon: History,
+                          run: () => onOpenHistory?.(),
+                        },
+                        onCancelDraft && {
+                          label: 'Discard draft',
+                          icon: X,
+                          danger: true,
+                          run: onCancelDraft,
+                        },
+                      ]
+                        .filter(Boolean)
+                        .map((a) => (
+                          <button
+                            key={a.label}
+                            type="button"
+                            disabled={a.disabled}
+                            onClick={() => {
+                              setMenuOpen(false)
+                              a.run()
+                            }}
+                            className={cn(
+                              'flex w-full items-center gap-2.5 px-3 py-2 text-left text-[12.5px] font-medium transition disabled:opacity-40',
+                              a.danger
+                                ? 'text-red-600 hover:bg-red-50'
+                                : 'text-[#0b1220] hover:bg-[#f4f7fb]',
+                            )}
+                          >
+                            <a.icon className="h-3.5 w-3.5 shrink-0 text-[#9aa7ba]" />
+                            {a.label}
+                          </button>
+                        ))}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
 
             <input
@@ -1589,6 +1671,24 @@ function BoqSheet({
               }}
             />
           </header>
+
+          {locked ? (
+            <div className="flex shrink-0 items-center gap-2 border-b border-amber-200/80 bg-amber-50 px-3 py-2 text-[12px] text-amber-900 sm:px-4">
+              <span className="font-semibold">Viewing locked version</span>
+              <span className="text-amber-800/80">
+                Approved sheets stay read-only. Open History to switch, or Unlock
+                to revise.
+              </span>
+              <button
+                type="button"
+                onClick={() => onOpenHistory?.()}
+                className="ml-auto inline-flex h-7 shrink-0 items-center gap-1 rounded-md border border-amber-300 bg-white px-2 text-[11px] font-semibold text-amber-900 transition hover:bg-amber-100"
+              >
+                <History className="h-3 w-3" />
+                Switch version
+              </button>
+            </div>
+          ) : null}
 
           {/* ── Steps: quantities → pricing → document, plus this step's tools ── */}
           <nav className="flex shrink-0 items-center gap-2 border-b border-[#edf1f7] bg-[#fafcfe] px-3 py-1.5 print:hidden sm:px-4">
@@ -1717,6 +1817,25 @@ function BoqSheet({
                       Approve
                     </button>
                   )}
+                  {status === 'approved' && (
+                    <button
+                      type="button"
+                      disabled={unlock.isPending || !quotation?._id}
+                      onClick={() => {
+                        if (
+                          !window.confirm(
+                            'Unlock this approved BOQ?\n\nA locked copy stays in History. This sheet reopens as a draft you can edit.',
+                          )
+                        )
+                          return
+                        unlock.mutate()
+                      }}
+                      className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-[#e4eaf3] bg-surface px-3 text-[12px] font-semibold text-[#5b6b80] transition hover:border-[#c7dbfb] hover:text-[#0b1220] disabled:opacity-50"
+                    >
+                      <Unlock className="h-3.5 w-3.5" />
+                      {unlock.isPending ? 'Unlocking…' : 'Unlock'}
+                    </button>
+                  )}
                 </>
               )}
             </div>
@@ -1779,10 +1898,10 @@ function BoqSheet({
               className={cn(
                 'w-full border-separate border-spacing-0 text-[13px]',
                 interiorMode
-                  ? 'min-w-[1100px]'
+                  ? 'min-w-[1280px]'
                   : materialMode
-                    ? 'min-w-[1180px] table-fixed'
-                    : 'min-w-[860px]',
+                    ? 'min-w-[1360px] table-fixed'
+                    : 'min-w-[1040px]',
               )}
             >
               <thead className="sticky top-0 z-10">
@@ -1824,6 +1943,8 @@ function BoqSheet({
                       )}
                     </>
                   )}
+                  <th className="w-[56px]">Image</th>
+                  <th className="w-[140px]">Remarks</th>
                   <th className="w-[84px]">Unit</th>
                   <th className="w-[72px] text-right">Qty</th>
                   <th className="w-[100px] text-right">Rate</th>
@@ -1836,7 +1957,7 @@ function BoqSheet({
                   <Fragment key={`${g.room}-${g.startIdx}`}>
                     <tr>
                       <td
-                        colSpan={interiorMode ? 11 : materialMode ? 12 : 8}
+                        colSpan={interiorMode ? 13 : materialMode ? 14 : 10}
                         className={cn(
                           'sticky top-[40px] z-[5] border-b px-3 py-2',
                           interiorMode
@@ -1977,44 +2098,7 @@ function BoqSheet({
                                 />
                               </td>
                             </>
-                          ) : !materialMode ? (
-                            <td className="px-1.5 py-2">
-                              {it.image ? (
-                                <div className="relative h-9 w-9">
-                                  <img
-                                    src={assetUrl(it.image)}
-                                    alt=""
-                                    onClick={() => setPreview(assetUrl(it.image))}
-                                    className="h-9 w-9 cursor-zoom-in rounded-lg object-cover ring-1 ring-[#e4eaf3] transition hover:ring-[#b6cef7]"
-                                  />
-                                  {!locked && (
-                                    <button
-                                      type="button"
-                                      title="Remove image"
-                                      onClick={() => updateItem(idx, 'image', '')}
-                                      className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#171717] text-white shadow-sm group-hover/row:flex"
-                                    >
-                                      <X className="h-2.5 w-2.5" />
-                                    </button>
-                                  )}
-                                </div>
-                              ) : (
-                                <button
-                                  type="button"
-                                  title="Attach a reference image to this line"
-                                  disabled={locked || uploading}
-                                  onClick={() => {
-                                    rowImageTarget.current = idx
-                                    rowImageInputRef.current?.click()
-                                  }}
-                                  className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-[#dde5ef] text-[#c3ccd9] transition hover:border-[#b6cef7] hover:bg-[#f5f9ff] hover:text-[#3ecf8e] disabled:opacity-40"
-                                >
-                                  <ImageIcon className="h-3.5 w-3.5" />
-                                </button>
-                              )}
-                            </td>
-                          ) : null}
-                          {interiorMode ? null : materialMode ? (
+                          ) : materialMode ? (
                             <>
                               <td className="px-1 py-1.5">
                                 <input
@@ -2089,28 +2173,91 @@ function BoqSheet({
                               </td>
                             </>
                           ) : (
-                            <td className="px-1.5 py-1.5">
-                              <input
-                                data-field="description"
-                                disabled={locked}
-                                value={it.description || ''}
-                                placeholder="Work / item description"
-                                onChange={(e) =>
-                                  updateItem(idx, 'description', e.target.value)
-                                }
-                                onKeyDown={(e) => {
-                                  if (e.key === 'Enter') {
-                                    e.preventDefault()
-                                    addLine(idx)
+                            <>
+                              <td className="px-1.5 py-1.5">
+                                <input
+                                  disabled={locked}
+                                  value={it.room || ''}
+                                  placeholder="Room"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'room', e.target.value)
                                   }
-                                }}
-                                className={cn(
-                                  cell,
-                                  'font-medium text-[#0b1220] placeholder:font-normal placeholder:text-[#c3ccd9]',
-                                )}
-                              />
-                            </td>
+                                  className={cn(cell, 'text-[#334155]')}
+                                />
+                              </td>
+                              <td className="px-1.5 py-1.5">
+                                <input
+                                  data-field="description"
+                                  disabled={locked}
+                                  value={it.description || ''}
+                                  placeholder="Work / item description"
+                                  onChange={(e) =>
+                                    updateItem(idx, 'description', e.target.value)
+                                  }
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      e.preventDefault()
+                                      addLine(idx)
+                                    }
+                                  }}
+                                  className={cn(
+                                    cell,
+                                    'font-medium text-[#0b1220] placeholder:font-normal placeholder:text-[#c3ccd9]',
+                                  )}
+                                />
+                              </td>
+                            </>
                           )}
+                          <td className="px-1.5 py-2">
+                            {it.image ? (
+                              <div className="relative h-9 w-9">
+                                <img
+                                  src={assetUrl(it.image)}
+                                  alt=""
+                                  onClick={() => setPreview(assetUrl(it.image))}
+                                  className="h-9 w-9 cursor-zoom-in rounded-lg object-cover ring-1 ring-[#e4eaf3] transition hover:ring-[#b6cef7]"
+                                />
+                                {!locked && (
+                                  <button
+                                    type="button"
+                                    title="Remove image"
+                                    onClick={() => updateItem(idx, 'image', '')}
+                                    className="absolute -right-1.5 -top-1.5 hidden h-4 w-4 items-center justify-center rounded-full bg-[#171717] text-white shadow-sm group-hover/row:flex"
+                                  >
+                                    <X className="h-2.5 w-2.5" />
+                                  </button>
+                                )}
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                title="Attach a reference image to this line"
+                                disabled={locked || uploading}
+                                onClick={() => {
+                                  rowImageTarget.current = idx
+                                  rowImageInputRef.current?.click()
+                                }}
+                                className="flex h-9 w-9 items-center justify-center rounded-lg border border-dashed border-[#dde5ef] text-[#c3ccd9] transition hover:border-[#b6cef7] hover:bg-[#f5f9ff] hover:text-[#3ecf8e] disabled:opacity-40"
+                              >
+                                <ImageIcon className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </td>
+                          <td className="px-1 py-1.5">
+                            <textarea
+                              disabled={locked}
+                              rows={2}
+                              value={it.remarks || ''}
+                              placeholder="Remarks"
+                              onChange={(e) =>
+                                updateItem(idx, 'remarks', e.target.value)
+                              }
+                              className={cn(
+                                cell,
+                                'min-h-[44px] resize-none whitespace-pre-wrap leading-snug text-[#475569]',
+                              )}
+                            />
+                          </td>
                           <td className="px-1 py-1.5">
                             <select
                               disabled={locked}
@@ -2476,20 +2623,20 @@ function BoqSheet({
                 {locked && (
                   <button
                     type="button"
-                    disabled={save.isPending}
+                    disabled={unlock.isPending || !quotation?._id}
                     onClick={() => {
                       if (
                         !window.confirm(
-                          'Reopen as draft? The sheet unlocks so you can revise it.',
+                          'Unlock this approved BOQ?\n\nA locked copy stays in History. This sheet reopens as a draft you can edit.',
                         )
                       )
                         return
-                      save.mutate(payload({ status: 'draft' }))
+                      unlock.mutate()
                     }}
                     className="inline-flex h-9 w-full items-center justify-center gap-1.5 rounded-xl border border-[#e4eaf3] bg-surface text-[12px] font-semibold text-secondary transition hover:bg-[#f4f7fb]"
                   >
                     <Unlock className="h-3.5 w-3.5" />
-                    Reopen as draft
+                    {unlock.isPending ? 'Unlocking…' : 'Unlock to edit'}
                   </button>
                 )}
 
@@ -2771,7 +2918,6 @@ function QuoteHeaderEditor({
   onClose,
 }) {
   const logoInput = useRef(null)
-  const companyInput = useRef(null)
 
   const Text = ({ label, k, placeholder, wide }) => (
     <label className={cn('block', wide && 'sm:col-span-2')}>
@@ -2873,12 +3019,30 @@ function QuoteHeaderEditor({
       </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <LogoRow
-          label="Company logo"
-          k="companyLogo"
-          inputRef={companyInput}
-          fallback={tenant?.name || 'Your logo'}
-        />
+        <div className="flex items-center gap-3 rounded-xl border border-[#e0d6c8] bg-white p-2.5">
+          <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#faf6f0] ring-1 ring-inset ring-[#efe6d8]">
+            {tenant?.logoUrl ? (
+              <img
+                src={assetUrl(tenant.logoUrl)}
+                alt="Company logo"
+                className="max-h-full max-w-full object-contain"
+              />
+            ) : (
+              <span className="px-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#b8ab9c]">
+                No logo
+              </span>
+            )}
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-[11.5px] font-semibold text-[#1c1917]">
+              Company logo
+            </p>
+            <p className="mt-0.5 text-[10.5px] leading-snug text-[#a3988a]">
+              From Platform Admin — prints on every quotation. Name text is not
+              shown next to it.
+            </p>
+          </div>
+        </div>
         <LogoRow
           label="Client logo"
           k="clientLogo"
@@ -3169,6 +3333,148 @@ function BoqPrintView({
           listed. Prepared by EPM — Editco Project Management.
         </p>
       </footer>
+    </div>
+  )
+}
+
+function formatHistoryDate(value) {
+  if (!value) return '—'
+  try {
+    return new Date(value).toLocaleString(undefined, {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    return '—'
+  }
+}
+
+function BoqHistoryPanel({ quotes = [], activeId, onClose, onSelect }) {
+  const sorted = [...quotes].sort((a, b) => {
+    const ta = new Date(a.updatedAt || a.createdAt || 0).getTime()
+    const tb = new Date(b.updatedAt || b.createdAt || 0).getTime()
+    return tb - ta
+  })
+
+  const openVersion = (q) => {
+    if (String(q._id) === String(activeId)) {
+      onClose?.()
+      return
+    }
+    onSelect?.(q._id)
+  }
+
+  return (
+    <div className="fixed inset-0 z-[85] flex justify-end print:hidden">
+      <button
+        type="button"
+        aria-label="Close history"
+        className="absolute inset-0 bg-[#0b1220]/45 backdrop-blur-[1px]"
+        onClick={onClose}
+      />
+      <aside className="relative flex h-full w-full max-w-md flex-col border-l border-[#e1e8f1] bg-surface shadow-[-20px_0_50px_-28px_rgba(11,18,32,0.45)]">
+        <header className="flex items-start gap-3 border-b border-[#edf1f7] px-5 py-4">
+          <div className="min-w-0 flex-1">
+            <div className="inline-flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-[0.12em] text-[#3ecf8e]">
+              <History className="h-3.5 w-3.5" />
+              Version history
+            </div>
+            <h2 className="mt-1 text-[16px] font-semibold tracking-tight text-[#0b1220]">
+              All BOQs for this project
+            </h2>
+            <p className="mt-0.5 text-[12px] text-[#8a98ac]">
+              Tap a version to open it. Use History again anytime to switch back.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-[#9aa7ba] transition hover:bg-[#f2f6fb] hover:text-[#0b1220]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto p-3">
+          {sorted.length === 0 ? (
+            <p className="px-3 py-10 text-center text-[13px] text-[#8a98ac]">
+              No BOQ versions yet for this project.
+            </p>
+          ) : (
+            <ul className="space-y-2">
+              {sorted.map((q) => {
+                const meta = STATUS_META[q.status] || STATUS_META.draft
+                const active = String(q._id) === String(activeId)
+                return (
+                  <li key={q._id}>
+                    <div
+                      className={cn(
+                        'rounded-xl border px-3.5 py-3 transition',
+                        active
+                          ? 'border-[#c7dbfb] bg-[#eef4ff] shadow-[0_1px_2px_rgba(37,99,235,0.08)]'
+                          : 'border-[#e9eef6] bg-surface',
+                      )}
+                    >
+                      <div className="flex items-start gap-2">
+                        <span
+                          className={cn(
+                            'mt-1.5 h-2 w-2 shrink-0 rounded-full',
+                            meta.dot,
+                          )}
+                        />
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2">
+                            <p className="truncate text-[13px] font-semibold text-[#0b1220]">
+                              {q.title || 'Untitled BOQ'}
+                            </p>
+                            {active ? (
+                              <span className="shrink-0 rounded bg-[#dbeafe] px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-[#1d4ed8]">
+                                Viewing
+                              </span>
+                            ) : null}
+                          </div>
+                          <p className="mt-0.5 truncate text-[11.5px] text-[#8a98ac]">
+                            {q.versionLabel ||
+                              BOQ_TYPE_META[q.boqType]?.label ||
+                              'Standard'}
+                            {' · '}
+                            {meta.label}
+                            {' · '}
+                            {(q.items || []).length} lines
+                          </p>
+                          <div className="mt-2 flex items-center justify-between gap-2">
+                            <span className="text-[11px] tabular-nums text-[#9aa7ba]">
+                              {formatHistoryDate(q.updatedAt || q.createdAt)}
+                            </span>
+                            <span className="text-[12.5px] font-semibold tabular-nums text-[#0b1220]">
+                              {formatInr(q.grandTotal || 0)}
+                            </span>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => openVersion(q)}
+                            className={cn(
+                              'mt-2.5 inline-flex h-8 w-full items-center justify-center gap-1.5 rounded-lg text-[12px] font-semibold transition',
+                              active
+                                ? 'border border-[#c7dbfb] bg-white text-[#24b47e]'
+                                : 'bg-[#0b1220] text-white hover:bg-[#1f2937]',
+                            )}
+                          >
+                            {active ? 'Close · keep viewing' : 'Open this version'}
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </li>
+                )
+              })}
+            </ul>
+          )}
+        </div>
+      </aside>
     </div>
   )
 }

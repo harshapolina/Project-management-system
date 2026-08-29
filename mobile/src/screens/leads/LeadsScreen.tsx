@@ -34,12 +34,23 @@ function stageColorMap(c: AppColors): Record<LeadStage, string> {
     site_visit: c.accent,
     quotation_sent: c.warning,
     negotiation: c.warning,
+    mood_board: c.accent,
+    hot: c.success,
+    dead: c.danger,
     won: c.success,
     lost: c.danger,
   }
 }
 
-const STAGE_ORDER: LeadStage[] = ['new_enquiry', 'site_visit', 'quotation_sent', 'negotiation', 'won', 'lost']
+const STAGE_ORDER: LeadStage[] = [
+  'new_enquiry',
+  'site_visit',
+  'quotation_sent',
+  'negotiation',
+  'mood_board',
+  'hot',
+  'dead',
+]
 
 export function LeadsScreen({ navigation }: Props) {
   const colors = useColors()
@@ -75,7 +86,7 @@ export function LeadsScreen({ navigation }: Props) {
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ['leads'] })
       queryClient.invalidateQueries({ queryKey: ['projects'] })
-      Alert.alert('Converted', `${result.project.name} was created from this lead.`, [
+  Alert.alert('Marked Hot', `${result.project.name} was added to Projects.`, [
         {
           text: 'Open project',
           onPress: () =>
@@ -92,9 +103,11 @@ export function LeadsScreen({ navigation }: Props) {
   })
 
   const nextStage = (stage: LeadStage): LeadStage | null => {
-    const idx = STAGE_ORDER.indexOf(stage)
-    // Stop before won/lost — those are explicit actions
-    if (idx < 0 || idx >= STAGE_ORDER.indexOf('won') - 1) return null
+    const normalized =
+      stage === 'won' ? 'hot' : stage === 'lost' ? 'dead' : stage
+    const idx = STAGE_ORDER.indexOf(normalized)
+    // Stop before hot/dead — those are explicit actions
+    if (idx < 0 || idx >= STAGE_ORDER.indexOf('hot') - 1) return null
     return STAGE_ORDER[idx + 1]
   }
 
@@ -186,38 +199,30 @@ export function LeadsScreen({ navigation }: Props) {
                         <Text style={styles.actionText}>Move to {stageLabel(next)}</Text>
                       </Pressable>
                     ) : null}
-                    {item.stage !== 'won' && item.stage !== 'lost' ? (
+                    {item.stage !== 'hot' &&
+                    item.stage !== 'dead' &&
+                    item.stage !== 'won' &&
+                    item.stage !== 'lost' ? (
                       <>
                         <Pressable
                           style={[styles.actionBtn, styles.wonBtn]}
                           disabled={busyId === item._id}
                           onPress={() => {
                             setBusyId(item._id)
-                            stageMutation.mutate({ id: item._id, stage: 'won' })
+                            convertMutation.mutate(item._id)
                           }}
                         >
-                          <Text style={[styles.actionText, { color: colors.success }]}>Mark won</Text>
+                          <Text style={[styles.actionText, { color: colors.success }]}>Mark Hot</Text>
                         </Pressable>
                         <Pressable
                           style={[styles.actionBtn, styles.lostBtn]}
                           disabled={busyId === item._id}
                           onPress={() => {
                             setBusyId(item._id)
-                            stageMutation.mutate({ id: item._id, stage: 'lost' })
+                            stageMutation.mutate({ id: item._id, stage: 'dead' })
                           }}
                         >
-                          <Text style={[styles.actionText, { color: colors.danger }]}>Mark lost</Text>
-                        </Pressable>
-                        <Pressable
-                          style={[styles.actionBtn, styles.convertBtn]}
-                          disabled={busyId === item._id}
-                          onPress={() => {
-                            setBusyId(item._id)
-                            convertMutation.mutate(item._id)
-                          }}
-                        >
-                          <Ionicons name="checkmark-circle-outline" size={14} color={colors.success} />
-                          <Text style={[styles.actionText, { color: colors.success }]}>Convert to project</Text>
+                          <Text style={[styles.actionText, { color: colors.danger }]}>Mark Dead</Text>
                         </Pressable>
                       </>
                     ) : null}

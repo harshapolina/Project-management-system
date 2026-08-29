@@ -211,7 +211,15 @@ export function ProjectOverview() {
                 <label className="mt-3 flex items-center gap-2 text-[12px] text-secondary">
                   Property type
                   <select
-                    value={project.type === 'commercial' ? 'commercial' : 'residential'}
+                    value={
+                      ['residential', 'commercial', 'renovation', 'custom'].includes(
+                        project.type,
+                      )
+                        ? project.type
+                        : project.type === 'blank'
+                          ? 'custom'
+                          : 'residential'
+                    }
                     onChange={(e) =>
                       api(`/projects/${id}`, {
                         method: 'PATCH',
@@ -227,11 +235,19 @@ export function ProjectOverview() {
                   >
                     <option value="residential">Residential</option>
                     <option value="commercial">Commercial</option>
+                    <option value="renovation">Renovation</option>
+                    <option value="custom">Custom</option>
                   </select>
                 </label>
               ) : (
                 <p className="mt-2 text-[12px] font-semibold uppercase tracking-[0.08em] text-secondary">
-                  {project.type === 'commercial' ? 'Commercial' : 'Residential'}
+                  {project.type === 'commercial'
+                    ? 'Commercial'
+                    : project.type === 'renovation'
+                      ? 'Renovation'
+                      : project.type === 'custom' || project.type === 'blank'
+                        ? 'Custom'
+                        : 'Residential'}
                 </p>
               )}
             </div>

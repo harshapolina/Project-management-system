@@ -36,6 +36,21 @@ const TEMPLATE_TASKS = {
     { title: 'Fit-out execution', stage: 'execution' },
     { title: 'Handover pack', stage: 'handover' },
   ],
+  renovation: [
+    { title: 'Site survey & as-built notes', stage: 'design' },
+    { title: 'Renovation moodboards', stage: 'design' },
+    { title: 'Scope & demolition plan', stage: 'planning' },
+    { title: 'Renovation BOQ', stage: 'planning' },
+    { title: 'Material & finish shortlist', stage: 'procurement' },
+    { title: 'Demolition & site prep', stage: 'execution' },
+    { title: 'Fit-out & finishing', stage: 'execution' },
+    { title: 'Snag walkthrough', stage: 'handover' },
+  ],
+  custom: [
+    { title: 'Define project milestones', stage: 'design' },
+    { title: 'Confirm scope with client', stage: 'design', requiresApproval: true },
+    { title: 'Build custom schedule', stage: 'planning' },
+  ],
   blank: [
     { title: 'Define project milestones', stage: 'design' },
   ],
@@ -327,6 +342,16 @@ router.post(
 
     if (!name || !clientName) throw new AppError('Name and client are required')
 
+    const allowedTypes = ['residential', 'commercial', 'renovation', 'custom']
+    const resolvedType =
+      type === 'blank' ? 'custom' : type || 'residential'
+    if (!allowedTypes.includes(resolvedType)) {
+      throw new AppError(
+        'Property type must be residential, commercial, renovation, or custom',
+        400,
+      )
+    }
+
     const stages = STAGE_DEFS.map((s, i) => ({
       ...s,
       progress: 0,
@@ -338,7 +363,7 @@ router.post(
         name,
         clientName,
         clientPhone: clientPhone || '',
-        type,
+        type: resolvedType,
         location,
         startDate,
         endDate,
@@ -357,7 +382,7 @@ router.post(
       }),
     )
 
-    const template = TEMPLATE_TASKS[type] || TEMPLATE_TASKS.blank
+    const template = TEMPLATE_TASKS[resolvedType] || TEMPLATE_TASKS.custom
     await Task.insertMany(
       template.map((t) =>
         withTenant(req, {

@@ -35,7 +35,7 @@ export const ACCESS_TOGGLES = [
 
 const ALL_PERMISSION_KEYS = ACCESS_TOGGLES.map((item) => item.key)
 
-export function defaultPermissionsForRole(role, customRoles = []) {
+export function defaultPermissionsForRole(role, customRoles = [], _seen = null) {
   if (role === 'admin' || role === 'owner') {
     return Object.fromEntries(ALL_PERMISSION_KEYS.map((key) => [key, true]))
   }
@@ -52,16 +52,63 @@ export function defaultPermissionsForRole(role, customRoles = []) {
   if (['project_manager', 'designer', 'site_supervisor'].includes(role)) {
     return { impact: true }
   }
+  if (role === 'client' || role === 'vendor') {
+    return {}
+  }
+  // Department templates used as “Based on” for custom roles
+  if (role === 'dept_design') {
+    return { impact: true, boq: true, 'files.manage': true, 'tasks.create': true }
+  }
+  if (role === 'dept_site') {
+    return { impact: true, site: true, 'tasks.create': true, 'tasks.manage': true }
+  }
+  if (role === 'dept_procurement') {
+    return { impact: true, procurement: true, 'tasks.create': true }
+  }
+  if (role === 'dept_accounts') {
+    return { impact: true, finance: true }
+  }
+  if (role === 'dept_sales') {
+    return { impact: true, leads: true }
+  }
+  if (role === 'dept_admin') {
+    return {
+      impact: true,
+      people: true,
+      'projects.create': true,
+      'tasks.create': true,
+    }
+  }
   const custom = (customRoles || []).find((r) => r.key === role)
   if (custom) {
+    const seen = _seen || new Set()
+    if (seen.has(role)) return { impact: true }
+    seen.add(role)
     return {
-      ...defaultPermissionsForRole(custom.basedOn || 'designer'),
+      ...defaultPermissionsForRole(
+        custom.basedOn || 'designer',
+        customRoles,
+        seen,
+      ),
       ...(custom.permissions && typeof custom.permissions === 'object'
         ? custom.permissions
         : {}),
     }
   }
   return {}
+}
+
+/** Built-in roles + department templates + existing custom roles. */
+export function customRoleBaseOptions(customRoles = []) {
+  const custom = (customRoles || []).map((r) => ({
+    value: r.key,
+    label: `${r.label} (custom)`,
+  }))
+  return [
+    ...CUSTOM_ROLE_BASE_OPTIONS,
+    ...DEPARTMENT_BASE_OPTIONS,
+    ...custom,
+  ]
 }
 
 export function permissionsForUser(user, tenant = null) {
@@ -227,6 +274,16 @@ export const CUSTOM_ROLE_BASE_OPTIONS = [
   { value: 'hr', label: 'HR' },
   { value: 'client', label: 'Client' },
   { value: 'vendor', label: 'Vendor' },
+]
+
+/** Department templates for “Based on” when creating a custom role */
+export const DEPARTMENT_BASE_OPTIONS = [
+  { value: 'dept_design', label: 'Design department' },
+  { value: 'dept_site', label: 'Site / execution department' },
+  { value: 'dept_procurement', label: 'Procurement department' },
+  { value: 'dept_accounts', label: 'Accounts / finance department' },
+  { value: 'dept_sales', label: 'Sales / enquiries department' },
+  { value: 'dept_admin', label: 'Admin department' },
 ]
 
 export const NEW_CUSTOM_ROLE_VALUE = '__new_custom_role__'

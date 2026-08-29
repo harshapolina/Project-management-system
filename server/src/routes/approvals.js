@@ -13,6 +13,9 @@ import {
   BUILTIN_APPROVAL_TYPE_KEYS,
 } from '../models/Approval.js'
 import { User, ROLES } from '../models/User.js'
+import { ProjectFile } from '../models/LeadQuotationFile.js'
+import { Expense } from '../models/ProcurementFinance.js'
+import { Task } from '../models/Task.js'
 import {
   computeBands,
   listApprovalTypes,
@@ -22,10 +25,7 @@ import {
 
 const router = express.Router()
 
-/**
- * Approval routing is workspace policy — who signs off on spending — so it
- * stays with owners and admins rather than following a feature permission.
- */
+/** Approval routing + inbox for pending sign-offs. */
 function requireApprovalAdmin(req, _res, next) {
   if (req.user?.isPlatformAdmin || isCompanyAdminRole(req.user?.role)) return next()
   next(new AppError('Only owners and admins can change approval routing', 403))
@@ -304,6 +304,119 @@ router.get(
       : null
 
     res.json({ success: true, rule, approver })
+  }),
+)
+
+/**
+ * Pending sign-offs for the current user (and optionally all pending for admins).
+ * Drawing/file approvals are first-class; expenses and tasks pending sign-off are included.
+ */
+router.get(
+  '/inbox',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const mineOnly = req.query.scope !== 'all'
+    const isAdmin =
+      req.user?.isPlatformAdmin || isCompanyAdminRole(req.user?.role)
+    const userId = req.user._id
+
+    const fileFilter = tenantFilter(req, { approvalStatus: 'pending' })
+    if (mineOnly || !isAdmin) {
+      fileFilter.approver = userId
+    }
+
+    const files = await ProjectFile.find(fileFilter)
+      .populate('approver', 'name avatar role')
+      .populate('requestedBy', 'name avatar role')
+      .populate('projectId', 'name code clientName')
+      .sort({ requestedAt: -1 })
+      .lean()
+
+    const expenseFilter = tenantFilter(req, { status: 'pending' })
+    if (mineOnly || !isAdmin) {
+      expenseFilter.$or = [{ approver: userId }, { approver: null }]
+    }
+    const expenses = await Expense.find(expenseFilter)
+      .populate('approver', 'name avatar role')
+      .populate('projectId', 'name code')
+      .sort({ createdAt: -1 })
+      .limit(50)
+      .lean()
+
+    const taskFilter = tenantFilter(req, {
+      requiresApproval: true,
+      approvalStatus: 'pending',
+    })
+    if (mineOnly || !isAdmin) {
+      taskFilter.approver = userId
+    }
+    const tasks = await Task.find(taskFilter)
+      .populate('approver', 'name avatar role')
+      .populate('projectId', 'name code')
+      .sort({ updatedAt: -1 })
+      .limit(50)
+      .lean()
+
+    const items = [
+      ...files.map((f) => ({
+        kind: 'file',
+        id: String(f._id),
+        title: f.name,
+        subtitle: f.projectId?.name || 'Project file',
+        status: f.approvalStatus,
+        requestedAt: f.requestedAt || f.updatedAt,
+        requestedBy: f.requestedBy,
+        approver: f.approver,
+        projectId: f.projectId?._id || f.projectId,
+        projectName: f.projectId?.name || '',
+        folder: f.folder,
+        previewUrl: f.versions?.[f.versions.length - 1]?.url || '',
+        note: f.approvalNote || '',
+        link: `/projects/${f.projectId?._id || f.projectId}/files`,
+      })),
+      ...expenses.map((e) => ({
+        kind: 'expense',
+        id: String(e._id),
+        title: e.description || e.category || 'Expense',
+        subtitle: e.projectId?.name || 'Expense',
+        status: e.status,
+        amount: e.amount,
+        requestedAt: e.createdAt,
+        approver: e.approver,
+        projectId: e.projectId?._id || e.projectId,
+        projectName: e.projectId?.name || '',
+        link: '/money?tab=approvals',
+      })),
+      ...tasks.map((t) => ({
+        kind: 'task',
+        id: String(t._id),
+        title: t.title,
+        subtitle: t.projectId?.name || 'Task',
+        status: t.approvalStatus,
+        requestedAt: t.updatedAt,
+        approver: t.approver,
+        projectId: t.projectId?._id || t.projectId,
+        projectName: t.projectId?.name || '',
+        link: t.projectId
+          ? `/projects/${t.projectId._id || t.projectId}/tasks`
+          : '/my-work',
+      })),
+    ].sort(
+      (a, b) =>
+        new Date(b.requestedAt || 0).getTime() -
+        new Date(a.requestedAt || 0).getTime(),
+    )
+
+    res.json({
+      success: true,
+      items,
+      counts: {
+        files: files.length,
+        expenses: expenses.length,
+        tasks: tasks.length,
+        total: items.length,
+      },
+    })
   }),
 )
 

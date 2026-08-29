@@ -23,6 +23,7 @@ import { PlatformLoginPage } from './pages/auth/PlatformLoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { HomePage } from './pages/HomePage'
 import { PortfolioPage } from './pages/PortfolioPage'
+import { LiveDashboardPage } from './pages/LiveDashboardPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectWorkspace } from './pages/project/ProjectWorkspace'
 import { ProjectOverview } from './pages/project/ProjectOverview'
@@ -211,6 +212,16 @@ export default function App() {
                 <CapabilityGate capability="portfolio">
                   <PagePad>
                     <PortfolioPage />
+                  </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/live-board"
+              element={
+                <CapabilityGate capability="myWork">
+                  <PagePad>
+                    <LiveDashboardPage />
                   </PagePad>
                 </CapabilityGate>
               }

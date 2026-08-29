@@ -34,12 +34,14 @@ export function splitPhone(phone) {
   return { code: '+91', number: raw.replace(/\D/g, '') }
 }
 
-/** wa.me deep link for a stored phone. Returns '' when no usable number. */
+/** WhatsApp Web link for desktop browsers. Returns '' when no usable number. */
 export function whatsappLink(phone, message = '') {
   const digits = String(phone || '').replace(/\D/g, '')
   if (!digits) return ''
-  const q = message ? `?text=${encodeURIComponent(message)}` : ''
-  return `https://wa.me/${digits}${q}`
+  const params = new URLSearchParams()
+  params.set('phone', digits)
+  if (message) params.set('text', message)
+  return `https://web.whatsapp.com/send?${params.toString()}`
 }
 
 const inr = (n) => `₹${Number(n || 0).toLocaleString('en-IN')}`

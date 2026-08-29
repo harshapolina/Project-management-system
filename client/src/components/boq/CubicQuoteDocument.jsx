@@ -1,5 +1,6 @@
 import { Fragment, useMemo } from 'react'
 import { formatInr } from '../../lib/format'
+import { assetUrl } from '../../lib/api'
 
 /* ─────────────────────────── line maths ─────────────────────────── */
 
@@ -135,19 +136,24 @@ const SHEET =
   'cubic-sheet relative mx-auto w-full max-w-[210mm] bg-white px-4 pt-4 text-[#1c1917] shadow-[0_20px_60px_-32px_rgba(28,25,23,0.5)] ring-1 ring-[#e6ded2] print:shadow-none print:ring-0 sm:px-5 sm:pt-5 pb-2'
 
 function LogoSlot({ src, alt, fallback }) {
-  if (src) {
+  const url = src ? assetUrl(src) : ''
+  if (url) {
     return (
       <img
-        src={src}
-        alt={alt}
-        className="max-h-[62px] max-w-full object-contain"
+        src={url}
+        alt={alt || ''}
+        className="max-h-[72px] max-w-full object-contain"
         crossOrigin="anonymous"
       />
     )
   }
+  // No company text in the logo cell — platform logo only when set.
   return (
-    <span className="text-center text-[13px] font-bold uppercase leading-tight tracking-[0.06em] text-[#1c1917]">
-      {fallback}
+    <span
+      className="inline-flex h-[52px] min-w-[120px] items-center justify-center rounded border border-dashed border-[#d8cec0] text-[9px] font-semibold uppercase tracking-[0.12em] text-[#a3988a]"
+      title={fallback || 'Company logo'}
+    >
+      Logo
     </span>
   )
 }
@@ -510,9 +516,9 @@ function ActualsTable({ items }) {
             </td>
             <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 text-[#1c1917]">
               {it.description}
-              {it.note ? (
+              {it.remarks || it.note ? (
                 <span className="mt-0.5 block whitespace-pre-line text-[8.5px] text-[#a3988a]">
-                  {it.note}
+                  {it.remarks || it.note}
                 </span>
               ) : null}
             </td>
@@ -604,7 +610,11 @@ export function CubicQuoteDocument({
   // residential sheets band in green, commercial estimates in the pink of the
   // source workbook
   const accent = measured ? '#e8f0e4' : '#e8b7cd'
-  const header = { ...docMeta, companyLogo: docMeta.companyLogo || tenant?.logoUrl || '' }
+  const header = {
+    ...docMeta,
+    // Always prefer the platform-admin company logo for the letterhead mark.
+    companyLogo: tenant?.logoUrl || docMeta.companyLogo || '',
+  }
 
   const customerName =
     header.customerName || project?.clientName || tenant?.name || ''

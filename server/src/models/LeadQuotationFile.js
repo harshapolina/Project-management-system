@@ -18,8 +18,12 @@ const leadSchema = new mongoose.Schema(
       enum: [
         'new_enquiry',
         'site_visit',
+        'mood_board',
         'quotation_sent',
         'negotiation',
+        'hot',
+        'dead',
+        // legacy aliases (normalized on write)
         'won',
         'lost',
       ],
@@ -44,6 +48,8 @@ const boqItemSchema = new mongoose.Schema(
     amount: { type: Number, default: 0 },
     room: { type: String, default: 'General' },
     image: { type: String, default: '' },
+    /** Free-text line remarks (site note / alternate / client comment) */
+    remarks: { type: String, default: '' },
     category: { type: String, default: '' },
     measureNo: { type: Number, default: 0 },
     width: { type: Number, default: 0 },
@@ -228,6 +234,38 @@ const fileSchema = new mongoose.Schema(
       enum: ['draft', 'sent', 'approved', 'rejected'],
       default: 'draft',
     },
+    /** pending | approved | rejected | none — sign-off lifecycle separate from folder status */
+    approvalStatus: {
+      type: String,
+      enum: ['none', 'pending', 'approved', 'rejected'],
+      default: 'none',
+    },
+    approvalType: { type: String, default: 'drawing' },
+    approvalRule: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'ApprovalRule',
+      default: null,
+    },
+    approver: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    requestedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    requestedAt: Date,
+    decidedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+    },
+    decidedAt: Date,
+    approvalNote: { type: String, default: '' },
+    decisionNote: { type: String, default: '' },
     clientVisible: { type: Boolean, default: false },
     versions: [fileVersionSchema],
     currentVersion: { type: Number, default: 1 },

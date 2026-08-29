@@ -25,7 +25,9 @@ import impactRoutes from './routes/impact.js'
 import inventoryRoutes from './routes/inventory.js'
 import rfqRoutes from './routes/rfq.js'
 import billingRoutes from './routes/billing.js'
+import procurementFlowRoutes from './routes/procurementFlow.js'
 import mediaRoutes from './routes/media.js'
+import workspaceSettingsRoutes from './routes/workspaceSettings.js'
 
 import { registerSocketAuth, registerSocketHandlers } from './lib/socketAuth.js'
 
@@ -150,10 +152,12 @@ export function createApp({ enableSockets = true } = {}) {
   app.use('/api', inventoryRoutes)
   app.use('/api', rfqRoutes)
   app.use('/api', billingRoutes)
+  app.use('/api', procurementFlowRoutes)
   app.use('/api', mailRoutes)
   app.use('/api', calendarRoutes)
   app.use('/api', spacesRoutes)
   app.use('/api', channelsRoutes)
+  app.use('/api/settings', workspaceSettingsRoutes)
 
   app.use(errorHandler)
 

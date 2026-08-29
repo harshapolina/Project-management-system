@@ -14,10 +14,12 @@ import {
   UserPlus,
   Palette,
   SlidersHorizontal,
+  Mail,
 } from 'lucide-react'
 import { api, getTenantSlug, useAuthStore } from '../lib/api'
 import { InviteDetailsModal } from '../components/layout/GlobalChrome'
 import { PageToolbar } from '../components/layout/PageToolbar'
+import { MailAndAlertsSettings } from '../components/settings/MailAndAlertsSettings'
 import { cn } from '../lib/utils'
 import {
   Avatar,
@@ -29,6 +31,11 @@ import {
   toast,
 } from '../components/ui'
 import { useUiStore } from '../store/uiStore'
+import {
+  PILL_ACTIVE,
+  PILL_IDLE,
+  PILL_TRACK,
+} from '../components/layout/PageToolbar'
 
 export { ReportsPage } from './ReportsPage'
 
@@ -104,6 +111,7 @@ export function SettingsPage() {
   const setUser = useAuthStore((s) => s.setUser)
   const avatarInputRef = useRef(null)
   const [avatarBusy, setAvatarBusy] = useState(false)
+  const [tab, setTab] = useState('account')
   const [name, setName] = useStateSafe(user?.name || '')
   const [title, setTitle] = useStateSafe(user?.title || '')
   const [invite, setInvite] = useState({
@@ -116,6 +124,8 @@ export function SettingsPage() {
   const canInvite =
     user?.isPlatformAdmin ||
     ['admin', 'owner', 'hr', 'project_manager'].includes(user?.role)
+  const canEditMail =
+    user?.isPlatformAdmin || ['admin', 'owner'].includes(user?.role)
 
   /**
    * The photo saves as soon as it's chosen rather than waiting for "Save
@@ -217,14 +227,14 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="mx-auto w-full max-w-2xl space-y-4 pb-10">
+    <div className="mx-auto w-full max-w-3xl space-y-4 pb-10">
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[22px] font-semibold tracking-tight text-primary">
             Settings
           </h1>
           <p className="mt-0.5 text-[13px] text-secondary">
-            Profile, appearance, and workspace preferences
+            Profile, email SMTP, and who gets popups & mail for every event
           </p>
         </div>
         {(tenant?.slug || user?.tenantId) && (
@@ -235,6 +245,36 @@ export function SettingsPage() {
         )}
       </header>
 
+      <div className={PILL_TRACK}>
+        <button
+          type="button"
+          onClick={() => setTab('account')}
+          className={cn(
+            'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
+            tab === 'account' ? PILL_ACTIVE : PILL_IDLE,
+          )}
+        >
+          Account
+        </button>
+        <button
+          type="button"
+          onClick={() => setTab('email')}
+          className={cn(
+            'rounded-full px-3.5 py-1.5 text-[13px] font-semibold transition',
+            tab === 'email' ? PILL_ACTIVE : PILL_IDLE,
+          )}
+        >
+          <span className="inline-flex items-center gap-1.5">
+            <Mail className="h-3.5 w-3.5" />
+            Email & alerts
+          </span>
+        </button>
+      </div>
+
+      {tab === 'email' ? (
+        <MailAndAlertsSettings canEdit={canEditMail} />
+      ) : (
+        <>
       <AppearanceSettings />
 
       {user?.mustChangePassword && (
@@ -447,6 +487,8 @@ export function SettingsPage() {
       />
 
       <CustomFieldsSettings />
+        </>
+      )}
     </div>
   )
 }

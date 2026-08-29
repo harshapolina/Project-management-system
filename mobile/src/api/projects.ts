@@ -5,7 +5,7 @@ export interface CreateProjectPayload {
   name: string
   clientName: string
   clientPhone?: string
-  type?: 'residential' | 'commercial' | 'blank'
+  type?: 'residential' | 'commercial' | 'renovation' | 'custom' | 'blank'
   location?: string
   startDate?: string
   endDate?: string
