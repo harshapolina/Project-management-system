@@ -2332,4 +2332,43 @@ router.post(
   }),
 )
 
+router.delete(
+  '/admin/users/:id',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (!canManageEmployeeAccess(req.user)) {
+      throw new AppError('Only an Admin or Owner can delete people', 403)
+    }
+
+    if (String(req.user._id) === String(req.params.id)) {
+      throw new AppError('You cannot delete your own account', 400)
+    }
+
+    const target = await User.findOne(
+      tenantFilter(req, {
+        _id: req.params.id,
+        isPlatformAdmin: { $ne: true },
+      }),
+    )
+    if (!target) throw new AppError('Employee not found', 404)
+
+    if (req.user.role === 'admin' && target.role === 'owner') {
+      throw new AppError('Only an Owner can delete another Owner', 403)
+    }
+
+    const removed = {
+      id: String(target._id),
+      name: target.name,
+      email: target.email,
+    }
+    await User.deleteOne({ _id: target._id })
+
+    res.json({
+      success: true,
+      message: `${removed.name} removed from this company`,
+      removed,
+    })
+  }),
+)
+
 export default router

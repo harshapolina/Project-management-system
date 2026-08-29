@@ -232,6 +232,18 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
     onError: (e) => toast(e.message, { type: 'error' }),
   })
 
+  const deleteUser = useMutation({
+    mutationFn: (userId) =>
+      api(`/platform/tenants/${tenant._id}/users/${userId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (res) => {
+      toast(res.message || 'Person deleted', { type: 'success' })
+      invalidate()
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
   const copyLogin = async () => {
     const url = companyLoginUrl(tenant.slug)
     try {
@@ -681,6 +693,23 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
                             >
                               <UserMinus className="mr-1 h-3.5 w-3.5" />
                               {u.isActive !== false ? 'Deactivate' : 'Activate'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              loading={deleteUser.isPending}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Permanently delete ${u.name} from ${tenant.name}?\n\nThey will lose login access immediately.`,
+                                  )
+                                ) {
+                                  deleteUser.mutate(u.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              Delete
                             </Button>
                           </div>
                         </td>
