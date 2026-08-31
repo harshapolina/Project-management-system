@@ -40,6 +40,7 @@ import { LeadsPage } from './pages/LeadsPage'
 import { FinancePage } from './pages/MoneyPage'
 import { MaterialsPage } from './pages/MaterialsPage'
 import { BillingPage } from './pages/BillingPage'
+import { TaxInvoicesPage } from './pages/TaxInvoicesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ApprovalsPage } from './pages/ApprovalsPage'
 import {
@@ -337,6 +338,14 @@ export default function App() {
                   <PagePad>
                     <BillingPage />
                   </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/billing/tax-invoices"
+              element={
+                <CapabilityGate capability="finance">
+                  <TaxInvoicesPage />
                 </CapabilityGate>
               }
             />

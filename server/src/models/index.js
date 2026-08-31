@@ -25,6 +25,7 @@ export {
   VendorPayment,
 } from './ProcurementFlow.js'
 export { VendorInvoice } from './VendorInvoice.js'
+export { ClientInvoice } from './ClientInvoice.js'
 export { Message } from './Message.js'
 export { WorkspaceSettings } from './WorkspaceSettings.js'
 export { MailSettings, NOTIFICATION_EVENTS } from './MailSettings.js'

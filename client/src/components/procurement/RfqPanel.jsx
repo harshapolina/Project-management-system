@@ -62,16 +62,22 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
   const [closing, setClosing] = useState('')
   const [notes, setNotes] = useState('')
   const [extraRows, setExtraRows] = useState([])
+  /** Editable vendor-rate cells for BOQ lines (kept internal — not sent to vendors). */
+  const [boqVendorRates, setBoqVendorRates] = useState(() => ({}))
   if (!open) return null
 
   const materialLines = [
-    ...items.map((it) => ({
-      key: it._key || it._id,
-      description: it.description || 'Item',
-      qty: num(it.qty),
-      unit: it.unit || 'nos',
-      fromBoq: true,
-    })),
+    ...items.map((it) => {
+      const key = it._key || it._id
+      return {
+        key,
+        description: it.description || 'Item',
+        qty: num(it.qty),
+        unit: it.unit || 'nos',
+        vendorRate: boqVendorRates[key] ?? '',
+        fromBoq: true,
+      }
+    }),
     ...extraRows,
   ]
 
@@ -83,6 +89,7 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
         description: '',
         qty: 1,
         unit: 'nos',
+        vendorRate: '',
         fromBoq: false,
       },
     ])
@@ -92,6 +99,14 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
     setExtraRows((rows) =>
       rows.map((r) => (r.key === key ? { ...r, ...patch } : r)),
     )
+  }
+
+  const updateVendorRate = (line, value) => {
+    if (line.fromBoq) {
+      setBoqVendorRates((prev) => ({ ...prev, [line.key]: value }))
+    } else {
+      updateExtra(line.key, { vendorRate: value })
+    }
   }
 
   const removeExtra = (key) => {
@@ -225,8 +240,18 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
                         />
                       )}
                     </td>
-                    <td className="text-right text-[11px] font-medium text-[#9aa7ba]">
-                      —
+                    <td className="text-right">
+                      <input
+                        type="number"
+                        step="any"
+                        min="0"
+                        value={line.vendorRate ?? ''}
+                        onChange={(e) =>
+                          updateVendorRate(line, e.target.value)
+                        }
+                        placeholder="Enter rate"
+                        className="h-8 w-full rounded-lg border border-[#e4eaf3] bg-[#f7f9fc] px-2 text-right text-[12px] tabular-nums outline-none placeholder:text-[#9aa7ba] focus:border-[#b6cef7] focus:bg-surface"
+                      />
                     </td>
                     <td>
                       {!line.fromBoq ? (
@@ -246,8 +271,8 @@ function CreateRfqModal({ open, onClose, items, vendors, onCreate, saving }) {
             </table>
           </div>
           <p className="border-t border-[#e9eef6] bg-[#ecfdf5] px-3 py-2 text-[11px] text-[#0b7a52]">
-            Vendors only receive Item, Qty and Unit — your BOQ rate and amount
-            stay internal.
+            Vendor rate is editable here for your notes — vendors still only get
+            Item, Qty and Unit. BOQ amounts stay internal.
           </p>
         </div>
 

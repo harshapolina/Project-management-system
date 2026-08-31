@@ -847,6 +847,23 @@ body {
     page-break-after: auto;
   }
 
+  #tax-invoice-print,
+  .tax-invoice-sheet {
+    display: block !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+    break-after: page;
+    page-break-after: always;
+  }
+
+  #tax-invoice-print:last-child,
+  .tax-invoice-sheet:last-child {
+    break-after: auto;
+    page-break-after: auto;
+  }
+
   .cubic-sheet .break-inside-avoid,
   .cubic-sheet tr {
     break-inside: avoid;

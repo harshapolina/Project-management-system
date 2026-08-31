@@ -102,6 +102,9 @@ const quotationDocMetaSchema = new mongoose.Schema(
     architect: { type: String, default: '' },
     emailId: { type: String, default: '' },
     contactNo: { type: String, default: '' },
+    buyerGstin: { type: String, default: '' },
+    buyerStateName: { type: String, default: '' },
+    buyerStateCode: { type: String, default: '' },
   },
   { _id: false },
 )

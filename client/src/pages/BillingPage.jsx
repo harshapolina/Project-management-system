@@ -328,6 +328,10 @@ export function BillingPage() {
               <Wallet className="h-3.5 w-3.5" />
               Revenue
             </ToolbarLink>
+            <ToolbarLink to="/billing/tax-invoices">
+              <FileText className="h-3.5 w-3.5" />
+              Tax invoices
+            </ToolbarLink>
           </>
         }
         right={

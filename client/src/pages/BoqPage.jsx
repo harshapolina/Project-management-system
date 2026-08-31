@@ -11,6 +11,7 @@ import {
   History,
   Image as ImageIcon,
   Layers,
+  FileText,
   Maximize2,
   MoreHorizontal,
   Plus,
@@ -744,6 +745,7 @@ function BoqSheet({
   onCancelDraft,
 }) {
   const qc = useQueryClient()
+  const navigate = useNavigate()
   const tableRef = useRef(null)
   const excelInputRef = useRef(null)
   const galleryInputRef = useRef(null)
@@ -1405,6 +1407,16 @@ function BoqSheet({
     setTimeout(restore, 1000)
   }
 
+  const generateTaxInvoice = useMutation({
+    mutationFn: () =>
+      api(`/tax-invoices/from-quotation/${quotation._id}`, { method: 'POST' }),
+    onSuccess: (res) => {
+      toast('Tax invoice created from this BOQ', { type: 'success' })
+      navigate(`/billing/tax-invoices?open=${res.invoice._id}`)
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
   const setDoc = (key, value) => {
     markDirty()
     setDocMeta((prev) => ({ ...prev, [key]: value }))
@@ -1621,6 +1633,12 @@ function BoqSheet({
                           run: () => setCatalogOpen(true),
                         },
                         { label: 'Print / PDF', icon: Printer, run: printSheet },
+                        status === 'approved' &&
+                          quotation?._id && {
+                            label: 'Generate tax invoice',
+                            icon: FileText,
+                            run: () => generateTaxInvoice.mutate(),
+                          },
                         {
                           label: 'Version history',
                           icon: History,
