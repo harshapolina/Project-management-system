@@ -263,8 +263,7 @@ async function convertLeadToProject(req, lead, { projectType } = {}) {
         progress: 0,
         status: i === 0 ? 'in_progress' : 'not_started',
       })),
-      coverImage:
-        'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&q=80',
+      coverImage: '',
       budget: lead.estimatedValue || 0,
       projectManager: ownerId,
       members,

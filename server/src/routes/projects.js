@@ -369,9 +369,7 @@ router.post(
         endDate,
         budget: budget || 0,
         spaceId: spaceId || undefined,
-        coverImage:
-          coverImage ||
-          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=80',
+        coverImage: coverImage || '',
         description,
         status: 'in_progress',
         currentStage: 'design',
