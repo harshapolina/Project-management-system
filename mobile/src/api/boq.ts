@@ -31,8 +31,28 @@ export const boqApi = {
 
   catalog: (boqType: 'residential' | 'commercial') =>
     http
-      .get<{ success: true; items: BoqItem[] }>(`/boq-catalog/${boqType}`)
+      .get<{ success: true; items: BoqItem[]; meta?: Record<string, unknown>; template?: unknown; count?: number }>(
+        `/boq-catalog/${boqType}`,
+      )
+      .then((r) => r.data),
+
+  measurementCatalog: (boqType: 'residential' | 'commercial', spaces?: string) =>
+    http
+      .get<{ success: true; catalog: import('../types/ops').MeasurementCatalog }>(
+        `/measurement-catalog/${boqType}`,
+        { params: spaces ? { spaces } : undefined },
+      )
+      .then((r) => r.data.catalog),
+
+  materialCatalog: (params?: { q?: string; family?: string; boqType?: string }) =>
+    http
+      .get<{ success: true; items: import('../types/ops').MaterialCatalogItem[] }>('/material-catalog', { params })
       .then((r) => r.data.items),
+
+  materialTemplate: (boqType: 'residential' | 'commercial') =>
+    http
+      .get<{ success: true; template: unknown }>(`/material-catalog/template/${boqType}`)
+      .then((r) => r.data.template),
 
   uploadImage: async (file: { uri: string; name: string; mimeType?: string }) => {
     const asset = await compressImageAsset(file)

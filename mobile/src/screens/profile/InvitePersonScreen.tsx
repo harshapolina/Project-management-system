@@ -42,7 +42,7 @@ export function InvitePersonScreen({ navigation }: Props) {
         title="Invite created"
         subtitle="Share credentials securely"
         subtitleIcon="checkmark-circle-outline"
-        onBack={() => navigation.goBack()}
+
         footer={<Button title="Done" onPress={() => navigation.goBack()} fullWidth />}
       >
         <Text style={styles.successBody}>
@@ -64,7 +64,7 @@ export function InvitePersonScreen({ navigation }: Props) {
       title="Invite person"
       subtitle="Add someone to your workspace"
       subtitleIcon="person-add-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Send invite"

@@ -22,7 +22,7 @@ import { SectionLabel } from '../../components/SectionLabel'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { Avatar } from '../../components/Avatar'
 import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { STATUS_LABELS, radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { heroFor, STATUS_LABELS, radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors, useShadows } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { assetUrl } from '../../constants/env'
@@ -35,26 +35,22 @@ import { isApiError } from '../../api/client'
 import { capabilitiesForUser } from '../../utils/roles'
 import type { HomeStackParamList, RootTabParamList } from '../../navigation/types'
 import { openProjectScreen, openMoreScreen } from '../../navigation/openProject'
+import { PageHeader } from '../../components/PageHeader'
+import { MyWorkViews, myWorkHeaderTitle } from './MyWorkViews'
+import { ViewPills, type MyWorkView } from '../../components/ViewPills'
 import type { HomeData, Task } from '../../types/models'
 import type { SiteUpdate, Snag } from '../../types/ops'
 import { timeAgo } from '../../utils/time'
 
-/** Deep green hero + lime accents (home mock). */
-const HERO = {
-  bg: NAV_HERO_BG,
-  panel: '#0a5c48',
-  lime: '#C5E966',
-  limeText: '#0a2e24',
-  white: '#ffffff',
-  mute: 'rgba(255,255,255,0.72)',
-  faint: 'rgba(255,255,255,0.14)',
-} as const
+import { HeroSection } from './sections/HeroSection'
 
+const HERO = heroFor('light')
 type Props = {
   navigation: CompositeNavigationProp<
     NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
     BottomTabNavigationProp<RootTabParamList>
   >
+  route: { params?: HomeStackParamList['HomeMain'] }
 }
 
 function firstName(name?: string) {
@@ -117,7 +113,7 @@ type AttentionItem = {
   onPress: () => void
 }
 
-export function HomeScreen({ navigation }: Props) {
+export function HomeScreen({ navigation, route }: Props) {
   const colors = useColors()
   const shadows = useShadows()
   const { height: windowHeight } = useWindowDimensions()
@@ -134,6 +130,7 @@ export function HomeScreen({ navigation }: Props) {
   const [pickerOpen, setPickerOpen] = useState(false)
   const [tasksOpen, setTasksOpen] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [workView, setWorkView] = useState<MyWorkView>(route.params?.view || 'all')
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['home'],
@@ -306,8 +303,8 @@ export function HomeScreen({ navigation }: Props) {
         key: 'photos',
         label: 'Site Photos',
         icon: 'camera' as const,
-        color: '#3b82f6',
-        bg: 'rgba(59,130,246,0.12)',
+        color: colors.accent,
+        bg: colors.accentSoft,
         visible: caps.siteFeed,
         onPress: () => goMore('SiteFeed', activeProjectId ? { projectId: activeProjectId } : undefined),
       },
@@ -328,6 +325,28 @@ export function HomeScreen({ navigation }: Props) {
       <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
         <AppNavBar variant="hero" />
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </Screen>
+    )
+  }
+
+  if (workView !== 'all') {
+    return (
+      <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
+        <AppNavBar />
+        <PageHeader
+          title="My work"
+          subtitle={myWorkHeaderTitle(workView)}
+          subtitleIcon="checkbox-outline"
+          onBack={() => setWorkView('all')}
+        />
+        <View style={{ flex: 1, minHeight: 0 }}>
+          <MyWorkViews
+            view={workView}
+            onViewChange={setWorkView}
+            onTaskPress={(t) => navigation.navigate('TaskDetail', { taskId: t._id })}
+            onCreatePersonal={() => navigation.navigate('CreateTask', { isPersonal: true })}
+          />
+        </View>
       </Screen>
     )
   }
@@ -396,66 +415,25 @@ export function HomeScreen({ navigation }: Props) {
           }
         >
           {/* Hero lives in the scroll so CTAs stay tappable */}
-          <Animated.View
-            style={[
-              styles.heroInner,
-              {
-                opacity: heroOpacity,
-                transform: [{ scale: heroScale }],
-              },
-            ]}
-            onLayout={(e) => {
-              const next = Math.ceil(e.nativeEvent.layout.height)
+          <HeroSection
+            userName={firstName(user?.name)}
+            heroStat={heroStat}
+            overdueCount={overdueCount}
+            greeting={timeGreeting()}
+            onMyTasks={openMyTasks}
+            onPostUpdate={() =>
+              caps.siteFeed
+                ? goMore('PostSiteUpdate', activeProjectId ? { projectId: activeProjectId } : undefined)
+                : navigation.navigate('Projects' as never)
+            }
+            postUpdateLabel={caps.siteFeed ? 'Post update' : 'Projects'}
+            postUpdateIcon={caps.siteFeed ? 'camera-outline' : 'folder-outline'}
+            opacity={heroOpacity}
+            scale={heroScale}
+            onLayout={(next) => {
               if (next > 0 && Math.abs(next - heroHeight) > 2) setHeroHeight(next)
             }}
           >
-            <Text style={styles.heroHelloLine}>
-              Hello, <Text style={styles.heroHelloName}>{firstName(user?.name)}</Text>
-            </Text>
-
-            <View style={styles.heroStatBlock}>
-              <Text style={styles.heroStatLabel}>Your work today</Text>
-              <Text style={styles.heroStatValue}>
-                {heroStat}
-                <Text style={styles.heroStatUnit}> open</Text>
-              </Text>
-              <Text style={styles.heroStatHint}>
-                {timeGreeting()}
-                {overdueCount > 0 ? ` · ${overdueCount} overdue` : ' · looking good'}
-              </Text>
-            </View>
-
-            <View style={styles.heroCtas}>
-              <Pressable
-                style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
-                onPress={openMyTasks}
-                accessibilityRole="button"
-                accessibilityLabel="My tasks"
-              >
-                <Ionicons name="checkmark-done-outline" size={18} color={HERO.limeText} />
-                <Text style={styles.heroCtaText}>My tasks</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
-                onPress={() =>
-                  caps.siteFeed
-                    ? goMore(
-                        'PostSiteUpdate',
-                        activeProjectId ? { projectId: activeProjectId } : undefined,
-                      )
-                    : navigation.navigate('Projects' as never)
-                }
-                accessibilityRole="button"
-                accessibilityLabel={caps.siteFeed ? 'Post update' : 'Projects'}
-              >
-                <Ionicons
-                  name={caps.siteFeed ? 'camera-outline' : 'folder-outline'}
-                  size={18}
-                  color={HERO.limeText}
-                />
-                <Text style={styles.heroCtaText}>{caps.siteFeed ? 'Post update' : 'Projects'}</Text>
-              </Pressable>
-            </View>
 
             {caps.projects ? (
               <View style={styles.heroPanel}>
@@ -474,7 +452,7 @@ export function HomeScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             ) : null}
-          </Animated.View>
+          </HeroSection>
 
           {/* Green under rounded corners; sheet scrolls up over the hero */}
           <View style={[styles.sheetStack, { marginTop: -SHEET_OVERLAP }]}>
@@ -487,6 +465,9 @@ export function HomeScreen({ navigation }: Props) {
               },
             ]}
           >
+          <View style={{ marginBottom: spacing.md }}>
+            <ViewPills value={workView} onChange={setWorkView} />
+          </View>
           {/* Project health */}
           <SectionLabel
             action="View Details ›"

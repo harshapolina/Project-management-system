@@ -78,8 +78,7 @@ const STATUS_META = {
   },
 }
 
-const CARD =
-  'on-dark rounded-[20px] border border-[var(--panel-dark-border)] bg-[var(--panel-dark)] shadow-[0_8px_24px_-14px_rgba(0,0,0,0.35)]'
+const CARD = 'panel-surface rounded-[var(--radius-xl)]'
 
 /** Only the commercial template derives its quantities from a take-off sheet. */
 function boqTypeLeadsWithMeasurements(boqType) {

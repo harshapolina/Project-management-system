@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import { Alert, FlatList, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { StatCard } from '../../components/StatCard'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -43,32 +41,24 @@ export function InventoryScreen({ navigation }: Props) {
     onError: (err) => Alert.alert('Could not update stock', isApiError(err) ? err.message : 'Try again'),
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Inventory"
-      subtitle="Stock on hand"
-      subtitleIcon="cube-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Inventory",
+    subtitle: "Stock on hand",
+    subtitleIcon: 'cube-outline' as const,
+  }
 
   if (summary.isLoading || items.isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading inventory…" variant="dashboard" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading inventory…" variant="dashboard" />
+      </NestedChrome>
     )
   }
   if (summary.isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(summary.error) ? summary.error.message : undefined} onRetry={() => summary.refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(summary.error) ? summary.error.message : undefined} onRetry={() => summary.refetch()} />
+      </NestedChrome>
     )
   }
 
@@ -119,8 +109,7 @@ export function InventoryScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={list}
         keyExtractor={(i) => i._id}
@@ -157,7 +146,7 @@ export function InventoryScreen({ navigation }: Props) {
         }
       />
       <Fab label="Add item" onPress={() => navigation.navigate('CreateInventoryItem')} />
-    </Screen>
+    </NestedChrome>
   )
 }
 

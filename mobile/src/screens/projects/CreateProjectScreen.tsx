@@ -60,7 +60,7 @@ export function CreateProjectScreen({ navigation }: Props) {
       title="New project"
       subtitle="Set up a workspace for the client"
       subtitleIcon="folder-outline"
-      onBack={() => navigation.goBack()}
+
       footer={<Button title="Create project" onPress={onSubmit} loading={mutation.isPending} fullWidth />}
     >
       <View>

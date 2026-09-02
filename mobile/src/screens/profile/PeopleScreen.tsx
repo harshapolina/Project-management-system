@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
 import { SearchField } from '../../components/SearchField'
@@ -68,16 +66,12 @@ export function PeopleScreen({ navigation }: Props) {
   const refetch = caps.people ? summary.refetch : directory.refetch
   const isRefetching = caps.people ? summary.isRefetching : directory.isRefetching
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="People"
-        subtitle="Teammates in this company"
-        subtitleIcon="people-outline"
-        onBack={() => navigation.goBack()}
-        right={
-          caps.managePeople ? (
+  const chromeProps = {
+    title: "People",
+    subtitle: "Teammates in this company",
+    subtitleIcon: 'people-outline' as const,
+    right: (
+      caps.managePeople ? (
             <IconButton
               icon="person-add-outline"
               label="Invite person"
@@ -85,31 +79,26 @@ export function PeopleScreen({ navigation }: Props) {
               onPress={() => navigation.navigate('InvitePerson')}
             />
           ) : null
-        }
-      />
-    </>
-  )
+    ),
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading directory…" variant="rows" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading directory…" variant="rows" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <SearchField value={search} onChangeText={setSearch} placeholder="Search people or roles" />
       <FlatList
         data={filtered}
@@ -152,7 +141,7 @@ export function PeopleScreen({ navigation }: Props) {
           />
         }
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

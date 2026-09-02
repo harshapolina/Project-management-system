@@ -1,47 +1,226 @@
 import type { ReactNode, ComponentProps } from 'react'
+import { Fragment, useCallback } from 'react'
+import { Children, cloneElement, isValidElement } from 'react'
+import {
+  FlatList,
+  ScrollView,
+  StyleSheet,
+  View,
+  type StyleProp,
+  type ViewStyle,
+} from 'react-native'
+import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { AppNavBar } from './AppNavBar'
+import { Fab } from './Fab'
 import { PageHeader } from './PageHeader'
 import { Screen } from './Screen'
+import { KeyboardAwareView } from './KeyboardAwareView'
+import { useResponsive } from '../theme/useResponsive'
+import { smartGoBack } from '../navigation/openProject'
+import type { NavigationProp, ParamListBase } from '@react-navigation/native'
+
+/** Apply to ScrollView / FlatList inside chrome shells when not using `scroll` prop. */
+export const flexFill = { flex: 1, minHeight: 0 } as const
+
+/** Flex wrapper for kanban boards, split layouts, or custom scroll regions inside NestedChrome. */
+export function ChromeFill({
+  children,
+  style,
+}: {
+  children: ReactNode
+  style?: StyleProp<ViewStyle>
+}) {
+  return <View style={[flexFill, style]}>{children}</View>
+}
 
 type NestedChromeProps = {
-  title: string
+  title: ReactNode
   subtitle?: string
   subtitleIcon?: ComponentProps<typeof Ionicons>['name']
-  onBack: () => void
+  onBack?: () => void
+  /** When false, never show back (tab roots). When true, always show. Default: auto from stack depth. */
+  showBack?: boolean
   right?: ReactNode
   children: ReactNode
   edges?: ('top' | 'right' | 'bottom' | 'left')[]
   keyboardAvoiding?: boolean
   background?: string
+  /** Wrap children in ScrollView with standard list padding */
+  scroll?: boolean
+  contentContainerStyle?: StyleProp<ViewStyle>
+  keyboardShouldPersistTaps?: 'always' | 'never' | 'handled'
+}
+
+const FIXED_CHROME = new Set(['SegmentedControl', 'ViewPills', 'ProcurementTabs', 'SearchField'])
+
+function componentName(type: unknown): string {
+  if (typeof type === 'string') return type
+  if (typeof type === 'function') {
+    const fn = type as { displayName?: string; name?: string }
+    return fn.displayName || fn.name || ''
+  }
+  return ''
+}
+
+function flattenChildren(children: ReactNode): ReactNode[] {
+  const out: ReactNode[] = []
+  Children.forEach(children, (child) => {
+    if (child == null || child === false) return
+    if (isValidElement(child) && child.type === Fragment) {
+      out.push(...flattenChildren((child.props as { children?: ReactNode }).children))
+    } else {
+      out.push(child)
+    }
+  })
+  return out
+}
+
+function isScrollableElement(child: React.ReactElement): boolean {
+  const type = child.type as { displayName?: string; name?: string }
+  return (
+    child.type === ScrollView ||
+    child.type === FlatList ||
+    type?.displayName === 'ScrollView' ||
+    type?.displayName === 'FlatList' ||
+    type?.name === 'ScrollView' ||
+    type?.name === 'FlatList'
+  )
+}
+
+function viewHasFlex(style: StyleProp<ViewStyle> | undefined): boolean {
+  if (!style) return false
+  const flat = StyleSheet.flatten(style)
+  return flat?.flex === 1 || flat?.flexGrow === 1
+}
+
+function shouldFlexFill(child: React.ReactElement, layout: React.ReactElement[]): boolean {
+  const prevStyle = (child.props as { style?: StyleProp<ViewStyle> }).style
+  if (viewHasFlex(prevStyle)) return true
+  if (isScrollableElement(child)) return true
+  const name = componentName(child.type)
+  if (name === 'LoadingState' || name === 'ErrorState' || name === 'KanbanBoard' || name === 'ChromeFill' || name === 'KeyboardAwareView') {
+    return true
+  }
+  if (child.type === View) {
+    if (layout.length === 1) return true
+    if (viewHasFlex((child.props as { style?: StyleProp<ViewStyle> }).style)) return true
+  }
+  const flexCandidates = layout.filter((c) => {
+    if (!isValidElement(c)) return false
+    const n = componentName(c.type)
+    return isScrollableElement(c) || n === 'KanbanBoard' || n === 'LoadingState' || n === 'ErrorState'
+  })
+  return flexCandidates.length === 1 && flexCandidates[0] === child
+}
+
+function isFabElement(child: React.ReactElement): boolean {
+  return child.type === Fab
+}
+
+/** Assign flex to scroll regions; keep tabs/headers at natural height; pass FABs through. */
+function layoutChromeBody(children: ReactNode): ReactNode {
+  const flat = flattenChildren(children)
+  const layout: React.ReactElement[] = []
+  const overlays: React.ReactElement[] = []
+
+  for (const child of flat) {
+    if (!isValidElement(child)) continue
+    if (isFabElement(child)) overlays.push(child)
+    else layout.push(child)
+  }
+
+  const laid = layout.map((child) => {
+    const prev = child.props as { style?: StyleProp<ViewStyle> }
+    if (shouldFlexFill(child, layout)) {
+      return cloneElement(child, {
+        style: [flexFill, prev.style],
+      } as Record<string, unknown>)
+    }
+    const name = componentName(child.type)
+    if (FIXED_CHROME.has(name)) {
+      return cloneElement(child, {
+        style: [{ flexShrink: 0 }, prev.style],
+      } as Record<string, unknown>)
+    }
+    return child
+  })
+
+  return [...laid, ...overlays]
+}
+
+function useAutoBack(showBack: boolean | undefined, onBack?: () => void) {
+  const navigation = useNavigation()
+  const route = useRoute()
+  const defaultBack = useCallback(() => {
+    smartGoBack(navigation as NavigationProp<ParamListBase>, route)
+  }, [navigation, route])
+
+  const canPop = navigation.canGoBack() || navigation.getParent()?.canGoBack()
+
+  if (showBack === false) return undefined
+  if (onBack) return onBack
+  if (showBack === true || canPop) return defaultBack
+  return undefined
 }
 
 /**
- * Shared nested-screen chrome: global AppNavBar + PageHeader with back.
- * Tab roots keep AppNavBar without onBack; form sheets use FormLayout instead.
+ * Shared nested-screen chrome: global AppNavBar + PageHeader with optional back.
+ * Tab roots pass showBack={false}; pushed screens get back automatically.
  */
 export function NestedChrome({
   title,
   subtitle,
   subtitleIcon,
   onBack,
+  showBack,
   right,
   children,
   edges = ['left', 'right'],
   keyboardAvoiding,
   background,
+  scroll,
+  contentContainerStyle,
+  keyboardShouldPersistTaps = 'handled',
 }: NestedChromeProps) {
+  const { listContent } = useResponsive()
+  const resolvedOnBack = useAutoBack(showBack, onBack)
+
+  let body: ReactNode
+  if (scroll) {
+    body = (
+      <ScrollView
+        style={flexFill}
+        contentContainerStyle={[listContent, contentContainerStyle]}
+        keyboardShouldPersistTaps={keyboardShouldPersistTaps}
+        showsVerticalScrollIndicator={false}
+      >
+        {children}
+      </ScrollView>
+    )
+  } else {
+    body = layoutChromeBody(children)
+  }
+
   return (
-    <Screen padded={false} edges={edges} keyboardAvoiding={keyboardAvoiding} background={background}>
+    <Screen padded={false} edges={edges} background={background}>
       <AppNavBar />
       <PageHeader
         title={title}
         subtitle={subtitle}
         subtitleIcon={subtitleIcon}
-        onBack={onBack}
+        onBack={resolvedOnBack}
         right={right}
       />
-      {children}
+      {keyboardAvoiding ? (
+        <KeyboardAwareView style={styles.body}>{body}</KeyboardAwareView>
+      ) : (
+        <View style={styles.body}>{body}</View>
+      )}
     </Screen>
   )
 }
+
+const styles = StyleSheet.create({
+  body: { flex: 1, minHeight: 0, flexDirection: 'column' },
+})

@@ -22,6 +22,8 @@ import {
 import { api, useAuthStore } from '../lib/api'
 import { Avatar, EmptyState, SkeletonCard, toast } from '../components/ui'
 import { ToolbarPills } from '../components/layout/PageToolbar'
+import { PageHeader } from '../components/layout/PageHeader'
+import { PageLayout } from '../components/layout/PageLayout'
 import { TaskDetailPanel } from '../components/tasks/TaskDetailPanel'
 import { cn } from '../lib/utils'
 import {
@@ -424,19 +426,11 @@ export function HomePage() {
   }
 
   return (
-    <div
-      className={cn(
-        'mx-auto flex w-full max-w-[1500px] flex-col gap-4 pb-6 transition-opacity',
-        isFetching && 'opacity-90',
-      )}
-    >
-          <header className="flex flex-wrap items-center justify-between gap-3">
-            <div className="min-w-0">
-              <h1 className="text-[26px] font-medium tracking-tight text-primary sm:text-[28px]">
-                {greeting}
-              </h1>
-            </div>
-            <div className="flex flex-wrap items-center gap-3">
+    <PageLayout className={cn('flex flex-col gap-4 pb-6 transition-opacity', isFetching && 'opacity-90')}>
+          <PageHeader
+            title={greeting}
+            actions={
+              <>
               <ToolbarPills
                 items={FILTER_PILLS}
                 value={view}
@@ -454,8 +448,9 @@ export function HomePage() {
                 <Plus className="h-3.5 w-3.5" />
                 New task
               </button>
-            </div>
-          </header>
+              </>
+            }
+          />
 
           <section className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <MiniStat
@@ -619,7 +614,7 @@ export function HomePage() {
         isPersonal={!!selected?.isPersonal}
         onClose={() => setSelected(null)}
       />
-    </div>
+    </PageLayout>
   )
 }
 
@@ -676,7 +671,7 @@ function AssignedBoard({
         </div>
       )}
 
-      <div className="grid min-h-[440px] gap-4 lg:grid-cols-3">
+      <div className="kanban-scroll grid min-h-[440px] gap-4 lg:grid-cols-3">
         {BOARD_COLUMNS.map((col) => (
           <BoardColumn
             key={col.key}
@@ -914,7 +909,7 @@ function Overview({
           Open full board
         </button>
       </div>
-      <div className="grid min-h-[320px] gap-4 lg:grid-cols-3">
+      <div className="kanban-scroll grid min-h-[320px] gap-4 lg:grid-cols-3">
         {BOARD_COLUMNS.map((col) => (
           <BoardColumn
             key={col.key}

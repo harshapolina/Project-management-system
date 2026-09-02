@@ -2,10 +2,21 @@ import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { MoreMainScreen } from '../screens/more/MoreMainScreen'
 import { LeadsScreen } from '../screens/leads/LeadsScreen'
+import { LeadDetailScreen } from '../screens/leads/LeadDetailScreen'
 import { CreateLeadScreen } from '../screens/leads/CreateLeadScreen'
 import { BoqListScreen } from '../screens/boq/BoqListScreen'
 import { BoqDetailScreen } from '../screens/boq/BoqDetailScreen'
+import { MeasurementSheetScreen } from '../screens/boq/MeasurementSheetScreen'
 import { CreateBoqScreen } from '../screens/boq/CreateBoqScreen'
+import { MaterialsHubScreen } from '../screens/procurement/MaterialsHubScreen'
+import { RfqDetailScreen } from '../screens/procurement/RfqDetailScreen'
+import { CreateRfqScreen } from '../screens/procurement/CreateRfqScreen'
+import { RfqPanelScreen } from '../screens/procurement/RfqPanelScreen'
+import { PurchaseOrderDetailScreen } from '../screens/procurement/PurchaseOrderDetailScreen'
+import { VendorDetailScreen } from '../screens/procurement/VendorDetailScreen'
+import { EditVendorScreen } from '../screens/procurement/EditVendorScreen'
+import { DocsScreen } from '../screens/docs/DocsScreen'
+import { SiteSupervisorScreen } from '../screens/site/SiteSupervisorScreen'
 import { VendorsScreen } from '../screens/procurement/VendorsScreen'
 import { CreateVendorScreen } from '../screens/procurement/CreateVendorScreen'
 import { PurchaseOrdersScreen } from '../screens/procurement/PurchaseOrdersScreen'
@@ -22,11 +33,11 @@ import { InventoryScreen } from '../screens/inventory/InventoryScreen'
 import { CreateInventoryItemScreen } from '../screens/inventory/CreateInventoryItemScreen'
 import { InventoryMovementsScreen } from '../screens/inventory/InventoryMovementsScreen'
 import { CompanyAdminDashboardScreen } from '../screens/admin/CompanyAdminDashboardScreen'
-import { PlatformAdminScreen } from '../screens/admin/PlatformAdminScreen'
-import { CreateTenantScreen } from '../screens/admin/CreateTenantScreen'
+import { PlatformNavigator } from './PlatformNavigator'
 import { ImpactScreen } from '../screens/impact/ImpactScreen'
 import { ProfileNavigator } from './ProfileNavigator'
 import { BillingScreen } from '../screens/billing/BillingScreen'
+import { InvoiceDetailScreen } from '../screens/billing/InvoiceDetailScreen'
 import { CreateInvoiceScreen } from '../screens/billing/CreateInvoiceScreen'
 import { NotificationsScreen } from '../screens/inbox/NotificationsScreen'
 import { AssignedCommentsScreen } from '../screens/more/AssignedCommentsScreen'
@@ -49,13 +60,23 @@ export function MoreNavigator() {
       <Stack.Screen name="MoreMain" component={MoreMainScreen} options={{ headerShown: false }} />
 
       <Stack.Screen name="Leads" component={LeadsScreen} options={{ headerShown: false, title: 'New enquiries' }} />
+      <Stack.Screen name="LeadDetail" component={LeadDetailScreen} options={{ headerShown: false, title: 'Enquiry' }} />
       <Stack.Screen name="CreateLead" component={CreateLeadScreen} options={formSheetOptions(colors, 'New enquiry')} />
 
       <Stack.Screen name="BoqList" component={BoqListScreen} options={{ headerShown: false, title: 'BOQ / Quotes' }} />
       <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ headerShown: false, title: 'Quotation' }} />
+      <Stack.Screen name="BoqMeasurement" component={MeasurementSheetScreen} options={{ headerShown: false, title: 'Measurements' }} />
       <Stack.Screen name="CreateBoq" component={CreateBoqScreen} options={formSheetOptions(colors, 'New quotation')} />
 
+      <Stack.Screen name="MaterialsHub" component={MaterialsHubScreen} options={{ headerShown: false, title: 'Materials' }} />
+      <Stack.Screen name="RfqPanel" component={RfqPanelScreen} options={{ headerShown: false, title: 'RFQs' }} />
+      <Stack.Screen name="RfqDetail" component={RfqDetailScreen} options={{ headerShown: false, title: 'RFQ' }} />
+      <Stack.Screen name="CreateRfq" component={CreateRfqScreen} options={formSheetOptions(colors, 'Raise RFQ')} />
+      <Stack.Screen name="PurchaseOrderDetail" component={PurchaseOrderDetailScreen} options={{ headerShown: false, title: 'Purchase order' }} />
+
       <Stack.Screen name="Vendors" component={VendorsScreen} options={{ headerShown: false, title: 'Vendors' }} />
+      <Stack.Screen name="VendorDetail" component={VendorDetailScreen} options={{ headerShown: false, title: 'Vendor' }} />
+      <Stack.Screen name="EditVendor" component={EditVendorScreen} options={formSheetOptions(colors, 'Edit vendor')} />
       <Stack.Screen name="CreateVendor" component={CreateVendorScreen} options={formSheetOptions(colors, 'New vendor')} />
       <Stack.Screen name="PurchaseOrders" component={PurchaseOrdersScreen} options={{ headerShown: false, title: 'Purchase Orders' }} />
       <Stack.Screen
@@ -92,11 +113,11 @@ export function MoreNavigator() {
         component={CompanyAdminDashboardScreen}
         options={{ headerShown: false, title: 'Company Dashboard' }}
       />
-      <Stack.Screen name="PlatformAdmin" component={PlatformAdminScreen} options={{ headerShown: false, title: 'Workspaces' }} />
-      <Stack.Screen name="CreateTenant" component={CreateTenantScreen} options={formSheetOptions(colors, 'New workspace')} />
+      <Stack.Screen name="PlatformAdmin" component={PlatformNavigator} options={{ headerShown: false, title: 'Platform' }} />
       <Stack.Screen name="Impact" component={ImpactScreen} options={{ headerShown: false }} />
       <Stack.Screen name="ProfileHub" component={ProfileNavigator} options={{ headerShown: false }} />
       <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: false, title: 'Billing' }} />
+      <Stack.Screen name="InvoiceDetail" component={InvoiceDetailScreen} options={{ headerShown: false, title: 'Invoice' }} />
       <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} options={formSheetOptions(colors, 'Add invoice')} />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false, title: 'Alerts' }} />
       <Stack.Screen
@@ -125,6 +146,8 @@ export function MoreNavigator() {
         options={formSheetOptions(colors, 'New approval type')}
       />
       <Stack.Screen name="TaskDetail" component={TaskDetailScreen} options={{ headerShown: false, title: 'Task' }} />
+      <Stack.Screen name="Docs" component={DocsScreen} options={{ headerShown: false, title: 'Handbook' }} />
+      <Stack.Screen name="SiteSupervisor" component={SiteSupervisorScreen} options={{ headerShown: false, title: 'Site mode' }} />
     </Stack.Navigator>
   )
 }

@@ -45,7 +45,7 @@ export function CreateVendorScreen({ navigation }: Props) {
       title="New vendor"
       subtitle="Add a supplier to your directory"
       subtitleIcon="business-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Add vendor"

@@ -1,9 +1,7 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import { FlatList, Modal, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Avatar } from '../../components/Avatar'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -33,25 +31,18 @@ export function SiteFeedScreen({ route, navigation }: Props) {
     queryFn: () => siteFeedApi.updates(projectId ? { projectId } : undefined),
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Site updates"
-      subtitle="Photos and daily logs"
-      subtitleIcon="camera-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Site updates",
+    subtitle: "Photos and daily logs",
+    subtitleIcon: 'camera-outline' as const,
+  }
 
   const selectedProjectName =
     selected && typeof selected.projectId === 'object' ? selected.projectId?.name : undefined
   const photoCount = selected?.photos?.length ?? 0
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       {isLoading ? (
         <LoadingState label="Loading site feed…" variant="cards" />
       ) : isError ? (
@@ -134,7 +125,7 @@ export function SiteFeedScreen({ route, navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
-    </Screen>
+    </NestedChrome>
   )
 }
 

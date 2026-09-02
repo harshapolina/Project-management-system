@@ -1,9 +1,7 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Pill } from '../../components/Badge'
@@ -20,7 +18,7 @@ import type { MoreStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<MoreStackParamList, 'PlatformAdmin'>
 
 function statusColor(c: AppColors) {
-  return { trial: c.warning, active: c.success, suspended: c.danger }
+  return { trial: c.warning, active: c.success, suspended: c.danger, cancelled: c.textMuted }
 }
 
 export function PlatformAdminScreen({ navigation }: Props) {
@@ -33,48 +31,39 @@ export function PlatformAdminScreen({ navigation }: Props) {
     queryFn: platformApi.tenants,
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Workspaces"
-      subtitle="Companies on Cubic"
-      subtitleIcon="server-outline"
-      onBack={() => navigation.goBack()}
-      right={
-        <IconButton
-          icon="add-outline"
-          label="New workspace"
-          tone="ghost"
-          onPress={() => navigation.navigate('CreateTenant')}
-        />
-      }
-    />
-    </>
-  )
+  const chromeProps = {
+    title: 'Workspaces',
+    subtitle: 'Platform tenants',
+    subtitleIcon: 'server-outline' as const,
+    right: (
+      <IconButton
+        icon="add-outline"
+        label="New workspace"
+        tone="ghost"
+        onPress={() => navigation.navigate('PlatformAdmin', { screen: 'CreateTenant' } as never)}
+      />
+    ),
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading workspaces…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading workspaces…" variant="list" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   const tenants = data || []
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={tenants}
         keyExtractor={(t) => t._id}
@@ -97,7 +86,7 @@ export function PlatformAdminScreen({ navigation }: Props) {
         )}
         ListEmptyComponent={<EmptyState title="No workspaces yet" body="Create the first tenant to onboard a company." />}
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

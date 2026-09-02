@@ -19,7 +19,7 @@ export function PageHeader({
   onBack,
   backLabel = 'Back',
 }: {
-  title: string
+  title: ReactNode
   subtitle?: string
   subtitleIcon?: keyof typeof Ionicons.glyphMap
   right?: ReactNode
@@ -46,7 +46,13 @@ export function PageHeader({
           >
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
-          <View style={styles.topSpacer} />
+          {typeof title === 'string' ? (
+            <Text style={styles.topTitle} numberOfLines={1}>
+              {title}
+            </Text>
+          ) : (
+            <View style={styles.topTitleWrap}>{title}</View>
+          )}
           {right ? <View style={styles.rightSlot}>{right}</View> : <View style={styles.topIconBtn} />}
         </View>
       ) : null}
@@ -59,11 +65,11 @@ export function PageHeader({
             </Text>
             <View style={styles.rightSlot}>{right}</View>
           </View>
-        ) : (
+        ) : !onBack ? (
           <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
             {title}
           </Text>
-        )}
+        ) : null}
         {subtitle ? (
           <View style={styles.statusRow}>
             {subtitleIcon ? (
@@ -100,6 +106,20 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
       justifyContent: 'center',
     },
     topSpacer: { flex: 1 },
+    topTitle: {
+      ...typography.h3,
+      fontSize: 17,
+      color: c.textPrimary,
+      flex: 1,
+      minWidth: 0,
+      textAlign: 'center',
+    },
+    topTitleWrap: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     rightSlot: { flexShrink: 0, alignItems: 'flex-end', justifyContent: 'center' },
     titleBlock: { gap: 6 },
     titleRow: {

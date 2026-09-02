@@ -1,12 +1,10 @@
 import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { NestedChrome } from '../../components/NestedChrome'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { StatCard } from '../../components/StatCard'
 import { Pill } from '../../components/Badge'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
@@ -47,54 +45,39 @@ export function FinanceScreen({ navigation }: Props) {
     },
   })
 
+  const chromeProps = {
+    title: 'Revenue',
+    subtitle: 'Expenses and payments',
+    subtitleIcon: 'wallet-outline' as const,
+    right: (
+      <IconButton
+        icon="add-outline"
+        label="Add expense"
+        tone="ghost"
+        onPress={() => navigation.navigate('CreateExpense', undefined)}
+      />
+    ),
+  }
+
   if (summary.isLoading || expenses.isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        <AppNavBar />
-        <PageHeader
-          title="Revenue"
-          subtitle="Expenses and payments"
-          subtitleIcon="wallet-outline"
-          onBack={() => navigation.goBack()}
-        />
+      <NestedChrome {...chromeProps}>
         <LoadingState label="Loading finance…" variant="dashboard" />
-      </Screen>
+      </NestedChrome>
     )
   }
   if (summary.isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        <AppNavBar />
-        <PageHeader
-          title="Revenue"
-          subtitle="Expenses and payments"
-          subtitleIcon="wallet-outline"
-          onBack={() => navigation.goBack()}
-        />
+      <NestedChrome {...chromeProps}>
         <ErrorState message={isApiError(summary.error) ? summary.error.message : undefined} onRetry={() => summary.refetch()} />
-      </Screen>
+      </NestedChrome>
     )
   }
 
   const data = summary.data!
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      <AppNavBar />
-      <PageHeader
-        title="Revenue"
-        subtitle="Expenses and payments"
-        subtitleIcon="wallet-outline"
-        onBack={() => navigation.goBack()}
-        right={
-          <IconButton
-            icon="add-outline"
-            label="Add expense"
-            tone="ghost"
-            onPress={() => navigation.navigate('CreateExpense', undefined)}
-          />
-        }
-      />
+    <NestedChrome {...chromeProps}>
       <ScrollView
         contentContainerStyle={listContent}
         refreshControl={
@@ -201,7 +184,7 @@ export function FinanceScreen({ navigation }: Props) {
           {!payments.data?.length ? <EmptyState title="No payments yet" body="Vendor payments will show up here." /> : null}
         </View>
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

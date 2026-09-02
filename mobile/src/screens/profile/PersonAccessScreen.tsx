@@ -1,9 +1,7 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useEffect, useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
@@ -70,43 +68,34 @@ export function PersonAccessScreen({ route, navigation }: Props) {
     onError: (err) => Alert.alert('Could not reset', isApiError(err) ? err.message : 'Try again'),
   })
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Access"
-        subtitle="Permissions & account"
-        subtitleIcon="shield-checkmark-outline"
-        onBack={() => navigation.goBack()}
-      />
-    </>
-  )
+  const chromeProps = {
+    title: "Access",
+    subtitle: "Permissions & account",
+    subtitleIcon: 'shield-checkmark-outline' as const,
+  }
 
   if (summary.isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading access…" variant="form" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading access…" variant="form" />
+      </NestedChrome>
     )
   }
   if (summary.isError || !member) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState
+      <NestedChrome {...chromeProps}>
+      <ErrorState
           message={isApiError(summary.error) ? summary.error.message : 'Person not found'}
           onRetry={() => summary.refetch()}
         />
-      </Screen>
+      </NestedChrome>
     )
   }
 
   const user = member.user
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
+    <NestedChrome {...chromeProps}>
       <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
         <SurfaceCard style={styles.identity}>
           <Avatar name={user.name} uri={user.avatar} size={56} />
@@ -200,7 +189,7 @@ export function PersonAccessScreen({ route, navigation }: Props) {
           </Pressable>
         ) : null}
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

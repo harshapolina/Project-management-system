@@ -74,6 +74,7 @@ export interface Task {
   stage?: string
   tags?: string[]
   checklist?: ChecklistItem[]
+  customFields?: Record<string, unknown>
   timeEstimate?: number | null
   timeSpent?: number
   timeTrackingStartedAt?: string | null
@@ -245,6 +246,8 @@ export interface Notification {
   body?: string
   link?: string
   read: boolean
+  later?: boolean
+  cleared?: boolean
   createdAt: string
 }
 

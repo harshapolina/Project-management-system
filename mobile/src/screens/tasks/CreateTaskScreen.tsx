@@ -55,7 +55,7 @@ export function CreateTaskScreen({ route, navigation }: Props) {
       title={isPersonal ? 'Personal task' : 'New task'}
       subtitle="Capture what needs to happen next"
       subtitleIcon="checkbox-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button title="Create task" onPress={onSubmit} loading={mutation.isPending} fullWidth />
       }

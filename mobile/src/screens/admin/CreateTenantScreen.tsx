@@ -9,9 +9,9 @@ import { useColors } from '../../theme/useColors'
 import { platformApi } from '../../api/platform'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import type { MoreStackParamList } from '../../navigation/types'
+import type { PlatformStackParamList } from '../../navigation/types'
 
-type Props = NativeStackScreenProps<MoreStackParamList, 'CreateTenant'>
+type Props = NativeStackScreenProps<PlatformStackParamList, 'CreateTenant'>
 
 export function CreateTenantScreen({ navigation }: Props) {
   const colors = useColors()
@@ -35,6 +35,7 @@ export function CreateTenantScreen({ navigation }: Props) {
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['platform-tenants'] })
+      queryClient.invalidateQueries({ queryKey: ['platform-overview'] })
       setResult({ tempPassword: data.tempPassword, loginHint: data.loginHint })
     },
     onError: (err) => setErrors({ form: isApiError(err) ? err.message : 'Could not create workspace' }),
@@ -46,7 +47,7 @@ export function CreateTenantScreen({ navigation }: Props) {
         title="Workspace created"
         subtitle="Share credentials securely"
         subtitleIcon="checkmark-circle-outline"
-        onBack={() => navigation.goBack()}
+
         footer={<Button title="Done" onPress={() => navigation.goBack()} fullWidth />}
       >
         <View style={styles.credBox}>
@@ -66,7 +67,7 @@ export function CreateTenantScreen({ navigation }: Props) {
       title="New workspace"
       subtitle="Platform admin"
       subtitleIcon="business-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Create workspace"

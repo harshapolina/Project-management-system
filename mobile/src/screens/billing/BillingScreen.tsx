@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { SectionLabel } from '../../components/SectionLabel'
@@ -85,35 +83,27 @@ export function BillingScreen({ navigation }: Props) {
     },
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Billing"
-      subtitle="Vendor invoices"
-      subtitleIcon="receipt-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: 'Billing',
+    subtitle: 'Vendor invoices',
+    subtitleIcon: 'receipt-outline' as const,
+  }
 
   if (summary.isLoading && list.isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading invoices…" variant="dashboard" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading invoices…" variant="dashboard" />
+      </NestedChrome>
     )
   }
   if (summary.isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState
+      <NestedChrome {...chromeProps}>
+      <ErrorState
           message={isApiError(summary.error) ? summary.error.message : undefined}
           onRetry={() => summary.refetch()}
         />
-      </Screen>
+      </NestedChrome>
     )
   }
 
@@ -121,8 +111,7 @@ export function BillingScreen({ navigation }: Props) {
   const invoices = list.data || []
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <ScrollView
         contentContainerStyle={listContent}
         refreshControl={
@@ -204,7 +193,7 @@ export function BillingScreen({ navigation }: Props) {
       </ScrollView>
 
       <Fab label="Add invoice" onPress={() => navigation.navigate('CreateInvoice')} />
-    </Screen>
+    </NestedChrome>
   )
 }
 

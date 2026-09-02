@@ -3,14 +3,20 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ProjectsListScreen } from '../screens/projects/ProjectsListScreen'
 import { CreateProjectScreen } from '../screens/projects/CreateProjectScreen'
 import { ProjectOverviewScreen } from '../screens/projects/ProjectOverviewScreen'
+import { EditProjectScreen } from '../screens/projects/EditProjectScreen'
 import { ProjectTasksScreen } from '../screens/projects/ProjectTasksScreen'
 import { ProjectFilesScreen } from '../screens/projects/ProjectFilesScreen'
 import { ProjectTeamScreen } from '../screens/projects/ProjectTeamScreen'
 import { ProjectNotesScreen } from '../screens/projects/ProjectNotesScreen'
 import { SiteFeedScreen } from '../screens/sitefeed/SiteFeedScreen'
 import { PostSiteUpdateScreen } from '../screens/sitefeed/PostSiteUpdateScreen'
+import { RfqPanelScreen } from '../screens/procurement/RfqPanelScreen'
+import { RfqDetailScreen } from '../screens/procurement/RfqDetailScreen'
+import { CreateRfqScreen } from '../screens/procurement/CreateRfqScreen'
+import { PurchaseOrderDetailScreen } from '../screens/procurement/PurchaseOrderDetailScreen'
 import { PurchaseOrdersScreen } from '../screens/procurement/PurchaseOrdersScreen'
 import { CreatePurchaseOrderScreen } from '../screens/procurement/CreatePurchaseOrderScreen'
+import { BoqDetailScreen } from '../screens/boq/BoqDetailScreen'
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen'
 import { CreateTaskScreen } from '../screens/tasks/CreateTaskScreen'
 import { formSheetOptions, stackScreenOptions } from './options'
@@ -31,6 +37,7 @@ export function ProjectNavigator() {
         options={formSheetOptions(colors, 'New project')}
       />
       <Stack.Screen name="ProjectOverview" component={ProjectOverviewScreen} options={{ headerShown: false, title: 'Project' }} />
+      <Stack.Screen name="EditProject" component={EditProjectScreen} options={formSheetOptions(colors, 'Edit project')} />
       <Stack.Screen name="ProjectTasks" component={ProjectTasksScreen} options={{ headerShown: false, title: 'Tasks' }} />
       <Stack.Screen name="ProjectFiles" component={ProjectFilesScreen} options={{ headerShown: false, title: 'Files' }} />
       <Stack.Screen name="ProjectTeam" component={ProjectTeamScreen} options={{ headerShown: false, title: 'Team' }} />
@@ -45,6 +52,11 @@ export function ProjectNavigator() {
         options={formSheetOptions(colors, 'Post update')}
       />
       <Stack.Screen name="PurchaseOrders" component={PurchaseOrdersScreen} options={{ headerShown: false, title: 'Purchase Orders' }} />
+      <Stack.Screen name="PurchaseOrderDetail" component={PurchaseOrderDetailScreen} options={{ headerShown: false, title: 'PO' }} />
+      <Stack.Screen name="RfqPanel" component={RfqPanelScreen} options={{ headerShown: false, title: 'Materials' }} />
+      <Stack.Screen name="RfqDetail" component={RfqDetailScreen} options={{ headerShown: false, title: 'RFQ' }} />
+      <Stack.Screen name="CreateRfq" component={CreateRfqScreen} options={formSheetOptions(colors, 'Raise RFQ')} />
+      <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ headerShown: false, title: 'Quotation' }} />
       <Stack.Screen
         name="CreatePurchaseOrder"
         component={CreatePurchaseOrderScreen}

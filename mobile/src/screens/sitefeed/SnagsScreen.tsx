@@ -1,9 +1,7 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
@@ -17,7 +15,7 @@ import { isApiError } from '../../api/client'
 import type { SnagStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { MoreStackParamList } from '../../navigation/types'
-import { goBackOrHome } from '../../navigation/openProject'
+import { smartGoBack } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Snags'>
 
@@ -49,38 +47,30 @@ export function SnagsScreen({ route, navigation }: Props) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['snags'] }),
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Snags"
-      subtitle="Issues to fix"
-      subtitleIcon="alert-circle-outline"
-      onBack={() => goBackOrHome(navigation, route)}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Snags",
+    subtitle: "Issues to fix",
+    subtitleIcon: 'alert-circle-outline' as const,
+    onBack: () => smartGoBack(navigation, route),
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading snags…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading snags…" variant="list" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={data}
         keyExtractor={(s) => s._id}
@@ -126,7 +116,7 @@ export function SnagsScreen({ route, navigation }: Props) {
         label="Log snag"
         onPress={() => navigation.navigate('CreateSnag', { projectId, projectName })}
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

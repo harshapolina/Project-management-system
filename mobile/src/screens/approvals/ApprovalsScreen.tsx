@@ -1,11 +1,9 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { IconButton } from '../../components/IconButton'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
@@ -20,7 +18,7 @@ import { useToastStore } from '../../store/toastStore'
 import { ROLE_LABELS } from '../../utils/roles'
 import type { ApprovalBand, ApprovalFlowType } from '../../types/models'
 import type { MoreStackParamList } from '../../navigation/types'
-import { goBackOrHome } from '../../navigation/openProject'
+import { smartGoBack } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'Approvals'>
 
@@ -105,44 +103,37 @@ export function ApprovalsScreen({ route, navigation }: Props) {
     )
   }
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Approvals"
-        subtitle="Who signs off on what"
-        subtitleIcon="shield-checkmark-outline"
-        onBack={() => goBackOrHome(navigation, route)}
-        right={
-          <IconButton
-            icon="add"
-            label="New approval type"
-            tone="ghost"
-            onPress={() => navigation.navigate('CreateApprovalType')}
-          />
-        }
+  const chromeProps = {
+    title: 'Approvals',
+    subtitle: 'Who signs off on what',
+    subtitleIcon: 'shield-checkmark-outline' as const,
+    onBack: () => smartGoBack(navigation, route),
+    right: (
+      <IconButton
+        icon="add"
+        label="New approval type"
+        tone="ghost"
+        onPress={() => navigation.navigate('CreateApprovalType')}
       />
-    </>
-  )
+    ),
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading approvals…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading approvals…" variant="list" />
+      </NestedChrome>
     )
   }
 
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState
+      <NestedChrome {...chromeProps}>
+      <ErrorState
           message={isApiError(error) ? error.message : undefined}
           onRetry={() => refetch()}
         />
-      </Screen>
+      </NestedChrome>
     )
   }
 
@@ -150,8 +141,7 @@ export function ApprovalsScreen({ route, navigation }: Props) {
   const routedCount = flow.reduce((n, t) => n + t.bands.length, 0)
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
+    <NestedChrome {...chromeProps}>
       <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
         <Text style={styles.intro}>
           When someone raises one of these it routes automatically to the approver
@@ -247,7 +237,7 @@ export function ApprovalsScreen({ route, navigation }: Props) {
           </SurfaceCard>
         ))}
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

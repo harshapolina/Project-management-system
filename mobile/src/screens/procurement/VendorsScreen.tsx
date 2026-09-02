@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
@@ -26,38 +24,29 @@ export function VendorsScreen({ navigation }: Props) {
 
   const { data, isLoading, isError, error, refetch } = useQuery({ queryKey: ['vendors'], queryFn: vendorsApi.list })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Vendors"
-      subtitle="Supplier directory"
-      subtitleIcon="business-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Vendors",
+    subtitle: "Supplier directory",
+    subtitleIcon: 'business-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading vendors…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading vendors…" variant="list" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={data}
         keyExtractor={(v) => v._id}
@@ -111,7 +100,7 @@ export function VendorsScreen({ navigation }: Props) {
         }
       />
       <Fab label="Add vendor" onPress={() => navigation.navigate('CreateVendor')} />
-    </Screen>
+    </NestedChrome>
   )
 }
 

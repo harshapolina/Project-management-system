@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { HomeScreen } from '../screens/home/HomeScreen'
+import { SiteSupervisorScreen } from '../screens/site/SiteSupervisorScreen'
 import { TaskDetailScreen } from '../screens/tasks/TaskDetailScreen'
 import { CreateTaskScreen } from '../screens/tasks/CreateTaskScreen'
 import { formSheetOptions, stackScreenOptions } from './options'
@@ -15,6 +16,7 @@ export function HomeNavigator() {
   return (
     <Stack.Navigator screenOptions={options}>
       <Stack.Screen name="HomeMain" component={HomeScreen} options={{ headerShown: false }} />
+      <Stack.Screen name="SiteSupervisor" component={SiteSupervisorScreen} options={{ headerShown: false, title: 'Site mode' }} />
       <Stack.Screen name="TaskDetail" component={TaskDetailScreen} options={{ headerShown: false, title: 'Task' }} />
       <Stack.Screen
         name="CreateTask"

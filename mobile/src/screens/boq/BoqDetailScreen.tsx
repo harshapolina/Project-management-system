@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Input } from '../../components/Input'
@@ -56,32 +54,24 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     onSuccess: invalidate,
   })
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title={quotation?.title || 'Quotation'}
-        subtitle={quotation ? `${quotation.versionLabel} · BOQ` : 'Bill of quantities'}
-        subtitleIcon="document-text-outline"
-        onBack={() => navigation.goBack()}
-      />
-    </>
-  )
+  const chromeProps = {
+    title: quotation?.title || 'Quotation',
+    subtitle: quotation ? `${quotation.versionLabel} · BOQ` : 'Bill of quantities',
+    subtitleIcon: 'document-text-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading quotation…" variant="detail" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading quotation…" variant="detail" />
+      </NestedChrome>
     )
   }
   if (isError || !quotation) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
@@ -120,8 +110,7 @@ export function BoqDetailScreen({ route, navigation }: Props) {
         : null
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={quotation.items}
         keyExtractor={(item, i) => item._id || String(i)}
@@ -227,7 +216,7 @@ export function BoqDetailScreen({ route, navigation }: Props) {
           </View>
         }
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

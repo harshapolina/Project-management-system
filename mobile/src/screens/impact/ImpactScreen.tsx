@@ -1,9 +1,7 @@
 import { useMemo } from 'react'
 import { RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
+import { NestedChrome } from '../../components/NestedChrome'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
@@ -33,47 +31,37 @@ export function ImpactScreen({ navigation }: Props) {
     enabled: caps.impact,
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Impact"
-      subtitle="Points earned for finishing work well"
-      subtitleIcon="trophy-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Impact",
+    subtitle: "Points earned for finishing work well",
+    subtitleIcon: 'trophy-outline' as const,
+  }
 
   if (!caps.impact) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <EmptyState title="Impact Points" body="This isn’t enabled for your role yet." />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <EmptyState title="Impact Points" body="This isn’t enabled for your role yet." />
+      </NestedChrome>
     )
   }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading your score…" variant="dashboard" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading your score…" variant="dashboard" />
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <ScrollView
         contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
@@ -130,7 +118,7 @@ export function ImpactScreen({ navigation }: Props) {
           )}
         </SurfaceCard>
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

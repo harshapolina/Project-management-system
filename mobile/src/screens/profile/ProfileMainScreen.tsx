@@ -1,10 +1,8 @@
 import { useMemo } from 'react'
 import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { Screen } from '../../components/Screen'
+import { NestedChrome } from '../../components/NestedChrome'
 import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { NavRow, NavSection } from '../../components/NavRow'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { spacing, typography, type AppColors } from '../../constants/theme'
@@ -51,14 +49,11 @@ export function ProfileMainScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      <AppNavBar />
-      <PageHeader
-        title="You"
-        subtitle="Account and company"
-        subtitleIcon="person-outline"
-        onBack={() => navigation.goBack()}
-      />
+    <NestedChrome
+      title="You"
+      subtitle="Account and company"
+      subtitleIcon="person-outline"
+    >
       <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
         <SurfaceCard>
           <View style={styles.identity}>
@@ -122,7 +117,7 @@ export function ProfileMainScreen({ navigation }: Props) {
           />
         </NavSection>
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

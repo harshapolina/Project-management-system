@@ -1,11 +1,9 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Fab } from '../../components/Fab'
@@ -69,41 +67,32 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
     },
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Files"
-      subtitle={projectName || 'Project files'}
-      subtitleIcon="folder-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Files",
+    subtitle: projectName || 'Project files',
+    subtitleIcon: 'folder-outline' as const,
+  }
 
   if (!caps.manageFiles) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <EmptyState title="Files aren't available" body="Your role doesn't have access to project files." />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <EmptyState title="Files aren't available" body="Your role doesn't have access to project files." />
+      </NestedChrome>
     )
   }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading files…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading files…" variant="list" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
@@ -134,8 +123,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={files}
         keyExtractor={(f) => f._id}
@@ -153,7 +141,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
         disabled={uploadMutation.isPending}
         aboveTabBar={true}
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

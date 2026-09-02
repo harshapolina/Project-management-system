@@ -48,7 +48,7 @@ export function CreatePurchaseOrderScreen({ route, navigation }: Props) {
       title="Purchase order"
       subtitle="Request materials from a vendor"
       subtitleIcon="cart-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Create purchase order"

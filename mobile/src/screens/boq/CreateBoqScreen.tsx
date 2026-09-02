@@ -60,7 +60,7 @@ export function CreateBoqScreen({ route, navigation }: Props) {
       title="New quotation"
       subtitle="Start a BOQ estimate"
       subtitleIcon="document-text-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Create quotation"

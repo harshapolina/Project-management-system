@@ -70,6 +70,12 @@ export function LoginScreen({ navigation }: Props) {
             size="sm"
             onPress={() => navigation.navigate('ForgotPassword')}
           />
+          <Button
+            title="Invite only — learn more"
+            variant="ghost"
+            size="sm"
+            onPress={() => navigation.navigate('Register')}
+          />
         </>
       }
     >

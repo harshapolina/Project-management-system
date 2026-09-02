@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Input } from '../../components/Input'
@@ -55,41 +53,31 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['project', projectId] }),
   })
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Notes"
-        subtitle={projectName || 'Meeting notes'}
-        subtitleIcon="chatbubble-ellipses-outline"
-        onBack={() => navigation.goBack()}
-      />
-    </>
-  )
+  const chromeProps = {
+    title: "Notes",
+    subtitle: projectName || 'Meeting notes',
+    subtitleIcon: 'chatbubble-ellipses-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading notes…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading notes…" variant="list" />
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   const notes = [...(data.project.meetingNotes || [])].reverse()
 
   return (
-    <Screen padded={false} edges={['left', 'right']} keyboardAvoiding>
-      {header}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <NestedChrome {...chromeProps} keyboardAvoiding>
         <FlatList
           data={notes}
           keyExtractor={(n) => n._id}
@@ -126,8 +114,7 @@ export function ProjectNotesScreen({ route, navigation }: Props) {
             disabled={!text.trim()}
           />
         </View>
-      </KeyboardAvoidingView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

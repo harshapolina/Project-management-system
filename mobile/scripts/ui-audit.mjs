@@ -59,6 +59,10 @@ for (const file of screens) {
     (/backgroundColor|color:|borderColor|tintColor|shadowColor/.test(text) ||
       /createStyles\(/.test(text))
   if (needsTheme && !text.includes('useColors')) {
+    // Section components may use static hero tokens from theme
+    if (rel.includes(`${path.sep}sections${path.sep}`) && text.includes('heroFor')) {
+      continue
+    }
     // MoreMain is layout-only exception if no color styles
     if (!/createStyles\(|backgroundColor: c\.|color: c\./.test(text)) {
       warnings.push(`${rel}: no useColors (layout-only OK if children are themed)`)
@@ -69,7 +73,68 @@ for (const file of screens) {
   }
 }
 
-// Responsive primitives present
+// NestedChrome adoption + layout checks
+const TAB_ROOT_SCREENS = new Set([
+  'HomeScreen.tsx',
+  'MoreMainScreen.tsx',
+  'ProjectsListScreen.tsx',
+  'ProjectOverviewScreen.tsx',
+  'ThreadsScreen.tsx',
+  'InboxHubScreen.tsx',
+  'DocsScreen.tsx',
+])
+
+for (const file of screens) {
+  const text = fs.readFileSync(file, 'utf8')
+  const rel = path.relative(ROOT, file)
+  const base = path.basename(file)
+
+  if (text.includes('onBack') && text.includes('AppNavBar') && text.includes('PageHeader') && !text.includes('NestedChrome')) {
+    if (!TAB_ROOT_SCREENS.has(base)) {
+      errors.push(`${rel}: manual chrome with onBack — use NestedChrome`)
+    }
+  }
+
+  if (/FlatList|ScrollView/.test(text) && text.includes('AppNavBar') && !text.includes('listContent') && !text.includes('tabListContent') && !text.includes('NestedChrome')) {
+    if (!TAB_ROOT_SCREENS.has(base) && !text.includes('FormLayout')) {
+      warnings.push(`${rel}: scroll list may miss tab-bar clearance (listContent)`)
+    }
+  }
+
+  if (text.includes('NestedChrome') && /\bscroll\b/.test(text) && text.includes('KanbanBoard')) {
+    warnings.push(`${rel}: KanbanBoard inside NestedChrome scroll — use ChromeFill + flex layout instead`)
+  }
+
+  // Hardcoded hex outside theme (screens only)
+  if (!rel.includes('constants/theme.ts')) {
+    const hexMatches = text.match(/#[0-9a-fA-F]{3,8}/g) || []
+    const allowed = new Set(['#fff', '#ffffff', '#000', '#000000'])
+    for (const hex of hexMatches) {
+      const lower = hex.toLowerCase()
+      if (allowed.has(lower)) continue
+      if (OLD_BLUES.includes(hex) || OLD_BLUES.includes(lower)) continue
+      // theme.ts re-exports in imports are OK
+      if (/from ['"].*theme['"]/.test(text) && text.includes(hex)) continue
+      warnings.push(`${rel}: hardcoded hex ${hex} — prefer theme tokens`)
+      break
+    }
+  }
+}
+
+// Web lint hint (client pages)
+const clientPages = path.join(ROOT, '..', 'client', 'src', 'pages')
+if (fs.existsSync(clientPages)) {
+  let applePanels = 0
+  for (const file of walk(clientPages)) {
+    if (!file.endsWith('.jsx')) continue
+    const text = fs.readFileSync(file, 'utf8')
+    if (text.includes('bg-[#fbfbfd]') || text.includes('ring-black/[0.04]')) applePanels++
+  }
+  if (applePanels > 0) {
+    warnings.push(`client pages: ${applePanels} file(s) still use Apple-panel hex patterns`)
+  }
+}
+
 for (const must of [
   'src/theme/useResponsive.ts',
   'src/components/Fab.tsx',
@@ -112,4 +177,25 @@ for (const d of devices) {
   console.log(
     `  ${d.name.padEnd(18)} w=${String(d.width).padStart(3)}  pad=${pagePadding}  statsCols=${statsColumns}  maxWidth=${contentMax}`,
   )
+}
+
+// Web parity — key routes must exist in navigation types
+const typesText = fs.readFileSync(path.join(SRC, 'navigation/types.ts'), 'utf8')
+const parityRoutes = [
+  'InboxHub',
+  'SiteSupervisor',
+  'Docs',
+  'MaterialsHub',
+  'RfqDetail',
+  'LeadDetail',
+  'EditProject',
+  'InvoiceDetail',
+  'PlatformOverview',
+  'BoqMeasurement',
+  'Register',
+]
+console.log('\nParity routes (navigation/types.ts):')
+for (const route of parityRoutes) {
+  if (!typesText.includes(route)) errors.push(`types.ts: missing parity route ${route}`)
+  else console.log(`  ✓ ${route}`)
 }
