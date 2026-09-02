@@ -19,6 +19,7 @@ import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { spacing } from '../../constants/theme'
 import type { InboxStackParamList } from '../../navigation/types'
+import type { AppNotification } from '../../types/ops'
 import { pushConversation } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<InboxStackParamList, 'InboxHub'>

@@ -9,7 +9,7 @@ import { radius, spacing, typography, type AppColors, type ChatColors } from '..
 import { useColors } from '../../theme/useColors'
 import { useChatColors } from '../../theme/useChatColors'
 import { useResponsive } from '../../theme/useResponsive'
-import { formatDayLabel, formatMsgTime, sameMessageDay } from '../../utils/chatUtils'
+import { formatDayLabel, formatMsgTime, isCurrentUser, mailUserId, sameMessageDay } from '../../utils/chatUtils'
 import { getSocket } from '../../lib/socket'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
@@ -28,7 +28,7 @@ export function ConversationScreen({ route, navigation }: Props) {
   const styles = useMemo(() => createStyles(colors, chat, pagePadding), [colors, chat, pagePadding])
   const listRef = useRef<FlatList<Message>>(null)
 
-  const { userId, userName } = route.params
+  const { userId, userName: routeName } = route.params
   const me = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const [body, setBody] = useState('')
@@ -48,9 +48,8 @@ export function ConversationScreen({ route, navigation }: Props) {
     const onMail = (payload: { message?: Message }) => {
       const message = payload?.message
       if (!message) return
-      const peer =
-        String(message.from._id) === String(me.id) ? message.to._id : message.from._id
-      if (String(peer) !== String(userId)) return
+      const peer = isCurrentUser(message.from, me.id) ? mailUserId(message.to) : mailUserId(message.from)
+      if (peer !== String(userId)) return
 
       queryClient.setQueryData<ConversationData>(queryKey, (old) => {
         if (!old) return old
@@ -76,10 +75,11 @@ export function ConversationScreen({ route, navigation }: Props) {
         _id: `temp-${Date.now()}`,
         from: {
           _id: me.id,
+          id: me.id,
           name: me.name,
           email: me.email,
           avatar: me.avatar,
-        },
+        } as Message['from'],
         to: previous.other,
         body: text,
         createdAt: new Date().toISOString(),
@@ -109,23 +109,24 @@ export function ConversationScreen({ route, navigation }: Props) {
   })
 
   const other = data?.other
+  const displayName = other?.name || routeName || 'Chat'
+  const firstName = displayName.trim().split(/\s+/)[0] || displayName
   const chromeProps = {
-    title: userName,
-    subtitle: other?.email || 'Direct message',
-    subtitleIcon: 'chatbubble-ellipses-outline' as const,
-    right: other ? <Avatar name={other.name} uri={other.avatar} size={36} /> : undefined,
+    title: displayName,
+    subtitle: other?.email || (other ? 'Direct message' : undefined),
+    right: other ? <Avatar name={other.name} uri={other.avatar} size={32} /> : undefined,
   }
 
   if (isLoading) {
     return (
-      <NestedChrome {...chromeProps} background={chat.listBg}>
+      <NestedChrome {...chromeProps} background={chat.listBg} compactHeader>
         <LoadingState label="Loading conversation…" variant="chat" />
       </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <NestedChrome {...chromeProps} background={chat.listBg}>
+      <NestedChrome {...chromeProps} background={chat.listBg} compactHeader>
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       </NestedChrome>
     )
@@ -140,7 +141,7 @@ export function ConversationScreen({ route, navigation }: Props) {
   }
 
   return (
-    <NestedChrome {...chromeProps} background={chat.listBg} keyboardAvoiding>
+    <NestedChrome {...chromeProps} background={chat.listBg} keyboardAvoiding compactHeader>
       <FlatList
           ref={listRef}
           data={messages}
@@ -157,13 +158,13 @@ export function ConversationScreen({ route, navigation }: Props) {
             if (messages.length > 0) listRef.current?.scrollToOffset({ offset: 0, animated: true })
           }}
           renderItem={({ item, index }) => {
-            const mine = String(item.from._id) === String(me?.id)
+            const mine = isCurrentUser(item.from, me?.id)
             const pending = String(item._id).startsWith('temp-')
             const older = messages[index + 1]
             const showDate =
               index === messages.length - 1 ||
               (older && !sameMessageDay(item.createdAt, older.createdAt))
-            const showAvatar = !mine && (!older || String(older.from._id) !== String(item.from._id))
+            const showAvatar = !mine && (!older || mailUserId(older.from) !== mailUserId(item.from))
 
             return (
               <View>
@@ -203,7 +204,7 @@ export function ConversationScreen({ route, navigation }: Props) {
             <EmptyState
               icon="chatbubble-ellipses-outline"
               title="Start the conversation"
-              body={`Send the first message to ${userName.split(' ')[0]}.`}
+              body={`Send the first message to ${firstName}.`}
             />
           }
         />
@@ -212,7 +213,7 @@ export function ConversationScreen({ route, navigation }: Props) {
           onChangeText={setBody}
           onSend={send}
           sending={sendMutation.isPending}
-          placeholder={`Message ${userName.split(' ')[0]}…`}
+          placeholder={`Message ${firstName}…`}
         />
     </NestedChrome>
   )

@@ -50,6 +50,7 @@ type NestedChromeProps = {
   scroll?: boolean
   contentContainerStyle?: StyleProp<ViewStyle>
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled'
+  compactHeader?: boolean
 }
 
 const FIXED_CHROME = new Set(['SegmentedControl', 'ViewPills', 'ProcurementTabs', 'SearchField'])
@@ -182,6 +183,7 @@ export function NestedChrome({
   scroll,
   contentContainerStyle,
   keyboardShouldPersistTaps = 'handled',
+  compactHeader,
 }: NestedChromeProps) {
   const { listContent } = useResponsive()
   const resolvedOnBack = useAutoBack(showBack, onBack)
@@ -211,6 +213,7 @@ export function NestedChrome({
         subtitleIcon={subtitleIcon}
         onBack={resolvedOnBack}
         right={right}
+        compact={compactHeader}
       />
       {keyboardAvoiding ? (
         <KeyboardAwareView style={styles.body}>{body}</KeyboardAwareView>

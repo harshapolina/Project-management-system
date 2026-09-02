@@ -12,6 +12,7 @@ import { useResponsive } from '../../theme/useResponsive'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
+import type { InboxStackParamList } from '../../navigation/types'
 import { pushConversation } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<InboxStackParamList, 'Threads'>

@@ -253,6 +253,7 @@ export interface Notification {
 
 export interface MailUser {
   _id: string
+  id?: string
   name: string
   email: string
   avatar?: string

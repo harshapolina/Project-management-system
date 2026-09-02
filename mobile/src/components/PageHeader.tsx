@@ -18,6 +18,7 @@ export function PageHeader({
   right,
   onBack,
   backLabel = 'Back',
+  compact = false,
 }: {
   title: ReactNode
   subtitle?: string
@@ -25,6 +26,8 @@ export function PageHeader({
   right?: ReactNode
   onBack?: () => void
   backLabel?: string
+  /** Chat-style: name sits in the back row instead of a large page title. */
+  compact?: boolean
 }) {
   const colors = useColors()
   const { pagePadding, titleSize, isCompact } = useResponsive()
@@ -32,6 +35,7 @@ export function PageHeader({
     () => createStyles(colors, pagePadding, titleSize, isCompact),
     [colors, pagePadding, titleSize, isCompact],
   )
+  const useCompactBar = compact && !!onBack
 
   return (
     <View style={styles.wrap}>
@@ -46,41 +50,53 @@ export function PageHeader({
           >
             <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
           </Pressable>
-          {typeof title === 'string' ? (
-            <Text style={styles.topTitle} numberOfLines={1}>
-              {title}
-            </Text>
+          {useCompactBar ? (
+            typeof title === 'string' ? (
+              <Text style={styles.topTitle} numberOfLines={1}>
+                {title}
+              </Text>
+            ) : (
+              <View style={styles.topTitleWrap}>{title}</View>
+            )
           ) : (
-            <View style={styles.topTitleWrap}>{title}</View>
+            <View style={styles.topSpacer} />
           )}
           {right ? <View style={styles.rightSlot}>{right}</View> : <View style={styles.topIconBtn} />}
         </View>
       ) : null}
 
-      <View style={styles.titleBlock}>
-        {!onBack && right ? (
-          <View style={styles.titleRow}>
+      {useCompactBar ? (
+        subtitle ? (
+          <Text style={styles.compactSubtitle} numberOfLines={1}>
+            {subtitle}
+          </Text>
+        ) : null
+      ) : (
+        <View style={styles.titleBlock}>
+          {!onBack && right ? (
+            <View style={styles.titleRow}>
+              <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+                {title}
+              </Text>
+              <View style={styles.rightSlot}>{right}</View>
+            </View>
+          ) : (
             <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
               {title}
             </Text>
-            <View style={styles.rightSlot}>{right}</View>
-          </View>
-        ) : !onBack ? (
-          <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
-            {title}
-          </Text>
-        ) : null}
-        {subtitle ? (
-          <View style={styles.statusRow}>
-            {subtitleIcon ? (
-              <Ionicons name={subtitleIcon} size={16} color={colors.accentHover} />
-            ) : null}
-            <Text style={styles.subtitle} numberOfLines={2}>
-              {subtitle}
-            </Text>
-          </View>
-        ) : null}
-      </View>
+          )}
+          {subtitle ? (
+            <View style={styles.statusRow}>
+              {subtitleIcon ? (
+                <Ionicons name={subtitleIcon} size={16} color={colors.accentHover} />
+              ) : null}
+              <Text style={styles.subtitle} numberOfLines={2}>
+                {subtitle}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
     </View>
   )
 }
@@ -143,5 +159,11 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
       marginTop: -2,
     },
     subtitle: { ...typography.caption, color: c.textSecondary, flex: 1 },
+    compactSubtitle: {
+      ...typography.caption,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: -6,
+    },
   })
 }
