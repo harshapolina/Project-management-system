@@ -8,6 +8,7 @@ import { BoqListScreen } from '../screens/boq/BoqListScreen'
 import { BoqDetailScreen } from '../screens/boq/BoqDetailScreen'
 import { MeasurementSheetScreen } from '../screens/boq/MeasurementSheetScreen'
 import { CreateBoqScreen } from '../screens/boq/CreateBoqScreen'
+import { EditQuotationScreen } from '../screens/boq/EditQuotationScreen'
 import { MaterialsHubScreen } from '../screens/procurement/MaterialsHubScreen'
 import { RfqDetailScreen } from '../screens/procurement/RfqDetailScreen'
 import { CreateRfqScreen } from '../screens/procurement/CreateRfqScreen'
@@ -35,6 +36,9 @@ import { InventoryMovementsScreen } from '../screens/inventory/InventoryMovement
 import { CompanyAdminDashboardScreen } from '../screens/admin/CompanyAdminDashboardScreen'
 import { PlatformNavigator } from './PlatformNavigator'
 import { ImpactScreen } from '../screens/impact/ImpactScreen'
+import { AdjustPointsScreen } from '../screens/impact/AdjustPointsScreen'
+import { ImpactRuleScreen } from '../screens/impact/ImpactRuleScreen'
+import { ImpactPersonScreen } from '../screens/impact/ImpactPersonScreen'
 import { ProfileNavigator } from './ProfileNavigator'
 import { BillingScreen } from '../screens/billing/BillingScreen'
 import { InvoiceDetailScreen } from '../screens/billing/InvoiceDetailScreen'
@@ -67,6 +71,11 @@ export function MoreNavigator() {
       <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ headerShown: false, title: 'Quotation' }} />
       <Stack.Screen name="BoqMeasurement" component={MeasurementSheetScreen} options={{ headerShown: false, title: 'Measurements' }} />
       <Stack.Screen name="CreateBoq" component={CreateBoqScreen} options={formSheetOptions(colors, 'New quotation')} />
+      <Stack.Screen
+        name="EditQuotation"
+        component={EditQuotationScreen}
+        options={formSheetOptions(colors, 'Edit quotation')}
+      />
 
       <Stack.Screen name="MaterialsHub" component={MaterialsHubScreen} options={{ headerShown: false, title: 'Materials' }} />
       <Stack.Screen name="RfqPanel" component={RfqPanelScreen} options={{ headerShown: false, title: 'RFQs' }} />
@@ -115,6 +124,21 @@ export function MoreNavigator() {
       />
       <Stack.Screen name="PlatformAdmin" component={PlatformNavigator} options={{ headerShown: false, title: 'Platform' }} />
       <Stack.Screen name="Impact" component={ImpactScreen} options={{ headerShown: false }} />
+      <Stack.Screen
+        name="ImpactAdjust"
+        component={AdjustPointsScreen}
+        options={formSheetOptions(colors, 'Adjust points')}
+      />
+      <Stack.Screen
+        name="ImpactRule"
+        component={ImpactRuleScreen}
+        options={formSheetOptions(colors, 'Point rule')}
+      />
+      <Stack.Screen
+        name="ImpactPerson"
+        component={ImpactPersonScreen}
+        options={{ headerShown: false, title: 'Impact profile' }}
+      />
       <Stack.Screen name="ProfileHub" component={ProfileNavigator} options={{ headerShown: false }} />
       <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: false, title: 'Billing' }} />
       <Stack.Screen name="InvoiceDetail" component={InvoiceDetailScreen} options={{ headerShown: false, title: 'Invoice' }} />

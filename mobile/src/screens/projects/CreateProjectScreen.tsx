@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
 import { radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { projectsApi } from '../../api/projects'
+import { spacesApi } from '../../api/spaces'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { ProjectStackParamList } from '../../navigation/types'
@@ -28,7 +29,10 @@ export function CreateProjectScreen({ navigation }: Props) {
   const [location, setLocation] = useState('')
   const [budget, setBudget] = useState('')
   const [type, setType] = useState<'residential' | 'commercial'>('residential')
+  const [spaceId, setSpaceId] = useState('')
   const [errors, setErrors] = useState<Record<string, string>>({})
+
+  const spaces = useQuery({ queryKey: ['spaces'], queryFn: spacesApi.list })
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -39,6 +43,7 @@ export function CreateProjectScreen({ navigation }: Props) {
         location: location.trim() || undefined,
         budget: budget ? Number(budget) : undefined,
         type,
+        spaceId: spaceId || undefined,
       }),
     onSuccess: (project) => {
       queryClient.invalidateQueries({ queryKey: ['projects'] })
@@ -94,6 +99,47 @@ export function CreateProjectScreen({ navigation }: Props) {
       />
       <Input label="Location (optional)" placeholder="City, area" value={location} onChangeText={setLocation} />
       <Input label="Budget (optional)" placeholder="0" keyboardType="numeric" value={budget} onChangeText={setBudget} />
+
+      <View>
+        <View style={styles.spaceHead}>
+          <Text style={styles.label}>Space (optional)</Text>
+          <Pressable
+            onPress={() => navigation.navigate('CreateSpace')}
+            hitSlop={8}
+            accessibilityRole="button"
+          >
+            <Text style={styles.spaceAction}>New space</Text>
+          </Pressable>
+        </View>
+        <View style={styles.typeRow}>
+          <Pressable
+            onPress={() => setSpaceId('')}
+            style={[styles.typeChip, !spaceId && styles.typeChipActive]}
+            accessibilityRole="button"
+            accessibilityState={{ selected: !spaceId }}
+          >
+            <Text style={[styles.typeChipText, !spaceId && styles.typeChipTextActive]}>No space</Text>
+          </Pressable>
+          {(spaces.data || []).map((sp) => (
+            <Pressable
+              key={sp._id}
+              onPress={() => setSpaceId(sp._id)}
+              style={[styles.typeChip, spaceId === sp._id && styles.typeChipActive]}
+              accessibilityRole="button"
+              accessibilityState={{ selected: spaceId === sp._id }}
+            >
+              <View style={[styles.spaceDot, { backgroundColor: sp.color }]} />
+              <Text
+                style={[styles.typeChipText, spaceId === sp._id && styles.typeChipTextActive]}
+                numberOfLines={1}
+              >
+                {sp.name}
+              </Text>
+            </Pressable>
+          ))}
+        </View>
+      </View>
+
       {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
     </FormLayout>
   )
@@ -104,14 +150,21 @@ function createStyles(c: AppColors) {
     label: { ...typography.captionStrong, color: c.textSecondary, marginBottom: spacing.sm },
     typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     typeChip: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
       paddingHorizontal: spacing.md,
       paddingVertical: spacing.sm,
       borderRadius: radius.full,
       backgroundColor: c.surfaceRaised,
+      maxWidth: '100%',
     },
     typeChipActive: { backgroundColor: c.textPrimary },
     typeChipText: { ...typography.caption, color: c.textSecondary },
     typeChipTextActive: { color: c.canvas, fontWeight: '700' },
     error: { ...typography.caption, color: c.danger },
+    spaceHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+    spaceAction: { ...typography.captionStrong, color: c.accentHover, marginBottom: spacing.sm },
+    spaceDot: { width: 8, height: 8, borderRadius: 4 },
   })
 }

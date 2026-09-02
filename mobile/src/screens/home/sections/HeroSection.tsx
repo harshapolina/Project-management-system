@@ -31,16 +31,13 @@ export function HeroSection({
   postUpdateLabel,
   postUpdateIcon,
   style,
-  onLayout,
-  opacity,
-  scale,
   children,
 }: HeroSectionProps) {
   const HERO = heroFor(mode)
   const styles = createStyles(HERO)
 
-  const content = (
-    <>
+  return (
+    <View style={[styles.heroInner, style]}>
       <Text style={styles.heroHelloLine}>
         Hello, <Text style={styles.heroHelloName}>{userName || 'there'}</Text>
       </Text>
@@ -76,23 +73,6 @@ export function HeroSection({
         </Pressable>
       </View>
       {children}
-    </>
-  )
-
-  if (opacity != null || scale != null) {
-    return (
-      <Animated.View
-        style={[styles.heroInner, style, opacity != null && { opacity }, scale != null && { transform: [{ scale }] }]}
-        onLayout={(e) => onLayout?.(Math.ceil(e.nativeEvent.layout.height))}
-      >
-        {content}
-      </Animated.View>
-    )
-  }
-
-  return (
-    <View style={[styles.heroInner, style]} onLayout={(e) => onLayout?.(Math.ceil(e.nativeEvent.layout.height))}>
-      {content}
     </View>
   )
 }

@@ -3,8 +3,12 @@ import type { ProjectFile } from '../types/models'
 import { compressImageAsset } from '../lib/compressImage'
 
 export const filesApi = {
-  list: (projectId: string) =>
-    http.get<{ success: true; files: ProjectFile[] }>('/files', { params: { projectId } }).then((r) => r.data.files),
+  list: (projectId: string, folder?: string) =>
+    http
+      .get<{ success: true; files: ProjectFile[] }>('/files', {
+        params: { projectId, ...(folder ? { folder } : {}) },
+      })
+      .then((r) => r.data.files),
 
   upload: async (
     projectId: string,

@@ -8,6 +8,7 @@ import { ViewPills, type MyWorkView, MY_WORK_LABELS } from '../../components/Vie
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { StatusBadge } from '../../components/Badge'
 import { EmptyState } from '../../components/States'
+import { AgendaCard } from '../../components/AgendaCard'
 import { spacing, typography } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
@@ -19,11 +20,13 @@ export function MyWorkViews({
   onViewChange,
   onTaskPress,
   onCreatePersonal,
+  onOpenCalendar,
 }: {
   view: MyWorkView
   onViewChange: (v: MyWorkView) => void
   onTaskPress: (task: Task) => void
   onCreatePersonal?: () => void
+  onOpenCalendar?: () => void
 }) {
   const colors = useColors()
   const { listContent, pagePadding } = useResponsive()
@@ -74,6 +77,9 @@ export function MyWorkViews({
             onRefresh={refetch}
             refreshing={isRefetching}
             keyboardShouldPersistTaps="handled"
+            ListHeaderComponent={
+              view === 'today' ? <AgendaCard onConnect={onOpenCalendar} /> : null
+            }
             ListEmptyComponent={
               <EmptyState
                 title={view === 'today' ? 'Nothing due' : 'No completed tasks'}

@@ -47,6 +47,8 @@ export interface Tenant {
   /** Sits behind the company logo; empty means use a neutral surface. */
   brandColor?: string
   notice?: TenantNotice | null
+  /** Extra roles this workspace defined on top of the built-in set. */
+  customRoles?: CustomRole[]
 }
 
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done'
@@ -331,6 +333,90 @@ export interface ImpactData {
     projectId?: { _id: string; name: string }
   }[]
   canManage: boolean
+}
+
+export interface ImpactAchievement {
+  key: string
+  label: string
+  minPoints: number
+  description?: string
+}
+
+export interface ImpactRule {
+  _id: string
+  key: string
+  label: string
+  description?: string
+  category: string
+  points: number
+  weight: number
+  enabled: boolean
+  auto: boolean
+}
+
+export interface ImpactLeaderboardRow {
+  rank: number
+  user: { _id: string; name: string; avatar?: string; role: string; title?: string }
+  totalPoints: number
+  weeklyPoints: number
+  monthlyPoints: number
+  badges: string[]
+  /** Points for the requested period — what the board is ranked on. */
+  points: number
+}
+
+export type ImpactPeriod = 'weekly' | 'monthly' | 'all'
+
+export interface ImpactTimelineEntry {
+  _id: string
+  points: number
+  reason: string
+  category?: string
+  createdAt: string
+  userId?: { _id: string; name: string; avatar?: string; role?: string }
+  awardedBy?: { _id: string; name: string; avatar?: string }
+  projectId?: { _id: string; name: string }
+}
+
+export interface ImpactOverview {
+  me: ImpactScore
+  badges: ImpactBadge[]
+  top: {
+    rank: number
+    user: { _id: string; name: string; avatar?: string; role: string; title?: string }
+    totalPoints: number
+    weeklyPoints: number
+    monthlyPoints: number
+    badges: string[]
+  }[]
+  company: {
+    scope: 'company' | 'self'
+    breakdown: { category: string; points: number; count: number }[]
+    trend: { date: string; points: number }[]
+    timeline: ImpactTimelineEntry[]
+  }
+  rules: ImpactRule[]
+  people: { _id: string; name: string; avatar?: string; role: string; title?: string; isActive?: boolean }[]
+  achievements: ImpactAchievement[]
+  canManage: boolean
+}
+
+export interface ActivityEntry {
+  _id: string
+  action: string
+  entityType?: string
+  entityName?: string
+  actor?: { _id: string; name: string; avatar?: string }
+  projectId?: { _id: string; name: string }
+  createdAt: string
+}
+
+export interface CustomRole {
+  key: string
+  label: string
+  basedOn: string
+  permissions?: Record<string, boolean>
+  createdAt?: string
 }
 
 export interface ApiError {

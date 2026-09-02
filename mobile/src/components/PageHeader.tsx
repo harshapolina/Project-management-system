@@ -43,7 +43,7 @@ export function PageHeader({
         <View style={styles.topBar}>
           <Pressable
             onPress={onBack}
-            hitSlop={10}
+            hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={backLabel}
             style={styles.topIconBtn}
@@ -73,22 +73,20 @@ export function PageHeader({
         ) : null
       ) : (
         <View style={styles.titleBlock}>
-          {!onBack && right ? (
-            <View style={styles.titleRow}>
-              <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
+          <View style={styles.titleRow}>
+            {typeof title === 'string' ? (
+              <Text style={styles.title} numberOfLines={2}>
                 {title}
               </Text>
-              <View style={styles.rightSlot}>{right}</View>
-            </View>
-          ) : (
-            <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
-              {title}
-            </Text>
-          )}
+            ) : (
+              <View style={{ flex: 1 }}>{title}</View>
+            )}
+            {!onBack && right ? <View style={styles.rightSlot}>{right}</View> : null}
+          </View>
           {subtitle ? (
             <View style={styles.statusRow}>
               {subtitleIcon ? (
-                <Ionicons name={subtitleIcon} size={16} color={colors.accentHover} />
+                <Ionicons name={subtitleIcon} size={15} color={colors.accentHover} />
               ) : null}
               <Text style={styles.subtitle} numberOfLines={2}>
                 {subtitle}
@@ -106,18 +104,20 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
     wrap: {
       paddingHorizontal: pagePadding,
       paddingTop: spacing.xs,
-      paddingBottom: isCompact ? spacing.sm : spacing.md,
-      gap: spacing.sm,
+      paddingBottom: isCompact ? spacing.xs : spacing.sm,
+      gap: spacing.xs,
     },
     topBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      minHeight: 40,
+      minHeight: 38,
+      marginBottom: 2,
     },
     topIconBtn: {
-      width: 40,
-      height: 40,
+      width: 38,
+      height: 38,
+      borderRadius: 19,
       alignItems: 'center',
       justifyContent: 'center',
     },
@@ -137,33 +137,40 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
       justifyContent: 'center',
     },
     rightSlot: { flexShrink: 0, alignItems: 'flex-end', justifyContent: 'center' },
-    titleBlock: { gap: 6 },
+    titleBlock: { gap: 4, paddingHorizontal: 2 },
     titleRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-between',
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     title: {
       ...typography.h1,
-      fontSize: titleSize,
+      fontSize: Math.min(titleSize, 28),
       color: c.textPrimary,
-      letterSpacing: -0.6,
+      fontWeight: '700',
+      letterSpacing: -0.5,
       flex: 1,
       minWidth: 0,
     },
     statusRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginTop: -2,
+      gap: 6,
+      marginTop: 1,
     },
-    subtitle: { ...typography.caption, color: c.textSecondary, flex: 1 },
+    subtitle: {
+      ...typography.caption,
+      color: c.textSecondary,
+      fontSize: 13,
+      fontWeight: '500',
+      flex: 1,
+    },
     compactSubtitle: {
       ...typography.caption,
       color: c.textSecondary,
       textAlign: 'center',
-      marginTop: -6,
+      marginTop: -4,
     },
   })
 }

@@ -1,8 +1,11 @@
 import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActionSheetIOS, Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
+import * as DocumentPicker from 'expo-document-picker'
+import * as XLSX from 'xlsx'
+import { File } from 'expo-file-system'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Input } from '../../components/Input'
@@ -12,8 +15,13 @@ import { LoadingState, ErrorState } from '../../components/States'
 import { formatInr, radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
+import { IconButton } from '../../components/IconButton'
 import { boqApi } from '../../api/boq'
 import { isApiError } from '../../api/client'
+import { useAuthStore } from '../../store/authStore'
+import { rowsToBoqLines, materialMasterAoa, unitLabel } from '../../lib/boqImport'
+import { exportXlsxBase64, todayStamp } from '../../lib/exportFile'
+import { shareQuotationPdf, printQuotation } from '../../lib/quotePdf'
 import type { BoqItem, QuotationStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { MoreStackParamList } from '../../navigation/types'
@@ -33,6 +41,8 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   const [qty, setQty] = useState('1')
   const [rate, setRate] = useState('')
   const [addError, setAddError] = useState('')
+  const [busy, setBusy] = useState<string | null>(null)
+  const tenant = useAuthStore((st) => st.tenant)
 
   const { data: quotation, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['quotation', quotationId],
@@ -98,6 +108,193 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     updateItems.mutate(nextItems)
   }
 
+  /** Copy a line in place so a near-identical row is two taps, not a retype. */
+  const duplicateItem = (index: number) => {
+    const source = quotation.items[index]
+    if (!source) return
+    const copy: BoqItem = { ...source, _id: undefined }
+    const nextItems = [
+      ...quotation.items.slice(0, index + 1),
+      copy,
+      ...quotation.items.slice(index + 1),
+    ]
+    updateItems.mutate(nextItems)
+  }
+
+  /**
+   * Import an Excel/CSV take-off. SheetJS reads base64 on device — there is no
+   * ArrayBuffer from a file:// URI without reading it ourselves first.
+   */
+  const importSheet = async () => {
+    try {
+      const picked = await DocumentPicker.getDocumentAsync({
+        multiple: false,
+        copyToCacheDirectory: true,
+        type: [
+          'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+          'application/vnd.ms-excel',
+          'text/csv',
+          'text/comma-separated-values',
+          '*/*',
+        ],
+      })
+      if (picked.canceled || !picked.assets?.[0]) return
+
+      setBusy('import')
+      const asset = picked.assets[0]
+      const base64 = await new File(asset.uri).base64()
+      const workbook = XLSX.read(base64, { type: 'base64' })
+      const sheetName = workbook.SheetNames[0]
+      if (!sheetName) throw new Error('That file has no sheets.')
+
+      const grid = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], {
+        header: 1,
+        blankrows: false,
+        defval: '',
+      }) as (string | number | null)[][]
+
+      const lines = rowsToBoqLines(grid)
+      if (!lines.length) {
+        Alert.alert(
+          'Nothing to import',
+          'No priced or measurable rows were found. Check that the sheet has Description / Qty columns, or start from the Cubic template.',
+        )
+        return
+      }
+
+      const nextItems: BoqItem[] = [
+        ...quotation.items,
+        ...lines.map((l) => ({
+          description: l.description,
+          unit: l.unit,
+          qty: l.qty,
+          rate: l.rate,
+          amount: l.amount,
+          room: l.room,
+        })),
+      ]
+
+      Alert.alert(
+        'Import lines?',
+        `${lines.length} line${lines.length === 1 ? '' : 's'} read from ${asset.name}. They will be added below the existing items.`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Import', onPress: () => updateItems.mutate(nextItems) },
+        ],
+      )
+    } catch (err) {
+      Alert.alert('Could not read that file', err instanceof Error ? err.message : 'Try an .xlsx or .csv export.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  /** Hand back the material-master workbook, seeded with this quotation's lines. */
+  const downloadTemplate = async () => {
+    try {
+      setBusy('template')
+      const seed = quotation.items.length
+        ? quotation.items.map((it) => ({
+            room: it.room,
+            materialName: it.description,
+            unit: it.unit,
+            qty: it.qty,
+          }))
+        : [
+            {
+              room: 'INTERIOR / JOINERY',
+              materialFamily: 'Plywood',
+              materialName: 'Plywood',
+              grade:
+                quotation.boqType === 'commercial'
+                  ? 'BWP / Boiling Waterproof – 710 Grade'
+                  : 'BWR / Boiling Water Resistant – IS 303',
+              thickness: '18 mm',
+              brand: 'Approved make / equivalent',
+              dimensions: "8' × 4'",
+              unit: 'sheet',
+              qty: 0,
+            },
+          ]
+
+      const aoa = materialMasterAoa(seed)
+      const ws = XLSX.utils.aoa_to_sheet(aoa)
+      ws['!cols'] = [
+        { wch: 8 },
+        { wch: 16 },
+        { wch: 16 },
+        { wch: 52 },
+        { wch: 12 },
+        { wch: 22 },
+        { wch: 14 },
+        { wch: 10 },
+        { wch: 8 },
+      ]
+      const wb = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(wb, ws, 'Material Master')
+      const base64 = XLSX.write(wb, { type: 'base64', bookType: 'xlsx' })
+      await exportXlsxBase64(`cubic-material-master-${todayStamp()}`, base64)
+    } catch (err) {
+      Alert.alert('Export failed', err instanceof Error ? err.message : 'Could not build the template.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const pdfOptions = () => ({
+    quotation,
+    tenant,
+    projectName:
+      typeof quotation.projectId === 'object' ? quotation.projectId?.name : undefined,
+    clientName:
+      typeof quotation.projectId === 'object' ? quotation.projectId?.clientName : undefined,
+  })
+
+  const sharePdfAction = async () => {
+    try {
+      setBusy('pdf')
+      await shareQuotationPdf(pdfOptions())
+    } catch (err) {
+      Alert.alert('Could not build the PDF', err instanceof Error ? err.message : 'Try again.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const printAction = async () => {
+    try {
+      setBusy('print')
+      await printQuotation(pdfOptions())
+    } catch (err) {
+      Alert.alert('Could not print', err instanceof Error ? err.message : 'Try again.')
+    } finally {
+      setBusy(null)
+    }
+  }
+
+  const actions: { label: string; run: () => void }[] = [
+    { label: 'Share as PDF', run: sharePdfAction },
+    { label: 'Print', run: printAction },
+    { label: 'Edit title, GST & discount', run: () => navigation.navigate('EditQuotation', { quotationId }) },
+    { label: 'Measurement sheet', run: () => navigation.navigate('BoqMeasurement', { quotationId }) },
+    { label: 'Import Excel / CSV', run: importSheet },
+    { label: 'Download Excel template', run: downloadTemplate },
+  ]
+
+  const openActions = () => {
+    if (Platform.OS === 'ios') {
+      ActionSheetIOS.showActionSheetWithOptions(
+        { options: [...actions.map((a) => a.label), 'Cancel'], cancelButtonIndex: actions.length },
+        (i) => actions[i]?.run(),
+      )
+      return
+    }
+    Alert.alert('Quotation', undefined, [
+      ...actions.map((a) => ({ text: a.label, onPress: a.run })),
+      { text: 'Cancel', style: 'cancel' as const },
+    ])
+  }
+
   // Same order the quotation sheets total in: subtotal → handling → GST → discount
   const chargesAmount = (quotation.subtotal * (quotation.chargesPercent || 0)) / 100
   const gstAmount =
@@ -110,7 +307,19 @@ export function BoqDetailScreen({ route, navigation }: Props) {
         : null
 
   return (
-    <NestedChrome {...chromeProps}>
+    <NestedChrome
+      {...chromeProps}
+      right={
+        <IconButton
+          icon={busy ? 'hourglass-outline' : 'ellipsis-horizontal'}
+          label="Quotation actions"
+          tone="ghost"
+          onPress={() => {
+            if (!busy) openActions()
+          }}
+        />
+      }
+    >
       <FlatList
         data={quotation.items}
         keyExtractor={(item, i) => item._id || String(i)}
@@ -161,11 +370,25 @@ export function BoqDetailScreen({ route, navigation }: Props) {
                   {item.description}
                 </Text>
                 <Text style={styles.itemMeta}>
-                  {item.qty} {item.unit} × {formatInr(item.rate)}
+                  {`${item.qty} ${unitLabel(item.unit)} × ${formatInr(item.rate)}`}
+                  {item.room ? ` · ${item.room}` : ''}
                 </Text>
               </View>
               <Text style={styles.itemAmount}>{formatInr(item.amount)}</Text>
-              <Pressable onPress={() => removeItem(index)} hitSlop={8}>
+              <Pressable
+                onPress={() => duplicateItem(index)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Duplicate ${item.description}`}
+              >
+                <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
+              </Pressable>
+              <Pressable
+                onPress={() => removeItem(index)}
+                hitSlop={8}
+                accessibilityRole="button"
+                accessibilityLabel={`Remove ${item.description}`}
+              >
                 <Ionicons name="trash-outline" size={18} color={colors.danger} />
               </Pressable>
             </View>
@@ -184,7 +407,12 @@ export function BoqDetailScreen({ route, navigation }: Props) {
               <Button title="Add item" size="sm" onPress={addItem} loading={updateItems.isPending} />
             </SurfaceCard>
 
-            <SectionLabel>Totals</SectionLabel>
+            <SectionLabel
+              action="Edit"
+              onAction={() => navigation.navigate('EditQuotation', { quotationId })}
+            >
+              Totals
+            </SectionLabel>
             <SurfaceCard>
               <View style={styles.totalRow}>
                 <Text style={styles.totalLabel}>Subtotal</Text>

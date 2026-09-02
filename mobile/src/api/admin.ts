@@ -1,5 +1,5 @@
 import { http } from './client'
-import type { Role, User } from '../types/models'
+import type { CustomRole, Role, User } from '../types/models'
 
 export interface DirectoryUser {
   _id: string
@@ -41,6 +41,20 @@ export const adminApi = {
     http
       .patch<{ success: true; user: DirectoryUser }>(`/admin/users/${id}/permissions`, payload)
       .then((r) => r.data.user),
+
+  customRoles: () =>
+    http
+      .get<{ success: true; customRoles: CustomRole[] }>('/admin/custom-roles')
+      .then((r) => r.data.customRoles),
+
+  createCustomRole: (payload: {
+    label: string
+    basedOn: string
+    permissions?: Record<string, boolean>
+  }) =>
+    http
+      .post<{ success: true; role: CustomRole; customRoles: CustomRole[] }>('/admin/custom-roles', payload)
+      .then((r) => r.data),
 
   resetPassword: (id: string) =>
     http

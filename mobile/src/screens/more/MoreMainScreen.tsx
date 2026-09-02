@@ -295,14 +295,23 @@ export function MoreMainScreen({ navigation }: Props) {
               />
             ) : null}
             {caps.managePeople ? (
-              <NavRow
-                icon="person-add-outline"
-                label="Invite teammate"
-                hint="Add someone to this workspace"
-                tone={0}
-                last={!caps.inventory && !caps.manageTasks}
-                onPress={() => goMore(tabNav,'ProfileHub', { screen: 'InvitePerson' })}
-              />
+              <>
+                <NavRow
+                  icon="person-add-outline"
+                  label="Invite teammate"
+                  hint="Add someone to this workspace"
+                  tone={0}
+                  onPress={() => goMore(tabNav,'ProfileHub', { screen: 'InvitePerson' })}
+                />
+                <NavRow
+                  icon="shield-outline"
+                  label="Custom roles"
+                  hint="Define a job title and its access"
+                  tone={3}
+                  last={!caps.inventory && !caps.manageTasks}
+                  onPress={() => goMore(tabNav,'ProfileHub', { screen: 'CreateCustomRole' })}
+                />
+              </>
             ) : null}
             {caps.inventory ? (
               <>
@@ -359,6 +368,13 @@ export function MoreMainScreen({ navigation }: Props) {
 
         {/* Preferences */}
         <NavSection title="Preferences">
+          <NavRow
+            icon="calendar-outline"
+            label="Google Calendar"
+            hint="See meetings next to your work"
+            tone={0}
+            onPress={() => goMore(tabNav, 'ProfileHub', { screen: 'GoogleCalendar' })}
+          />
           <NavRow
             icon="book-outline"
             label="Handbook"

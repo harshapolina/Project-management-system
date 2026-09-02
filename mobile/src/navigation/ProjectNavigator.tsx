@@ -2,12 +2,14 @@ import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ProjectsListScreen } from '../screens/projects/ProjectsListScreen'
 import { CreateProjectScreen } from '../screens/projects/CreateProjectScreen'
+import { CreateSpaceScreen } from '../screens/projects/CreateSpaceScreen'
 import { ProjectOverviewScreen } from '../screens/projects/ProjectOverviewScreen'
 import { EditProjectScreen } from '../screens/projects/EditProjectScreen'
 import { ProjectTasksScreen } from '../screens/projects/ProjectTasksScreen'
 import { ProjectFilesScreen } from '../screens/projects/ProjectFilesScreen'
 import { ProjectTeamScreen } from '../screens/projects/ProjectTeamScreen'
 import { ProjectNotesScreen } from '../screens/projects/ProjectNotesScreen'
+import { ProjectActivityScreen } from '../screens/projects/ProjectActivityScreen'
 import { SiteFeedScreen } from '../screens/sitefeed/SiteFeedScreen'
 import { PostSiteUpdateScreen } from '../screens/sitefeed/PostSiteUpdateScreen'
 import { RfqPanelScreen } from '../screens/procurement/RfqPanelScreen'
@@ -36,12 +38,18 @@ export function ProjectNavigator() {
         component={CreateProjectScreen}
         options={formSheetOptions(colors, 'New project')}
       />
+      <Stack.Screen
+        name="CreateSpace"
+        component={CreateSpaceScreen}
+        options={formSheetOptions(colors, 'New space')}
+      />
       <Stack.Screen name="ProjectOverview" component={ProjectOverviewScreen} options={{ headerShown: false, title: 'Project' }} />
       <Stack.Screen name="EditProject" component={EditProjectScreen} options={formSheetOptions(colors, 'Edit project')} />
       <Stack.Screen name="ProjectTasks" component={ProjectTasksScreen} options={{ headerShown: false, title: 'Tasks' }} />
       <Stack.Screen name="ProjectFiles" component={ProjectFilesScreen} options={{ headerShown: false, title: 'Files' }} />
       <Stack.Screen name="ProjectTeam" component={ProjectTeamScreen} options={{ headerShown: false, title: 'Team' }} />
       <Stack.Screen name="ProjectNotes" component={ProjectNotesScreen} options={{ headerShown: false, title: 'Notes' }} />
+      <Stack.Screen name="ProjectActivity" component={ProjectActivityScreen} options={{ headerShown: false, title: 'Activity' }} />
       {/* Same route names + components the top-level "More" hub registers
           (see SharedOpsParamList) — the project's id is pre-filled via
           route params here instead of picked via ProjectPicker there. */}

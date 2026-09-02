@@ -37,6 +37,7 @@ export function ViewPills({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      nestedScrollEnabled
       style={styles.scroll}
       contentContainerStyle={[styles.row, inset && { paddingHorizontal: pagePadding }]}
       keyboardShouldPersistTaps="handled"

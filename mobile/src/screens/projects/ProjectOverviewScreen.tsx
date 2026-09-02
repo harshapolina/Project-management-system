@@ -81,12 +81,21 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   }
 
   const { project, stats } = data
-  type TabKey = 'ProjectTasks' | 'ProjectFiles' | 'ProjectNotes' | 'SiteFeed' | 'PurchaseOrders' | 'ProjectTeam' | 'RfqPanel'
+  type TabKey =
+    | 'ProjectTasks'
+    | 'ProjectFiles'
+    | 'ProjectNotes'
+    | 'ProjectActivity'
+    | 'SiteFeed'
+    | 'PurchaseOrders'
+    | 'ProjectTeam'
+    | 'RfqPanel'
   type TabIcon = keyof typeof Ionicons.glyphMap
   const tabs: { key: TabKey; label: string; icon: TabIcon }[] = [
     { key: 'ProjectTasks', label: 'Tasks', icon: 'checkbox-outline' },
     { key: 'ProjectFiles', label: 'Files', icon: 'folder-outline' },
     { key: 'ProjectNotes', label: 'Notes', icon: 'chatbubble-ellipses-outline' },
+    { key: 'ProjectActivity', label: 'Activity', icon: 'pulse-outline' },
     ...(caps.siteFeed ? [{ key: 'SiteFeed' as const, label: 'Site', icon: 'camera-outline' as const }] : []),
     ...(caps.procurement ? [{ key: 'RfqPanel' as const, label: 'Materials', icon: 'layers-outline' as const }, { key: 'PurchaseOrders' as const, label: 'Orders', icon: 'cart-outline' as const }] : []),
     ...(caps.manageProjects ? [{ key: 'ProjectTeam' as const, label: 'Team', icon: 'people-outline' as const }] : []),

@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
 import { Button } from '../../components/Button'
@@ -8,7 +8,8 @@ import { radius, spacing, typography, type AppColors } from '../../constants/the
 import { useColors } from '../../theme/useColors'
 import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
-import { INVITE_ROLE_OPTIONS } from '../../utils/roles'
+import { capabilitiesForUser, INVITE_ROLE_OPTIONS } from '../../utils/roles'
+import { useAuthStore } from '../../store/authStore'
 import type { Role } from '../../types/models'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { ProfileStackParamList } from '../../navigation/types'
@@ -20,6 +21,24 @@ export function InvitePersonScreen({ navigation }: Props) {
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const queryClient = useQueryClient()
+  const me = useAuthStore((s) => s.user)
+  const tenant = useAuthStore((s) => s.tenant)
+  const caps = capabilitiesForUser(me)
+
+  // Custom roles live on the tenant; refetch so a role created moments ago
+  // (on this device or another) is offered here without a re-login.
+  const customRolesQuery = useQuery({
+    queryKey: ['custom-roles'],
+    queryFn: adminApi.customRoles,
+    enabled: caps.managePeople,
+    initialData: tenant?.customRoles,
+  })
+
+  const roleOptions = [
+    ...INVITE_ROLE_OPTIONS,
+    ...(customRolesQuery.data || []).map((r) => ({ value: r.key as Role, label: r.label })),
+  ]
+
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [role, setRole] = useState<Role>('project_manager')
@@ -90,9 +109,18 @@ export function InvitePersonScreen({ navigation }: Props) {
         error={errors.email}
       />
 
-      <Text style={styles.label}>Role</Text>
+      <View style={styles.roleHead}>
+        <Text style={styles.label}>Role</Text>
+        <Pressable
+          onPress={() => navigation.navigate('CreateCustomRole')}
+          hitSlop={8}
+          accessibilityRole="button"
+        >
+          <Text style={styles.roleAction}>New custom role</Text>
+        </Pressable>
+      </View>
       <View style={styles.roleGrid}>
-        {INVITE_ROLE_OPTIONS.map((opt) => (
+        {roleOptions.map((opt) => (
           <Pressable
             key={opt.value}
             onPress={() => setRole(opt.value)}
@@ -111,6 +139,8 @@ export function InvitePersonScreen({ navigation }: Props) {
 function createStyles(c: AppColors) {
   return StyleSheet.create({
     label: { ...typography.captionStrong, color: c.textSecondary },
+    roleHead: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.md },
+    roleAction: { ...typography.captionStrong, color: c.accentHover },
     roleGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },
     roleChip: {
       paddingHorizontal: spacing.md,

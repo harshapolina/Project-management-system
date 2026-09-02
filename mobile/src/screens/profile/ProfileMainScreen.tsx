@@ -80,8 +80,15 @@ export function ProfileMainScreen({ navigation }: Props) {
             label="Password"
             hint="Update sign-in"
             tone={1}
-            last={!showPeople}
             onPress={() => navigation.navigate('ChangePassword')}
+          />
+          <NavRow
+            icon="calendar-outline"
+            label="Google Calendar"
+            hint="See meetings next to your work"
+            tone={4}
+            last={!showPeople}
+            onPress={() => navigation.navigate('GoogleCalendar')}
           />
           {showPeople ? (
             <NavRow

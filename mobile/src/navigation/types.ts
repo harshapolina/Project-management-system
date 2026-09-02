@@ -26,9 +26,11 @@ export type ProjectStackParamList = SharedOpsParamList & {
   ProjectFiles: { projectId: string; projectName?: string }
   ProjectTeam: { projectId: string; projectName?: string }
   ProjectNotes: { projectId: string; projectName?: string }
+  ProjectActivity: { projectId: string; projectName?: string }
   EditProject: { projectId: string; projectName?: string }
   TaskDetail: { taskId: string }
   CreateProject: undefined
+  CreateSpace: undefined
   CreateTask: { projectId?: string; isPersonal?: boolean }
   BoqDetail: { quotationId: string }
 }
@@ -54,6 +56,8 @@ export type ProfileStackParamList = {
   People: undefined
   PersonAccess: { userId: string }
   InvitePerson: undefined
+  CreateCustomRole: undefined
+  GoogleCalendar: undefined
 }
 
 export type PlatformStackParamList = {
@@ -76,6 +80,7 @@ export type MoreStackParamList = SharedOpsParamList & {
   BoqDetail: { quotationId: string }
   BoqMeasurement: { quotationId: string }
   CreateBoq: { projectId?: string; projectName?: string } | undefined
+  EditQuotation: { quotationId: string }
   MaterialsHub: { tab?: ProcurementTab } | undefined
   Vendors: undefined
   VendorDetail: { vendorId: string }
@@ -93,6 +98,9 @@ export type MoreStackParamList = SharedOpsParamList & {
   CompanyAdminDashboard: undefined
   PlatformAdmin: NavigatorScreenParams<PlatformStackParamList> | undefined
   Impact: undefined
+  ImpactAdjust: { userId?: string } | undefined
+  ImpactRule: { ruleId: string }
+  ImpactPerson: { userId: string; userName?: string }
   ProfileHub: NavigatorScreenParams<ProfileStackParamList> | undefined
   Billing: undefined
   InvoiceDetail: { invoiceId: string }

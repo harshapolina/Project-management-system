@@ -1,10 +1,11 @@
 import { NestedChrome } from '../../components/NestedChrome'
-import { useMemo } from 'react'
-import { FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { Alert, FlatList, Linking, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
 import { SectionLabel } from '../../components/SectionLabel'
+import { SegmentedControl } from '../../components/SegmentedControl'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
@@ -23,6 +24,17 @@ import type { ProjectStackParamList } from '../../navigation/types'
 import type { ProjectFile } from '../../types/models'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectFiles'>
+
+/** Same five buckets the web client files into — keep the keys in step. */
+const FOLDERS = [
+  { key: 'concepts', label: 'Concepts' },
+  { key: 'drawings', label: 'Drawings' },
+  { key: 'renders', label: '3D Renders' },
+  { key: 'approvals', label: 'Approvals' },
+  { key: 'site_photos', label: 'Site photos' },
+] as const
+
+type FolderKey = (typeof FOLDERS)[number]['key']
 
 function statusColorMap(c: AppColors): Record<string, string> {
   return {
@@ -49,21 +61,52 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
 
+  const [folder, setFolder] = useState<FolderKey>('concepts')
+
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
-    queryKey: ['files', projectId],
-    queryFn: () => filesApi.list(projectId),
+    queryKey: ['files', projectId, folder],
+    queryFn: () => filesApi.list(projectId, folder),
     enabled: caps.manageFiles,
   })
 
   const uploadMutation = useMutation({
     mutationFn: async () => {
-      const result = await DocumentPicker.getDocumentAsync({ multiple: false, copyToCacheDirectory: true })
-      if (result.canceled || !result.assets?.[0]) return null
-      const asset = result.assets[0]
-      return filesApi.upload(projectId, { uri: asset.uri, name: asset.name, mimeType: asset.mimeType })
+      const result = await DocumentPicker.getDocumentAsync({
+        multiple: true,
+        copyToCacheDirectory: true,
+      })
+      if (result.canceled || !result.assets?.length) return { ok: 0, failed: 0 }
+
+      // Uploaded one at a time: the server writes a version per file, and a
+      // site connection is far likelier to finish five small requests than
+      // one large parallel burst.
+      let ok = 0
+      let failed = 0
+      for (const asset of result.assets) {
+        try {
+          await filesApi.upload(
+            projectId,
+            { uri: asset.uri, name: asset.name, mimeType: asset.mimeType },
+            folder,
+          )
+          ok += 1
+        } catch {
+          failed += 1
+        }
+      }
+      return { ok, failed }
     },
-    onSuccess: (file) => {
-      if (file) queryClient.invalidateQueries({ queryKey: ['files', projectId] })
+    onSuccess: (res) => {
+      if (res.ok) queryClient.invalidateQueries({ queryKey: ['files', projectId] })
+      if (res.failed) {
+        Alert.alert(
+          'Some files did not upload',
+          `${res.ok} uploaded, ${res.failed} failed. Check your connection and try the rest again.`,
+        )
+      }
+    },
+    onError: (err) => {
+      Alert.alert('Upload failed', isApiError(err) ? err.message : 'Could not upload those files.')
     },
   })
 
@@ -97,6 +140,8 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   }
 
   const files = data || []
+  const folderOptions = FOLDERS.map((f) => ({ key: f.key, label: f.label }))
+  const folderLabel = FOLDERS.find((f) => f.key === folder)?.label || 'Files'
 
   const renderItem = ({ item }: { item: ProjectFile }) => {
     const current = item.versions[item.versions.length - 1]
@@ -124,18 +169,30 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
 
   return (
     <NestedChrome {...chromeProps}>
+      <SegmentedControl options={folderOptions} value={folder} onChange={setFolder} />
+
       <FlatList
         data={files}
         keyExtractor={(f) => f._id}
         contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
-        ListHeaderComponent={files.length > 0 ? <SectionLabel count={files.length}>Files</SectionLabel> : null}
+        ListHeaderComponent={
+          files.length > 0 ? <SectionLabel count={files.length}>{folderLabel}</SectionLabel> : null
+        }
         renderItem={renderItem}
-        ListEmptyComponent={<EmptyState title="No files yet" body="Drawings, BOQs, and documents will show up here." />}
+        ListEmptyComponent={
+          <EmptyState
+            icon="folder-open-outline"
+            title={`Nothing in ${folderLabel}`}
+            body="Upload drawings, BOQs, and documents — each keeps its own version history."
+            action="Upload files"
+            onAction={() => uploadMutation.mutate()}
+          />
+        }
       />
 
       <Fab
-        label="Upload file"
+        label="Upload files"
         icon={uploadMutation.isPending ? 'hourglass-outline' : 'cloud-upload-outline'}
         onPress={() => uploadMutation.mutate()}
         disabled={uploadMutation.isPending}
