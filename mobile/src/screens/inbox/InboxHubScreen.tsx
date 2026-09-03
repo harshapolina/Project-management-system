@@ -3,7 +3,6 @@ import { ActionSheetIOS, Alert, FlatList, Platform, RefreshControl, View } from 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
 import { SearchField } from '../../components/SearchField'
 import { KeyboardAwareView } from '../../components/KeyboardAwareView'
 import { InboxChatHeader, type ChatContact } from '../../components/inbox/InboxChatHeader'
@@ -194,9 +193,11 @@ export function InboxHubScreen({ navigation, route }: Props) {
     </View>
   )
 
+  // No 'top' edge: the chat header is a coloured band and should bleed behind
+  // the status bar, so InboxChatHeader takes the inset itself rather than
+  // letting the shell pad a pale strip above it.
   return (
     <Screen padded={false} edges={['left', 'right']} background={chat.listBg}>
-      <AppNavBar variant="hero" />
       <InboxChatHeader
         title={HERO[tab]}
         tab={tab}

@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
 import { ProfileMainScreen } from '../screens/profile/ProfileMainScreen'
 import { EditProfileScreen } from '../screens/profile/EditProfileScreen'
+import { CropAvatarScreen } from '../screens/profile/CropAvatarScreen'
 import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen'
 import { PeopleScreen } from '../screens/profile/PeopleScreen'
 import { PersonAccessScreen } from '../screens/profile/PersonAccessScreen'
@@ -22,6 +23,18 @@ export function ProfileNavigator() {
     <Stack.Navigator screenOptions={options}>
       <Stack.Screen name="ProfileMain" component={ProfileMainScreen} options={{ headerShown: false }} />
       <Stack.Screen name="EditProfile" component={EditProfileScreen} options={{ headerShown: false, title: 'Edit profile' }} />
+      <Stack.Screen
+        name="CropAvatar"
+        component={CropAvatarScreen}
+        options={{
+          headerShown: false,
+          title: 'Adjust photo',
+          // Rises over the form like a viewer, and keeps the editor's dark
+          // surround from flashing against the light canvas on the way in.
+          animation: 'slide_from_bottom',
+          contentStyle: { backgroundColor: '#0d0d0f' },
+        }}
+      />
       <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false, title: 'Change password' }} />
       <Stack.Screen name="People" component={PeopleScreen} options={{ headerShown: false, title: 'People' }} />
       <Stack.Screen name="PersonAccess" component={PersonAccessScreen} options={{ headerShown: false, title: 'Access' }} />

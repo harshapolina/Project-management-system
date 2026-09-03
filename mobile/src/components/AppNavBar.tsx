@@ -174,14 +174,6 @@ export function AppNavBar({
     goMore('MoreMain')
   }
 
-  const openBilling = () => {
-    if (caps.finance) {
-      goMore('Billing')
-      return
-    }
-    goMore('Notifications')
-  }
-
   const openTask = (task: Task) => {
     closeSearch()
     const projectId =
@@ -474,10 +466,15 @@ export function AppNavBar({
                 shadows={shadows}
               />
             ) : null}
+            {/*
+              * Replaces the old Billing/Notifications action. Both of those
+              * destinations live in the drawer this opens, so nothing became
+              * unreachable — the slot now leads to all of them instead of one.
+              */}
             <CircleAction
-              icon={caps.finance ? 'card-outline' : 'notifications-outline'}
-              label={caps.finance ? 'Billing' : 'Notifications'}
-              onPress={openBilling}
+              icon="menu-outline"
+              label="Open sidebar"
+              onPress={openDrawer}
               onDark={onDark}
               iconColor={iconColor}
               colors={colors}
@@ -603,9 +600,15 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof useShadows>, onHe
     shell: {
       // backgroundColor set dynamically (theme canvas / hero blend)
       paddingBottom: spacing.sm,
-      // Stay above Home white sheet so search chrome never scrolls under content
+      /**
+       * Stay above the Home white sheet so search chrome never scrolls under
+       * content — but via `zIndex` only. Android's `elevation` cannot raise a
+       * view without also casting a shadow, and that shadow fell as a dark
+       * band across the hero directly below. The bar and the hero are the same
+       * green (#004838), so the shadow was the entire reason the navbar read
+       * as a separate, lighter strip.
+       */
       zIndex: 20,
-      elevation: 20,
       position: 'relative',
     },
     bar: {

@@ -12,6 +12,7 @@ import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
 import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type ChatColors } from '../../constants/theme'
 import { useChatColors } from '../../theme/useChatColors'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useResponsive } from '../../theme/useResponsive'
 import { Avatar } from '../Avatar'
 import { InboxTabs, type InboxTab } from './InboxTabs'
@@ -45,12 +46,15 @@ export function InboxChatHeader({
   style,
 }: InboxChatHeaderProps) {
   const chat = useChatColors()
+  const insets = useSafeAreaInsets()
   const { pagePadding } = useResponsive()
   const styles = useMemo(() => createStyles(chat, pagePadding), [chat, pagePadding])
   const showContacts = tab === 'mail'
 
   return (
-    <View style={[styles.shell, style]}>
+    // The gradient fills this view, so carrying the status-bar inset here (not
+    // on the screen shell) lets the colour run to the very top of the display.
+    <View style={[styles.shell, { paddingTop: insets.top + spacing.md }, style]}>
       <View style={StyleSheet.absoluteFill} pointerEvents="none">
         <Svg width="100%" height="100%" preserveAspectRatio="none">
           <Defs>
@@ -135,7 +139,6 @@ function createStyles(chat: ChatColors, pagePadding: number) {
   return StyleSheet.create({
     shell: {
       flexShrink: 0,
-      paddingTop: spacing.xs,
       paddingBottom: spacing.lg,
       overflow: 'hidden',
       borderBottomWidth: StyleSheet.hairlineWidth,

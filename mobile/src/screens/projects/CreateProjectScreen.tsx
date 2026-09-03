@@ -3,6 +3,8 @@ import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
+import { CollapsibleSection } from '../../components/CollapsibleSection'
+import { FieldRow } from '../../components/FieldRow'
 import { Button } from '../../components/Button'
 import { radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
@@ -97,19 +99,27 @@ export function CreateProjectScreen({ navigation }: Props) {
         onChangeText={setClientName}
         error={errors.clientName}
       />
-      <Input
-        label="Client phone (optional)"
-        placeholder="+91…"
-        keyboardType="phone-pad"
-        value={clientPhone}
-        onChangeText={setClientPhone}
-      />
-      <Input label="Location (optional)" placeholder="City, area" value={location} onChangeText={setLocation} />
-      <Input label="Budget (optional)" placeholder="0" keyboardType="numeric" value={budget} onChangeText={setBudget} />
+      {/*
+        * Everything below is optional, so it starts collapsed: a project can be
+        * created from the three fields above, and hiding the rest is what keeps
+        * this sheet from scrolling on a small phone.
+        */}
+      <CollapsibleSection>
+        <FieldRow>
+          <Input
+            label="Client phone"
+            placeholder="+91…"
+            keyboardType="phone-pad"
+            value={clientPhone}
+            onChangeText={setClientPhone}
+          />
+          <Input label="Location" placeholder="City, area" value={location} onChangeText={setLocation} />
+        </FieldRow>
+        <Input label="Budget" placeholder="0" keyboardType="numeric" value={budget} onChangeText={setBudget} />
 
-      <View>
+        <View>
         <View style={styles.spaceHead}>
-          <Text style={styles.label}>Space (optional)</Text>
+          <Text style={styles.label}>Space</Text>
           <Pressable
             onPress={() => navigation.navigate('CreateSpace')}
             hitSlop={8}
@@ -145,7 +155,8 @@ export function CreateProjectScreen({ navigation }: Props) {
             </Pressable>
           ))}
         </View>
-      </View>
+        </View>
+      </CollapsibleSection>
 
       {errors.form ? <Text style={styles.error}>{errors.form}</Text> : null}
     </FormLayout>

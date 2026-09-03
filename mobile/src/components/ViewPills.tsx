@@ -13,12 +13,17 @@ export const MY_WORK_LABELS: Record<MyWorkView, string> = {
   all: 'Overview',
 }
 
+/**
+ * Overview leads: it's the default view, and sitting last it started out
+ * selected but scrolled off the right edge — the one pill you couldn't see was
+ * the one you were on.
+ */
 const VIEWS: { key: MyWorkView; label: string }[] = [
+  { key: 'all', label: MY_WORK_LABELS.all },
   { key: 'assigned', label: MY_WORK_LABELS.assigned },
   { key: 'today', label: MY_WORK_LABELS.today },
   { key: 'personal', label: MY_WORK_LABELS.personal },
   { key: 'history', label: MY_WORK_LABELS.history },
-  { key: 'all', label: MY_WORK_LABELS.all },
 ]
 
 export function ViewPills({

@@ -10,6 +10,8 @@ import {
   Text,
   View,
   useWindowDimensions,
+  type NativeScrollEvent,
+  type NativeSyntheticEvent,
 } from 'react-native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { CompositeNavigationProp } from '@react-navigation/native'
@@ -35,8 +37,7 @@ import { isApiError } from '../../api/client'
 import { capabilitiesForUser } from '../../utils/roles'
 import type { HomeStackParamList, RootTabParamList } from '../../navigation/types'
 import { openProjectScreen, openMoreScreen } from '../../navigation/openProject'
-import { PageHeader } from '../../components/PageHeader'
-import { MyWorkViews, myWorkHeaderTitle } from './MyWorkViews'
+import { MyWorkViews } from './MyWorkViews'
 import { ViewPills, type MyWorkView } from '../../components/ViewPills'
 import type { HomeData, Task } from '../../types/models'
 import type { SiteUpdate, Snag } from '../../types/ops'
@@ -122,7 +123,17 @@ export function HomeScreen({ navigation, route }: Props) {
     () => createStyles(colors, shadows, pagePadding, isCompact, windowHeight),
     [colors, shadows, pagePadding, isCompact, windowHeight],
   )
+  /**
+   * Two values off one scroll, because they can't share a driver. The hero pin
+   * has to run on the UI thread or it lands a frame behind every scroll frame
+   * and the green card visibly judders; the navbar animates `backgroundColor`,
+   * which the native driver can't do at all. So the pin gets the native value
+   * and the navbar gets a JS one mirrored from the same event.
+   */
+  const scrollYNative = useRef(new Animated.Value(0)).current
   const scrollY = useRef(new Animated.Value(0)).current
+  /** Measured, not assumed — the hero's height varies with role and font scale. */
+  const [heroHeight, setHeroHeight] = useState(0)
 
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
@@ -328,29 +339,6 @@ export function HomeScreen({ navigation, route }: Props) {
     )
   }
 
-  if (workView !== 'all') {
-    return (
-      <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
-        <AppNavBar />
-        <PageHeader
-          title="My work"
-          subtitle={myWorkHeaderTitle(workView)}
-          subtitleIcon="checkbox-outline"
-          onBack={() => setWorkView('all')}
-        />
-        <View style={{ flex: 1, minHeight: 0 }}>
-          <MyWorkViews
-            view={workView}
-            onViewChange={setWorkView}
-            onTaskPress={(t) => navigation.navigate('TaskDetail', { taskId: t._id })}
-            onCreatePersonal={() => navigation.navigate('CreateTask', { isPersonal: true })}
-            onOpenCalendar={() => goMore('ProfileHub', { screen: 'GoogleCalendar' })}
-          />
-        </View>
-      </Screen>
-    )
-  }
-
   const focusStatusColor = focus ? colors.status[focus.status] || colors.accent : colors.accent
   const updateProject =
     recentUpdate?.projectId && typeof recentUpdate.projectId === 'object'
@@ -360,6 +348,22 @@ export function HomeScreen({ navigation, route }: Props) {
   const updateThumb = updatePhotos[0]?.url ? assetUrl(updatePhotos[0].url) : null
 
   const coverRange = 160
+
+  /**
+   * The hero and the sheet share one scroll, but only the sheet is meant to
+   * travel: cancelling the scroll out of the hero one-for-one pins it in place
+   * so the sheet slides up over it. The pin stops once the sheet has climbed
+   * the hero's full height — past that the hero is completely covered, so
+   * holding it any longer would just drag an invisible view down the screen.
+   *
+   * `heroHeight` is 0 for the first frame, before layout has run; the `max`
+   * keeps the interpolation valid until a real height arrives.
+   */
+  const heroPin = scrollYNative.interpolate({
+    inputRange: [0, Math.max(heroHeight, 1)],
+    outputRange: [0, Math.max(heroHeight, 1)],
+    extrapolate: 'clamp',
+  })
 
   return (
     <Screen padded={false} edges={['left', 'right']} background={HERO.bg}>
@@ -374,8 +378,10 @@ export function HomeScreen({ navigation, route }: Props) {
           bounces
           overScrollMode="never"
           keyboardShouldPersistTaps="handled"
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
-            useNativeDriver: false,
+          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollYNative } } }], {
+            useNativeDriver: true,
+            listener: (e: NativeSyntheticEvent<NativeScrollEvent>) =>
+              scrollY.setValue(e.nativeEvent.contentOffset.y),
           })}
           refreshControl={
             <RefreshControl
@@ -392,45 +398,70 @@ export function HomeScreen({ navigation, route }: Props) {
             />
           }
         >
-          {/* Hero lives in the scroll so CTAs stay tappable */}
-          <HeroSection
-            userName={firstName(user?.name)}
-            heroStat={heroStat}
-            overdueCount={overdueCount}
-            greeting={timeGreeting()}
-            onMyTasks={openMyTasks}
-            onPostUpdate={() =>
-              caps.siteFeed
-                ? goMore('PostSiteUpdate', activeProjectId ? { projectId: activeProjectId } : undefined)
-                : navigation.navigate('Projects' as never)
-            }
-            postUpdateLabel={caps.siteFeed ? 'Post update' : 'Projects'}
-            postUpdateIcon={caps.siteFeed ? 'camera-outline' : 'folder-outline'}
+          {/* Hero lives in the scroll so its CTAs stay tappable, but the scroll
+              is cancelled back out of it so it holds still and the sheet slides
+              up over the top. */}
+          <Animated.View
+            onLayout={(e) => setHeroHeight(e.nativeEvent.layout.height)}
+            style={[styles.heroLayer, { transform: [{ translateY: heroPin }] }]}
           >
-            {caps.projects ? (
-              <View style={styles.heroPanel}>
-                <Text style={styles.heroPanelLabel}>Active project</Text>
-                <Pressable
-                  style={({ pressed }) => [styles.heroProjectRow, pressed && styles.heroCtaPressed]}
-                  onPress={() => setPickerOpen(true)}
-                  accessibilityRole="button"
-                  accessibilityLabel="Select project"
-                >
-                  <Ionicons name="business-outline" size={16} color={HERO.lime} />
-                  <Text style={styles.heroProjectName} numberOfLines={1}>
-                    {activeProject?.name || 'All projects'}
-                  </Text>
-                  <Ionicons name="chevron-down" size={16} color={HERO.mute} />
-                </Pressable>
-              </View>
-            ) : null}
-          </HeroSection>
+            <HeroSection
+              userName={firstName(user?.name)}
+              heroStat={heroStat}
+              overdueCount={overdueCount}
+              greeting={timeGreeting()}
+              onMyTasks={openMyTasks}
+              onPostUpdate={() =>
+                caps.siteFeed
+                  ? goMore('PostSiteUpdate', activeProjectId ? { projectId: activeProjectId } : undefined)
+                  : navigation.navigate('Projects' as never)
+              }
+              postUpdateLabel={caps.siteFeed ? 'Post update' : 'Projects'}
+              postUpdateIcon={caps.siteFeed ? 'camera-outline' : 'folder-outline'}
+            >
+              {caps.projects ? (
+                <View style={styles.heroPanel}>
+                  <Text style={styles.heroPanelLabel}>Active project</Text>
+                  <Pressable
+                    style={({ pressed }) => [styles.heroProjectRow, pressed && styles.heroCtaPressed]}
+                    onPress={() => setPickerOpen(true)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Select project"
+                  >
+                    <Ionicons name="business-outline" size={16} color={HERO.lime} />
+                    <Text style={styles.heroProjectName} numberOfLines={1}>
+                      {activeProject?.name || 'All projects'}
+                    </Text>
+                    <Ionicons name="chevron-down" size={16} color={HERO.mute} />
+                  </Pressable>
+                </View>
+              ) : null}
+            </HeroSection>
+          </Animated.View>
 
           {/* Sheet contains all dashboard widgets and scrolls smoothly */}
           <View style={styles.sheet}>
             <View style={{ marginBottom: spacing.md }}>
               <ViewPills value={workView} onChange={setWorkView} />
             </View>
+
+            {/*
+              * A pill selection swaps what the sheet shows, in place. This used
+              * to early-return a whole separate screen, which is why picking
+              * Assigned/Today/Personal felt like being navigated away: the hero,
+              * the navbar and the sheet all disappeared.
+              */}
+            {workView !== 'all' ? (
+              <MyWorkViews
+                embedded
+                view={workView}
+                onViewChange={setWorkView}
+                onTaskPress={(t) => navigation.navigate('TaskDetail', { taskId: t._id })}
+                onCreatePersonal={() => navigation.navigate('CreateTask', { isPersonal: true })}
+                onOpenCalendar={() => goMore('ProfileHub', { screen: 'GoogleCalendar' })}
+              />
+            ) : (
+              <>
           {/* Project health */}
           <SectionLabel
             action="View Details ›"
@@ -694,6 +725,8 @@ export function HomeScreen({ navigation, route }: Props) {
               )}
             </>
           ) : null}
+              </>
+            )}
           </View>
         </Animated.ScrollView>
 
@@ -830,6 +863,14 @@ function createStyles(
       flexGrow: 1,
       backgroundColor: 'transparent',
     },
+    /**
+     * Sits under the sheet in the same scroll. `zIndex` is what guarantees the
+     * sheet paints on top on Android, where the elevation on the cards inside
+     * it would otherwise decide the order for us.
+     */
+    heroLayer: {
+      zIndex: 0,
+    },
     heroInner: {
       paddingHorizontal: pagePadding,
       paddingTop: spacing.md,
@@ -927,6 +968,8 @@ function createStyles(
       backgroundColor: c.canvas,
       borderTopLeftRadius: 28,
       borderTopRightRadius: 28,
+      // Rides over the hero rather than sitting beside it.
+      zIndex: 1,
       paddingHorizontal: pagePadding,
       paddingTop: spacing.xl,
       paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,

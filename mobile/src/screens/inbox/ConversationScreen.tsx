@@ -21,12 +21,23 @@ import type { InboxStackParamList } from '../../navigation/types'
 type Props = NativeStackScreenProps<InboxStackParamList, 'Conversation'>
 type ConversationData = Awaited<ReturnType<typeof mailApi.conversation>>
 
+/** Within this many px of the newest message still counts as "following along". */
+const AT_LATEST_THRESHOLD = 80
+
 export function ConversationScreen({ route, navigation }: Props) {
   const colors = useColors()
   const chat = useChatColors()
   const { pagePadding } = useResponsive()
   const styles = useMemo(() => createStyles(colors, chat, pagePadding), [colors, chat, pagePadding])
   const listRef = useRef<FlatList<Message>>(null)
+  /**
+   * Whether the newest message is on screen. The list is inverted, so offset 0
+   * *is* the bottom of the conversation. Tracked in a ref rather than state so
+   * scrolling never re-renders the thread.
+   */
+  const atLatestRef = useRef(true)
+  const scrollToLatest = (animated = true) =>
+    listRef.current?.scrollToOffset({ offset: 0, animated })
 
   const { userId, userName: routeName } = route.params
   const me = useAuthStore((s) => s.user)
@@ -108,6 +119,13 @@ export function ConversationScreen({ route, navigation }: Props) {
     },
   })
 
+  /** Sending is an explicit act — always show the result, wherever they were. */
+  const sendAndScroll = (text: string) => {
+    atLatestRef.current = true
+    sendMutation.mutate(text)
+    scrollToLatest()
+  }
+
   const other = data?.other
   const displayName = other?.name || routeName || 'Chat'
   const firstName = displayName.trim().split(/\s+/)[0] || displayName
@@ -137,7 +155,7 @@ export function ConversationScreen({ route, navigation }: Props) {
 
   const send = () => {
     const text = body.trim()
-    if (text && !sendMutation.isPending) sendMutation.mutate(text)
+    if (text && !sendMutation.isPending) sendAndScroll(text)
   }
 
   return (
@@ -146,7 +164,13 @@ export function ConversationScreen({ route, navigation }: Props) {
           ref={listRef}
           data={messages}
           inverted={messages.length > 0}
-          automaticallyAdjustKeyboardInsets
+          /**
+           * No `automaticallyAdjustKeyboardInsets`: the chrome around this list
+           * is already a KeyboardAwareView that shrinks the whole container by
+           * the keyboard height. Letting the list add the same inset again
+           * double-counted it, which is what pushed the composer into the
+           * keyboard instead of resting on top of it.
+           */
           keyExtractor={(m) => m._id}
           contentContainerStyle={[
             styles.listContent,
@@ -154,8 +178,17 @@ export function ConversationScreen({ route, navigation }: Props) {
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            atLatestRef.current = e.nativeEvent.contentOffset.y <= AT_LATEST_THRESHOLD
+          }}
+          /**
+           * Opening the keyboard changes the content size, so an unconditional
+           * scroll-to-newest here yanked anyone reading history back to the
+           * bottom. Follow the conversation only for people already at it.
+           */
           onContentSizeChange={() => {
-            if (messages.length > 0) listRef.current?.scrollToOffset({ offset: 0, animated: true })
+            if (messages.length > 0 && atLatestRef.current) scrollToLatest()
           }}
           renderItem={({ item, index }) => {
             const mine = isCurrentUser(item.from, me?.id)

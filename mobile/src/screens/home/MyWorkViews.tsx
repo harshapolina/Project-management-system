@@ -21,12 +21,23 @@ export function MyWorkViews({
   onTaskPress,
   onCreatePersonal,
   onOpenCalendar,
+  embedded = false,
 }: {
   view: MyWorkView
   onViewChange: (v: MyWorkView) => void
   onTaskPress: (task: Task) => void
   onCreatePersonal?: () => void
   onOpenCalendar?: () => void
+  /**
+   * Render inside Home's sheet instead of owning a screen.
+   *
+   * The standalone layout can't simply be dropped into the sheet: it fills a
+   * flex parent and scrolls with a FlatList, and both collapse inside the
+   * sheet's own ScrollView. Embedded mode drops its copy of the pills (the
+   * sheet already shows them), maps the rows out instead of virtualising, and
+   * takes its height from content so the sheet keeps scrolling as one page.
+   */
+  embedded?: boolean
 }) {
   const colors = useColors()
   const { listContent, pagePadding } = useResponsive()
@@ -53,6 +64,41 @@ export function MyWorkViews({
   if (view === 'all') tasks = [...data.tasks.assigned, ...data.tasks.today].filter((t) => t.status !== 'done').filter(match)
 
   const isKanban = view === 'assigned' || view === 'personal' || view === 'all'
+
+  const taskRow = (item: Task) => (
+    <Pressable key={item._id} onPress={() => onTaskPress(item)}>
+      <SurfaceCard style={styles.row}>
+        <Text style={[styles.title, { color: colors.textPrimary }]}>{item.title}</Text>
+        <StatusBadge status={item.status} />
+      </SurfaceCard>
+    </Pressable>
+  )
+
+  if (embedded) {
+    return (
+      <View style={styles.embedded}>
+        <Input placeholder="Search tasks…" value={search} onChangeText={setSearch} />
+        {view === 'today' ? <AgendaCard onConnect={onOpenCalendar} /> : null}
+        {tasks.length === 0 ? (
+          <EmptyState
+            title={view === 'today' ? 'Nothing due' : 'No tasks here'}
+            body={
+              view === 'today'
+                ? "You're clear for today."
+                : 'Tasks matching this view will show up here.'
+            }
+          />
+        ) : (
+          tasks.map(taskRow)
+        )}
+        {view === 'personal' && onCreatePersonal ? (
+          <Pressable style={styles.footer} onPress={onCreatePersonal}>
+            <Text style={{ color: colors.accent, fontWeight: '600' }}>+ Add personal task</Text>
+          </Pressable>
+        ) : null}
+      </View>
+    )
+  }
 
   return (
     <View style={styles.wrap}>
@@ -86,14 +132,7 @@ export function MyWorkViews({
                 body={view === 'today' ? "You're clear for today." : 'Finished tasks appear here.'}
               />
             }
-            renderItem={({ item }) => (
-              <Pressable onPress={() => onTaskPress(item)}>
-                <SurfaceCard style={styles.row}>
-                  <Text style={[styles.title, { color: colors.textPrimary }]}>{item.title}</Text>
-                  <StatusBadge status={item.status} />
-                </SurfaceCard>
-              </Pressable>
-            )}
+            renderItem={({ item }) => taskRow(item)}
           />
         )}
       </ChromeFill>
@@ -115,6 +154,8 @@ export function myWorkHeaderTitle(view: MyWorkView) {
 function createStyles(pagePadding: number) {
   return StyleSheet.create({
     wrap: { flex: 1, minHeight: 0 },
+    /** Height comes from content — the sheet above it owns the scrolling. */
+    embedded: { gap: spacing.md },
     header: { gap: spacing.md, paddingHorizontal: pagePadding, paddingBottom: spacing.sm },
     content: { flex: 1, minHeight: 0 },
     flex: { flex: 1, minHeight: 0 },

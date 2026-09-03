@@ -11,7 +11,6 @@ import {
 } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
-import { AppNavBar } from './AppNavBar'
 import { Fab } from './Fab'
 import { PageHeader } from './PageHeader'
 import { Screen } from './Screen'
@@ -173,7 +172,9 @@ function useAutoBack(showBack: boolean | undefined, onBack?: () => void) {
 }
 
 /**
- * Shared nested-screen chrome: global AppNavBar + PageHeader with optional back.
+ * Shared nested-screen chrome: PageHeader with optional back. The global
+ * AppNavBar is deliberately absent — it belongs to Home alone, where it blends
+ * with the hero; everywhere else the screen's own header is the top chrome.
  * Tab roots pass showBack={false}; pushed screens get back automatically.
  */
 export function NestedChrome({
@@ -184,7 +185,9 @@ export function NestedChrome({
   showBack,
   right,
   children,
-  edges = ['left', 'right'],
+  // Includes 'top': AppNavBar used to absorb the status-bar inset for these
+  // screens, so with it gone the safe area has to come from the shell itself.
+  edges = ['top', 'left', 'right'],
   keyboardAvoiding,
   background,
   scroll,
@@ -213,7 +216,6 @@ export function NestedChrome({
 
   return (
     <Screen padded={false} edges={edges} background={background}>
-      <AppNavBar />
       <PageHeader
         title={title}
         subtitle={subtitle}

@@ -6,6 +6,10 @@ import { spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
 
+/** Touch target for the header's icon buttons, and the glyph drawn inside it. */
+const ICON_TARGET = 42
+const ICON_GLYPH = 24
+
 /**
  * Home-aligned page chrome: large title + status subtitle.
  * Nested screens pass `onBack` for a top action row (back + optional right).
@@ -46,9 +50,9 @@ export function PageHeader({
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={backLabel}
-            style={styles.topIconBtn}
+            style={[styles.topIconBtn, styles.topBackBtn]}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+            <Ionicons name="chevron-back" size={ICON_GLYPH} color={colors.textPrimary} />
           </Pressable>
           {useCompactBar ? (
             typeof title === 'string' ? (
@@ -103,7 +107,13 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
   return StyleSheet.create({
     wrap: {
       paddingHorizontal: pagePadding,
-      paddingTop: spacing.xs,
+      /**
+       * This now sits directly against the status bar rather than under the
+       * AppNavBar, so it owns the gap below it. The safe-area inset only
+       * clears the notch — it leaves no breathing room of its own — and a
+       * header butted right up against the clock reads as a rendering bug.
+       */
+      paddingTop: spacing.md,
       paddingBottom: isCompact ? spacing.xs : spacing.sm,
       gap: spacing.xs,
     },
@@ -111,15 +121,26 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      minHeight: 38,
+      minHeight: ICON_TARGET,
       marginBottom: 2,
     },
     topIconBtn: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
+      width: ICON_TARGET,
+      height: ICON_TARGET,
+      borderRadius: ICON_TARGET / 2,
       alignItems: 'center',
       justifyContent: 'center',
+    },
+    /**
+     * Circular chip. Now that the button has a visible edge of its own, the
+     * chip is what the eye aligns to — so it sits flush at the content edge
+     * rather than being pulled left to line the bare glyph up with the title,
+     * which is what a borderless chevron needed.
+     */
+    topBackBtn: {
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
     },
     topSpacer: { flex: 1 },
     topTitle: {
@@ -137,7 +158,9 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
       justifyContent: 'center',
     },
     rightSlot: { flexShrink: 0, alignItems: 'flex-end', justifyContent: 'center' },
-    titleBlock: { gap: 4, paddingHorizontal: 2 },
+    // No horizontal padding: the title defines the content edge that the back
+    // chip above it lines up with.
+    titleBlock: { gap: 4 },
     titleRow: {
       flexDirection: 'row',
       alignItems: 'center',

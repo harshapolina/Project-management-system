@@ -55,7 +55,9 @@ export type InboxStackParamList = {
 
 export type ProfileStackParamList = {
   ProfileMain: undefined
-  EditProfile: undefined
+  /** `croppedAvatarUri` is handed back by CropAvatar once a crop is confirmed. */
+  EditProfile: { croppedAvatarUri?: string } | undefined
+  CropAvatar: { uri: string }
   ChangePassword: undefined
   People: undefined
   PersonAccess: { userId: string }

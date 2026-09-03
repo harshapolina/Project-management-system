@@ -104,6 +104,13 @@ function createStyles(c: AppColors, chat: ChatColors, pagePadding: number) {
     },
     input: {
       ...typography.body,
+      /**
+       * Mobile browsers zoom into an input whose text is under 16px, which
+       * throws the whole layout off when the keyboard opens. Native has no such
+       * behaviour, so the bump is web-only and the app's type scale is
+       * unchanged on device.
+       */
+      ...(Platform.OS === 'web' ? { fontSize: 16 } : null),
       lineHeight: 20,
       maxHeight: 96,
       paddingTop: 0,

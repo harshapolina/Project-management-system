@@ -1,6 +1,18 @@
+import {
+  Children,
+  Fragment,
+  cloneElement,
+  isValidElement,
+  useMemo,
+  useState,
+  type ReactElement,
+  type ReactNode,
+} from 'react'
 import { Alert, ScrollView } from 'react-native'
 import { NestedChrome } from '../../components/NestedChrome'
 import { NavRow, NavSection } from '../../components/NavRow'
+import { SearchField } from '../../components/SearchField'
+import { EmptyState } from '../../components/States'
 import { useColors, useThemeMode } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { useUiStore } from '../../store/uiStore'
@@ -15,6 +27,78 @@ import { openMoreScreen, type TabNavigation } from '../../navigation/openProject
 import type { MoreStackParamList, RootTabParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'MoreMain'>
+
+/**
+ * Flatten fragments so grouped rows are reachable. Several sections wrap a
+ * capability's rows in a `<>…</>`, and `Children.toArray` keeps that fragment
+ * as a single child — the rows inside it would never be seen by the filter.
+ */
+function flattenRows(children: ReactNode): ReactNode[] {
+  const out: ReactNode[] = []
+  Children.forEach(children, (child) => {
+    if (child == null || typeof child === 'boolean') return
+    if (isValidElement(child) && child.type === Fragment) {
+      out.push(...flattenRows((child.props as { children?: ReactNode }).children))
+      return
+    }
+    out.push(child)
+  })
+  return out
+}
+
+function rowMatches(row: ReactElement, needle: string) {
+  const { label, hint } = row.props as { label?: string; hint?: string }
+  return `${label ?? ''} ${hint ?? ''}`.toLowerCase().includes(needle)
+}
+
+/**
+ * Narrow the nav list to rows matching `query`.
+ *
+ * Filters the rendered sections rather than a separate list of entries, so
+ * there's one source of truth for what More contains — a row added below is
+ * searchable without being registered anywhere. It also means capability
+ * gating is honoured for free: a row the user can't see was never rendered,
+ * so it can't be surfaced by a search.
+ */
+function filterSections(children: ReactNode, query: string) {
+  const needle = query.trim().toLowerCase()
+  if (!needle) return { nodes: children, matches: -1 }
+
+  const nodes: ReactNode[] = []
+  let matches = 0
+
+  flattenRows(children).forEach((section) => {
+    if (!isValidElement(section) || section.type !== NavSection) return
+    const { children: sectionRows } = section.props as { children: ReactNode }
+
+    const kept = flattenRows(sectionRows).filter(
+      (row): row is ReactElement =>
+        isValidElement(row) && row.type === NavRow && rowMatches(row, needle),
+    )
+    if (!kept.length) return
+
+    matches += kept.length
+    const { title } = section.props as { title: string }
+    nodes.push(
+      cloneElement(section, {
+        // These land in an expression slot, so React wants a key on each one.
+        // Section titles and row labels are unique within More and stable
+        // across queries, which keeps rows from being remounted as you type.
+        key: `section-${title}`,
+        // `last` drives the row hairline, so it has to be recomputed for the
+        // filtered set or a divider is left dangling under the final row.
+        children: kept.map((row, i) =>
+          cloneElement(row, {
+            key: (row.props as { label?: string }).label ?? `row-${i}`,
+            last: i === kept.length - 1,
+          } as Record<string, unknown>),
+        ),
+      } as Record<string, unknown>),
+    )
+  })
+
+  return { nodes, matches }
+}
 
 type Nav = CompositeNavigationProp<
   NativeStackNavigationProp<MoreStackParamList, 'MoreMain'>,
@@ -39,6 +123,7 @@ export function MoreMainScreen({ navigation }: Props) {
   const caps = capabilitiesForUser(user)
   const { tabListContent } = useResponsive()
   const tabNav = navigation as unknown as Nav
+  const [search, setSearch] = useState('')
 
   const goTab = (tab: keyof RootTabParamList) => {
     tabNav.navigate(tab)
@@ -61,10 +146,9 @@ export function MoreMainScreen({ navigation }: Props) {
     ])
   }
 
-  return (
-    <NestedChrome title="More" subtitle="Account, tools, and company" subtitleIcon="grid-outline" showBack={false}>
-      <ScrollView contentContainerStyle={tabListContent} showsVerticalScrollIndicator={false}>
-        {/* Account */}
+  const sections = (
+    <>
+      {/* Account */}
         <NavSection title="You">
           <NavRow
             icon="person-outline"
@@ -413,7 +497,34 @@ export function MoreMainScreen({ navigation }: Props) {
             last
             onPress={doLogout}
           />
-        </NavSection>
+      </NavSection>
+    </>
+  )
+
+  const { nodes, matches } = useMemo(() => filterSections(sections, search), [sections, search])
+
+  return (
+    <NestedChrome title="More" subtitle="Account, tools, and company" subtitleIcon="grid-outline" showBack={false}>
+      <ScrollView
+        contentContainerStyle={tabListContent}
+        showsVerticalScrollIndicator={false}
+        keyboardShouldPersistTaps="handled"
+      >
+        <SearchField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search settings and tools"
+          inset={false}
+        />
+        {matches === 0 ? (
+          <EmptyState
+            icon="search-outline"
+            title="Nothing matches"
+            body={`No settings or tools match “${search.trim()}”.`}
+          />
+        ) : (
+          nodes
+        )}
       </ScrollView>
     </NestedChrome>
   )

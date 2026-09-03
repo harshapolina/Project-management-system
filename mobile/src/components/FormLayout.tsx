@@ -12,7 +12,6 @@ import { useNavigation, useRoute, type NavigationProp, type ParamListBase } from
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Screen } from './Screen'
-import { AppNavBar } from './AppNavBar'
 import { PageHeader } from './PageHeader'
 import { KeyboardAwareView } from './KeyboardAwareView'
 import { TAB_BAR_CLEARANCE } from './GlassyTabBar'
@@ -119,10 +118,7 @@ export function FormLayout({
           </View>
         </View>
       ) : (
-        <>
-          <AppNavBar />
-          <PageHeader title={title} subtitle={subtitle} subtitleIcon={subtitleIcon} onBack={handleBack} />
-        </>
+        <PageHeader title={title} subtitle={subtitle} subtitleIcon={subtitleIcon} onBack={handleBack} />
       )}
 
       <KeyboardAwareView

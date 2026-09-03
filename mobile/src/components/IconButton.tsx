@@ -62,9 +62,19 @@ function createStyles(c: AppColors) {
       borderWidth: 1,
       borderColor: c.border,
     },
+    /**
+     * Header action chip. `ghost` is the tone every page header uses for its
+     * trailing action, so it's matched to PageHeader's back button — same 42dp
+     * circle, surface fill and hairline border — and the two sit on the same
+     * row looking like a pair rather than one button and one bare glyph.
+     */
     ghost: {
-      backgroundColor: 'transparent',
-      borderWidth: 0,
+      width: 42,
+      height: 42,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
     },
     badge: {
       position: 'absolute',

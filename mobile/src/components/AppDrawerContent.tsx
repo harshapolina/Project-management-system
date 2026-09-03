@@ -1,7 +1,11 @@
-import { useMemo } from 'react'
-import { Pressable, StyleSheet, Text, View } from 'react-native'
+import { useEffect, useMemo } from 'react'
+import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
-import { DrawerContentScrollView, type DrawerContentComponentProps } from '@react-navigation/drawer'
+import {
+  DrawerContentScrollView,
+  useDrawerStatus,
+  type DrawerContentComponentProps,
+} from '@react-navigation/drawer'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
@@ -26,6 +30,23 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
   const logout = useAuthStore((s) => s.logout)
   const caps = capabilitiesForUser(user)
   const { navigation } = props
+  const drawerStatus = useDrawerStatus()
+
+  /**
+   * Esc closes the drawer wherever there's a physical keyboard — web and
+   * desktop-class browsers. Native Android already closes it on hardware
+   * back via the navigator, so this only fills the keyboard gap. The listener
+   * is bound only while the drawer is open, so it can't swallow Esc from
+   * anything else.
+   */
+  useEffect(() => {
+    if (Platform.OS !== 'web' || drawerStatus !== 'open') return
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') navigation.closeDrawer()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [drawerStatus, navigation])
 
   const goTab = (
     tab: keyof import('../navigation/types').RootTabParamList,
@@ -217,10 +238,29 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
   ]
 
   return (
-    <DrawerContentScrollView
-      {...props}
-      contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.sm }]}
-    >
+    <View style={styles.root}>
+      {/*
+        * Pinned rather than scrolled with the header: the tools list is long
+        * enough to scroll the top out of view, and a close button you have to
+        * scroll back up to find isn't a close button.
+        */}
+      <Pressable
+        onPress={() => navigation.closeDrawer()}
+        hitSlop={10}
+        accessibilityRole="button"
+        accessibilityLabel="Close sidebar"
+        style={({ pressed }) => [
+          styles.closeBtn,
+          { top: insets.top + spacing.sm },
+          pressed && { opacity: 0.7 },
+        ]}
+      >
+        <Ionicons name="close" size={20} color={colors.textPrimary} />
+      </Pressable>
+      <DrawerContentScrollView
+        {...props}
+        contentContainerStyle={[styles.scroll, { paddingTop: insets.top + spacing.sm }]}
+      >
       <View style={styles.brandBlock}>
         <Text style={styles.brand}>Cubic</Text>
         <Text style={styles.brandHint}>Studio workspace</Text>
@@ -267,9 +307,10 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
         <Text style={styles.logoutText}>Sign out</Text>
       </Pressable>
 
-      {/* Keep ScrollView happy on short drawers */}
-      <View style={{ height: spacing.xxl }} />
-    </DrawerContentScrollView>
+        {/* Keep ScrollView happy on short drawers */}
+        <View style={{ height: spacing.xxl }} />
+      </DrawerContentScrollView>
+    </View>
   )
 }
 
@@ -303,10 +344,24 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof useShadows>) {
       paddingHorizontal: spacing.md,
       paddingBottom: spacing.xl,
     },
+    root: { flex: 1 },
     brandBlock: {
       paddingHorizontal: spacing.sm,
+      // Clears the pinned close button floating in the top-right corner.
+      paddingRight: 52,
       marginBottom: spacing.lg,
       gap: 2,
+    },
+    closeBtn: {
+      position: 'absolute',
+      right: spacing.lg,
+      zIndex: 2,
+      width: 36,
+      height: 36,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+      alignItems: 'center',
+      justifyContent: 'center',
     },
     brand: {
       ...typography.h2,

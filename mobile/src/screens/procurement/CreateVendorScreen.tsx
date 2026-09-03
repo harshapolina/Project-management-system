@@ -3,6 +3,8 @@ import { StyleSheet, Text } from 'react-native'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
+import { CollapsibleSection } from '../../components/CollapsibleSection'
+import { FieldRow } from '../../components/FieldRow'
 import { Button } from '../../components/Button'
 import { typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
@@ -63,16 +65,21 @@ export function CreateVendorScreen({ navigation }: Props) {
       }
     >
       <Input label="Vendor name" value={name} onChangeText={setName} />
-      <Input label="Contact person (optional)" value={contact} onChangeText={setContact} />
-      <Input label="Phone (optional)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-      <Input
-        label="Email (optional)"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <Input label="GSTIN (optional)" autoCapitalize="characters" value={gst} onChangeText={setGst} />
+      {/* Only the name is required, so the contact block starts collapsed. */}
+      <CollapsibleSection>
+        <Input label="Contact person" value={contact} onChangeText={setContact} />
+        <FieldRow>
+          <Input label="Phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+          <Input
+            label="Email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </FieldRow>
+        <Input label="GSTIN" autoCapitalize="characters" value={gst} onChangeText={setGst} />
+      </CollapsibleSection>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormLayout>
   )
