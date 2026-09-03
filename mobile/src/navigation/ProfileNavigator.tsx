@@ -6,6 +6,7 @@ import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen'
 import { PeopleScreen } from '../screens/profile/PeopleScreen'
 import { PersonAccessScreen } from '../screens/profile/PersonAccessScreen'
 import { InvitePersonScreen } from '../screens/profile/InvitePersonScreen'
+import { MailSettingsScreen } from '../screens/settings/MailSettingsScreen'
 import { CreateCustomRoleScreen } from '../screens/profile/CreateCustomRoleScreen'
 import { GoogleCalendarScreen } from '../screens/profile/GoogleCalendarScreen'
 import { formSheetOptions, stackScreenOptions } from './options'
@@ -38,6 +39,11 @@ export function ProfileNavigator() {
         name="CreateCustomRole"
         component={CreateCustomRoleScreen}
         options={formSheetOptions(colors, 'New custom role')}
+      />
+      <Stack.Screen
+        name="MailSettings"
+        component={MailSettingsScreen}
+        options={{ headerShown: false, title: 'Email & alerts' }}
       />
     </Stack.Navigator>
   )

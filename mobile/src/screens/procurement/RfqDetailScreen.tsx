@@ -16,6 +16,7 @@ import { isApiError } from '../../api/client'
 import type { RfqStatus, RfqVendorEntry } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { SharedOpsParamList } from '../../navigation/types'
+import { rfqEmailDraft } from '../../lib/composeEmail'
 
 type Props = NativeStackScreenProps<SharedOpsParamList, 'RfqDetail'>
 
@@ -160,22 +161,35 @@ export function RfqDetailScreen({ route, navigation }: Props) {
                     </View>
                     <Pill label={entry.status} bg={colors.surfaceRaised} color={colors.textSecondary} />
                   </View>
-                  {canAward ? (
-                    <View style={styles.vendorActions}>
-                      <Pressable
-                        onPress={() => setQuoteVendorId(id)}
-                        style={[styles.chip, selectedQuote && styles.chipActive]}
-                      >
-                        <Text style={[styles.chipText, selectedQuote && styles.chipTextActive]}>Quote</Text>
-                      </Pressable>
-                      <Pressable
-                        onPress={() => setAwardVendorId(id)}
-                        style={[styles.chip, selectedAward && styles.chipActive]}
-                      >
-                        <Text style={[styles.chipText, selectedAward && styles.chipTextActive]}>Award</Text>
-                      </Pressable>
-                    </View>
-                  ) : null}
+                  <View style={styles.vendorActions}>
+                    <Pressable
+                      onPress={() =>
+                        navigation.navigate(
+                          'ComposeEmail',
+                          rfqEmailDraft(rfq, typeof entry.vendor === 'object' ? entry.vendor : null),
+                        )
+                      }
+                      style={styles.chip}
+                    >
+                      <Text style={styles.chipText}>Email quote request</Text>
+                    </Pressable>
+                    {canAward ? (
+                      <>
+                        <Pressable
+                          onPress={() => setQuoteVendorId(id)}
+                          style={[styles.chip, selectedQuote && styles.chipActive]}
+                        >
+                          <Text style={[styles.chipText, selectedQuote && styles.chipTextActive]}>Quote</Text>
+                        </Pressable>
+                        <Pressable
+                          onPress={() => setAwardVendorId(id)}
+                          style={[styles.chip, selectedAward && styles.chipActive]}
+                        >
+                          <Text style={[styles.chipText, selectedAward && styles.chipTextActive]}>Award</Text>
+                        </Pressable>
+                      </>
+                    ) : null}
+                  </View>
                 </SurfaceCard>
               )
             })}
@@ -239,7 +253,7 @@ function createStyles(c: AppColors) {
     notes: { ...typography.body, color: c.textPrimary },
     vendorRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
     vendorName: { ...typography.bodyStrong, color: c.textPrimary },
-    vendorActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.sm },
+    vendorActions: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm, marginTop: spacing.sm },
     chip: {
       paddingHorizontal: spacing.md,
       paddingVertical: 6,

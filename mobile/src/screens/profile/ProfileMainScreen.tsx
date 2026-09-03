@@ -87,8 +87,15 @@ export function ProfileMainScreen({ navigation }: Props) {
             label="Google Calendar"
             hint="See meetings next to your work"
             tone={4}
-            last={!showPeople}
             onPress={() => navigation.navigate('GoogleCalendar')}
+          />
+          <NavRow
+            icon="mail-outline"
+            label="Email & alerts"
+            hint="Company SMTP and who gets notified"
+            tone={2}
+            last={!showPeople}
+            onPress={() => navigation.navigate('MailSettings')}
           />
           {showPeople ? (
             <NavRow

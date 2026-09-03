@@ -14,6 +14,13 @@ import { RfqDetailScreen } from '../screens/procurement/RfqDetailScreen'
 import { CreateRfqScreen } from '../screens/procurement/CreateRfqScreen'
 import { RfqPanelScreen } from '../screens/procurement/RfqPanelScreen'
 import { PurchaseOrderDetailScreen } from '../screens/procurement/PurchaseOrderDetailScreen'
+import { GrnDetailScreen } from '../screens/procurement/GrnDetailScreen'
+import { CreateGrnScreen } from '../screens/procurement/CreateGrnScreen'
+import { CreateQcScreen } from '../screens/procurement/CreateQcScreen'
+import { CreateMaterialRequestScreen } from '../screens/procurement/CreateMaterialRequestScreen'
+import { CreateMaterialIssueScreen } from '../screens/procurement/CreateMaterialIssueScreen'
+import { CreateVendorPaymentScreen } from '../screens/procurement/CreateVendorPaymentScreen'
+import { VendorPaymentDetailScreen } from '../screens/procurement/VendorPaymentDetailScreen'
 import { VendorDetailScreen } from '../screens/procurement/VendorDetailScreen'
 import { EditVendorScreen } from '../screens/procurement/EditVendorScreen'
 import { DocsScreen } from '../screens/docs/DocsScreen'
@@ -30,6 +37,7 @@ import { SnagsScreen } from '../screens/sitefeed/SnagsScreen'
 import { CreateSnagScreen } from '../screens/sitefeed/CreateSnagScreen'
 import { ReportsScreen } from '../screens/reports/ReportsScreen'
 import { PortfolioScreen } from '../screens/reports/PortfolioScreen'
+import { LiveBoardScreen } from '../screens/live/LiveBoardScreen'
 import { InventoryScreen } from '../screens/inventory/InventoryScreen'
 import { CreateInventoryItemScreen } from '../screens/inventory/CreateInventoryItemScreen'
 import { InventoryMovementsScreen } from '../screens/inventory/InventoryMovementsScreen'
@@ -43,6 +51,10 @@ import { ProfileNavigator } from './ProfileNavigator'
 import { BillingScreen } from '../screens/billing/BillingScreen'
 import { InvoiceDetailScreen } from '../screens/billing/InvoiceDetailScreen'
 import { CreateInvoiceScreen } from '../screens/billing/CreateInvoiceScreen'
+import { ComposeEmailScreen } from '../screens/settings/ComposeEmailScreen'
+import { TaxInvoicesScreen } from '../screens/billing/TaxInvoicesScreen'
+import { TaxInvoiceDetailScreen } from '../screens/billing/TaxInvoiceDetailScreen'
+import { EditTaxInvoiceScreen } from '../screens/billing/EditTaxInvoiceScreen'
 import { NotificationsScreen } from '../screens/inbox/NotificationsScreen'
 import { AssignedCommentsScreen } from '../screens/more/AssignedCommentsScreen'
 import { ApprovalsScreen } from '../screens/approvals/ApprovalsScreen'
@@ -83,6 +95,30 @@ export function MoreNavigator() {
       <Stack.Screen name="CreateRfq" component={CreateRfqScreen} options={formSheetOptions(colors, 'Raise RFQ')} />
       <Stack.Screen name="PurchaseOrderDetail" component={PurchaseOrderDetailScreen} options={{ headerShown: false, title: 'Purchase order' }} />
 
+      <Stack.Screen name="GrnDetail" component={GrnDetailScreen} options={{ headerShown: false, title: 'GRN' }} />
+      <Stack.Screen name="CreateGrn" component={CreateGrnScreen} options={formSheetOptions(colors, 'Record GRN')} />
+      <Stack.Screen name="CreateQc" component={CreateQcScreen} options={formSheetOptions(colors, 'Quality check')} />
+      <Stack.Screen
+        name="CreateMaterialRequest"
+        component={CreateMaterialRequestScreen}
+        options={formSheetOptions(colors, 'Material request')}
+      />
+      <Stack.Screen
+        name="CreateMaterialIssue"
+        component={CreateMaterialIssueScreen}
+        options={formSheetOptions(colors, 'Issue material')}
+      />
+      <Stack.Screen
+        name="CreateVendorPayment"
+        component={CreateVendorPaymentScreen}
+        options={formSheetOptions(colors, 'Raise payment')}
+      />
+      <Stack.Screen
+        name="VendorPaymentDetail"
+        component={VendorPaymentDetailScreen}
+        options={{ headerShown: false, title: 'Payment' }}
+      />
+
       <Stack.Screen name="Vendors" component={VendorsScreen} options={{ headerShown: false, title: 'Vendors' }} />
       <Stack.Screen name="VendorDetail" component={VendorDetailScreen} options={{ headerShown: false, title: 'Vendor' }} />
       <Stack.Screen name="EditVendor" component={EditVendorScreen} options={formSheetOptions(colors, 'Edit vendor')} />
@@ -108,6 +144,7 @@ export function MoreNavigator() {
 
       <Stack.Screen name="Reports" component={ReportsScreen} options={{ headerShown: false, title: 'Reports' }} />
       <Stack.Screen name="Portfolio" component={PortfolioScreen} options={{ headerShown: false, title: 'Portfolio' }} />
+      <Stack.Screen name="LiveBoard" component={LiveBoardScreen} options={{ headerShown: false, title: 'Live board' }} />
 
       <Stack.Screen name="Inventory" component={InventoryScreen} options={{ headerShown: false, title: 'Inventory' }} />
       <Stack.Screen
@@ -143,6 +180,22 @@ export function MoreNavigator() {
       <Stack.Screen name="Billing" component={BillingScreen} options={{ headerShown: false, title: 'Billing' }} />
       <Stack.Screen name="InvoiceDetail" component={InvoiceDetailScreen} options={{ headerShown: false, title: 'Invoice' }} />
       <Stack.Screen name="CreateInvoice" component={CreateInvoiceScreen} options={formSheetOptions(colors, 'Add invoice')} />
+      <Stack.Screen name="TaxInvoices" component={TaxInvoicesScreen} options={{ headerShown: false, title: 'Tax invoices' }} />
+      <Stack.Screen
+        name="ComposeEmail"
+        component={ComposeEmailScreen}
+        options={formSheetOptions(colors, 'Compose email')}
+      />
+      <Stack.Screen
+        name="TaxInvoiceDetail"
+        component={TaxInvoiceDetailScreen}
+        options={{ headerShown: false, title: 'Tax invoice' }}
+      />
+      <Stack.Screen
+        name="EditTaxInvoice"
+        component={EditTaxInvoiceScreen}
+        options={formSheetOptions(colors, 'Edit invoice')}
+      />
       <Stack.Screen name="Notifications" component={NotificationsScreen} options={{ headerShown: false, title: 'Alerts' }} />
       <Stack.Screen
         name="AssignedComments"

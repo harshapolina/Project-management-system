@@ -56,6 +56,14 @@ export const adminApi = {
       .post<{ success: true; role: CustomRole; customRoles: CustomRole[] }>('/admin/custom-roles', payload)
       .then((r) => r.data),
 
+  /** Permanently removes their login. Tasks they own stay on the project. */
+  deleteUser: (id: string) =>
+    http
+      .delete<{ success: true; message: string; removed: { id: string; name: string; email: string } }>(
+        `/admin/users/${id}`,
+      )
+      .then((r) => r.data),
+
   resetPassword: (id: string) =>
     http
       .post<{ success: true; user: DirectoryUser; tempPassword: string }>(`/admin/users/${id}/reset-password`, {})

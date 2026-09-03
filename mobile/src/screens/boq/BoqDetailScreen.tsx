@@ -1,6 +1,6 @@
 import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
-import { ActionSheetIOS, Alert, FlatList, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { ActionSheetIOS, Alert, FlatList, Modal, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import * as DocumentPicker from 'expo-document-picker'
@@ -17,6 +17,7 @@ import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { IconButton } from '../../components/IconButton'
 import { boqApi } from '../../api/boq'
+import { taxInvoicesApi } from '../../api/taxInvoices'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 import { rowsToBoqLines, materialMasterAoa, unitLabel } from '../../lib/boqImport'
@@ -42,6 +43,7 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   const [rate, setRate] = useState('')
   const [addError, setAddError] = useState('')
   const [busy, setBusy] = useState<string | null>(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const tenant = useAuthStore((st) => st.tenant)
 
   const { data: quotation, isLoading, isError, error, refetch } = useQuery({
@@ -54,6 +56,16 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     queryClient.invalidateQueries({ queryKey: ['quotations'] })
   }
 
+  // Every BOQ on the same project is a version of it — including the frozen
+  // copies unlock leaves behind.
+  const projectRef =
+    typeof quotation?.projectId === 'object' ? quotation.projectId?._id : quotation?.projectId
+  const versions = useQuery({
+    queryKey: ['quotations', 'history', projectRef],
+    queryFn: () => boqApi.list({ projectId: projectRef }),
+    enabled: historyOpen && !!projectRef,
+  })
+
   const updateItems = useMutation({
     mutationFn: (items: BoqItem[]) => boqApi.update(quotationId, { items }),
     onSuccess: invalidate,
@@ -62,6 +74,26 @@ export function BoqDetailScreen({ route, navigation }: Props) {
   const statusMutation = useMutation({
     mutationFn: (status: QuotationStatus) => boqApi.update(quotationId, { status }),
     onSuccess: invalidate,
+  })
+
+  /** Reopening an approved BOQ archives the signed-off copy under History. */
+  const unlockMutation = useMutation({
+    mutationFn: () => boqApi.unlock(quotationId),
+    onSuccess: (res) => {
+      invalidate()
+      Alert.alert('BOQ unlocked', res.message || 'The approved copy is kept in history.')
+    },
+    onError: (err) => Alert.alert('Could not unlock', isApiError(err) ? err.message : 'Try again'),
+  })
+
+  const convertToInvoice = useMutation({
+    mutationFn: () => taxInvoicesApi.fromQuotation(quotationId),
+    onSuccess: (invoice) => {
+      queryClient.invalidateQueries({ queryKey: ['tax-invoices'] })
+      navigation.navigate('TaxInvoiceDetail', { invoiceId: invoice._id })
+    },
+    onError: (err) =>
+      Alert.alert('Could not create the invoice', isApiError(err) ? err.message : 'Try again'),
   })
 
   const chromeProps = {
@@ -272,12 +304,47 @@ export function BoqDetailScreen({ route, navigation }: Props) {
     }
   }
 
+  const locked = quotation.status === 'approved'
+
   const actions: { label: string; run: () => void }[] = [
     { label: 'Share as PDF', run: sharePdfAction },
     { label: 'Print', run: printAction },
-    { label: 'Edit title, GST & discount', run: () => navigation.navigate('EditQuotation', { quotationId }) },
-    { label: 'Measurement sheet', run: () => navigation.navigate('BoqMeasurement', { quotationId }) },
-    { label: 'Import Excel / CSV', run: importSheet },
+    { label: 'Version history', run: () => setHistoryOpen(true) },
+    {
+      label: 'Convert to tax invoice',
+      run: () =>
+        Alert.alert(
+          'Create a tax invoice',
+          'A GST tax invoice will be drafted from these lines. You can edit it before issuing.',
+          [
+            { text: 'Cancel', style: 'cancel' },
+            { text: 'Create', onPress: () => convertToInvoice.mutate() },
+          ],
+        ),
+    },
+    ...(locked
+      ? [
+          {
+            label: 'Unlock to edit',
+            run: () =>
+              Alert.alert(
+                'Unlock this BOQ',
+                'It goes back to draft so it can be edited. The approved version is kept in history.',
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Unlock', onPress: () => unlockMutation.mutate() },
+                ],
+              ),
+          },
+        ]
+      : [
+          {
+            label: 'Edit title, GST & discount',
+            run: () => navigation.navigate('EditQuotation', { quotationId }),
+          },
+          { label: 'Measurement sheet', run: () => navigation.navigate('BoqMeasurement', { quotationId }) },
+          { label: 'Import Excel / CSV', run: importSheet },
+        ]),
     { label: 'Download Excel template', run: downloadTemplate },
   ]
 
@@ -375,41 +442,67 @@ export function BoqDetailScreen({ route, navigation }: Props) {
                 </Text>
               </View>
               <Text style={styles.itemAmount}>{formatInr(item.amount)}</Text>
-              <Pressable
-                onPress={() => duplicateItem(index)}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={`Duplicate ${item.description}`}
-              >
-                <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
-              </Pressable>
-              <Pressable
-                onPress={() => removeItem(index)}
-                hitSlop={8}
-                accessibilityRole="button"
-                accessibilityLabel={`Remove ${item.description}`}
-              >
-                <Ionicons name="trash-outline" size={18} color={colors.danger} />
-              </Pressable>
+              {locked ? null : (
+                <>
+                  <Pressable
+                    onPress={() => duplicateItem(index)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Duplicate ${item.description}`}
+                  >
+                    <Ionicons name="copy-outline" size={18} color={colors.textSecondary} />
+                  </Pressable>
+                  <Pressable
+                    onPress={() => removeItem(index)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remove ${item.description}`}
+                  >
+                    <Ionicons name="trash-outline" size={18} color={colors.danger} />
+                  </Pressable>
+                </>
+              )}
             </View>
           </SurfaceCard>
         )}
         ListFooterComponent={
           <View style={styles.footerBlock}>
-            <SectionLabel>Add item</SectionLabel>
-            <SurfaceCard style={styles.addCard}>
-              <Input placeholder="Description" value={desc} onChangeText={setDesc} />
-              <View style={styles.addRow}>
-                <Input placeholder="Qty" keyboardType="numeric" value={qty} onChangeText={setQty} containerStyle={{ flex: 1 }} />
-                <Input placeholder="Rate" keyboardType="numeric" value={rate} onChangeText={setRate} containerStyle={{ flex: 1 }} />
-              </View>
-              {addError ? <Text style={styles.error}>{addError}</Text> : null}
-              <Button title="Add item" size="sm" onPress={addItem} loading={updateItems.isPending} />
-            </SurfaceCard>
+            {locked ? (
+              <SurfaceCard style={styles.lockCard}>
+                <View style={styles.lockRow}>
+                  <Ionicons name="lock-closed-outline" size={16} color={colors.textSecondary} />
+                  <Text style={styles.lockTitle}>Approved and locked</Text>
+                </View>
+                <Text style={styles.lockBody}>
+                  Unlock to edit — the approved version is archived under History so nothing signed
+                  off is lost.
+                </Text>
+                <Button
+                  title="Unlock to edit"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => unlockMutation.mutate()}
+                  loading={unlockMutation.isPending}
+                />
+              </SurfaceCard>
+            ) : (
+              <>
+                <SectionLabel>Add item</SectionLabel>
+                <SurfaceCard style={styles.addCard}>
+                  <Input placeholder="Description" value={desc} onChangeText={setDesc} />
+                  <View style={styles.addRow}>
+                    <Input placeholder="Qty" keyboardType="numeric" value={qty} onChangeText={setQty} containerStyle={{ flex: 1 }} />
+                    <Input placeholder="Rate" keyboardType="numeric" value={rate} onChangeText={setRate} containerStyle={{ flex: 1 }} />
+                  </View>
+                  {addError ? <Text style={styles.error}>{addError}</Text> : null}
+                  <Button title="Add item" size="sm" onPress={addItem} loading={updateItems.isPending} />
+                </SurfaceCard>
+              </>
+            )}
 
             <SectionLabel
-              action="Edit"
-              onAction={() => navigation.navigate('EditQuotation', { quotationId })}
+              action={locked ? undefined : 'Edit'}
+              onAction={locked ? undefined : () => navigation.navigate('EditQuotation', { quotationId })}
             >
               Totals
             </SectionLabel>
@@ -444,12 +537,100 @@ export function BoqDetailScreen({ route, navigation }: Props) {
           </View>
         }
       />
+
+      <Modal
+        visible={historyOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setHistoryOpen(false)}
+      >
+        <Pressable style={styles.backdrop} onPress={() => setHistoryOpen(false)}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.sheetTitle}>Version history</Text>
+            <Text style={styles.sheetHint}>Every BOQ raised on this project, newest first.</Text>
+            <ScrollView style={styles.sheetList}>
+              {versions.isLoading ? (
+                <Text style={styles.sheetEmpty}>Loading versions…</Text>
+              ) : !versions.data?.length ? (
+                <Text style={styles.sheetEmpty}>No other versions for this project yet.</Text>
+              ) : (
+                [...versions.data]
+                  .sort(
+                    (a, b) =>
+                      new Date(b.updatedAt || b.createdAt).getTime() -
+                      new Date(a.updatedAt || a.createdAt).getTime(),
+                  )
+                  .map((version) => {
+                    const active = version._id === quotationId
+                    return (
+                      <Pressable
+                        key={version._id}
+                        style={[styles.versionRow, active && styles.versionRowActive]}
+                        onPress={() => {
+                          setHistoryOpen(false)
+                          if (!active) navigation.push('BoqDetail', { quotationId: version._id })
+                        }}
+                      >
+                        <View style={{ flex: 1, minWidth: 0 }}>
+                          <Text style={styles.versionTitle} numberOfLines={1}>
+                            {version.title || 'Untitled BOQ'}
+                            {active ? '  · viewing' : ''}
+                          </Text>
+                          <Text style={styles.versionMeta} numberOfLines={1}>
+                            {[
+                              version.versionLabel || 'Standard',
+                              version.status,
+                              `${(version.items || []).length} lines`,
+                            ].join(' · ')}
+                          </Text>
+                        </View>
+                        <Text style={styles.versionAmount}>{formatInr(version.grandTotal || 0)}</Text>
+                      </Pressable>
+                    )
+                  })
+              )}
+            </ScrollView>
+          </Pressable>
+        </Pressable>
+      </Modal>
     </NestedChrome>
   )
 }
 
 function createStyles(c: AppColors) {
   return StyleSheet.create({
+    lockCard: { gap: spacing.sm },
+    lockRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+    lockTitle: { ...typography.bodyStrong, color: c.textPrimary },
+    lockBody: { ...typography.caption, color: c.textSecondary },
+    backdrop: { flex: 1, backgroundColor: 'rgba(0,0,0,0.35)', justifyContent: 'flex-end' },
+    sheet: {
+      backgroundColor: c.surface,
+      borderTopLeftRadius: radius.xl,
+      borderTopRightRadius: radius.xl,
+      padding: spacing.lg,
+      paddingBottom: spacing.xxl,
+      gap: 4,
+      maxHeight: '75%',
+    },
+    sheetTitle: { ...typography.h3, color: c.textPrimary },
+    sheetHint: { ...typography.caption, color: c.textSecondary, marginBottom: spacing.sm },
+    sheetList: { maxHeight: 400 },
+    sheetEmpty: { ...typography.caption, color: c.textSecondary, paddingVertical: spacing.md },
+    versionRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: spacing.md,
+      paddingVertical: 12,
+      paddingHorizontal: spacing.sm,
+      borderRadius: radius.md,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: c.border,
+    },
+    versionRowActive: { backgroundColor: c.accentSoft },
+    versionTitle: { ...typography.bodyStrong, color: c.textPrimary },
+    versionMeta: { ...typography.micro, color: c.textMuted, marginTop: 2 },
+    versionAmount: { ...typography.bodyStrong, color: c.textPrimary },
     headerBlock: { gap: spacing.md },
     footerBlock: { gap: spacing.md, marginTop: spacing.sm },
     statusCard: { gap: spacing.sm },

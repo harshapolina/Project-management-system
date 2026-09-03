@@ -17,6 +17,10 @@ export type SharedOpsParamList = {
   RfqPanel: { projectId: string; projectName?: string }
   RfqDetail: { rfqId: string }
   CreateRfq: { projectId: string; projectName?: string; quotationId?: string }
+  ComposeEmail: { title?: string; to?: string; subject?: string; body?: string }
+  GrnDetail: { grnId: string; grnNumber?: string }
+  CreateGrn: { projectId?: string; purchaseOrderId?: string } | undefined
+  CreateQc: { grnId: string; grnNumber?: string }
 }
 
 export type ProjectStackParamList = SharedOpsParamList & {
@@ -58,6 +62,7 @@ export type ProfileStackParamList = {
   InvitePerson: undefined
   CreateCustomRole: undefined
   GoogleCalendar: undefined
+  MailSettings: undefined
 }
 
 export type PlatformStackParamList = {
@@ -81,7 +86,13 @@ export type MoreStackParamList = SharedOpsParamList & {
   BoqMeasurement: { quotationId: string }
   CreateBoq: { projectId?: string; projectName?: string } | undefined
   EditQuotation: { quotationId: string }
-  MaterialsHub: { tab?: ProcurementTab } | undefined
+  MaterialsHub: { tab?: ProcurementTab; projectId?: string; projectName?: string } | undefined
+  CreateMaterialRequest: { projectId?: string } | undefined
+  CreateMaterialIssue:
+    | { projectId?: string; materialRequestId?: string; requestNumber?: string }
+    | undefined
+  CreateVendorPayment: { projectId?: string } | undefined
+  VendorPaymentDetail: { paymentId: string; paymentNumber?: string }
   Vendors: undefined
   VendorDetail: { vendorId: string }
   EditVendor: { vendorId: string }
@@ -92,6 +103,7 @@ export type MoreStackParamList = SharedOpsParamList & {
   CreateSnag: { projectId?: string; projectName?: string } | undefined
   Reports: undefined
   Portfolio: undefined
+  LiveBoard: undefined
   Inventory: undefined
   CreateInventoryItem: undefined
   InventoryMovements: undefined
@@ -105,6 +117,9 @@ export type MoreStackParamList = SharedOpsParamList & {
   Billing: undefined
   InvoiceDetail: { invoiceId: string }
   CreateInvoice: undefined
+  TaxInvoices: undefined
+  TaxInvoiceDetail: { invoiceId: string }
+  EditTaxInvoice: { invoiceId: string }
   Notifications: undefined
   AssignedComments: undefined
   CustomFields: undefined

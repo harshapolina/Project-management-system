@@ -29,6 +29,18 @@ export const boqApi = {
 
   remove: (id: string) => http.delete<{ success: true }>(`/quotations/${id}`).then((r) => r.data),
 
+  /**
+   * Reopen an approved BOQ for editing. The server keeps a frozen approved
+   * copy on the same project, so history still shows what was signed off.
+   */
+  unlock: (id: string, versionLabel?: string) =>
+    http
+      .post<{ success: true; quotation: Quotation; archive: Quotation; message: string }>(
+        `/quotations/${id}/unlock`,
+        versionLabel ? { versionLabel } : {},
+      )
+      .then((r) => r.data),
+
   catalog: (boqType: 'residential' | 'commercial') =>
     http
       .get<{ success: true; items: BoqItem[]; meta?: Record<string, unknown>; template?: unknown; count?: number }>(

@@ -1,6 +1,6 @@
 import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
-import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
+import { Alert, FlatList, Linking, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -9,7 +9,11 @@ import { LoadingState, ErrorState } from '../../components/States'
 import { formatInr, radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
+import { Ionicons } from '@expo/vector-icons'
 import { purchaseOrdersApi } from '../../api/procurement'
+import { procurementFlowApi } from '../../api/procurementFlow'
+import { poEmailDraft } from '../../lib/composeEmail'
+import { poWhatsappLink } from '../../utils/phone'
 import { isApiError } from '../../api/client'
 import type { POStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -50,12 +54,22 @@ export function PurchaseOrderDetailScreen({ route, navigation }: Props) {
     },
   })
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['purchase-order', poId] })
+    queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
+    queryClient.invalidateQueries({ queryKey: ['procurement-dashboard'] })
+  }
+
   const statusMutation = useMutation({
     mutationFn: (status: POStatus) => purchaseOrdersApi.update(poId, { status }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['purchase-order', poId] })
-      queryClient.invalidateQueries({ queryKey: ['purchase-orders'] })
-    },
+    onSuccess: invalidate,
+  })
+
+  /** Records how and when the order went out, and moves it to `ordered`. */
+  const dispatch = useMutation({
+    mutationFn: (via: string) => procurementFlowApi.sendPo(poId, via),
+    onSuccess: invalidate,
+    onError: (err) => Alert.alert('Could not mark sent', isApiError(err) ? err.message : 'Try again'),
   })
 
   const chromeProps = {
@@ -97,6 +111,38 @@ export function PurchaseOrderDetailScreen({ route, navigation }: Props) {
                 <Text style={styles.value}>{formatInr(po.value)}</Text>
               </View>
               <Text style={styles.meta}>{[vendorName, pName].filter(Boolean).join(' · ')}</Text>
+
+              <View style={styles.sendRow}>
+                <Pressable
+                  style={styles.sendBtn}
+                  onPress={() => {
+                    navigation.navigate('ComposeEmail', poEmailDraft(po))
+                    if (po.status === 'draft' || po.status === 'approved') dispatch.mutate('email')
+                  }}
+                >
+                  <Ionicons name="mail-outline" size={14} color={colors.accent} />
+                  <Text style={styles.sendText}>Email vendor</Text>
+                </Pressable>
+                {poWhatsappLink(po) ? (
+                  <Pressable
+                    style={[styles.sendBtn, styles.waBtn]}
+                    onPress={() => {
+                      Linking.openURL(poWhatsappLink(po))
+                      if (po.status === 'draft' || po.status === 'approved') dispatch.mutate('whatsapp')
+                    }}
+                  >
+                    <Ionicons name="logo-whatsapp" size={14} color={colors.success} />
+                    <Text style={[styles.sendText, { color: colors.success }]}>WhatsApp</Text>
+                  </Pressable>
+                ) : null}
+                <Pressable
+                  style={styles.sendBtn}
+                  onPress={() => navigation.navigate('CreateGrn', { purchaseOrderId: poId })}
+                >
+                  <Ionicons name="download-outline" size={14} color={colors.accent} />
+                  <Text style={styles.sendText}>Receive goods</Text>
+                </Pressable>
+              </View>
 
               <SectionLabel>Status</SectionLabel>
               <View style={styles.stepper}>
@@ -148,6 +194,18 @@ export function PurchaseOrderDetailScreen({ route, navigation }: Props) {
 
 function createStyles(c: AppColors) {
   return StyleSheet.create({
+    sendRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginTop: spacing.sm },
+    sendBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 4,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 7,
+      borderRadius: radius.full,
+      backgroundColor: c.accentSoft,
+    },
+    waBtn: { backgroundColor: c.successSoft },
+    sendText: { ...typography.micro, fontWeight: '600', color: c.accentHover },
     headerBlock: { gap: spacing.md },
     summaryCard: { gap: spacing.sm },
     badgeRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },

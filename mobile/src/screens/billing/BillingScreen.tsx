@@ -4,6 +4,8 @@ import { Alert, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { Fab } from '../../components/Fab'
+import { IconButton } from '../../components/IconButton'
+import { NavRow } from '../../components/NavRow'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { SectionLabel } from '../../components/SectionLabel'
 import { StatCard } from '../../components/StatCard'
@@ -87,6 +89,14 @@ export function BillingScreen({ navigation }: Props) {
     title: 'Billing',
     subtitle: 'Vendor invoices',
     subtitleIcon: 'receipt-outline' as const,
+    right: (
+      <IconButton
+        icon="document-text-outline"
+        label="GST tax invoices"
+        tone="ghost"
+        onPress={() => navigation.navigate('TaxInvoices')}
+      />
+    ),
   }
 
   if (summary.isLoading && list.isLoading) {
@@ -131,6 +141,14 @@ export function BillingScreen({ navigation }: Props) {
           <StatCard label="Paid this month" value={formatInr(s?.paidThisMonth || 0)} tone="success" />
           <StatCard label="Overdue" value={s?.overdueCount || 0} tone={s?.overdueCount ? 'danger' : 'default'} />
         </View>
+
+        <NavRow
+          icon="document-text-outline"
+          label="GST tax invoices"
+          hint="Invoices you raise to clients"
+          onPress={() => navigation.navigate('TaxInvoices')}
+          last
+        />
 
         <SegmentedControl options={FILTERS} value={status} onChange={setStatus} inset={false} />
         <SearchField value={search} onChangeText={setSearch} placeholder="Search invoice, vendor, PO" inset={false} />

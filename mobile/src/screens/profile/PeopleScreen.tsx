@@ -7,6 +7,8 @@ import { Avatar } from '../../components/Avatar'
 import { Pill } from '../../components/Badge'
 import { SearchField } from '../../components/SearchField'
 import { SurfaceCard } from '../../components/SurfaceCard'
+import { StatCard } from '../../components/StatCard'
+import { SegmentedControl } from '../../components/SegmentedControl'
 import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { spacing, typography, type AppColors } from '../../constants/theme'
@@ -15,12 +17,20 @@ import { useResponsive } from '../../theme/useResponsive'
 import { adminApi, type TeamMember } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
-import { capabilitiesForUser, ROLE_LABELS } from '../../utils/roles'
+import { canInviteUsers, capabilitiesForUser, roleLabelFor } from '../../utils/roles'
 import { formatTrackedSeconds } from '../../utils/time'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { ProfileStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'People'>
+
+type Sort = 'name' | 'open' | 'overdue'
+
+const SORTS: { key: Sort; label: string }[] = [
+  { key: 'name', label: 'A–Z' },
+  { key: 'open', label: 'Most open' },
+  { key: 'overdue', label: 'Most overdue' },
+]
 
 export function PeopleScreen({ navigation }: Props) {
   const colors = useColors()
@@ -28,8 +38,11 @@ export function PeopleScreen({ navigation }: Props) {
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const user = useAuthStore((s) => s.user)
+  const tenant = useAuthStore((s) => s.tenant)
   const caps = capabilitiesForUser(user)
+  const customRoles = tenant?.customRoles || []
   const [search, setSearch] = useState('')
+  const [sort, setSort] = useState<Sort>('name')
 
   const summary = useQuery({
     queryKey: ['admin-team-summary'],
@@ -52,13 +65,27 @@ export function PeopleScreen({ navigation }: Props) {
         timeSpent: 0,
       }))
 
-  const filtered = members.filter((m) => {
-    const q = search.trim().toLowerCase()
-    if (!q) return true
-    return [m.user.name, m.user.email, m.user.role, m.user.title]
-      .filter(Boolean)
-      .some((v) => String(v).toLowerCase().includes(q))
-  })
+  const filtered = members
+    .filter((m) => {
+      const q = search.trim().toLowerCase()
+      if (!q) return true
+      return [m.user.name, m.user.email, m.user.role, roleLabelFor(m.user.role, customRoles), m.user.title]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q))
+    })
+    .sort((a, b) => {
+      if (sort === 'open') return b.open - a.open
+      if (sort === 'overdue') return b.overdue - a.overdue
+      return a.user.name.localeCompare(b.user.name)
+    })
+
+  // The platform caps admin seats per workspace; invites have to respect it.
+  const adminLimit = tenant?.adminLimit ?? 3
+  const adminsUsed = members.filter(
+    (m) => m.user.isActive !== false && ['admin', 'owner'].includes(m.user.role),
+  ).length
+  const openWork = members.reduce((sum, m) => sum + (m.open || 0), 0)
+  const canInvite = canInviteUsers(user)
 
   const isLoading = caps.people ? summary.isLoading : directory.isLoading
   const isError = caps.people ? summary.isError : directory.isError
@@ -70,16 +97,14 @@ export function PeopleScreen({ navigation }: Props) {
     title: "People",
     subtitle: "Teammates in this company",
     subtitleIcon: 'people-outline' as const,
-    right: (
-      caps.managePeople ? (
-            <IconButton
-              icon="person-add-outline"
-              label="Invite person"
-              tone="ghost"
-              onPress={() => navigation.navigate('InvitePerson')}
-            />
-          ) : null
-    ),
+    right: canInvite ? (
+      <IconButton
+        icon="person-add-outline"
+        label="Invite person"
+        tone="ghost"
+        onPress={() => navigation.navigate('InvitePerson')}
+      />
+    ) : null,
   }
 
   if (isLoading) {
@@ -100,11 +125,29 @@ export function PeopleScreen({ navigation }: Props) {
   return (
     <NestedChrome {...chromeProps}>
       <SearchField value={search} onChangeText={setSearch} placeholder="Search people or roles" />
+      {caps.people ? <SegmentedControl options={SORTS} value={sort} onChange={setSort} /> : null}
       <FlatList
         data={filtered}
         keyExtractor={(m) => m.user._id}
         contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={() => refetch()} tintColor={colors.accent} />}
+        ListHeaderComponent={
+          caps.people && members.length ? (
+            <View style={styles.header}>
+              <View style={styles.stats}>
+                <StatCard label="People" value={summary.data?.totalMembers ?? members.length} />
+                <StatCard label="Active" value={summary.data?.activeMembers ?? 0} tone="success" />
+                <StatCard label="Open work" value={openWork} />
+              </View>
+              {canInvite ? (
+                <Text style={styles.seats}>
+                  Company admins: {adminsUsed}/{adminLimit}
+                  {adminsUsed >= adminLimit ? ' — admin slots full (the platform sets this limit).' : ''}
+                </Text>
+              ) : null}
+            </View>
+          ) : null
+        }
         renderItem={({ item }) => {
           const person = item.user
           return (
@@ -121,12 +164,12 @@ export function PeopleScreen({ navigation }: Props) {
                     {person.title || person.email}
                   </Text>
                   {caps.people ? (
-                    <Text style={styles.stats}>
+                    <Text style={styles.metrics}>
                       {item.open} open · {item.overdue} overdue · {formatTrackedSeconds(item.timeSpent)}
                     </Text>
                   ) : null}
                 </View>
-                <Pill label={ROLE_LABELS[person.role] || person.role} />
+                <Pill label={roleLabelFor(person.role, customRoles)} />
                 {caps.people ? <Ionicons name="chevron-forward" size={16} color={colors.textMuted} /> : null}
               </View>
             </SurfaceCard>
@@ -135,9 +178,9 @@ export function PeopleScreen({ navigation }: Props) {
         ListEmptyComponent={
           <EmptyState
             title="No teammates yet"
-            body={caps.managePeople ? 'Invite someone to join this company.' : undefined}
-            action={caps.managePeople ? 'Invite person' : undefined}
-            onAction={caps.managePeople ? () => navigation.navigate('InvitePerson') : undefined}
+            body={canInvite ? 'Invite someone to join this company.' : undefined}
+            action={canInvite ? 'Invite person' : undefined}
+            onAction={canInvite ? () => navigation.navigate('InvitePerson') : undefined}
           />
         }
       />
@@ -154,6 +197,9 @@ function createStyles(c: AppColors) {
     },
     name: { ...typography.bodyStrong, color: c.textPrimary },
     email: { ...typography.caption, color: c.textSecondary },
-    stats: { ...typography.micro, color: c.textMuted, marginTop: 2 },
+    metrics: { ...typography.micro, color: c.textMuted, marginTop: 2 },
+    header: { gap: spacing.md, marginBottom: spacing.sm },
+    stats: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
+    seats: { ...typography.micro, color: c.textMuted },
   })
 }

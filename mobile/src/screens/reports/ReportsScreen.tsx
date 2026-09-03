@@ -8,6 +8,8 @@ import { useQuery } from '@tanstack/react-query'
 import { NestedChrome } from '../../components/NestedChrome'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { SectionLabel } from '../../components/SectionLabel'
+import { BarChart, DonutChart } from '../../components/Charts'
+import { Input } from '../../components/Input'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { SearchField } from '../../components/SearchField'
 import { StatCard } from '../../components/StatCard'
@@ -74,6 +76,8 @@ export function ReportsScreen() {
   const styles = useMemo(() => createStyles(colors), [colors])
 
   const [tab, setTab] = useState<Tab>('overview')
+  const [question, setQuestion] = useState('')
+  const [asked, setAsked] = useState('')
   const [peopleSearch, setPeopleSearch] = useState('')
   const [peopleSort, setPeopleSort] = useState<PeopleSort>('overdue')
   const [roleFilter, setRoleFilter] = useState<string>('all')
@@ -91,6 +95,39 @@ export function ReportsScreen() {
       params: { projectId, projectName },
     })
   }
+
+  /**
+   * "Ask reports" — the same deterministic keyword rules the web page uses.
+   * It reads the numbers already on screen rather than calling out anywhere.
+   */
+  const answer = useMemo(() => {
+    if (!asked.trim() || !data) return null
+    const q = asked.toLowerCase()
+    if (q.includes('risk') || q.includes('delay')) {
+      return `${data.health.delayed} project(s) are delayed. On-time rate is ${data.health.onTimePct}%.`
+    }
+    if (q.includes('pipeline') || q.includes('crm')) {
+      return `Open CRM pipeline value is ${formatInr(data.crmPipelineValue)}.`
+    }
+    if (q.includes('budget') || q.includes('variance')) {
+      return `Portfolio budget variance (quoted − spent) is ${formatInr(data.budgetVariance)}.`
+    }
+    if (q.includes('team')) {
+      const top = [...(data.teamPerf || [])].sort((a, b) => b.done - a.done)[0]
+      return top
+        ? `${top.user.name} leads completions with ${top.done} done, ${top.open} open, and a ${top.completionRate}% completion rate.`
+        : 'No team data.'
+    }
+    if (q.includes('overdue')) {
+      const ranked = [...(data.teamPerf || [])]
+        .filter((person) => person.overdue > 0)
+        .sort((a, b) => b.overdue - a.overdue)
+      return ranked.length
+        ? `${ranked[0].user.name} has the highest overdue workload (${ranked[0].overdue}). ${data.taskCompletion.overdue} tasks are overdue company-wide.`
+        : 'There are no overdue assigned tasks.'
+    }
+    return 'Try: “which projects are at risk”, “pipeline value”, “budget variance”, “team performance”, or “overdue”.'
+  }, [asked, data])
 
   const roles = useMemo(
     () => [...new Set((data?.teamPerf || []).map((t) => t.user.role))].filter(Boolean).sort(),
@@ -225,15 +262,51 @@ export function ReportsScreen() {
             </View>
 
             <View style={styles.section}>
-              <SectionLabel>Task status</SectionLabel>
-              <View style={styles.taskStatusRow}>
-                {data.taskStatus.map((t) => (
-                  <View key={t.status} style={styles.taskStatusChip}>
-                    <Text style={styles.taskStatusValue}>{t.count}</Text>
-                    <Text style={styles.taskStatusLabel}>{t.status.replace('_', ' ')}</Text>
-                  </View>
-                ))}
-              </View>
+              <SectionLabel>Ask reports</SectionLabel>
+              <SurfaceCard>
+                <Input
+                  placeholder="e.g. which projects are at risk"
+                  value={question}
+                  onChangeText={setQuestion}
+                  returnKeyType="search"
+                  onSubmitEditing={() => setAsked(question)}
+                />
+                <View style={styles.askChips}>
+                  {['at risk', 'pipeline value', 'budget variance', 'team performance', 'overdue'].map(
+                    (preset) => (
+                      <Pressable
+                        key={preset}
+                        style={styles.askChip}
+                        onPress={() => {
+                          setQuestion(preset)
+                          setAsked(preset)
+                        }}
+                      >
+                        <Text style={styles.askChipText}>{preset}</Text>
+                      </Pressable>
+                    ),
+                  )}
+                </View>
+                {answer ? <Text style={styles.answer}>{answer}</Text> : null}
+              </SurfaceCard>
+            </View>
+
+            <View style={styles.section}>
+              <SectionLabel>Task distribution</SectionLabel>
+              <SurfaceCard>
+                <DonutChart
+                  slices={data.taskStatus.map((t) => ({
+                    label: TASK_STATUS_LABELS[t.status] || t.status.replace('_', ' '),
+                    value: t.count,
+                    color: colors.status[t.status] || colors.textMuted,
+                  }))}
+                  centerValue={String(data.taskCompletion.total)}
+                  centerLabel="tasks"
+                />
+                <Text style={styles.meta}>
+                  {data.taskCompletion.unassigned} unassigned
+                </Text>
+              </SurfaceCard>
             </View>
 
             <View style={styles.section}>
@@ -256,6 +329,18 @@ export function ReportsScreen() {
             <View style={styles.section}>
               <SectionLabel>Lead pipeline</SectionLabel>
               <SurfaceCard>
+                {data.leadStages.some((s) => s.count > 0) ? (
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chartScroll}>
+                    <BarChart
+                      bars={data.leadStages
+                        .filter((s) => s.count > 0)
+                        .map((s) => ({
+                          label: stageLabel(s.stage).split(' ')[0],
+                          value: s.count,
+                        }))}
+                    />
+                  </ScrollView>
+                ) : null}
                 {data.leadStages
                   .filter((s) => s.count > 0)
                   .map((s) => (
@@ -434,8 +519,25 @@ function Metric({ label, value, danger }: { label: string; value: number; danger
   )
 }
 
+const TASK_STATUS_LABELS: Record<string, string> = {
+  todo: 'To do',
+  in_progress: 'In progress',
+  review: 'Review',
+  done: 'Done',
+}
+
 function createStyles(c: AppColors) {
   return StyleSheet.create({
+    askChips: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, marginTop: spacing.sm },
+    askChip: {
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+    },
+    askChipText: { ...typography.micro, color: c.textSecondary },
+    answer: { ...typography.body, color: c.textPrimary, marginTop: spacing.md },
+    chartScroll: { marginBottom: spacing.md },
     statsGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
     section: { gap: spacing.sm },
     taskStatusRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm },

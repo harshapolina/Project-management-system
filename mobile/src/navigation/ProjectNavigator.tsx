@@ -16,6 +16,10 @@ import { RfqPanelScreen } from '../screens/procurement/RfqPanelScreen'
 import { RfqDetailScreen } from '../screens/procurement/RfqDetailScreen'
 import { CreateRfqScreen } from '../screens/procurement/CreateRfqScreen'
 import { PurchaseOrderDetailScreen } from '../screens/procurement/PurchaseOrderDetailScreen'
+import { ComposeEmailScreen } from '../screens/settings/ComposeEmailScreen'
+import { GrnDetailScreen } from '../screens/procurement/GrnDetailScreen'
+import { CreateGrnScreen } from '../screens/procurement/CreateGrnScreen'
+import { CreateQcScreen } from '../screens/procurement/CreateQcScreen'
 import { PurchaseOrdersScreen } from '../screens/procurement/PurchaseOrdersScreen'
 import { CreatePurchaseOrderScreen } from '../screens/procurement/CreatePurchaseOrderScreen'
 import { BoqDetailScreen } from '../screens/boq/BoqDetailScreen'
@@ -64,6 +68,14 @@ export function ProjectNavigator() {
       <Stack.Screen name="RfqPanel" component={RfqPanelScreen} options={{ headerShown: false, title: 'Materials' }} />
       <Stack.Screen name="RfqDetail" component={RfqDetailScreen} options={{ headerShown: false, title: 'RFQ' }} />
       <Stack.Screen name="CreateRfq" component={CreateRfqScreen} options={formSheetOptions(colors, 'Raise RFQ')} />
+      <Stack.Screen
+        name="ComposeEmail"
+        component={ComposeEmailScreen}
+        options={formSheetOptions(colors, 'Compose email')}
+      />
+      <Stack.Screen name="GrnDetail" component={GrnDetailScreen} options={{ headerShown: false, title: 'GRN' }} />
+      <Stack.Screen name="CreateGrn" component={CreateGrnScreen} options={formSheetOptions(colors, 'Record GRN')} />
+      <Stack.Screen name="CreateQc" component={CreateQcScreen} options={formSheetOptions(colors, 'Quality check')} />
       <Stack.Screen name="BoqDetail" component={BoqDetailScreen} options={{ headerShown: false, title: 'Quotation' }} />
       <Stack.Screen
         name="CreatePurchaseOrder"

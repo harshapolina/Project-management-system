@@ -130,6 +130,12 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
             icon: 'receipt-outline' as const,
             onPress: () => goTab('More', 'Billing'),
           },
+          {
+            key: 'tax-invoices',
+            label: 'Tax invoices',
+            icon: 'document-text-outline' as const,
+            onPress: () => goTab('More', 'TaxInvoices'),
+          },
         ]
       : []),
     ...(caps.siteFeed
@@ -165,6 +171,16 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
             label: 'Reports',
             icon: 'bar-chart-outline' as const,
             onPress: () => goTab('More', 'Reports'),
+          },
+        ]
+      : []),
+    ...(caps.myWork
+      ? [
+          {
+            key: 'live-board',
+            label: 'Live board',
+            icon: 'pulse-outline' as const,
+            onPress: () => goTab('More', 'LiveBoard'),
           },
         ]
       : []),

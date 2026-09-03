@@ -44,6 +44,10 @@ export interface Tenant {
   slug: string
   status?: string
   seatLimit?: number
+  /** How many admin/owner seats the platform allows this workspace. */
+  adminLimit?: number
+  /** Company logo, printed on quotations and tax invoices. */
+  logoUrl?: string
   /** Sits behind the company logo; empty means use a neutral surface. */
   brandColor?: string
   notice?: TenantNotice | null
@@ -234,7 +238,17 @@ export interface ProjectFile {
   folder: string
   name: string
   mime?: string
-  status: 'draft' | 'sent' | 'approved' | string
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | string
+  /** Sign-off lifecycle, separate from the folder status. */
+  approvalStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  approvalType?: string
+  approver?: { _id: string; name: string; avatar?: string } | string | null
+  requestedBy?: { _id: string; name: string } | string | null
+  requestedAt?: string
+  decidedBy?: { _id: string; name: string } | string | null
+  decidedAt?: string
+  approvalNote?: string
+  decisionNote?: string
   clientVisible?: boolean
   currentVersion: number
   versions: { version: number; url: string; note?: string; uploadedBy?: string; createdAt?: string }[]
@@ -423,4 +437,48 @@ export interface ApiError {
   status?: number
   message: string
   data?: unknown
+}
+
+/** GET /tasks/live-board — the open workload across the whole company. */
+export interface LiveBoardPerson {
+  user: { _id: string; name: string; avatar?: string; role?: string; title?: string }
+  open: number
+  todo: number
+  in_progress: number
+  review: number
+  urgent: number
+  high: number
+  overdue: number
+  /** 0–100, relative to the busiest person — drives the load bar. */
+  load: number
+}
+
+export interface LiveBoardTask {
+  _id: string
+  title: string
+  status: TaskStatus
+  priority: TaskPriority
+  stage?: string
+  dueDate: string | null
+  updatedAt: string
+  overdue: boolean
+  project: { _id: string; name: string } | null
+  assignee: { _id: string; name: string; avatar?: string } | null
+  assignedBy: { _id: string; name: string; avatar?: string } | null
+}
+
+export interface LiveBoard {
+  generatedAt: string
+  counts: {
+    open: number
+    todo: number
+    in_progress: number
+    review: number
+    urgent: number
+    overdue: number
+    unassigned: number
+    peopleWithWork: number
+  }
+  team: LiveBoardPerson[]
+  tasks: LiveBoardTask[]
 }

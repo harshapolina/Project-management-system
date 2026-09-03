@@ -193,8 +193,15 @@ export function MoreMainScreen({ navigation }: Props) {
                   label="Billing"
                   hint="Vendor invoices"
                   tone={2}
-                  last
                   onPress={() => goMore(tabNav,'Billing')}
+                />
+                <NavRow
+                  icon="document-text-outline"
+                  label="Tax invoices"
+                  hint="GST invoices to clients"
+                  tone={4}
+                  last
+                  onPress={() => goMore(tabNav,'TaxInvoices')}
                 />
               </>
             ) : null}
@@ -237,7 +244,7 @@ export function MoreMainScreen({ navigation }: Props) {
         ) : null}
 
         {/* Insights */}
-        {caps.portfolio || caps.reports ? (
+        {caps.portfolio || caps.reports || caps.myWork ? (
           <NavSection title="Insights">
             {caps.portfolio ? (
               <NavRow
@@ -255,8 +262,17 @@ export function MoreMainScreen({ navigation }: Props) {
                 label="Reports"
                 hint="Progress snapshot"
                 tone={3}
-                last
                 onPress={() => goMore(tabNav,'Reports')}
+              />
+            ) : null}
+            {caps.myWork ? (
+              <NavRow
+                icon="pulse-outline"
+                label="Live board"
+                hint="Who is carrying what, right now"
+                tone={1}
+                last
+                onPress={() => goMore(tabNav,'LiveBoard')}
               />
             ) : null}
           </NavSection>

@@ -14,6 +14,7 @@ import { useResponsive } from '../../theme/useResponsive'
 import { vendorsApi, purchaseOrdersApi } from '../../api/procurement'
 import { isApiError } from '../../api/client'
 import { telLink, whatsappLink } from '../../utils/phone'
+import { vendorHelloEmailDraft } from '../../lib/composeEmail'
 import type { POStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { MoreStackParamList } from '../../navigation/types'
@@ -108,18 +109,27 @@ export function VendorDetailScreen({ route, navigation }: Props) {
                 <Text style={styles.categories}>{vendor.categories.join(', ')}</Text>
               ) : null}
               <Text style={styles.terms}>{vendor.paymentTerms || 'Net 30'}</Text>
-              {vendor.phone ? (
-                <View style={styles.actions}>
-                  <Pressable style={styles.actionBtn} onPress={() => Linking.openURL(telLink(vendor.phone!))}>
-                    <Ionicons name="call-outline" size={14} color={colors.accent} />
-                    <Text style={styles.actionText}>Call</Text>
-                  </Pressable>
-                  <Pressable style={styles.actionBtn} onPress={() => Linking.openURL(whatsappLink(vendor.phone!))}>
-                    <Ionicons name="logo-whatsapp" size={14} color={colors.success} />
-                    <Text style={styles.actionText}>WhatsApp</Text>
-                  </Pressable>
-                </View>
-              ) : null}
+              <View style={styles.actions}>
+                {vendor.phone ? (
+                  <>
+                    <Pressable style={styles.actionBtn} onPress={() => Linking.openURL(telLink(vendor.phone!))}>
+                      <Ionicons name="call-outline" size={14} color={colors.accent} />
+                      <Text style={styles.actionText}>Call</Text>
+                    </Pressable>
+                    <Pressable style={styles.actionBtn} onPress={() => Linking.openURL(whatsappLink(vendor.phone!))}>
+                      <Ionicons name="logo-whatsapp" size={14} color={colors.success} />
+                      <Text style={styles.actionText}>WhatsApp</Text>
+                    </Pressable>
+                  </>
+                ) : null}
+                <Pressable
+                  style={styles.actionBtn}
+                  onPress={() => navigation.navigate('ComposeEmail', vendorHelloEmailDraft(vendor))}
+                >
+                  <Ionicons name="mail-outline" size={14} color={colors.accent} />
+                  <Text style={styles.actionText}>Email</Text>
+                </Pressable>
+              </View>
               <Button title="Edit vendor" size="sm" onPress={() => navigation.navigate('EditVendor', { vendorId })} />
             </SurfaceCard>
             <SectionLabel count={posQuery.data?.length}>Purchase orders</SectionLabel>
@@ -171,7 +181,7 @@ function createStyles(c: AppColors) {
     meta: { ...typography.caption, color: c.textSecondary },
     categories: { ...typography.caption, color: c.accent },
     terms: { ...typography.micro, color: c.textMuted },
-    actions: { flexDirection: 'row', gap: 8 },
+    actions: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     actionBtn: {
       flexDirection: 'row',
       alignItems: 'center',
