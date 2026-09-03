@@ -3,6 +3,8 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
+import { CollapsibleSection } from '../../components/CollapsibleSection'
+import { FieldRow } from '../../components/FieldRow'
 import { Button } from '../../components/Button'
 import { radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
@@ -50,7 +52,7 @@ export function CreateLeadScreen({ navigation }: Props) {
       title="New enquiry"
       subtitle="Capture a lead and assign follow-up"
       subtitleIcon="people-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Add enquiry"
@@ -68,31 +70,36 @@ export function CreateLeadScreen({ navigation }: Props) {
       }
     >
       <Input label="Client name" placeholder="e.g. Priya Sharma" value={clientName} onChangeText={setClientName} />
-      <Input label="Phone (optional)" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
-      <Input
-        label="Email (optional)"
-        keyboardType="email-address"
-        autoCapitalize="none"
-        value={email}
-        onChangeText={setEmail}
-      />
-      <Input
-        label="Estimated value (optional)"
-        placeholder="0"
-        keyboardType="numeric"
-        value={estimatedValue}
-        onChangeText={setEstimatedValue}
-      />
-      <Input
-        label="Notes (optional)"
-        value={notes}
-        onChangeText={setNotes}
-        multiline
-        numberOfLines={3}
-        style={{ minHeight: 80, textAlignVertical: 'top' }}
-      />
+      {/* Capturing a lead should take one field; the rest is follow-up detail. */}
+      <CollapsibleSection>
+        <FieldRow>
+          <Input label="Phone" keyboardType="phone-pad" value={phone} onChangeText={setPhone} />
+          <Input
+            label="Email"
+            keyboardType="email-address"
+            autoCapitalize="none"
+            value={email}
+            onChangeText={setEmail}
+          />
+        </FieldRow>
+        <Input
+          label="Estimated value"
+          placeholder="0"
+          keyboardType="numeric"
+          value={estimatedValue}
+          onChangeText={setEstimatedValue}
+        />
+        {/* Free text stays full width — half a row can't show a sentence. */}
+        <Input
+          label="Notes"
+          value={notes}
+          onChangeText={setNotes}
+          multiline
+          numberOfLines={3}
+          style={{ minHeight: 80, textAlignVertical: 'top' }}
+        />
       <View>
-        <Text style={styles.label}>Assign employee (optional)</Text>
+        <Text style={styles.label}>Assign employee</Text>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.chips}>
           {(users.data || []).map((u) => {
             const active = owner === u._id
@@ -108,6 +115,7 @@ export function CreateLeadScreen({ navigation }: Props) {
           })}
         </ScrollView>
       </View>
+      </CollapsibleSection>
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormLayout>
   )

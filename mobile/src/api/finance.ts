@@ -6,6 +6,7 @@ export interface CreateExpensePayload {
   amount: number
   category?: string
   note?: string
+  receiptUrl?: string
 }
 
 export const financeApi = {

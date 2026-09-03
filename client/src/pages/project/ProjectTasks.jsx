@@ -24,7 +24,9 @@ import {
 import { ProjectTabBar } from './ProjectPageShell'
 import {
   getTaskStatus,
+  isLaterDue,
   nextTaskStatus,
+  openNativeDatePicker,
 } from '../../lib/taskStatus'
 
 const GROUPS = [
@@ -57,6 +59,14 @@ const GROUPS = [
     tint: 'bg-black/[0.02]',
   },
 ]
+
+const LATER_GROUP = {
+  key: 'later',
+  label: 'Later',
+  hint: 'Scheduled for a future date',
+  dot: 'bg-[#5b8def]',
+  tint: 'bg-black/[0.02]',
+}
 
 const PRIORITY = {
   urgent: { label: 'Urgent', className: 'bg-red-50 text-red-700' },
@@ -138,10 +148,18 @@ export function ProjectTasks() {
 
   const byStatus = useMemo(() => {
     const map = Object.fromEntries(GROUPS.map((g) => [g.key, []]))
+    map.later = []
     for (const t of tasks) {
+      if (t.status !== 'done' && isLaterDue(t.dueDate)) {
+        map.later.push(t)
+        continue
+      }
       const k = map[t.status] ? t.status : 'todo'
       map[k].push(t)
     }
+    map.later.sort(
+      (a, b) => new Date(a.dueDate).getTime() - new Date(b.dueDate).getTime(),
+    )
     return map
   }, [tasks])
 
@@ -156,6 +174,8 @@ export function ProjectTasks() {
         isPast(new Date(t.dueDate)) &&
         !isToday(new Date(t.dueDate)),
     ).length,
+    later: allTasks.filter((t) => t.status !== 'done' && isLaterDue(t.dueDate))
+      .length,
   }
 
   if (isLoading) {
@@ -168,17 +188,17 @@ export function ProjectTasks() {
 
   const visibleGroups =
     filter === 'open'
-      ? GROUPS.filter((g) => g.key !== 'done')
+      ? [...GROUPS.filter((g) => g.key !== 'done'), LATER_GROUP]
       : filter === 'done'
         ? GROUPS.filter((g) => g.key === 'done')
-        : GROUPS
+        : [...GROUPS, LATER_GROUP]
 
   const gridClass =
     filter === 'all'
       ? 'grid-cols-1 sm:grid-cols-2'
       : filter === 'done'
         ? 'grid-cols-1 max-w-2xl'
-        : 'grid-cols-1 lg:grid-cols-3'
+        : 'grid-cols-1 lg:grid-cols-2 xl:grid-cols-4'
 
   return (
     <div className="flex h-full min-h-0 flex-col bg-[var(--bg-canvas)]">
@@ -218,6 +238,11 @@ export function ProjectTasks() {
             {counts.late > 0 && (
               <span className="inline-flex items-center gap-1 rounded-full bg-red-50 px-2 py-1 text-[11px] font-bold text-red-700">
                 Late {counts.late}
+              </span>
+            )}
+            {counts.later > 0 && (
+              <span className="inline-flex items-center gap-1 rounded-full bg-[#5b8def]/10 px-2 py-1 text-[11px] font-bold text-[#3b6fd4]">
+                Later {counts.later}
               </span>
             )}
           </>
@@ -310,7 +335,7 @@ export function ProjectTasks() {
                         }
                       />
                     ))}
-                    {caps.createTask && (
+                    {caps.createTask && g.key !== 'later' && (
                       <button
                         type="button"
                         onClick={() => {
@@ -358,6 +383,7 @@ export function ProjectTasks() {
 }
 
 function TaskCard({ task, users, canManage, onOpen, onPatch }) {
+  const dueInputRef = useRef(null)
   const status = task.status || 'todo'
   const statusMeta = getTaskStatus(status)
   const next = nextTaskStatus(status)
@@ -368,7 +394,6 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
   const assigneeName =
     users.find((u) => String(u._id) === String(assigneeId))?.name?.split(' ')[0] ||
     'Anyone'
-  const dateInputRef = useRef(null)
 
   return (
     <div className="px-2.5 py-2 hover:bg-black/[0.02]">
@@ -433,9 +458,12 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
               </select>
             </label>
 
-            <label
-              className="relative flex min-w-0 cursor-pointer items-center gap-0.5 overflow-hidden rounded-md bg-black/[0.04] px-1 py-0.5"
+            <button
+              type="button"
+              disabled={!canManage}
               title={due.text}
+              onClick={() => openNativeDatePicker(dueInputRef.current)}
+              className="relative flex min-w-0 cursor-pointer items-center gap-0.5 overflow-hidden rounded-md bg-black/[0.04] px-1 py-0.5 text-left disabled:cursor-not-allowed"
             >
               <Calendar className="pointer-events-none h-2.5 w-2.5 shrink-0 text-secondary" />
               <span
@@ -449,22 +477,15 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
                   : 'Date'}
               </span>
               <input
-                ref={dateInputRef}
+                ref={dueInputRef}
                 type="date"
+                tabIndex={-1}
                 disabled={!canManage}
                 value={
                   task.dueDate
                     ? format(new Date(task.dueDate), 'yyyy-MM-dd')
                     : ''
                 }
-                onClick={(e) => {
-                  e.preventDefault()
-                  try {
-                    dateInputRef.current?.showPicker?.()
-                  } catch {
-                    dateInputRef.current?.focus()
-                  }
-                }}
                 onChange={(e) =>
                   onPatch({
                     dueDate: e.target.value
@@ -472,9 +493,9 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
                       : null,
                   })
                 }
-                className="absolute inset-0 cursor-pointer opacity-0 disabled:cursor-not-allowed"
+                className="pointer-events-none absolute inset-0 opacity-0"
               />
-            </label>
+            </button>
 
             <select
               value={task.priority || 'medium'}

@@ -1,17 +1,18 @@
 import type { ReactNode } from 'react'
-import { KeyboardAvoidingView, Platform, View, type StyleProp, type ViewStyle } from 'react-native'
+import { Platform, View, type StyleProp, type ViewStyle } from 'react-native'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useKeyboardInset } from '../hooks/useKeyboardInset'
 
 type KeyboardAwareViewProps = {
   children: ReactNode
   style?: StyleProp<ViewStyle>
-  /** iOS only — offset for nav bars / tab bars. */
+  /** Extra lift beyond keyboard height (e.g. sticky toolbars). */
   keyboardVerticalOffset?: number
 }
 
 /**
- * Keeps bottom inputs (login, chat composer, form footers) above the software keyboard.
- * Web uses visualViewport padding; native uses KeyboardAvoidingView.
+ * Lifts bottom-aligned inputs (chat composer, form footers) above the software keyboard.
+ * Uses keyboard height inset — reliable on Android (absolute tab bar) and iOS nested stacks.
  */
 export function KeyboardAwareView({
   children,
@@ -19,23 +20,29 @@ export function KeyboardAwareView({
   keyboardVerticalOffset = 0,
 }: KeyboardAwareViewProps) {
   const inset = useKeyboardInset()
+  const { bottom: safeBottom } = useSafeAreaInsets()
+
+  const lift =
+    inset > 0 ? Math.max(0, inset - safeBottom) + keyboardVerticalOffset : 0
 
   if (Platform.OS === 'web') {
     return (
-      <View style={[style, { flex: 1, paddingBottom: inset }]}>
+      <View style={[style, { flex: 1, minHeight: 0, paddingBottom: inset }]}>
         {children}
       </View>
     )
   }
 
   return (
-    <KeyboardAvoidingView
-      style={[style, { flex: 1 }]}
-      behavior="padding"
-      keyboardVerticalOffset={keyboardVerticalOffset}
+    <View
+      style={[
+        style,
+        { flex: 1, minHeight: 0 },
+        lift > 0 && { paddingBottom: lift },
+      ]}
     >
       {children}
-    </KeyboardAvoidingView>
+    </View>
   )
 }
 

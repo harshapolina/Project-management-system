@@ -82,7 +82,7 @@ export function CreateApprovalRuleScreen({ route, navigation }: Props) {
       title="Add routing"
       subtitle={typeLabel}
       subtitleIcon="shield-checkmark-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Add routing"

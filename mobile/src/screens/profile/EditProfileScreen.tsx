@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { ActivityIndicator, Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation } from '@tanstack/react-query'
 import * as ImagePicker from 'expo-image-picker'
@@ -18,7 +18,7 @@ import type { ProfileStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<ProfileStackParamList, 'EditProfile'>
 
-export function EditProfileScreen({ navigation }: Props) {
+export function EditProfileScreen({ navigation, route }: Props) {
   const colors = useColors()
   const styles = useMemo(() => createStyles(colors), [colors])
   const user = useAuthStore((s) => s.user)
@@ -67,21 +67,37 @@ export function EditProfileScreen({ navigation }: Props) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      // A square crop up front means the picture matches the circle it's shown
-      // in everywhere, instead of being centre-cropped unpredictably later.
-      allowsEditing: true,
-      aspect: [1, 1],
+      /**
+       * Deliberately no `allowsEditing`. That hands cropping to whatever editor
+       * the OS provides — which varies by Android skin and often has no zoom —
+       * so we take the full-size original and run our own adjust step, where
+       * the circle mask shows the avatar as it will actually appear.
+       */
+      allowsEditing: false,
       quality: 1,
     })
     if (result.canceled || !result.assets?.[0]) return
 
-    const asset = result.assets[0]
-    avatarMutation.mutate({
-      uri: asset.uri,
-      name: asset.fileName || 'profile.jpg',
-      mimeType: asset.mimeType || 'image/jpeg',
-    })
+    navigation.navigate('CropAvatar', { uri: result.assets[0].uri })
   }
+
+  /**
+   * The adjust screen merges the cropped file back into this screen's params.
+   * Clearing it before uploading matters: params survive re-renders, so leaving
+   * it set would re-upload the same crop every time this screen re-rendered.
+   */
+  const croppedAvatarUri = route.params?.croppedAvatarUri
+  useEffect(() => {
+    if (!croppedAvatarUri) return
+    navigation.setParams({ croppedAvatarUri: undefined })
+    avatarMutation.mutate({
+      uri: croppedAvatarUri,
+      name: 'profile.jpg',
+      mimeType: 'image/jpeg',
+    })
+    // avatarMutation is recreated each render; depending on it would re-fire.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [croppedAvatarUri])
 
   const confirmRemove = () =>
     Alert.alert('Remove your photo?', 'Your initials will be shown instead.', [
@@ -112,7 +128,7 @@ export function EditProfileScreen({ navigation }: Props) {
       subtitle="Photo, name, and contact"
       subtitleIcon="person-outline"
       variant="page"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Save changes"

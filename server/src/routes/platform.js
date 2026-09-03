@@ -236,11 +236,36 @@ router.patch(
       subscriptionPlan: z.enum(['starter', 'pro', 'enterprise']).optional(),
       features: z.record(z.boolean()).optional(),
       notes: z.string().optional(),
+      // Empty string clears it back to a neutral surface.
+      brandColor: z
+        .string()
+        .regex(/^(#[0-9a-fA-F]{6})?$/, 'Brand colour must be a hex value like #0F766E')
+        .optional(),
+      notice: z
+        .object({
+          active: z.boolean().optional(),
+          title: z.string().max(120).optional(),
+          message: z.string().max(1000).optional(),
+          variant: z.enum(['info', 'warning', 'urgent']).optional(),
+          dismissible: z.boolean().optional(),
+          blocking: z.boolean().optional(),
+        })
+        .optional(),
     })
     const data = schema.parse(req.body)
     const tenant = await Tenant.findById(req.params.id)
     if (!tenant) throw new AppError('Tenant not found', 404)
 
+    if (data.brandColor !== undefined) tenant.brandColor = data.brandColor
+    if (data.notice !== undefined) {
+      // Stamped on every edit so the company side can tell a re-worded notice
+      // from the one someone already dismissed.
+      tenant.notice = {
+        ...(tenant.notice?.toObject?.() ?? tenant.notice ?? {}),
+        ...data.notice,
+        updatedAt: new Date(),
+      }
+    }
     if (data.name !== undefined) tenant.name = data.name
     if (data.seatLimit !== undefined) tenant.seatLimit = data.seatLimit
     if (data.adminLimit !== undefined) {
@@ -437,6 +462,7 @@ router.patch(
     const schema = z.object({
       role: z.enum(ROLES).optional(),
       isActive: z.boolean().optional(),
+      email: z.string().email().optional(),
     })
     const data = schema.parse(req.body)
     const tenant = await Tenant.findById(req.params.id)
@@ -464,6 +490,24 @@ router.patch(
         user.refreshTokens = []
       }
       user.isActive = data.isActive
+    }
+    if (data.email !== undefined) {
+      const email = data.email.trim().toLowerCase()
+      if (email !== user.email) {
+        // Email is the sign-in identifier, so it has to stay unique inside the
+        // workspace or two people end up fighting over one login.
+        const clash = await User.findOne({
+          tenantId: tenant._id,
+          email,
+          _id: { $ne: user._id },
+        }).select('_id')
+        if (clash) {
+          throw new AppError('Someone in this workspace already uses that email', 409)
+        }
+        // Any session still holding the old identity is no longer valid.
+        user.refreshTokens = []
+        user.email = email
+      }
     }
     await user.save()
 

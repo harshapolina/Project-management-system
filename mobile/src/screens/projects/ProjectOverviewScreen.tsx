@@ -1,12 +1,10 @@
 import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import { CompositeNavigationProp } from '@react-navigation/native'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
+import { NestedChrome } from '../../components/NestedChrome'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
@@ -16,13 +14,14 @@ import { radius, spacing, typography, type AppColors } from '../../constants/the
 import { useColors, useShadows } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { projectsApi } from '../../api/projects'
+import { Button } from '../../components/Button'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 import { capabilitiesForUser, ROLE_LABELS } from '../../utils/roles'
 import type { Role } from '../../types/models'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { ProjectStackParamList, RootTabParamList } from '../../navigation/types'
-import { goBackOrHome } from '../../navigation/openProject'
+import { openConversationFromTabs, smartGoBack } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<ProjectStackParamList, 'ProjectOverview'>
 type Nav = CompositeNavigationProp<Props['navigation'], BottomTabNavigationProp<RootTabParamList>>
@@ -48,50 +47,57 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
     queryFn: () => projectsApi.get(projectId),
   })
 
+  const advanceStage = useMutation({
+    mutationFn: (currentStage: string) => projectsApi.update(projectId, { currentStage }),
+    onSuccess: () => refetch(),
+  })
+
   const title = projectName || data?.project.name || 'Project'
   const subtitle = data?.project
     ? `${data.project.clientName}${data.project.location ? ` · ${data.project.location}` : ''}`
     : 'Project workspace'
   const nameForNav = projectName || data?.project.name
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title={title}
-      subtitle={subtitle}
-      subtitleIcon="folder-outline"
-      onBack={() => goBackOrHome(navigation, route)}
-    />
-    </>
-  )
+  const chromeProps = {
+    title,
+    subtitle,
+    subtitleIcon: 'folder-outline' as const,
+    onBack: () => smartGoBack(navigation, route),
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
+      <NestedChrome {...chromeProps}>
         <LoadingState label="Loading project…" variant="detail" />
-      </Screen>
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
+      <NestedChrome {...chromeProps}>
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      </NestedChrome>
     )
   }
 
   const { project, stats } = data
-  type TabKey = 'ProjectTasks' | 'ProjectFiles' | 'ProjectNotes' | 'SiteFeed' | 'PurchaseOrders' | 'ProjectTeam'
+  type TabKey =
+    | 'ProjectTasks'
+    | 'ProjectFiles'
+    | 'ProjectNotes'
+    | 'ProjectActivity'
+    | 'SiteFeed'
+    | 'PurchaseOrders'
+    | 'ProjectTeam'
+    | 'RfqPanel'
   type TabIcon = keyof typeof Ionicons.glyphMap
   const tabs: { key: TabKey; label: string; icon: TabIcon }[] = [
     { key: 'ProjectTasks', label: 'Tasks', icon: 'checkbox-outline' },
     { key: 'ProjectFiles', label: 'Files', icon: 'folder-outline' },
     { key: 'ProjectNotes', label: 'Notes', icon: 'chatbubble-ellipses-outline' },
+    { key: 'ProjectActivity', label: 'Activity', icon: 'pulse-outline' },
     ...(caps.siteFeed ? [{ key: 'SiteFeed' as const, label: 'Site', icon: 'camera-outline' as const }] : []),
-    ...(caps.procurement ? [{ key: 'PurchaseOrders' as const, label: 'Orders', icon: 'cart-outline' as const }] : []),
+    ...(caps.procurement ? [{ key: 'RfqPanel' as const, label: 'Materials', icon: 'layers-outline' as const }, { key: 'PurchaseOrders' as const, label: 'Orders', icon: 'cart-outline' as const }] : []),
     ...(caps.manageProjects ? [{ key: 'ProjectTeam' as const, label: 'Team', icon: 'people-outline' as const }] : []),
   ]
   const members = project.members || []
@@ -110,15 +116,11 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   }
   const goTasks = () => openLeaf('ProjectTasks')
   const openMember = (memberId: string, memberName: string) => {
-    tabNav.navigate('Inbox', {
-      screen: 'Conversation',
-      params: { userId: memberId, userName: memberName },
-    })
+    openConversationFromTabs(tabNav, memberId, memberName)
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <ScrollView
         contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
@@ -197,6 +199,28 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
             </View>
           ))}
         </SurfaceCard>
+        {caps.manageProjects ? (
+          <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
+            <Button
+              title="Edit project"
+              variant="secondary"
+              onPress={() => navigation.navigate('EditProject', { projectId, projectName: nameForNav })}
+              fullWidth
+            />
+            {(() => {
+              const next = stages.find((s) => s.status !== 'completed')
+              if (!next) return null
+              return (
+                <Button
+                  title={`Mark done → ${next.label}`}
+                  onPress={() => advanceStage.mutate(next.key)}
+                  loading={advanceStage.isPending}
+                  fullWidth
+                />
+              )
+            })()}
+          </View>
+        ) : null}
 
         <SectionLabel count={members.length}>Team</SectionLabel>
         <SurfaceCard style={styles.blockGap}>
@@ -221,7 +245,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
           ))}
         </SurfaceCard>
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

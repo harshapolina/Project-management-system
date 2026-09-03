@@ -72,6 +72,9 @@ export interface Quotation {
   gstPercent: number
   discount: number
   grandTotal: number
+  /** Commercial take-off rows that feed BOQ quantities */
+  measurements?: MeasurementQuotationItem[]
+  spaces?: string[]
   createdBy?: { _id: string; name: string }
   createdAt: string
   updatedAt: string
@@ -290,9 +293,27 @@ export interface Tenant {
   _id: string
   name: string
   slug: string
-  status: 'trial' | 'active' | 'suspended'
+  status: 'trial' | 'active' | 'suspended' | 'cancelled'
   seatLimit: number
   seatsUsed: number
+  userCount?: number
+  projectCount?: number
+  adminsUsed?: number
+  adminLimit?: number
+  subscriptionPlan?: 'starter' | 'pro' | 'enterprise'
+  features?: Record<string, boolean>
+  logoUrl?: string
+  brandColor?: string
+  notice?: {
+    active?: boolean
+    title?: string
+    message?: string
+    variant?: 'info' | 'warning' | 'urgent'
+    dismissible?: boolean
+    blocking?: boolean
+    updatedAt?: string
+  }
+  cancelledAt?: string | null
   notes?: string
   createdAt: string
 }
@@ -332,6 +353,122 @@ export interface AppNotification {
   body?: string
   link?: string
   read?: boolean
+  later?: boolean
+  cleared?: boolean
   createdAt: string
   meta?: Record<string, unknown>
+}
+
+export type RfqStatus = 'draft' | 'sent' | 'comparing' | 'awarded' | 'cancelled'
+
+export interface RfqItem {
+  description: string
+  unit: string
+  qty: number
+  boqRate?: number
+  rate?: number
+  boqItemId?: string
+  _id?: string
+}
+
+export interface RfqVendorEntry {
+  vendor: import('../types/ops').Vendor | string
+  status: 'pending' | 'sent' | 'quoted' | 'declined'
+  rates?: number[]
+  gstPercent?: number
+  freight?: number
+  loading?: number
+  installation?: number
+  otherCharges?: number
+  validUntil?: string
+  remarks?: string
+  landedCost?: number
+  sentAt?: string
+  sentVia?: string
+  quotedAt?: string
+}
+
+export interface Rfq {
+  _id: string
+  rfqNumber: string
+  projectId?: { _id: string; name: string; clientName?: string; location?: string } | string
+  quotationId?: string
+  items: RfqItem[]
+  vendors: RfqVendorEntry[]
+  status: RfqStatus
+  closingDate?: string
+  notes?: string
+  awardedVendor?: import('../types/ops').Vendor | string
+  awardReason?: string
+  purchaseOrder?: string
+  createdBy?: { _id: string; name: string }
+  createdAt: string
+  updatedAt?: string
+}
+
+export interface MaterialCatalogItem {
+  _id?: string
+  materialFamily?: string
+  grade?: string
+  brand?: string
+  thickness?: string
+  finish?: string
+  description: string
+  unit: string
+  rate?: number
+  category?: string
+  room?: string
+  [key: string]: unknown
+}
+
+export interface MeasurementRow {
+  space?: string
+  unit?: string
+  nos?: number
+  length?: number
+  width?: number
+  qty?: number
+}
+
+export interface MeasurementQuotationItem {
+  group?: string
+  sectionNo?: string
+  sectionName?: string
+  no?: string
+  name?: string
+  unit?: string
+  rows?: MeasurementRow[]
+  overrideTotal?: number | null
+  boqTotal?: number | null
+  boqTotalLabel?: string
+  boqRef?: { index: number; slNo?: string; section?: string; label?: string }
+}
+
+export interface MeasurementSpaceOption {
+  name: string
+  uses?: number
+}
+
+export interface MeasurementCatalog {
+  meta?: Record<string, unknown>
+  boqType?: string
+  spaces?: MeasurementSpaceOption[]
+  items?: MeasurementQuotationItem[]
+}
+
+export interface GoogleCalendarStatus {
+  configured: boolean
+  clientId?: string
+  connected: boolean
+  email?: string
+  connectedAt?: string | null
+}
+
+export interface GoogleCalendarEvent {
+  id: string
+  summary?: string
+  start?: string
+  end?: string
+  htmlLink?: string
+  location?: string
 }

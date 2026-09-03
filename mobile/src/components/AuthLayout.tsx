@@ -39,7 +39,7 @@ export function AuthLayout({ title, subtitle, children, footer, brand }: AuthLay
           contentContainerStyle={[
             styles.scroll,
             keyboardOpen && styles.scrollWithKeyboard,
-            { paddingBottom: Math.max(keyboardInset, spacing.xl) },
+            { paddingBottom: spacing.xl },
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"

@@ -2,11 +2,9 @@ import { useMemo, useState } from 'react'
 import { Alert, FlatList, Linking, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
+import { NestedChrome } from '../../components/NestedChrome'
 import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { formatInr, radius, spacing, stageLabel, typography, type AppColors } from '../../constants/theme'
@@ -112,14 +110,11 @@ export function LeadsScreen({ navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      <AppNavBar />
-      <PageHeader
-        title="Enquiries"
-        subtitle="Assign and follow up"
-        subtitleIcon="people-outline"
-        onBack={() => navigation.goBack()}
-      />
+    <NestedChrome
+      title="Enquiries"
+      subtitle="Assign and follow up"
+      subtitleIcon="people-outline"
+    >
       {isLoading ? (
         <LoadingState label="Loading enquiries…" variant="list" />
       ) : isError ? (
@@ -134,6 +129,7 @@ export function LeadsScreen({ navigation }: Props) {
             const next = nextStage(item.stage)
             const ownerId = item.owner?._id
             return (
+              <Pressable onPress={() => navigation.navigate('LeadDetail', { leadId: item._id })}>
               <SurfaceCard>
                 <View style={styles.cardInner}>
                   <View style={styles.cardTop}>
@@ -229,6 +225,7 @@ export function LeadsScreen({ navigation }: Props) {
                   </View>
                 </View>
               </SurfaceCard>
+              </Pressable>
             )
           }}
           ListEmptyComponent={
@@ -243,7 +240,7 @@ export function LeadsScreen({ navigation }: Props) {
       )}
 
       <Fab label="Add enquiry" onPress={() => navigation.navigate('CreateLead')} />
-    </Screen>
+    </NestedChrome>
   )
 }
 

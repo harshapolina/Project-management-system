@@ -6,6 +6,10 @@ import { spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
 
+/** Touch target for the header's icon buttons, and the glyph drawn inside it. */
+const ICON_TARGET = 42
+const ICON_GLYPH = 24
+
 /**
  * Home-aligned page chrome: large title + status subtitle.
  * Nested screens pass `onBack` for a top action row (back + optional right).
@@ -18,13 +22,16 @@ export function PageHeader({
   right,
   onBack,
   backLabel = 'Back',
+  compact = false,
 }: {
-  title: string
+  title: ReactNode
   subtitle?: string
   subtitleIcon?: keyof typeof Ionicons.glyphMap
   right?: ReactNode
   onBack?: () => void
   backLabel?: string
+  /** Chat-style: name sits in the back row instead of a large page title. */
+  compact?: boolean
 }) {
   const colors = useColors()
   const { pagePadding, titleSize, isCompact } = useResponsive()
@@ -32,6 +39,7 @@ export function PageHeader({
     () => createStyles(colors, pagePadding, titleSize, isCompact),
     [colors, pagePadding, titleSize, isCompact],
   )
+  const useCompactBar = compact && !!onBack
 
   return (
     <View style={styles.wrap}>
@@ -39,42 +47,58 @@ export function PageHeader({
         <View style={styles.topBar}>
           <Pressable
             onPress={onBack}
-            hitSlop={10}
+            hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={backLabel}
-            style={styles.topIconBtn}
+            style={[styles.topIconBtn, styles.topBackBtn]}
           >
-            <Ionicons name="chevron-back" size={24} color={colors.textPrimary} />
+            <Ionicons name="chevron-back" size={ICON_GLYPH} color={colors.textPrimary} />
           </Pressable>
-          <View style={styles.topSpacer} />
+          {useCompactBar ? (
+            typeof title === 'string' ? (
+              <Text style={styles.topTitle} numberOfLines={1}>
+                {title}
+              </Text>
+            ) : (
+              <View style={styles.topTitleWrap}>{title}</View>
+            )
+          ) : (
+            <View style={styles.topSpacer} />
+          )}
           {right ? <View style={styles.rightSlot}>{right}</View> : <View style={styles.topIconBtn} />}
         </View>
       ) : null}
 
-      <View style={styles.titleBlock}>
-        {!onBack && right ? (
-          <View style={styles.titleRow}>
-            <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
-              {title}
-            </Text>
-            <View style={styles.rightSlot}>{right}</View>
-          </View>
-        ) : (
-          <Text style={styles.title} numberOfLines={2} adjustsFontSizeToFit minimumFontScale={0.8}>
-            {title}
+      {useCompactBar ? (
+        subtitle ? (
+          <Text style={styles.compactSubtitle} numberOfLines={1}>
+            {subtitle}
           </Text>
-        )}
-        {subtitle ? (
-          <View style={styles.statusRow}>
-            {subtitleIcon ? (
-              <Ionicons name={subtitleIcon} size={16} color={colors.accentHover} />
-            ) : null}
-            <Text style={styles.subtitle} numberOfLines={2}>
-              {subtitle}
-            </Text>
+        ) : null
+      ) : (
+        <View style={styles.titleBlock}>
+          <View style={styles.titleRow}>
+            {typeof title === 'string' ? (
+              <Text style={styles.title} numberOfLines={2}>
+                {title}
+              </Text>
+            ) : (
+              <View style={{ flex: 1 }}>{title}</View>
+            )}
+            {!onBack && right ? <View style={styles.rightSlot}>{right}</View> : null}
           </View>
-        ) : null}
-      </View>
+          {subtitle ? (
+            <View style={styles.statusRow}>
+              {subtitleIcon ? (
+                <Ionicons name={subtitleIcon} size={15} color={colors.accentHover} />
+              ) : null}
+              <Text style={styles.subtitle} numberOfLines={2}>
+                {subtitle}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+      )}
     </View>
   )
 }
@@ -83,45 +107,93 @@ function createStyles(c: AppColors, pagePadding: number, titleSize: number, isCo
   return StyleSheet.create({
     wrap: {
       paddingHorizontal: pagePadding,
-      paddingTop: spacing.xs,
-      paddingBottom: isCompact ? spacing.sm : spacing.md,
-      gap: spacing.sm,
+      /**
+       * This now sits directly against the status bar rather than under the
+       * AppNavBar, so it owns the gap below it. The safe-area inset only
+       * clears the notch — it leaves no breathing room of its own — and a
+       * header butted right up against the clock reads as a rendering bug.
+       */
+      paddingTop: spacing.md,
+      paddingBottom: isCompact ? spacing.xs : spacing.sm,
+      gap: spacing.xs,
     },
     topBar: {
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'space-between',
-      minHeight: 40,
+      minHeight: ICON_TARGET,
+      marginBottom: 2,
     },
     topIconBtn: {
-      width: 40,
-      height: 40,
+      width: ICON_TARGET,
+      height: ICON_TARGET,
+      borderRadius: ICON_TARGET / 2,
       alignItems: 'center',
       justifyContent: 'center',
     },
+    /**
+     * Circular chip. Now that the button has a visible edge of its own, the
+     * chip is what the eye aligns to — so it sits flush at the content edge
+     * rather than being pulled left to line the bare glyph up with the title,
+     * which is what a borderless chevron needed.
+     */
+    topBackBtn: {
+      backgroundColor: c.surface,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
+    },
     topSpacer: { flex: 1 },
+    topTitle: {
+      ...typography.h3,
+      fontSize: 17,
+      color: c.textPrimary,
+      flex: 1,
+      minWidth: 0,
+      textAlign: 'center',
+    },
+    topTitleWrap: {
+      flex: 1,
+      minWidth: 0,
+      alignItems: 'center',
+      justifyContent: 'center',
+    },
     rightSlot: { flexShrink: 0, alignItems: 'flex-end', justifyContent: 'center' },
-    titleBlock: { gap: 6 },
+    // No horizontal padding: the title defines the content edge that the back
+    // chip above it lines up with.
+    titleBlock: { gap: 4 },
     titleRow: {
       flexDirection: 'row',
-      alignItems: 'flex-start',
+      alignItems: 'center',
       justifyContent: 'space-between',
-      gap: spacing.md,
+      gap: spacing.sm,
     },
     title: {
       ...typography.h1,
-      fontSize: titleSize,
+      fontSize: Math.min(titleSize, 28),
       color: c.textPrimary,
-      letterSpacing: -0.6,
+      fontWeight: '700',
+      letterSpacing: -0.5,
       flex: 1,
       minWidth: 0,
     },
     statusRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      gap: 8,
-      marginTop: -2,
+      gap: 6,
+      marginTop: 1,
     },
-    subtitle: { ...typography.caption, color: c.textSecondary, flex: 1 },
+    subtitle: {
+      ...typography.caption,
+      color: c.textSecondary,
+      fontSize: 13,
+      fontWeight: '500',
+      flex: 1,
+    },
+    compactSubtitle: {
+      ...typography.caption,
+      color: c.textSecondary,
+      textAlign: 'center',
+      marginTop: -4,
+    },
   })
 }

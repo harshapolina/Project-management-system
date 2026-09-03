@@ -33,7 +33,7 @@ export function NewMessageScreen({ navigation }: Props) {
         title="New message"
         subtitle="Pick a teammate to chat with"
         subtitleIcon="chatbubble-ellipses-outline"
-        onBack={() => navigation.goBack()}
+
         card={false}
       >
         <LoadingState label="Loading directory…" variant="rows" />
@@ -46,7 +46,7 @@ export function NewMessageScreen({ navigation }: Props) {
         title="New message"
         subtitle="Pick a teammate to chat with"
         subtitleIcon="chatbubble-ellipses-outline"
-        onBack={() => navigation.goBack()}
+
         card={false}
       >
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
@@ -59,7 +59,7 @@ export function NewMessageScreen({ navigation }: Props) {
       title="New message"
       subtitle="Pick a teammate to chat with"
       subtitleIcon="chatbubble-ellipses-outline"
-      onBack={() => navigation.goBack()}
+
       card={false}
     >
       <FlatList

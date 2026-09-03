@@ -1,129 +1,92 @@
-import { useMemo } from 'react'
-import { FlatList, RefreshControl, StyleSheet, Text, View } from 'react-native'
+import { useMemo, useState } from 'react'
+import { FlatList, RefreshControl, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { Avatar } from '../../components/Avatar'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
-import { IconButton } from '../../components/IconButton'
-import { SurfaceCard } from '../../components/SurfaceCard'
+import { NestedChrome } from '../../components/NestedChrome'
+import { InboxContextBar } from '../../components/inbox/InboxContextBar'
+import { InboxTabs } from '../../components/inbox/InboxTabs'
+import { ThreadRow } from '../../components/inbox/ThreadRow'
+import { SearchField } from '../../components/SearchField'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
-import { spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { InboxStackParamList } from '../../navigation/types'
+import { pushConversation } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<InboxStackParamList, 'Threads'>
 
-function timeAgo(date: string) {
-  const diff = Date.now() - new Date(date).getTime()
-  const mins = Math.floor(diff / 60000)
-  if (mins < 1) return 'now'
-  if (mins < 60) return `${mins}m`
-  const hrs = Math.floor(mins / 60)
-  if (hrs < 24) return `${hrs}h`
-  return `${Math.floor(hrs / 24)}d`
-}
-
+/** Legacy route — redirects styling to InboxHub mail tab. */
 export function ThreadsScreen({ navigation }: Props) {
   const colors = useColors()
-  const { tabListContent } = useResponsive()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const { listContent, pagePadding } = useResponsive()
+  const [search, setSearch] = useState('')
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['mail-threads'],
     queryFn: mailApi.threads,
+    refetchInterval: 20_000,
   })
 
-  return (
-    <Screen padded={false} edges={['left', 'right']}>
-      <AppNavBar />
-      <PageHeader
-        title="Inbox"
-        subtitle="Messages with your team"
-        subtitleIcon="chatbubbles-outline"
-        right={
-          <IconButton
-            icon="create-outline"
-            label="New message"
-            tone="ghost"
-            onPress={() => navigation.navigate('NewMessage')}
-          />
-        }
-      />
+  const threads = useMemo(() => {
+    const list = data || []
+    if (!search.trim()) return list
+    const q = search.toLowerCase()
+    return list.filter(
+      (t) =>
+        t.user.name.toLowerCase().includes(q) ||
+        t.lastMessage.body.toLowerCase().includes(q),
+    )
+  }, [data, search])
 
+  return (
+    <NestedChrome
+      title="Chat"
+      subtitle="Team messages"
+      subtitleIcon="chatbubbles-outline"
+      showBack={false}
+    >
+      <InboxTabs value="mail" onChange={(tab) => tab !== 'mail' && navigation.navigate('InboxHub', { tab })} />
+      <InboxContextBar tab="mail" onCompose={() => navigation.navigate('NewMessage')} />
       {isLoading ? (
-        <LoadingState label="Loading messages…"  variant="rows" />
+        <LoadingState label="Loading messages…" variant="rows" />
       ) : isError ? (
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       ) : (
         <FlatList
-          data={data}
+          data={threads}
           keyExtractor={(t) => t.user._id}
-          contentContainerStyle={tabListContent}
+          contentContainerStyle={[listContent, { paddingHorizontal: 0, paddingTop: 0 }]}
           refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
+          ListHeaderComponent={
+            <View style={{ paddingHorizontal: pagePadding, paddingTop: 8, paddingBottom: 4 }}>
+              <SearchField value={search} onChangeText={setSearch} placeholder="Search conversations…" />
+            </View>
+          }
           renderItem={({ item }) => (
-            <SurfaceCard
-              onPress={() => navigation.navigate('Conversation', { userId: item.user._id, userName: item.user.name })}
-            >
-              <View style={styles.row}>
-                <Avatar name={item.user.name} uri={item.user.avatar} size={46} />
-                <View style={{ flex: 1, minWidth: 0, gap: 3 }}>
-                  <View style={styles.rowTop}>
-                    <Text style={styles.name} numberOfLines={1}>
-                      {item.user.name}
-                    </Text>
-                    <Text style={styles.time}>{timeAgo(item.lastMessage.createdAt)}</Text>
-                  </View>
-                  <Text style={[styles.preview, item.unread > 0 && styles.previewUnread]} numberOfLines={1}>
-                    {item.lastMessage.body}
-                  </Text>
-                </View>
-                {item.unread > 0 ? (
-                  <View style={styles.unreadBadge}>
-                    <Text style={styles.unreadText}>{item.unread}</Text>
-                  </View>
-                ) : null}
-              </View>
-            </SurfaceCard>
+            <ThreadRow
+              name={item.user.name}
+              avatar={item.user.avatar}
+              preview={item.lastMessage.body}
+              time={item.lastMessage.createdAt}
+              unread={item.unread}
+              onPress={() =>
+                pushConversation(navigation, item.user._id, item.user.name)
+              }
+            />
           )}
           ListEmptyComponent={
             <EmptyState
-              icon="chatbubble-ellipses-outline"
-              title="No messages yet"
-              body="Start a conversation with a teammate."
+              icon="chatbubbles-outline"
+              title="Start a conversation"
+              body="Message anyone on your team."
+              action="New message"
+              onAction={() => navigation.navigate('NewMessage')}
             />
           }
         />
       )}
-    </Screen>
+    </NestedChrome>
   )
-}
-
-function createStyles(c: AppColors) {
-  return StyleSheet.create({
-    row: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: spacing.md,
-    },
-    rowTop: { flexDirection: 'row', justifyContent: 'space-between', gap: spacing.sm },
-    name: { ...typography.bodyStrong, color: c.textPrimary, flexShrink: 1 },
-    time: { ...typography.caption, color: c.textMuted },
-    preview: { ...typography.caption, color: c.textSecondary },
-    previewUnread: { color: c.textPrimary, fontWeight: '600' },
-    unreadBadge: {
-      minWidth: 20,
-      height: 20,
-      borderRadius: 10,
-      backgroundColor: c.accent,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 5,
-    },
-    unreadText: { color: c.textOnAccent, fontSize: 11, fontWeight: '700' },
-  })
 }

@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
-import { KeyboardAvoidingView, Platform, StyleSheet, View } from 'react-native'
+import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
+import { KeyboardAwareView } from './KeyboardAwareView'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
 
@@ -10,6 +11,10 @@ interface ScreenProps {
   padded?: boolean
   keyboardAvoiding?: boolean
   background?: string
+  /** Stack nested screen: side edges only, standard list padding when scroll */
+  variant?: 'default' | 'stack'
+  scroll?: boolean
+  contentContainerStyle?: StyleProp<ViewStyle>
 }
 
 /**
@@ -22,42 +27,57 @@ export function Screen({
   padded = true,
   keyboardAvoiding = false,
   background,
+  variant = 'default',
+  scroll = false,
+  contentContainerStyle,
 }: ScreenProps) {
   const colors = useColors()
-  const { pagePadding, contentMaxWidth, isTablet } = useResponsive()
+  const { pagePadding, contentMaxWidth, isTablet, listContent } = useResponsive()
   const bg = background ?? colors.canvas
+  const resolvedEdges = variant === 'stack' ? (['left', 'right'] as const) : edges
+
+  const inner = scroll ? (
+    <ScrollView
+      style={styles.flex}
+      contentContainerStyle={[variant === 'stack' ? listContent : null, contentContainerStyle]}
+      keyboardShouldPersistTaps="handled"
+      showsVerticalScrollIndicator={false}
+    >
+      {children}
+    </ScrollView>
+  ) : (
+    children
+  )
 
   const content = (
     <View
       style={[
         styles.flex,
-        padded && { paddingHorizontal: pagePadding },
+        styles.column,
+        padded && variant !== 'stack' && { paddingHorizontal: pagePadding },
         isTablet && contentMaxWidth
           ? { width: '100%', maxWidth: contentMaxWidth, alignSelf: 'center' }
           : null,
       ]}
     >
-      {children}
+      {inner}
     </View>
   )
 
+  const body = keyboardAvoiding ? (
+    <KeyboardAwareView style={styles.flex}>{content}</KeyboardAwareView>
+  ) : (
+    content
+  )
+
   return (
-    <SafeAreaView edges={edges} style={[styles.flex, { backgroundColor: bg }]}>
-      {keyboardAvoiding ? (
-        <KeyboardAvoidingView
-          style={styles.flex}
-          behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-          keyboardVerticalOffset={Platform.OS === 'ios' ? 12 : 0}
-        >
-          {content}
-        </KeyboardAvoidingView>
-      ) : (
-        content
-      )}
+    <SafeAreaView edges={[...resolvedEdges]} style={[styles.flex, { backgroundColor: bg }]}>
+      {body}
     </SafeAreaView>
   )
 }
 
 const styles = StyleSheet.create({
   flex: { flex: 1, minHeight: 0 },
+  column: { flexDirection: 'column' },
 })

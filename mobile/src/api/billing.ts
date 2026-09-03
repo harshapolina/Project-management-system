@@ -53,7 +53,28 @@ export const billingApi = {
       .then((r) => r.data.invoice)
   },
 
-  update: (id: string, body: { status?: string }) =>
+  get: async (id: string) => {
+    const invoices = await http
+      .get<{ success: true; invoices: VendorInvoice[] }>('/billing/invoices')
+      .then((r) => r.data.invoices)
+    const invoice = invoices.find((inv) => inv._id === id)
+    if (!invoice) throw new Error('Invoice not found')
+    return invoice
+  },
+
+  update: (
+    id: string,
+    body: {
+      status?: string
+      invoiceNumber?: string
+      amount?: number
+      invoiceDate?: string
+      dueDate?: string
+      notes?: string
+      vendorId?: string
+      purchaseOrderId?: string | null
+    },
+  ) =>
     http
       .patch<{ success: true; invoice: VendorInvoice }>(`/billing/invoices/${id}`, body)
       .then((r) => r.data.invoice),

@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useEffect, useMemo, useState } from 'react'
-import { FlatList, KeyboardAvoidingView, Platform, Pressable, StyleSheet, Text, View } from 'react-native'
+import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query'
 import { useNavigation } from '@react-navigation/native'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
@@ -96,41 +94,31 @@ export function TaskDetailScreen({ route }: Props) {
     return 'Unassigned'
   }, [data])
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Task"
-        subtitle="Details & discussion"
-        subtitleIcon="checkbox-outline"
-        onBack={() => navigation.goBack()}
-      />
-    </>
-  )
+  const chromeProps = {
+    title: "Task",
+    subtitle: "Details & discussion",
+    subtitleIcon: 'checkbox-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading task…" variant="detail" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading task…" variant="detail" />
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   const { task, comments, activity } = data
 
   return (
-    <Screen padded={false} edges={['left', 'right']} keyboardAvoiding>
-      {header}
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+    <NestedChrome {...chromeProps} keyboardAvoiding>
         <FlatList
           data={comments}
           keyExtractor={(c) => c._id}
@@ -275,8 +263,7 @@ export function TaskDetailScreen({ route }: Props) {
             disabled={!comment.trim()}
           />
         </View>
-      </KeyboardAvoidingView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

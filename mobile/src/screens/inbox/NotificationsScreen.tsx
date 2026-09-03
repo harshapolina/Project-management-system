@@ -1,12 +1,10 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { CompositeNavigationProp, useNavigation } from '@react-navigation/native'
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { spacing, typography, type AppColors } from '../../constants/theme'
@@ -125,32 +123,24 @@ export function NotificationsScreen() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ['notifications'] }),
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Alerts"
-      subtitle="Assignments and mentions"
-      subtitleIcon="notifications-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Alerts",
+    subtitle: "Assignments and mentions",
+    subtitleIcon: 'notifications-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading alerts…" variant="rows" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading alerts…" variant="rows" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
@@ -158,8 +148,7 @@ export function NotificationsScreen() {
   const unread = items.filter((n) => !n.read).length
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <ScrollView
         contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
@@ -195,7 +184,7 @@ export function NotificationsScreen() {
           ))
         )}
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

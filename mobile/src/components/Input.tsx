@@ -70,7 +70,7 @@ function createStyles(c: AppColors) {
       borderRadius: radius.lg,
       paddingHorizontal: spacing.md,
       paddingVertical: 13,
-      fontSize: 16,
+      ...typography.input,
       color: c.textPrimary,
       backgroundColor: c.surface,
       minHeight: 50,

@@ -8,10 +8,10 @@ import {
   Text,
   View,
 } from 'react-native'
+import { useNavigation, useRoute, type NavigationProp, type ParamListBase } from '@react-navigation/native'
 import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Screen } from './Screen'
-import { AppNavBar } from './AppNavBar'
 import { PageHeader } from './PageHeader'
 import { KeyboardAwareView } from './KeyboardAwareView'
 import { TAB_BAR_CLEARANCE } from './GlassyTabBar'
@@ -19,12 +19,14 @@ import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
 import { isKeyboardOpen, useKeyboardInset } from '../hooks/useKeyboardInset'
+import { smartGoBack } from '../navigation/openProject'
 
 type FormLayoutProps = {
   title: string
   subtitle?: string
   subtitleIcon?: keyof typeof Ionicons.glyphMap
-  onBack: () => void
+  /** Defaults to smartGoBack (stack root fallback). */
+  onBack?: () => void
   children: ReactNode
   /** Sticky footer (primary button). */
   footer?: ReactNode
@@ -53,12 +55,15 @@ export function FormLayout({
   variant = 'sheet',
   tabBarClearance,
 }: FormLayoutProps) {
+  const navigation = useNavigation()
+  const route = useRoute()
   const colors = useColors()
   const shadows = useShadows()
   const insets = useSafeAreaInsets()
   const keyboardInset = useKeyboardInset()
   const keyboardOpen = isKeyboardOpen(keyboardInset)
   const { pagePadding } = useResponsive()
+  const handleBack = onBack ?? (() => smartGoBack(navigation as NavigationProp<ParamListBase>, route))
   const styles = useMemo(
     () => createStyles(colors, shadows, pagePadding),
     [colors, shadows, pagePadding],
@@ -66,10 +71,16 @@ export function FormLayout({
   const isSheet = variant === 'sheet'
   // Tab bar is absolute on every main tab screen — always lift footers above it.
   const reserveTabBar = tabBarClearance ?? !!footer
-  const footerPad =
+  const baseFooterPad =
     Math.max(insets.bottom, 12) +
     spacing.md +
     (reserveTabBar && !keyboardOpen ? TAB_BAR_CLEARANCE : 0)
+  const footerPad = keyboardOpen
+    ? Math.max(insets.bottom, spacing.sm)
+    : baseFooterPad
+  const scrollBottomPad = footer
+    ? spacing.sm + (keyboardOpen ? keyboardInset : 0)
+    : (keyboardOpen ? keyboardInset : 0) + footerPad + spacing.lg
 
   return (
     <Screen
@@ -96,7 +107,7 @@ export function FormLayout({
               ) : null}
             </View>
             <Pressable
-              onPress={onBack}
+              onPress={handleBack}
               hitSlop={10}
               accessibilityRole="button"
               accessibilityLabel="Close"
@@ -107,10 +118,7 @@ export function FormLayout({
           </View>
         </View>
       ) : (
-        <>
-          <AppNavBar />
-          <PageHeader title={title} subtitle={subtitle} subtitleIcon={subtitleIcon} onBack={onBack} />
-        </>
+        <PageHeader title={title} subtitle={subtitle} subtitleIcon={subtitleIcon} onBack={handleBack} />
       )}
 
       <KeyboardAwareView
@@ -122,7 +130,8 @@ export function FormLayout({
           contentContainerStyle={[
             styles.scroll,
             !footer && styles.scrollFill,
-            footer ? { paddingBottom: spacing.sm } : { paddingBottom: footerPad + spacing.lg },
+            { paddingBottom: scrollBottomPad },
+            keyboardOpen && styles.scrollWithKeyboard,
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
@@ -197,6 +206,9 @@ function createStyles(
     scrollFill: {
       flexGrow: 1,
       paddingBottom: spacing.lg,
+    },
+    scrollWithKeyboard: {
+      flexGrow: 1,
     },
     card: {
       backgroundColor: c.surface,

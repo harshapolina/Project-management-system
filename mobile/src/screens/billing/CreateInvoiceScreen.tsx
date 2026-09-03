@@ -74,7 +74,7 @@ export function CreateInvoiceScreen({ navigation }: Props) {
       title="New invoice"
       subtitle="Vendor billing"
       subtitleIcon="receipt-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Save invoice"

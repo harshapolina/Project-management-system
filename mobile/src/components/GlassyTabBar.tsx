@@ -9,15 +9,20 @@ import { useResponsive } from '../theme/useResponsive'
 import { QuickCreateSheet } from './QuickCreateSheet'
 import type { RootTabParamList } from '../navigation/types'
 
-/** Home · Projects · center FAB · Activity · More */
+/** Home · Projects · center FAB · Chat · More */
 const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }> = {
   Home: { on: 'home', off: 'home-outline', label: 'Home' },
   Projects: { on: 'business', off: 'business-outline', label: 'Projects' },
-  Inbox: { on: 'pulse', off: 'pulse-outline', label: 'Activity' },
+  Inbox: { on: 'chatbubbles', off: 'chatbubbles-outline', label: 'Chat' },
   More: { on: 'grid', off: 'grid-outline', label: 'More' },
 }
 
-export const TAB_BAR_CLEARANCE = 96
+/**
+ * Space a scroll view must leave at its bottom so content never ends up under
+ * the tab bar. Sized for the floating pill: its own height plus the gap it
+ * leaves at the bottom of the screen.
+ */
+export const TAB_BAR_CLEARANCE = 104
 
 export function GlassyTabBar({ state, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets()
@@ -28,7 +33,8 @@ export function GlassyTabBar({ state, navigation }: BottomTabBarProps) {
     () => createStyles(colors, shadows, pagePadding, isCompact),
     [colors, shadows, pagePadding, isCompact],
   )
-  const bottomPad = Math.max(insets.bottom, 10)
+  // Floating pill, so it needs a visible gap under it, not just inset clearance.
+  const bottomPad = Math.max(insets.bottom, 14)
   const [createOpen, setCreateOpen] = useState(false)
 
   const leftRoutes = state.routes.filter((r) => r.name === 'Home' || r.name === 'Projects')
@@ -124,22 +130,35 @@ function createStyles(
   const edge = Math.max(pagePadding - 2, 12)
 
   return StyleSheet.create({
+    /**
+     * Transparent positioner. The bar itself floats inside it, so the dock can
+     * own the safe-area padding without painting a slab behind the gesture
+     * handle.
+     */
     dock: {
       position: 'absolute',
       left: 0,
       right: 0,
       bottom: 0,
-      backgroundColor: c.surface,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.border,
-      ...shadows.card,
+      paddingHorizontal: edge,
     },
+    /**
+     * Floating pill rather than a full-width bar pinned to the edge: it reads
+     * as a control sitting above the page instead of a border closing it off,
+     * and the rounded corners match the sheets and cards used everywhere else.
+     */
     bar: {
       flexDirection: 'row',
       alignItems: 'flex-end',
+      backgroundColor: c.surface,
+      borderRadius: radius.xl + 8,
+      borderWidth: StyleSheet.hairlineWidth,
+      borderColor: c.border,
       paddingHorizontal: edge,
       paddingTop: 12,
+      paddingBottom: 10,
       minHeight: 60,
+      ...shadows.floating,
     },
     pair: {
       flex: 1,

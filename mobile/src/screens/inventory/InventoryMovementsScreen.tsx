@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useNavigation } from '@react-navigation/native'
 import { useMemo } from 'react'
 import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Pill } from '../../components/Badge'
@@ -30,40 +28,31 @@ export function InventoryMovementsScreen() {
     queryFn: () => inventoryApi.movements(),
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Stock log"
-      subtitle="In and out movements"
-      subtitleIcon="time-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Stock log",
+    subtitle: "In and out movements",
+    subtitleIcon: 'time-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading movements…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading movements…" variant="list" />
+      </NestedChrome>
     )
   }
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   const movements = data || []
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={movements}
         keyExtractor={(m) => m._id}
@@ -95,7 +84,7 @@ export function InventoryMovementsScreen() {
         }}
         ListEmptyComponent={<EmptyState title="No stock movements yet" />}
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

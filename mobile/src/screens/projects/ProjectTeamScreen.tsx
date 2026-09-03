@@ -1,3 +1,4 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import {
   Alert,
@@ -13,9 +14,6 @@ import { CompositeNavigationProp } from '@react-navigation/native'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
@@ -30,7 +28,7 @@ import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
 import { useAuthStore } from '../../store/authStore'
 import { ROLE_LABELS, capabilitiesForUser } from '../../utils/roles'
-import { goBackOrHome } from '../../navigation/openProject'
+import { openConversationFromTabs, smartGoBack } from '../../navigation/openProject'
 import type { Role } from '../../types/models'
 import type { ProjectStackParamList, RootTabParamList } from '../../navigation/types'
 
@@ -81,10 +79,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
   const openAdd = () => setPickerOpen(true)
 
   const openConversation = (userId: string, userName: string) => {
-    tabNav.navigate('Inbox', {
-      screen: 'Conversation',
-      params: { userId, userName },
-    })
+    openConversationFromTabs(tabNav, userId, userName)
   }
 
   const confirmRemove = (userId: string, name: string) => {
@@ -98,37 +93,30 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
     ])
   }
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Team"
-        subtitle={projectName || 'Project team'}
-        subtitleIcon="people-outline"
-        onBack={() => goBackOrHome(navigation, route)}
-        right={
-          caps.manageProjects ? (
+  const chromeProps = {
+    title: "Team",
+    subtitle: projectName || 'Project team',
+    subtitleIcon: 'people-outline' as const,
+    onBack: () => smartGoBack(navigation, route),
+    right: (
+      caps.manageProjects ? (
             <IconButton icon="person-add-outline" label="Add member" tone="ghost" onPress={openAdd} />
           ) : null
-        }
-      />
-    </>
-  )
+    ),
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading team…" variant="rows" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading team…" variant="rows" />
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
@@ -137,8 +125,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
   const candidates = (users.data || []).filter((u) => !memberIds.has(u._id))
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={members}
         keyExtractor={(m) => m.user._id}
@@ -233,7 +220,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
           </Pressable>
         </Pressable>
       </Modal>
-    </Screen>
+    </NestedChrome>
   )
 }
 

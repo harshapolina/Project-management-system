@@ -1,5 +1,5 @@
 import { useMemo } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
@@ -10,11 +10,13 @@ export function StatCard({
   value,
   tone = 'default',
   icon,
+  onPress,
 }: {
   label: string
   value: string | number
   tone?: 'default' | 'danger' | 'success' | 'warning'
   icon?: keyof typeof Ionicons.glyphMap
+  onPress?: () => void
 }) {
   const colors = useColors()
   const shadows = useShadows()
@@ -36,8 +38,8 @@ export function StatCard({
     warning: colors.warningSoft,
   }[tone]
 
-  return (
-    <View style={styles.card}>
+  const body = (
+    <>
       {icon ? (
         <View style={[styles.iconWell, { backgroundColor: toneSoft }]}>
           <Ionicons name={icon} size={16} color={toneColor} />
@@ -54,8 +56,23 @@ export function StatCard({
       <Text style={styles.label} numberOfLines={2}>
         {label}
       </Text>
-    </View>
+    </>
   )
+
+  if (onPress) {
+    return (
+      <Pressable
+        onPress={onPress}
+        accessibilityRole="button"
+        accessibilityLabel={label}
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }]}
+      >
+        {body}
+      </Pressable>
+    )
+  }
+
+  return <View style={styles.card}>{body}</View>
 }
 
 function createStyles(
