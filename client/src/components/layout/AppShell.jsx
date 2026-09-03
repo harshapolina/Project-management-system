@@ -32,12 +32,11 @@ import {
   Moon,
   Sun,
   ShieldCheck,
-  BookOpen,
 } from 'lucide-react'
 import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { useUiStore } from '../../store/uiStore'
 import { toast } from '../ui'
-import { cn, onColor } from '../../lib/utils'
+import { cn } from '../../lib/utils'
 import { capabilitiesForUser, canInviteUsers } from '../../lib/roles'
 import {
   formatTrackedSeconds,
@@ -57,7 +56,6 @@ import {
   CreateProjectModal,
 } from '../CreateModals'
 import { LiveNotificationCenter } from '../notifications/LiveNotificationCenter'
-import { TenantNotice } from './TenantNotice'
 import { ComposeEmailModal } from '../ComposeEmailModal'
 import { syncSocketAuth, disconnectSocket } from '../../lib/socket'
 
@@ -402,22 +400,11 @@ export function AppShell({ children }) {
               )}
               title={brandLabel}
             >
-              {/*
-                A logo is usually a transparent PNG, so whatever sits behind it
-                shows through. Painting the app's accent green there tinted every
-                company's mark; the backdrop is now the company's own brand
-                colour, falling back to a neutral surface rather than inventing
-                one. The lettered fallback keeps the accent, since that mark is
-                ours to colour.
-              */}
               <div
                 className={cn(
-                  'flex shrink-0 items-center justify-center overflow-hidden rounded-[10px]',
+                  'flex shrink-0 items-center justify-center overflow-hidden rounded-[10px] bg-transparent',
                   collapsed ? 'h-9 w-9' : 'h-11 w-auto max-w-[160px]',
-                  !tenant?.brandColor &&
-                    (tenant?.logoUrl ? 'bg-transparent' : 'bg-accent'),
                 )}
-                style={tenant?.brandColor ? { backgroundColor: tenant.brandColor } : undefined}
               >
                 {tenant?.logoUrl ? (
                   <img
@@ -429,12 +416,9 @@ export function AppShell({ children }) {
                     )}
                   />
                 ) : (
-                  <span
-                    className="flex h-9 w-9 items-center justify-center text-[13px] font-bold"
-                    style={{ color: tenant?.brandColor ? onColor(tenant.brandColor) : '#171717' }}
-                  >
+                  <div className="flex h-9 w-9 items-center justify-center rounded-[8px] bg-accent text-[13px] font-bold text-[#171717]">
                     {brandLabel.charAt(0).toUpperCase()}
-                  </span>
+                  </div>
                 )}
               </div>
             </div>
@@ -694,18 +678,6 @@ export function AppShell({ children }) {
                     <Settings className="h-4 w-4" />
                     Settings
                   </button>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
-                    onClick={() => {
-                      setProfileMenuOpen(false)
-                      navigate('/docs')
-                    }}
-                  >
-                    <BookOpen className="h-4 w-4" />
-                    Handbook
-                  </button>
                   <div className="my-1 border-t border-border" />
                   <button
                     type="button"
@@ -725,8 +697,6 @@ export function AppShell({ children }) {
             </div>
           </div>
         </header>
-
-        <TenantNotice />
 
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-y-auto pb-[calc(3.75rem+env(safe-area-inset-bottom))] print:overflow-visible print:pb-0 lg:pb-0">
           {children}

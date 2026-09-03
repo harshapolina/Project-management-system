@@ -15,9 +15,7 @@ import {
   UserRound,
 } from 'lucide-react'
 import { api, useAuthStore } from '../lib/api'
-import { Avatar, toast, Tabs, SearchField, Button } from '../components/ui'
-import { PageHeader } from '../components/layout/PageHeader'
-import { PageLayout } from '../components/layout/PageLayout'
+import { Avatar, toast } from '../components/ui'
 import { cn } from '../lib/utils'
 
 const TABS = [
@@ -128,46 +126,78 @@ export function AssignedCommentsPage() {
   const hasActiveFilters = showResolved || days !== '90' || !!q
 
   return (
-    <PageLayout className="flex h-full min-h-0 flex-col">
-      <PageHeader title="Assigned Comments" />
-      <Tabs
-        tabs={TABS.map((t) => ({ value: t.id, label: t.label }))}
-        value={scope}
-        onChange={setScope}
-        variant="underline"
-        className="mb-0"
-      />
+    <div className="flex h-full min-h-0 flex-col bg-[#121214]">
+      <div className="shrink-0 border-b border-[#2e2e32] px-6 pb-0 pt-5">
+        <motion.h1
+          initial={{ opacity: 0, y: 6 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.28 }}
+          className="text-[22px] font-semibold tracking-tight text-white"
+        >
+          Assigned Comments
+        </motion.h1>
 
-      <div className="flex shrink-0 flex-wrap items-center gap-1.5 border-b border-border py-2">
-        <Button variant="ghost" size="pill" type="button" className="text-secondary">
+        <div className="mt-4 flex items-center gap-1">
+          {TABS.map((t) => (
+            <button
+              key={t.id}
+              type="button"
+              onClick={() => setScope(t.id)}
+              className={cn(
+                'relative px-3 pb-3 text-[13px] font-medium transition-colors',
+                scope === t.id
+                  ? 'text-white'
+                  : 'text-[#8b8b90] hover:text-white',
+              )}
+            >
+              {t.label}
+              {scope === t.id && (
+                <motion.span
+                  layoutId="assigned-tab"
+                  className="absolute inset-x-2 bottom-0 h-[2px] rounded-full bg-surface"
+                />
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="flex h-10 shrink-0 items-center gap-1.5 border-b border-[#2e2e32] px-4">
+        <button
+          type="button"
+          className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[#8b8b90] hover:bg-[#1c1c1e] hover:text-white"
+        >
           <Filter className="h-3.5 w-3.5" />
           Filter
-        </Button>
+        </button>
 
-        <Button
-          variant={showResolved ? 'secondary' : 'ghost'}
-          size="pill"
+        <button
           type="button"
           onClick={toggleResolved}
+          className={cn(
+            'flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] transition-colors',
+            showResolved
+              ? 'bg-[#252528] text-white'
+              : 'text-[#8b8b90] hover:bg-[#1c1c1e] hover:text-white',
+          )}
         >
           {showResolved ? (
-            <CheckCircle2 className="h-3.5 w-3.5 text-status-completed" />
+            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-400" />
           ) : (
             <Circle className="h-3.5 w-3.5" />
           )}
           Resolved
-        </Button>
+        </button>
 
         <div className="relative">
-          <Button
-            variant="ghost"
-            size="pill"
+          <button
             type="button"
             onClick={() => setDaysOpen((v) => !v)}
+            className="flex h-7 items-center gap-1.5 rounded-md px-2 text-[12px] text-[#8b8b90] hover:bg-[#1c1c1e] hover:text-white"
           >
             <Calendar className="h-3.5 w-3.5" />
             {dayLabel}
-          </Button>
+          </button>
           {daysOpen && (
             <>
               <button
@@ -176,7 +206,7 @@ export function AssignedCommentsPage() {
                 aria-label="Close"
                 onClick={() => setDaysOpen(false)}
               />
-              <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-border bg-surface py-1 shadow-xl">
+              <div className="absolute left-0 top-full z-20 mt-1 min-w-[160px] overflow-hidden rounded-lg border border-[#2e2e32] bg-[#1c1c1e] py-1 shadow-xl">
                 {DAY_OPTIONS.map((opt) => (
                   <button
                     key={opt.value}
@@ -185,8 +215,8 @@ export function AssignedCommentsPage() {
                     className={cn(
                       'flex w-full px-3 py-1.5 text-left text-[12px]',
                       days === opt.value
-                        ? 'bg-active text-primary'
-                        : 'text-secondary hover:bg-active',
+                        ? 'bg-[#252528] text-white'
+                        : 'text-[#c5c5c8] hover:bg-[#252528]',
                     )}
                   >
                     {opt.label}
@@ -197,8 +227,9 @@ export function AssignedCommentsPage() {
           )}
         </div>
 
-        <div className="ml-auto w-[220px]">
-          <SearchField
+        <div className="ml-auto flex h-7 w-[200px] items-center gap-1.5 rounded-md border border-[#2e2e32] bg-[#1c1c1e] px-2 focus-within:border-[#3a3a3e]">
+          <Search className="h-3.5 w-3.5 shrink-0 text-[#6b6b70]" />
+          <input
             value={searchDraft}
             onChange={(e) => setSearchDraft(e.target.value)}
             onKeyDown={(e) => {
@@ -208,7 +239,7 @@ export function AssignedCommentsPage() {
               if (searchDraft !== q) applySearch(searchDraft)
             }}
             placeholder="Search"
-            className="h-8 text-[12px]"
+            className="w-full bg-transparent text-[12px] outline-none placeholder:text-[#6b6b70]"
           />
         </div>
       </div>
@@ -219,7 +250,7 @@ export function AssignedCommentsPage() {
             {[1, 2, 3].map((i) => (
               <div
                 key={i}
-                className="h-[88px] animate-pulse rounded-lg bg-surface-raised"
+                className="h-[88px] animate-pulse rounded-lg bg-[#1c1c1e]"
               />
             ))}
           </div>
@@ -231,7 +262,7 @@ export function AssignedCommentsPage() {
             meName={me?.name?.split(' ')[0]}
           />
         ) : (
-          <ul className="divide-y divide-border">
+          <ul className="divide-y divide-[#2e2e32]/70">
             <AnimatePresence initial={false}>
               {comments.map((c, i) => {
                 const task = c.taskId
@@ -256,7 +287,7 @@ export function AssignedCommentsPage() {
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.22, delay: Math.min(i * 0.03, 0.2) }}
                     className={cn(
-                      'group relative flex gap-3 px-2 py-4 transition-colors hover:bg-surface-raised',
+                      'group relative flex gap-3 px-5 py-4 transition-colors hover:bg-[#161618]',
                       c.resolved && 'opacity-60',
                       isFetching && 'opacity-80',
                     )}
@@ -268,16 +299,16 @@ export function AssignedCommentsPage() {
                     />
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[12px]">
-                        <span className="font-medium text-primary">
+                        <span className="font-medium text-white">
                           {c.author?.name || 'Someone'}
                         </span>
                         {c.assignedTo && (
-                          <span className="inline-flex items-center gap-1 rounded bg-active px-1.5 py-0.5 text-[11px] text-secondary">
+                          <span className="inline-flex items-center gap-1 rounded bg-[#252528] px-1.5 py-0.5 text-[11px] text-[#8b8b90]">
                             <AtSign className="h-3 w-3 text-[#7c9cff]" />
                             {c.assignedTo.name}
                           </span>
                         )}
-                        <span className="text-muted">
+                        <span className="text-[#6b6b70]">
                           {c.createdAt
                             ? formatDistanceToNow(new Date(c.createdAt), {
                                 addSuffix: true,
@@ -291,16 +322,16 @@ export function AssignedCommentsPage() {
                         )}
                       </div>
 
-                      <p className="mt-1.5 text-[13px] leading-relaxed text-primary">
+                      <p className="mt-1.5 text-[13px] leading-relaxed text-[#d4d4d8]">
                         {highlightMentions(c.body)}
                       </p>
 
                       <Link
                         to={href}
-                        className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-md border border-transparent px-1.5 py-1 text-[12px] text-secondary transition-colors hover:border-border hover:bg-surface-raised hover:text-primary"
+                        className="mt-2 inline-flex max-w-full items-center gap-1.5 rounded-md border border-transparent px-1.5 py-1 text-[12px] text-[#8b8b90] transition-colors hover:border-[#2e2e32] hover:bg-[#1c1c1e] hover:text-white"
                       >
                         <MessageSquare className="h-3 w-3 shrink-0 opacity-70" />
-                        <span className="truncate font-medium text-primary">
+                        <span className="truncate font-medium text-[#c5c5c8]">
                           {task?.title || 'Task'}
                         </span>
                         {projectName && (
@@ -324,8 +355,8 @@ export function AssignedCommentsPage() {
                       className={cn(
                         'mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md opacity-0 transition-all group-hover:opacity-100',
                         c.resolved
-                          ? 'text-status-completed hover:bg-active'
-                          : 'text-secondary hover:bg-active hover:text-primary',
+                          ? 'text-emerald-400 hover:bg-[#252528]'
+                          : 'text-[#8b8b90] hover:bg-[#252528] hover:text-white',
                       )}
                     >
                       <CheckCircle2 className="h-4 w-4" />
@@ -337,7 +368,7 @@ export function AssignedCommentsPage() {
           </ul>
         )}
       </div>
-    </PageLayout>
+    </div>
   )
 }
 
@@ -350,12 +381,12 @@ function EmptyState({ hasFilters, onClear, scope, meName }) {
       className="flex h-full min-h-[360px] flex-col items-center justify-center px-6 text-center"
     >
       <div className="relative mb-5 flex h-16 w-16 items-center justify-center">
-        <div className="absolute inset-0 rounded-full bg-surface-raised" />
-        <div className="absolute inset-2 rounded-full border border-border" />
-        <UserRound className="relative h-7 w-7 text-muted" strokeWidth={1.5} />
+        <div className="absolute inset-0 rounded-full bg-[#1c1c1e]" />
+        <div className="absolute inset-2 rounded-full border border-[#2e2e32]" />
+        <UserRound className="relative h-7 w-7 text-[#6b6b70]" strokeWidth={1.5} />
       </div>
-      <p className="text-[15px] font-medium text-primary">No results found</p>
-      <p className="mt-1.5 max-w-[320px] text-[13px] leading-relaxed text-muted">
+      <p className="text-[15px] font-medium text-[#c5c5c8]">No results found</p>
+      <p className="mt-1.5 max-w-[320px] text-[13px] leading-relaxed text-[#6b6b70]">
         {hasFilters
           ? 'Try clearing filters or widening the date range.'
           : scope === 'by_me'
@@ -366,7 +397,7 @@ function EmptyState({ hasFilters, onClear, scope, meName }) {
         <button
           type="button"
           onClick={onClear}
-          className="mt-4 rounded-md border border-border bg-surface px-3 py-1.5 text-[12px] font-medium text-primary hover:bg-active"
+          className="mt-4 rounded-md border border-[#2e2e32] bg-[#1c1c1e] px-3 py-1.5 text-[12px] font-medium text-white hover:bg-[#252528]"
         >
           Clear filters
         </button>

@@ -47,7 +47,7 @@ const LOG_FILTERS = [
 ]
 
 const FIELD =
-  'h-10 rounded-xl border-black/[0.08] bg-surface focus:border-[#3ecf8e]/55 focus:bg-white'
+  'h-10 rounded-xl border-black/[0.08] bg-[#fbfbfd] focus:border-[#3ecf8e]/55 focus:bg-white'
 
 const emptyItemForm = {
   name: '',
@@ -276,13 +276,13 @@ function InventoryHub() {
                     value={q}
                     onChange={(e) => setQ(e.target.value)}
                     placeholder="Search name, SKU…"
-                    className="h-9 w-[200px] rounded-full border-0 bg-surface-raised pl-8 pr-3 text-[12px] outline-none border border-border shadow-[var(--shadow-panel)] placeholder:text-muted focus:bg-white focus:ring-[#3ecf8e]/40"
+                    className="h-9 w-[200px] rounded-full border-0 bg-[#f5f5f7] pl-8 pr-3 text-[12px] outline-none ring-1 ring-black/[0.04] placeholder:text-[#86868b] focus:bg-white focus:ring-[#3ecf8e]/40"
                   />
                 </div>
                 <select
                   value={category}
                   onChange={(e) => setCategory(e.target.value)}
-                  className="h-9 max-w-[140px] rounded-full border-0 bg-surface-raised px-3 text-[12px] font-medium text-secondary outline-none border border-border shadow-[var(--shadow-panel)]"
+                  className="h-9 max-w-[140px] rounded-full border-0 bg-[#f5f5f7] px-3 text-[12px] font-medium text-secondary outline-none ring-1 ring-black/[0.04]"
                 >
                   {categories.map((c) => (
                     <option key={c} value={c}>
@@ -299,7 +299,7 @@ function InventoryHub() {
                   value={logQ}
                   onChange={(e) => setLogQ(e.target.value)}
                   placeholder="Search activity…"
-                  className="h-9 w-[200px] rounded-full border-0 bg-surface-raised pl-8 pr-3 text-[12px] outline-none border border-border shadow-[var(--shadow-panel)] placeholder:text-muted focus:bg-white focus:ring-[#3ecf8e]/40"
+                  className="h-9 w-[200px] rounded-full border-0 bg-[#f5f5f7] pl-8 pr-3 text-[12px] outline-none ring-1 ring-black/[0.04] placeholder:text-[#86868b] focus:bg-white focus:ring-[#3ecf8e]/40"
                 />
               </div>
             )}
@@ -378,7 +378,7 @@ function InventoryHub() {
                 <button
                   type="button"
                   onClick={() => openMove(item, 'in')}
-                  className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0d7a4f] border border-border transition hover:bg-emerald-50"
+                  className="shrink-0 rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-[#0d7a4f] ring-1 ring-black/[0.06] transition hover:bg-emerald-50"
                 >
                   Receive
                 </button>
@@ -401,7 +401,7 @@ function InventoryHub() {
               Loading stock…
             </p>
           ) : filteredItems.length === 0 ? (
-            <div className="rounded-2xl bg-white py-4 border border-border shadow-[var(--shadow-panel)]">
+            <div className="rounded-2xl bg-white py-4 ring-1 ring-black/[0.04]">
               <EmptyState
                 icon={Package}
                 title={items.length === 0 ? 'No inventory yet' : 'No matches'}
@@ -422,13 +422,13 @@ function InventoryHub() {
               />
             </div>
           ) : (
-            <ul className="overflow-hidden rounded-2xl bg-white border border-border divide-y divide-black/[0.04]">
+            <ul className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05] divide-y divide-black/[0.04]">
               {filteredItems.map((item) => (
                 <li
                   key={item._id}
                   className="group flex flex-col gap-3 px-4 py-3.5 sm:flex-row sm:items-center sm:px-5"
                 >
-                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-[#1d1d1f]">
+                  <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#f5f5f7] text-[#1d1d1f]">
                     <Package className="h-4 w-4" />
                   </span>
                   <div className="min-w-0 flex-1">
@@ -471,7 +471,7 @@ function InventoryHub() {
                     <button
                       type="button"
                       onClick={() => openMove(item, 'out')}
-                      className="inline-flex h-8 items-center gap-1 rounded-full bg-surface-raised px-3 text-[11px] font-semibold text-[#1d1d1f] transition hover:bg-[#ebebed]"
+                      className="inline-flex h-8 items-center gap-1 rounded-full bg-[#f5f5f7] px-3 text-[11px] font-semibold text-[#1d1d1f] transition hover:bg-[#ebebed]"
                     >
                       <ArrowUpRight className="h-3.5 w-3.5" />
                       Out
@@ -479,7 +479,7 @@ function InventoryHub() {
                     <button
                       type="button"
                       onClick={() => openMove(item, 'adjust')}
-                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6e6e73] transition hover:bg-surface-raised hover:text-[#1d1d1f]"
+                      className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
                       title="Set exact qty"
                     >
                       <SlidersHorizontal className="h-3.5 w-3.5" />
@@ -505,7 +505,7 @@ function InventoryHub() {
               Loading activity…
             </p>
           ) : filteredMovements.length === 0 ? (
-            <div className="rounded-2xl bg-white py-4 border border-border shadow-[var(--shadow-panel)]">
+            <div className="rounded-2xl bg-white py-4 ring-1 ring-black/[0.04]">
               <EmptyState
                 icon={History}
                 title="No stock activity yet"
@@ -515,7 +515,7 @@ function InventoryHub() {
               />
             </div>
           ) : (
-            <ul className="overflow-hidden rounded-2xl bg-white border border-border divide-y divide-black/[0.04]">
+            <ul className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05] divide-y divide-black/[0.04]">
               {filteredMovements.map((m) => {
                 const meta = TYPE_META[m.type] || TYPE_META.adjust
                 const Icon = meta.icon
@@ -713,7 +713,7 @@ function InventoryHub() {
           }}
         >
           {moveItem && (
-            <p className="rounded-xl bg-surface-raised px-3 py-2.5 text-[12px] text-[#6e6e73]">
+            <p className="rounded-xl bg-[#f5f5f7] px-3 py-2.5 text-[12px] text-[#6e6e73]">
               On hand{' '}
               <span className="font-semibold text-[#1d1d1f]">
                 {moveItem.quantity} {moveItem.unit}
@@ -810,13 +810,13 @@ const TYPE_META = {
 
 function Kpi({ icon: Icon, label, value, hint, tone = 'neutral' }) {
   const tones = {
-    neutral: 'text-[#1d1d1f] bg-surface-raised',
+    neutral: 'text-[#1d1d1f] bg-[#f5f5f7]',
     amber: 'text-amber-800 bg-amber-50',
     emerald: 'text-emerald-800 bg-emerald-50',
     red: 'text-red-700 bg-red-50',
   }
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 border border-border shadow-[var(--shadow-panel)] transition duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+    <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/[0.04] transition duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
           {label}
