@@ -1,3 +1,5 @@
+import { isAfter, startOfDay } from 'date-fns'
+
 /** Single source of truth for task status + priority visuals */
 
 export const TASK_STATUS_ORDER = ['todo', 'in_progress', 'review', 'done']
@@ -60,6 +62,23 @@ export function getTaskStatus(value) {
   return (
     TASK_STATUSES.find((s) => s.value === value) || TASK_STATUSES[0]
   )
+}
+
+/** Due after today (calendar day). Used to park scheduled work in Later. */
+export function isLaterDue(dueDate) {
+  if (!dueDate) return false
+  return isAfter(startOfDay(new Date(dueDate)), startOfDay(new Date()))
+}
+
+/** Open the native date picker on click (opacity-0 inputs ignore mouse otherwise). */
+export function openNativeDatePicker(input) {
+  if (!input || input.disabled) return
+  input.focus({ preventScroll: true })
+  try {
+    if (typeof input.showPicker === 'function') input.showPicker()
+  } catch {
+    /* ignore — older browsers, or picker already open */
+  }
 }
 
 /** Advance one step: Not started → Working on it → Needs check → Finished → Not started */

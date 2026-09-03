@@ -26,6 +26,7 @@ import { TaskDetailPanel } from '../components/tasks/TaskDetailPanel'
 import { cn } from '../lib/utils'
 import {
   getTaskStatus,
+  isLaterDue,
   nextTaskStatus,
 } from '../lib/taskStatus'
 import {
@@ -61,6 +62,7 @@ const BOARD_COLUMNS = [
 const FILTER_PILLS = [
   { id: 'assigned', label: 'Assigned' },
   { id: 'today', label: 'Today' },
+  { id: 'later', label: 'Later' },
   { id: 'personal', label: 'Personal' },
   { id: 'history', label: 'Done' },
   { id: 'all', label: 'Overview' },
@@ -86,6 +88,7 @@ export function HomePage() {
     'all',
     'assigned',
     'today',
+    'later',
     'personal',
     'history',
   ].includes(rawView)

@@ -5,7 +5,7 @@ import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.
 import '../models/index.js'
 import { Task } from '../models/Task.js'
 import { ActivityLog, Notification, Comment } from '../models/Activity.js'
-import { startOfDay, endOfDay, addDays } from './dateHelpers.js'
+import { startOfDay, endOfDay } from './dateHelpers.js'
 
 const router = express.Router()
 
@@ -17,7 +17,6 @@ router.get(
     const now = new Date()
     const todayStart = startOfDay(now)
     const todayEnd = endOfDay(now)
-    const upcomingEnd = endOfDay(addDays(now, 14))
 
     const populateTask = [
       { path: 'projectId', select: 'name coverImage' },
@@ -135,7 +134,7 @@ router.get(
       const due = new Date(t.dueDate)
       if (due >= todayStart && due <= todayEnd) today.push(t)
       else if (due < todayStart) overdue.push(t)
-      else if (due <= upcomingEnd) next.push(t)
+      else next.push(t)
     }
 
     const agenda = [...today, ...overdue, ...next]
