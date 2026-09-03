@@ -5,11 +5,13 @@ import { View } from 'react-native'
 import { AuthNavigator } from './AuthNavigator'
 import { AppNavigator } from './AppNavigator'
 import { OnboardingScreen } from '../screens/OnboardingScreen'
+import { IntroTourScreen } from '../screens/IntroTourScreen'
 import { ForceChangePasswordScreen } from '../screens/ForceChangePasswordScreen'
 import { SplashScreen, SPLASH_BG } from '../components/SplashScreen'
 import { useColors, useThemeMode } from '../theme/useColors'
 import { useUiStore } from '../store/uiStore'
 import { useAuthStore } from '../store/authStore'
+import { useIntroStore } from '../store/introStore'
 import { useSessionRestore } from '../hooks/useSession'
 import { TenantLockScreen, TenantNoticeBanner } from '../components/TenantNotice'
 
@@ -19,13 +21,20 @@ export function RootNavigator() {
   const tenant = useAuthStore((s) => s.tenant)
   const authHydrated = useAuthStore((s) => s.hasHydrated)
   const uiHydrated = useUiStore((s) => s.hasHydrated)
+  const hasSeenIntro = useIntroStore((s) => s.hasSeenIntro)
+  const introHydrated = useIntroStore((s) => s.hasHydrated)
   const { isRestoring } = useSessionRestore()
   const colors = useColors()
   const mode = useThemeMode()
   const [splashDone, setSplashDone] = useState(false)
+  const [tourDone, setTourDone] = useState(false)
 
-  const bootReady = authHydrated && uiHydrated && !isRestoring
+  const bootReady = authHydrated && uiHydrated && introHydrated && !isRestoring
   const showSplash = !splashDone
+  const isAuthedEarly = !!user && !!accessToken
+  // First-launch tour only — never shown again once seen, and skipped
+  // entirely for anyone who's already signed in (e.g. reopening the app).
+  const showTour = !showSplash && bootReady && introHydrated && !hasSeenIntro && !isAuthedEarly && !tourDone
 
   const navTheme = useMemo(
     () => ({
@@ -46,9 +55,11 @@ export function RootNavigator() {
   const locked = isAuthed && !!tenant?.notice?.blocking
 
   return (
-    <View style={{ flex: 1, backgroundColor: showSplash ? SPLASH_BG : colors.canvas }}>
+    <View style={{ flex: 1, backgroundColor: showSplash || showTour ? SPLASH_BG : colors.canvas }}>
       {showSplash ? (
         <SplashScreen hold={!bootReady} onFinished={() => setSplashDone(true)} />
+      ) : showTour ? (
+        <IntroTourScreen onDone={() => setTourDone(true)} />
       ) : (
         <NavigationContainer theme={navTheme}>
           <StatusBar style={mode === 'dark' ? 'light' : 'dark'} />
