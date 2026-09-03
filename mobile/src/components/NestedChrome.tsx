@@ -147,7 +147,14 @@ function layoutChromeBody(children: ReactNode): ReactNode {
     return child
   })
 
-  return [...laid, ...overlays]
+  // This array lands in an expression slot, so React needs a key on every
+  // element or it warns once per chrome child. Order is the caller's JSX
+  // order, so the index is stable.
+  return [...laid, ...overlays].map((child, i) =>
+    isValidElement(child) && child.key == null
+      ? cloneElement(child, { key: `chrome-${i}` })
+      : child,
+  )
 }
 
 function useAutoBack(showBack: boolean | undefined, onBack?: () => void) {
