@@ -183,36 +183,36 @@ export function GlobalSearchModal({ open, onClose }) {
           <motion.div
             role="dialog"
             aria-modal="true"
-            className="relative flex max-h-[70vh] w-full max-w-[560px] flex-col overflow-hidden rounded-[var(--radius-xl)] border border-border bg-surface shadow-[0_24px_70px_rgba(0,0,0,0.25)]"
+            className="relative flex max-h-[70vh] w-full max-w-[560px] flex-col overflow-hidden rounded-2xl border border-[#2e2e32] bg-[#1c1c1e] shadow-[0_24px_70px_rgba(0,0,0,0.55)]"
             initial={{ opacity: 0, y: 12, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 8, scale: 0.98 }}
             transition={{ duration: 0.16 }}
           >
-            <div className="flex shrink-0 items-center gap-2.5 border-b border-border px-4 py-3">
-              <Search className="h-4 w-4 shrink-0 text-secondary" />
+            <div className="flex shrink-0 items-center gap-2.5 border-b border-[#2e2e32] px-4 py-3">
+              <Search className="h-4 w-4 shrink-0 text-[#8b8b90]" />
               <input
                 ref={inputRef}
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onInputKeyDown}
                 placeholder="Search tasks, projects, people…"
-                className="h-6 w-full min-w-0 flex-1 bg-transparent text-[14px] text-primary outline-none placeholder:text-muted"
+                className="h-6 w-full min-w-0 flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[#6b6b70]"
               />
-              <kbd className="shrink-0 rounded border border-border bg-canvas px-1.5 py-0.5 text-[10px] text-muted">
+              <kbd className="shrink-0 rounded border border-[#2e2e32] bg-[#121214] px-1.5 py-0.5 text-[10px] text-[#6b6b70]">
                 Esc
               </kbd>
             </div>
 
             <div className="flex-1 overflow-y-auto p-2">
               {!q && (
-                <p className="px-3 py-8 text-center text-[13px] text-muted">
+                <p className="px-3 py-8 text-center text-[13px] text-[#6b6b70]">
                   Search across tasks, projects and people.
                 </p>
               )}
 
               {q && flatResults.length === 0 && (
-                <p className="px-3 py-8 text-center text-[13px] text-muted">
+                <p className="px-3 py-8 text-center text-[13px] text-[#6b6b70]">
                   No results for “{query}”.
                 </p>
               )}
@@ -292,7 +292,7 @@ export function GlobalSearchModal({ open, onClose }) {
 function ResultGroup({ label, children }) {
   return (
     <div className="mb-1.5">
-      <p className="px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-muted">
+      <p className="px-2.5 py-1 text-[10.5px] font-semibold uppercase tracking-wide text-[#6b6b70]">
         {label}
       </p>
       <div className="space-y-0.5">{children}</div>
@@ -308,13 +308,13 @@ function ResultRow({ icon: Icon, title, subtitle, active, onClick, onMouseEnter 
       onMouseEnter={onMouseEnter}
       className={cn(
         'flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left transition-colors',
-        active ? 'bg-[#2a2a2e] text-primary' : 'text-secondary hover:bg-active',
+        active ? 'bg-[#2a2a2e] text-white' : 'text-[#c5c5c8] hover:bg-[#252528]',
       )}
     >
-      <Icon className="h-4 w-4 shrink-0 text-secondary" />
+      <Icon className="h-4 w-4 shrink-0 text-[#8b8b90]" />
       <span className="min-w-0 flex-1 truncate text-[13px]">{title}</span>
       {subtitle && (
-        <span className="shrink-0 truncate text-[11px] text-muted">
+        <span className="shrink-0 truncate text-[11px] text-[#6b6b70]">
           {subtitle}
         </span>
       )}
@@ -577,8 +577,8 @@ export function InviteModal({ open, onClose }) {
             Create invite
           </Button>
 
-          <div className="border-t border-border pt-3">
-            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-secondary">
+          <div className="border-t border-[#2e2e32] pt-3">
+            <p className="mb-2 flex items-center gap-1.5 text-[11px] font-medium text-[#8b8b90]">
               <UserPlus className="h-3.5 w-3.5" />
               Workspace members · {users.length}
             </p>
@@ -586,9 +586,9 @@ export function InviteModal({ open, onClose }) {
               {users.map((u) => (
                 <div
                   key={u.id || u._id}
-                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-active"
+                  className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-[#252528]"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-active text-[10px] font-semibold">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[#3a3a3e] text-[10px] font-semibold">
                     {(u.name || '?')
                       .split(' ')
                       .map((n) => n[0])
@@ -597,10 +597,10 @@ export function InviteModal({ open, onClose }) {
                       .toUpperCase()}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-[12.5px] font-medium text-primary">
+                    <p className="truncate text-[12.5px] font-medium text-white">
                       {u.name}
                     </p>
-                    <p className="truncate text-[11px] text-secondary">{u.email}</p>
+                    <p className="truncate text-[11px] text-[#8b8b90]">{u.email}</p>
                   </div>
                 </div>
               ))}
@@ -699,7 +699,7 @@ export function HelpDrawer({ open, onClose }) {
     <Drawer open={open} onClose={onClose} title="Help & shortcuts" width="max-w-sm">
       <div className="space-y-6">
         <div>
-          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-secondary">
+          <p className="mb-2 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-[#8b8b90]">
             <Keyboard className="h-3.5 w-3.5" />
             Keyboard shortcuts
           </p>
@@ -707,14 +707,14 @@ export function HelpDrawer({ open, onClose }) {
             {SHORTCUTS.map((s) => (
               <div
                 key={s.label}
-                className="flex items-center justify-between rounded-lg border border-border bg-canvas px-3 py-2"
+                className="flex items-center justify-between rounded-lg border border-[#2e2e32] bg-[#121214] px-3 py-2"
               >
-                <span className="text-[13px] text-secondary">{s.label}</span>
+                <span className="text-[13px] text-[#c5c5c8]">{s.label}</span>
                 <span className="flex items-center gap-1">
                   {s.keys.map((k) => (
                     <kbd
                       key={k}
-                      className="rounded border border-border bg-surface px-1.5 py-0.5 text-[11px] text-[#e8e8ea]"
+                      className="rounded border border-[#2e2e32] bg-[#1c1c1e] px-1.5 py-0.5 text-[11px] text-[#e8e8ea]"
                     >
                       {k}
                     </kbd>
@@ -726,19 +726,19 @@ export function HelpDrawer({ open, onClose }) {
         </div>
 
         <div>
-          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-secondary">
+          <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-[#8b8b90]">
             Tips
           </p>
           <div className="space-y-2">
             {TIPS.map((tip) => (
               <div
                 key={tip.title}
-                className="flex gap-3 rounded-lg border border-border bg-canvas p-3"
+                className="flex gap-3 rounded-lg border border-[#2e2e32] bg-[#121214] p-3"
               >
                 <tip.icon className="mt-0.5 h-4 w-4 shrink-0 text-[#7B68EE]" />
                 <div className="min-w-0">
-                  <p className="text-[13px] font-medium text-primary">{tip.title}</p>
-                  <p className="mt-0.5 text-[12px] leading-relaxed text-secondary">
+                  <p className="text-[13px] font-medium text-white">{tip.title}</p>
+                  <p className="mt-0.5 text-[12px] leading-relaxed text-[#8b8b90]">
                     {tip.body}
                   </p>
                 </div>
@@ -764,7 +764,7 @@ export function CustomizeSidebarModal({ open, onClose, sidebarSections, onToggle
   return (
     <Modal open={open} onClose={onClose} title="Customize sidebar" size="sm">
       <div className="space-y-1">
-        <p className="mb-2 flex items-center gap-1.5 text-[12px] text-secondary">
+        <p className="mb-2 flex items-center gap-1.5 text-[12px] text-[#8b8b90]">
           <SlidersHorizontal className="h-3.5 w-3.5" />
           Choose which sections appear in your Home sidebar.
         </p>
@@ -775,13 +775,13 @@ export function CustomizeSidebarModal({ open, onClose, sidebarSections, onToggle
               key={opt.key}
               type="button"
               onClick={() => onToggle(opt.key)}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-active"
+              className="flex w-full items-center justify-between rounded-lg px-3 py-2.5 text-left hover:bg-[#252528]"
             >
               <span className="text-[13px] text-[#e8e8ea]">{opt.label}</span>
               <span
                 className={cn(
                   'relative h-5 w-9 shrink-0 rounded-full transition-colors',
-                  checked ? 'bg-[#7B68EE]' : 'bg-active',
+                  checked ? 'bg-[#7B68EE]' : 'bg-[#3a3a3e]',
                 )}
               >
                 <span
