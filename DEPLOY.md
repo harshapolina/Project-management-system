@@ -5,7 +5,7 @@ Both the SPA and the API run on Vercel.
 | | URL |
 |--|-----|
 | Frontend | your client Vercel URL |
-| API | `https://project-management-system-msmw.vercel.app` |
+| API | `https://project-management-backend-nine-tau.vercel.app` |
 
 > **Note:** Vercel is serverless. **Socket.io / live realtime will not work.** Uploads are ephemeral (`/tmp`).
 
@@ -14,13 +14,13 @@ Both the SPA and the API run on Vercel.
 ## 1. API project (already set up)
 
 - **Root Directory:** `server`
-- **URL:** `https://project-management-system-msmw.vercel.app`
+- **URL:** `https://project-management-backend-nine-tau.vercel.app`
 - Env vars: `MONGODB_URI`, `JWT_*`, `CLIENT_URL` (frontend URL), tenant settings, etc.
-- Health: `https://project-management-system-msmw.vercel.app/api/health`
+- Health: `https://project-management-backend-nine-tau.vercel.app/api/health`
 
 `CLIENT_URL` must be your frontend origin, e.g.:
 ```
-https://your-app.vercel.app
+https://pms-cubic.vercel.app
 ```
 
 ---
@@ -38,7 +38,7 @@ https://your-app.vercel.app
 `/api` is proxied to the Vercel API via `client/vercel.json`.
 
 Alternative (no proxy):  
-`VITE_API_URL=https://project-management-system-msmw.vercel.app/api`
+`VITE_API_URL=https://project-management-backend-nine-tau.vercel.app/api`
 
 4. Redeploy the frontend after changing `vercel.json` or env.
 
@@ -60,6 +60,6 @@ Network Access → allow `0.0.0.0/0` (or Vercel IPs).
 
 | | Local | Production |
 |--|--------|------------|
-| App | `http://localhost:5173` | `https://….vercel.app` |
-| API | `http://localhost:5000/api` | `https://project-management-system-msmw.vercel.app/api` |
+| App | `http://localhost:5173` | `https://pms-cubic.vercel.app` |
+| API | `http://localhost:5000/api` | `https://project-management-backend-nine-tau.vercel.app/api` |
 | Socket.io | yes | **no** |

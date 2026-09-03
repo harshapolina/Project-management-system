@@ -2,6 +2,7 @@ import dotenv from 'dotenv'
 import { connectDB } from './config/db.js'
 import { ensureDefaultTenant } from './middleware/tenant.js'
 import { createApp, allowedOrigins } from './app.js'
+import { startDeadlineScheduler } from './lib/deadlineReminders.js'
 
 dotenv.config()
 
@@ -15,6 +16,7 @@ connectDB()
     server.listen(PORT, () => {
       console.log(`Cubic API listening on :${PORT}`)
       console.log(`CORS origins: ${allowedOrigins.join(', ')}`)
+      startDeadlineScheduler(app)
     })
   })
   .catch((err) => {

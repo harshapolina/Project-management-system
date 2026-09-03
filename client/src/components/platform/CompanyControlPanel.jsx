@@ -15,7 +15,7 @@ import {
   UserMinus,
   UserPlus,
 } from 'lucide-react'
-import { api, assetUrl } from '../../lib/api'
+import { api, assetUrl, companyLoginUrl } from '../../lib/api'
 import { InviteDetailsModal } from '../layout/GlobalChrome'
 import { Button, Input, Select, StatusChip, toast } from '../ui'
 import { INVITE_ROLE_OPTIONS, ROLE_LABELS } from '../../lib/roles'
@@ -142,11 +142,6 @@ function NoticeComposer({ draft, setDraft }) {
       )}
     </div>
   )
-}
-
-function companyLoginUrl(workspace, portal = 'admin') {
-  const origin = window.location.origin
-  return `${origin}/login?portal=${portal}&tenant=${encodeURIComponent(workspace)}`
 }
 
 function generatePassword() {
@@ -367,6 +362,18 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
         portal: ['admin', 'owner', 'hr'].includes(res.user.role) ? 'admin' : 'staff',
       })
       toast('New password generated', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const deleteUser = useMutation({
+    mutationFn: (userId) =>
+      api(`/platform/tenants/${tenant._id}/users/${userId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (res) => {
+      toast(res.message || 'Person deleted', { type: 'success' })
+      invalidate()
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
@@ -887,6 +894,23 @@ export function CompanyControlPanel({ tenant, expanded, onToggle }) {
                             >
                               <UserMinus className="mr-1 h-3.5 w-3.5" />
                               {u.isActive !== false ? 'Deactivate' : 'Activate'}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="danger"
+                              loading={deleteUser.isPending}
+                              onClick={() => {
+                                if (
+                                  window.confirm(
+                                    `Permanently delete ${u.name} from ${tenant.name}?\n\nThey will lose login access immediately.`,
+                                  )
+                                ) {
+                                  deleteUser.mutate(u.id)
+                                }
+                              }}
+                            >
+                              <Trash2 className="mr-1 h-3.5 w-3.5" />
+                              Delete
                             </Button>
                           </div>
                         </td>

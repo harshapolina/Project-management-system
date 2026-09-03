@@ -3,14 +3,44 @@ import { apiOrigin, useAuthStore } from './api'
 
 let socket = null
 
-/** Prefer the real API host so websockets are not dropped by the Vite proxy. */
+function isLocalHost(url) {
+  try {
+    const host = new URL(url).hostname
+    return host === 'localhost' || host === '127.0.0.1'
+  } catch {
+    return /localhost|127\.0\.0\.1/i.test(String(url || ''))
+  }
+}
+
+/**
+ * Prefer the real API host so websockets are not dropped by the Vite proxy.
+ * Never point production builds at localhost (common misconfigured VITE_API_URL).
+ * Vercel serverless has no Socket.IO — skip connecting there.
+ */
 function socketUrl() {
   const raw = (import.meta.env.VITE_API_URL || '').trim()
+  let url = null
   if (raw && /^https?:\/\//i.test(raw)) {
-    return raw.replace(/\/api\/?$/, '')
+    url = raw.replace(/\/api\/?$/, '')
+  } else if (import.meta.env.DEV) {
+    url = 'http://localhost:5000'
+  } else {
+    url = apiOrigin() || null
   }
-  if (import.meta.env.DEV) return 'http://localhost:5000'
-  return apiOrigin() || undefined
+
+  if (!url) return null
+
+  // Production/preview must never dial the developer's machine.
+  if (!import.meta.env.DEV && isLocalHost(url)) return null
+
+  // Socket.IO is unavailable on Vercel serverless API hosts.
+  try {
+    if (new URL(url).hostname.endsWith('.vercel.app')) return null
+  } catch {
+    /* ignore */
+  }
+
+  return url
 }
 
 function currentToken() {
@@ -20,13 +50,17 @@ function currentToken() {
 /**
  * Singleton Socket.IO client — JWT auth on every connect.
  * Server auto-joins `user:{id}`; never emit join:user with a client-chosen id.
+ * Returns null when realtime is unavailable (Vercel / misconfigured URL).
  */
 export function getSocket() {
   const token = currentToken()
   if (!token) return null
 
+  const url = socketUrl()
+  if (!url) return null
+
   if (!socket) {
-    socket = io(socketUrl(), {
+    socket = io(url, {
       transports: ['websocket', 'polling'],
       withCredentials: true,
       reconnection: true,
@@ -58,6 +92,10 @@ export function getSocket() {
 export function syncSocketAuth() {
   const token = currentToken()
   if (!token) {
+    disconnectSocket()
+    return null
+  }
+  if (!socketUrl()) {
     disconnectSocket()
     return null
   }

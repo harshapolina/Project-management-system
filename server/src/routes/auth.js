@@ -346,7 +346,13 @@ router.post(
       role: z.string().min(2).max(48),
     })
     const data = schema.parse(req.body)
-    const tenantId = req.user.tenantId || req.tenantId
+    // Always attach invites to the workspace currently selected (slug header),
+    // not the inviter's home tenant — otherwise people can land in the wrong
+    // company and disappear from People.
+    const tenantId = req.tenantId || req.user.tenantId
+    if (!tenantId) {
+      throw new AppError('No workspace selected for this invite', 400)
+    }
     const tenant =
       req.tenant ||
       (tenantId ? await Tenant.findById(tenantId) : null)

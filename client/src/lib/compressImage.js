@@ -1,28 +1,34 @@
 /**
- * Long edge, in pixels, that an uploaded photo is capped at.
+ * Whole-site upload compressor — images + PDFs before they leave the browser.
  *
- * A phone camera shot is ~4000px and 3–8MB. Nothing in the app renders an image
- * wider than a tablet, and 2560px still lets someone zoom into a site photo to
- * read a label. Past that we'd be storing detail nobody sees, in a GridFS bucket
- * that shares the Atlas free tier with every other collection.
+ * Images: resize + JPEG/WebP-ish JPEG to cut phone camera dumps from many MB
+ * to a few hundred KB. PDFs: rewrite via pdf-lib (drops unused objects).
+ *
+ * Best-effort: anything that fails returns the original file so uploads never
+ * break because of compression.
  */
-const MAX_EDGE = 2560
 
-/** Visually indistinguishable from the source at any size the app renders. */
-const QUALITY = 0.85
+import { PDFDocument } from 'pdf-lib'
 
-/**
- * Left alone on purpose: re-encoding a GIF drops its animation, and an SVG is
- * vector data that rasterising would make both blurrier and usually larger.
- */
-const SKIP_TYPES = new Set(['image/gif', 'image/svg+xml'])
+/** Long edge cap — plenty for site photos / BOQ refs on a laptop or tablet. */
+const MAX_EDGE = 1920
+
+/** Slightly more aggressive than before — still looks clean in-app. */
+const QUALITY = 0.72
+
+const SKIP_IMAGE_TYPES = new Set(['image/gif', 'image/svg+xml'])
 
 function isCompressibleImage(file) {
   const type = String(file?.type || '').toLowerCase()
-  return type.startsWith('image/') && !SKIP_TYPES.has(type)
+  return type.startsWith('image/') && !SKIP_IMAGE_TYPES.has(type)
 }
 
-/** `plan.png` → `plan.jpg`, since the bytes we upload are now JPEG. */
+function isPdf(file) {
+  const type = String(file?.type || '').toLowerCase()
+  const name = String(file?.name || '').toLowerCase()
+  return type === 'application/pdf' || name.endsWith('.pdf')
+}
+
 function jpegName(name) {
   return String(name || 'image').replace(/\.[^.]+$/, '') + '.jpg'
 }
@@ -33,16 +39,6 @@ function canvasToBlob(canvas, quality) {
   })
 }
 
-/**
- * Shrink an image in the browser before it goes up the wire.
- *
- * Doing this client-side means a slow connection uploads the small file rather
- * than the large one — the transfer is the slow part, not the encode.
- *
- * Best-effort by design: anything unreadable, unsupported, or that decodes to
- * nothing returns the original File. Failing to shrink a file must never mean
- * failing to upload it.
- */
 export async function compressImageFile(file) {
   if (typeof window === 'undefined') return file
   if (!(file instanceof File) && !(file instanceof Blob)) return file
@@ -54,7 +50,6 @@ export async function compressImageFile(file) {
     bitmap = await createImageBitmap(file)
 
     const longEdge = Math.max(bitmap.width, bitmap.height)
-    // Only ever scale down — enlarging adds bytes rather than saving them.
     const scale = longEdge > MAX_EDGE ? MAX_EDGE / longEdge : 1
     const width = Math.round(bitmap.width * scale)
     const height = Math.round(bitmap.height * scale)
@@ -66,16 +61,22 @@ export async function compressImageFile(file) {
 
     const ctx = canvas.getContext('2d')
     if (!ctx) return file
-    // JPEG has no alpha; without this, transparent PNG areas turn black.
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, width, height)
     ctx.drawImage(bitmap, 0, 0, width, height)
 
-    const blob = await canvasToBlob(canvas, QUALITY)
-    // An already-optimised file can grow when re-encoded; keep the smaller one.
-    if (!blob || blob.size >= file.size) return file
+    // Try a couple of qualities and keep the smallest that still beat the
+    // original — large photos shrink a lot; already-small icons often don't.
+    let best = null
+    for (const q of [QUALITY, 0.62, 0.55]) {
+      const blob = await canvasToBlob(canvas, q)
+      if (!blob) continue
+      if (!best || blob.size < best.size) best = blob
+      if (blob.size < file.size * 0.35) break
+    }
+    if (!best || best.size >= file.size) return file
 
-    return new File([blob], jpegName(file.name), {
+    return new File([best], jpegName(file.name), {
       type: 'image/jpeg',
       lastModified: Date.now(),
     })
@@ -87,25 +88,67 @@ export async function compressImageFile(file) {
 }
 
 /**
- * Rebuild a FormData with every image entry compressed.
- *
- * Returns the original instance when nothing changed, so non-image uploads
- * (drawings, BOQ spreadsheets, PDFs) are passed through byte-for-byte rather
- * than round-tripped through a copy.
+ * Rewrite a PDF through pdf-lib. Often trims a bit; never enlarges what we keep.
+ */
+export async function compressPdfFile(file) {
+  if (typeof window === 'undefined') return file
+  if (!(file instanceof File) && !(file instanceof Blob)) return file
+  if (!isPdf(file)) return file
+  // Tiny PDFs aren't worth the CPU; huge ones benefit most.
+  if (file.size < 80_000) return file
+
+  try {
+    const bytes = await file.arrayBuffer()
+    const src = await PDFDocument.load(bytes, { ignoreEncryption: true })
+    const out = await PDFDocument.create()
+    const pages = await out.copyPages(src, src.getPageIndices())
+    for (const page of pages) out.addPage(page)
+    const saved = await out.save({ useObjectStreams: true })
+    if (!saved?.length || saved.length >= file.size) return file
+    const name = String(file.name || 'document.pdf').replace(/\.pdf$/i, '') + '.pdf'
+    return new File([saved], name, {
+      type: 'application/pdf',
+      lastModified: Date.now(),
+    })
+  } catch {
+    return file
+  }
+}
+
+/** Compress any single uploadable File (image or PDF). */
+export async function compressUploadFile(file) {
+  if (!(file instanceof File) && !(file instanceof Blob)) return file
+  if (isCompressibleImage(file)) return compressImageFile(file)
+  if (isPdf(file)) return compressPdfFile(file)
+  return file
+}
+
+/**
+ * Rebuild FormData with every image/PDF entry compressed.
+ * Returns the original instance when nothing changed.
  */
 export async function compressFormDataImages(formData) {
+  return compressFormDataUploads(formData)
+}
+
+export async function compressFormDataUploads(formData) {
   if (typeof FormData === 'undefined' || !(formData instanceof FormData)) {
     return formData
   }
 
   const entries = [...formData.entries()]
-  if (!entries.some(([, value]) => value instanceof File && isCompressibleImage(value))) {
-    return formData
-  }
+  const needsWork = entries.some(
+    ([, value]) =>
+      value instanceof File && (isCompressibleImage(value) || isPdf(value)),
+  )
+  if (!needsWork) return formData
 
   const next = new FormData()
   for (const [key, value] of entries) {
-    next.append(key, value instanceof File ? await compressImageFile(value) : value)
+    next.append(
+      key,
+      value instanceof File ? await compressUploadFile(value) : value,
+    )
   }
   return next
 }

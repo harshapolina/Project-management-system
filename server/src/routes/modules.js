@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import express from 'express'
 import { requireAuth } from '../middleware/auth.js'
 import { asyncHandler, AppError } from '../middleware/errorHandler.js'
-import { tenantFilter, withTenant, assertTenantDoc } from '../middleware/tenant.js'
+import { tenantFilter, withTenant, assertTenantDoc, isCompanyAdminRole } from '../middleware/tenant.js'
 import { upload } from '../middleware/upload.js'
 import { storeFileBuffer } from '../lib/mediaStore.js'
 import {
@@ -64,6 +64,39 @@ const STAGE_DEFS = [
   { key: 'execution', label: 'Execution' },
   { key: 'handover', label: 'QC / Handover' },
 ]
+
+const LEAD_PROJECT_TEMPLATE_TASKS = {
+  residential: [
+    { title: 'Kickoff & brief capture', stage: 'design' },
+    { title: 'Concept moodboards', stage: 'design' },
+    { title: 'Client concept approval', stage: 'design', requiresApproval: true },
+    { title: 'Draft BOQ — Standard', stage: 'planning' },
+    { title: 'Vendor shortlist', stage: 'procurement' },
+    { title: 'Site mobilization', stage: 'execution' },
+    { title: 'Snag walkthrough', stage: 'handover' },
+  ],
+  commercial: [
+    { title: 'Brand & space brief', stage: 'design' },
+    { title: 'Space planning drawings', stage: 'design' },
+    { title: 'Commercial BOQ', stage: 'planning' },
+    { title: 'MEP coordination', stage: 'planning' },
+    { title: 'Fit-out execution', stage: 'execution' },
+    { title: 'Handover pack', stage: 'handover' },
+  ],
+  renovation: [
+    { title: 'Site survey & as-built notes', stage: 'design' },
+    { title: 'Renovation moodboards', stage: 'design' },
+    { title: 'Renovation BOQ', stage: 'planning' },
+    { title: 'Demolition & site prep', stage: 'execution' },
+    { title: 'Fit-out & finishing', stage: 'execution' },
+    { title: 'Snag walkthrough', stage: 'handover' },
+  ],
+  custom: [
+    { title: 'Define project milestones', stage: 'design' },
+    { title: 'Confirm scope with client', stage: 'design', requiresApproval: true },
+    { title: 'Build custom schedule', stage: 'planning' },
+  ],
+}
 
 /** Create a personal follow-up task + task_assigned popup when an enquiry is owned. */
 async function createEnquiryFollowUpTask(req, lead, assigneeId) {
@@ -141,11 +174,24 @@ async function createEnquiryFollowUpTask(req, lead, assigneeId) {
 const LEAD_STAGES = [
   'new_enquiry',
   'site_visit',
+  'mood_board',
   'quotation_sent',
   'negotiation',
-  'won',
-  'lost',
+  'hot',
+  'dead',
+  'won', // legacy → hot
+  'lost', // legacy → dead
 ]
+
+const CLOSED_LEAD_STAGES = ['hot', 'dead', 'won', 'lost']
+const DEAD_LEAD_STAGES = ['dead', 'lost']
+const HOT_LEAD_STAGES = ['hot', 'won']
+
+function normalizeLeadStage(stage) {
+  if (stage === 'won') return 'hot'
+  if (stage === 'lost') return 'dead'
+  return stage
+}
 
 function sanitizeLeadPayload(body, { partial = false } = {}) {
   const out = {}
@@ -168,7 +214,7 @@ function sanitizeLeadPayload(body, { partial = false } = {}) {
     if (!LEAD_STAGES.includes(body.stage)) {
       throw new AppError('Invalid enquiry stage', 400)
     }
-    out.stage = body.stage
+    out.stage = normalizeLeadStage(body.stage)
   }
   if (body.nextFollowUp !== undefined) {
     out.nextFollowUp = body.nextFollowUp ? new Date(body.nextFollowUp) : null
@@ -180,6 +226,95 @@ function sanitizeLeadPayload(body, { partial = false } = {}) {
     out.owner = body.owner === '' || body.owner == null ? null : body.owner
   }
   return out
+}
+
+async function convertLeadToProject(req, lead, { projectType } = {}) {
+  if (lead.convertedProjectId) {
+    return {
+      alreadyConverted: true,
+      project: { _id: lead.convertedProjectId },
+      lead,
+    }
+  }
+  if (DEAD_LEAD_STAGES.includes(lead.stage)) {
+    throw new AppError('Dead enquiries cannot be converted to a project', 400)
+  }
+
+  const allowedTypes = ['residential', 'commercial', 'renovation', 'custom']
+  let type = projectType === 'blank' ? 'custom' : projectType || 'residential'
+  if (!allowedTypes.includes(type)) type = 'residential'
+
+  const ownerId = lead.owner || req.user._id
+  const members = [{ user: req.user._id, role: req.user.role }]
+  if (String(ownerId) !== String(req.user._id)) {
+    members.push({ user: ownerId, role: 'project_manager' })
+  }
+
+  const project = await Project.create(
+    withTenant(req, {
+      name: `${lead.clientName} Project`,
+      clientName: lead.clientName,
+      clientPhone: lead.phone || '',
+      type,
+      status: 'in_progress',
+      currentStage: 'design',
+      stages: STAGE_DEFS.map((s, i) => ({
+        ...s,
+        progress: 0,
+        status: i === 0 ? 'in_progress' : 'not_started',
+      })),
+      coverImage: '',
+      budget: lead.estimatedValue || 0,
+      projectManager: ownerId,
+      members,
+      leadId: lead._id,
+      code: `EPM-${Math.floor(100 + Math.random() * 900)}`,
+    }),
+  )
+
+  const quotation = await Quotation.create(
+    withTenant(req, {
+      projectId: project._id,
+      leadId: lead._id,
+      title: `${lead.clientName} — Quotation`,
+      versionLabel: 'Standard',
+      status: 'draft',
+      items: [],
+      createdBy: req.user._id,
+    }),
+  )
+
+  const template =
+    LEAD_PROJECT_TEMPLATE_TASKS[type] || LEAD_PROJECT_TEMPLATE_TASKS.residential
+  await Task.insertMany(
+    template.map((t) =>
+      withTenant(req, {
+        ...t,
+        projectId: project._id,
+        createdBy: req.user._id,
+        assignee: ownerId,
+        status: 'todo',
+        priority: 'medium',
+        approvalStatus: t.requiresApproval ? 'pending' : 'none',
+      }),
+    ),
+  )
+
+  lead.stage = 'hot'
+  lead.convertedProjectId = project._id
+  await lead.save()
+  await lead.populate('owner', 'name avatar role title')
+
+  await ActivityLog.create(
+    withTenant(req, {
+      projectId: project._id,
+      actor: req.user._id,
+      type: 'lead_converted',
+      message: `${req.user.name} marked lead “${lead.clientName}” Hot — added to Projects`,
+    }),
+  )
+
+  return { alreadyConverted: false, project, quotation, lead }
 }
 
 /* ─── Leads ─── */
@@ -251,6 +386,22 @@ router.patch(
       await createEnquiryFollowUpTask(req, lead, nextOwner)
     }
 
+    // Marking Hot automatically creates a Project in the PMS
+    if (
+      HOT_LEAD_STAGES.includes(lead.stage) &&
+      !lead.convertedProjectId
+    ) {
+      const result = await convertLeadToProject(req, lead, {
+        projectType: req.body.projectType || req.body.type,
+      })
+      return res.json({
+        success: true,
+        lead: result.lead,
+        project: result.project,
+        converted: !result.alreadyConverted,
+      })
+    }
+
     res.json({ success: true, lead })
   }),
 )
@@ -291,71 +442,24 @@ router.post(
     const lead = await Lead.findById(req.params.id)
     assertTenantDoc(lead, req, 'Lead')
 
-    if (lead.convertedProjectId) {
+    const result = await convertLeadToProject(req, lead, {
+      projectType: req.body?.projectType || req.body?.type,
+    })
+
+    if (result.alreadyConverted) {
       return res.json({
         success: true,
-        project: { _id: lead.convertedProjectId },
+        project: result.project,
         alreadyConverted: true,
       })
     }
-    if (lead.stage === 'lost') {
-      throw new AppError('Lost enquiries cannot be converted to a project', 400)
-    }
 
-    const ownerId = lead.owner || req.user._id
-    const members = [{ user: req.user._id, role: req.user.role }]
-    if (String(ownerId) !== String(req.user._id)) {
-      members.push({ user: ownerId, role: 'project_manager' })
-    }
-
-    const project = await Project.create(
-      withTenant(req, {
-        name: `${lead.clientName} Project`,
-        clientName: lead.clientName,
-        type: 'residential',
-        status: 'in_progress',
-        currentStage: 'design',
-        stages: STAGE_DEFS.map((s, i) => ({
-          ...s,
-          progress: 0,
-          status: i === 0 ? 'in_progress' : 'not_started',
-        })),
-        coverImage:
-          'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=1200&q=80',
-        budget: lead.estimatedValue || 0,
-        projectManager: ownerId,
-        members,
-        leadId: lead._id,
-        code: `EPM-${Math.floor(100 + Math.random() * 900)}`,
-      }),
-    )
-
-    const quotation = await Quotation.create(
-      withTenant(req, {
-        projectId: project._id,
-        leadId: lead._id,
-        title: `${lead.clientName} — Quotation`,
-        versionLabel: 'Standard',
-        status: 'draft',
-        items: [],
-        createdBy: req.user._id,
-      }),
-    )
-
-    lead.stage = 'won'
-    lead.convertedProjectId = project._id
-    await lead.save()
-
-    await ActivityLog.create(
-      withTenant(req, {
-        projectId: project._id,
-        actor: req.user._id,
-        type: 'lead_converted',
-        message: `${req.user.name} converted lead “${lead.clientName}” to a project`,
-      }),
-    )
-
-    res.status(201).json({ success: true, project, quotation })
+    res.status(201).json({
+      success: true,
+      project: result.project,
+      quotation: result.quotation,
+      lead: result.lead,
+    })
   }),
 )
 
@@ -560,6 +664,17 @@ router.patch(
     const quotation = await Quotation.findById(req.params.id)
     assertTenantDoc(quotation, req, 'Quotation')
 
+    if (
+      quotation.status === 'approved' &&
+      req.body.status !== 'draft' &&
+      Object.keys(req.body || {}).some((k) => k !== 'status')
+    ) {
+      throw new AppError(
+        'This BOQ is approved and locked. Unlock it first to make changes.',
+        400,
+      )
+    }
+
     const allowed = [
       'title',
       'versionLabel',
@@ -646,6 +761,72 @@ router.patch(
   }),
 )
 
+/**
+ * Unlock an approved BOQ so it can be edited again.
+ * Keeps a frozen archive copy on the same project so History still shows the
+ * approved version that was locked.
+ */
+router.post(
+  '/quotations/:id/unlock',
+  requireAuth,
+  requirePermission('boq'),
+  asyncHandler(async (req, res) => {
+    const quotation = await Quotation.findById(req.params.id)
+    assertTenantDoc(quotation, req, 'Quotation')
+
+    if (quotation.status !== 'approved') {
+      throw new AppError('Only an approved BOQ needs unlocking', 400)
+    }
+
+    const stamp = new Date()
+    const archiveLabel =
+      `${quotation.versionLabel || 'Standard'} · approved ` +
+      stamp.toISOString().slice(0, 10)
+
+    const archive = await Quotation.create(
+      withTenant(req, {
+        projectId: quotation.projectId,
+        leadId: quotation.leadId,
+        title: `${quotation.title} (locked)`,
+        versionLabel: archiveLabel,
+        boqType: quotation.boqType,
+        status: 'approved',
+        items: quotation.items,
+        spaces: quotation.spaces,
+        measurements: quotation.measurements,
+        docMeta: quotation.docMeta,
+        attachments: quotation.attachments,
+        subtotal: quotation.subtotal,
+        chargesPercent: quotation.chargesPercent,
+        chargesLabel: quotation.chargesLabel,
+        gstPercent: quotation.gstPercent,
+        discount: quotation.discount,
+        grandTotal: quotation.grandTotal,
+        createdBy: req.user._id,
+        approvedAt: quotation.approvedAt || stamp,
+        approvalStatus: quotation.approvalStatus || 'approved',
+        approver: quotation.approver,
+        approvalRule: quotation.approvalRule,
+      }),
+    )
+
+    quotation.status = 'draft'
+    quotation.approvedAt = undefined
+    quotation.sentAt = undefined
+    quotation.versionLabel =
+      req.body.versionLabel ||
+      `${quotation.versionLabel || 'Standard'} · revision`
+    await quotation.save()
+
+    res.json({
+      success: true,
+      quotation,
+      archive,
+      message: 'BOQ unlocked. Approved copy kept in history.',
+    })
+  }),
+)
+
 router.delete(
   '/quotations/:id',
   requireAuth,
@@ -696,8 +877,14 @@ router.get(
     if (req.query.projectId) filter.projectId = req.query.projectId
     if (req.query.folder) filter.folder = req.query.folder
     if (req.query.clientVisible === 'true') filter.clientVisible = true
+    if (req.query.approvalStatus) filter.approvalStatus = req.query.approvalStatus
 
-    const files = await ProjectFile.find(filter).sort({ updatedAt: -1 })
+    const files = await ProjectFile.find(filter)
+      .populate('approver', 'name avatar role')
+      .populate('requestedBy', 'name avatar role')
+      .populate('decidedBy', 'name avatar role')
+      .populate('versions.uploadedBy', 'name avatar')
+      .sort({ updatedAt: -1 })
     res.json({ success: true, files })
   }),
 )
@@ -749,6 +936,7 @@ router.post(
           },
         ],
         status: 'draft',
+        approvalStatus: 'none',
       }),
     )
 
@@ -781,7 +969,182 @@ router.post(
     })
     file.currentVersion = next
     file.status = 'draft'
+    file.approvalStatus = 'none'
+    file.approver = null
+    file.approvalRule = null
+    file.requestedBy = null
+    file.requestedAt = undefined
+    file.decidedBy = null
+    file.decidedAt = undefined
+    file.decisionNote = ''
     await file.save()
+    res.json({ success: true, file })
+  }),
+)
+
+/**
+ * Send a drawing/file for sign-off. Routes via Approvals → Drawing / file
+ * rules (or an optional pinned approver). The assigned person gets a live popup.
+ */
+router.post(
+  '/files/:id/request-approval',
+  requireAuth,
+  requirePermission('files.manage'),
+  asyncHandler(async (req, res) => {
+    const file = await ProjectFile.findById(req.params.id)
+    assertTenantDoc(file, req, 'File')
+
+    if (file.approvalStatus === 'pending') {
+      throw new AppError('This file is already waiting for approval', 400)
+    }
+
+    const approvalType = String(req.body.approvalType || 'drawing').trim() || 'drawing'
+    const note = String(req.body.note || '').trim()
+
+    let approverId = null
+    let ruleId = null
+
+    if (req.body.approverUser) {
+      const pinned = await User.findOne(
+        tenantFilter(req, { _id: req.body.approverUser, isActive: { $ne: false } }),
+      ).select('_id name')
+      if (!pinned) throw new AppError('That approver is not in this workspace', 400)
+      approverId = pinned._id
+    } else {
+      const resolved = await resolveApproval(req.tenantId, approvalType, 0)
+      if (!resolved.rule || !resolved.approver) {
+        throw new AppError(
+          'No approval routing for drawings yet. Open Approvals, add a rule under “Drawing / file”, then try again.',
+          400,
+        )
+      }
+      approverId = resolved.approver
+      ruleId = resolved.rule._id
+    }
+
+    const project = await Project.findById(file.projectId).select('name').lean()
+
+    file.status = 'sent'
+    file.approvalStatus = 'pending'
+    file.approvalType = approvalType
+    file.approvalRule = ruleId
+    file.approver = approverId
+    file.requestedBy = req.user._id
+    file.requestedAt = new Date()
+    file.approvalNote = note
+    file.decidedBy = null
+    file.decidedAt = undefined
+    file.decisionNote = ''
+    await file.save()
+    await file.populate([
+      { path: 'approver', select: 'name avatar role' },
+      { path: 'requestedBy', select: 'name avatar role' },
+    ])
+
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: file.projectId,
+        actor: req.user._id,
+        type: 'approval_requested',
+        message: `${req.user.name} sent “${file.name}” for approval`,
+        meta: { fileId: file._id, approvalType },
+      }),
+    )
+
+    await notifyUser(req, {
+      userId: approverId,
+      type: 'approval_requested',
+      title: 'Approval needed',
+      body: `${req.user.name} sent “${file.name}” for your approval`,
+      link: `/approvals?tab=inbox`,
+      projectId: file.projectId,
+      meta: {
+        actor: actorSummary(req.user),
+        entityKind: 'file',
+        fileId: String(file._id),
+        fileName: file.name,
+        folder: file.folder,
+        projectId: String(file.projectId),
+        projectName: project?.name || '',
+        approvalType,
+        note,
+        previewUrl: file.versions?.[file.versions.length - 1]?.url || '',
+      },
+    })
+
+    res.json({ success: true, file })
+  }),
+)
+
+/**
+ * Approve or reject a file. Only the assigned approver (or company admin) may decide.
+ */
+router.post(
+  '/files/:id/decide',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    const file = await ProjectFile.findById(req.params.id)
+    assertTenantDoc(file, req, 'File')
+
+    if (file.approvalStatus !== 'pending') {
+      throw new AppError('This file is not waiting for approval', 400)
+    }
+
+    const isApprover =
+      file.approver && String(file.approver) === String(req.user._id)
+    const isAdmin =
+      req.user?.isPlatformAdmin || isCompanyAdminRole(req.user?.role)
+    if (!isApprover && !isAdmin) {
+      throw new AppError('Only the assigned approver can decide this', 403)
+    }
+
+    const decision = String(req.body.decision || '').trim()
+    if (!['approved', 'rejected'].includes(decision)) {
+      throw new AppError('decision must be approved or rejected', 400)
+    }
+    const decisionNote = String(req.body.note || '').trim()
+
+    file.approvalStatus = decision
+    file.status = decision
+    file.decidedBy = req.user._id
+    file.decidedAt = new Date()
+    file.decisionNote = decisionNote
+    await file.save()
+    await file.populate([
+      { path: 'approver', select: 'name avatar role' },
+      { path: 'requestedBy', select: 'name avatar role' },
+      { path: 'decidedBy', select: 'name avatar role' },
+    ])
+
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId: file.projectId,
+        actor: req.user._id,
+        type: 'file_status',
+        message: `${req.user.name} ${decision} “${file.name}”`,
+        meta: { fileId: file._id, decision },
+      }),
+    )
+
+    if (file.requestedBy) {
+      await notifyUser(req, {
+        userId: file.requestedBy._id || file.requestedBy,
+        type: 'approval_decided',
+        title: decision === 'approved' ? 'Drawing approved' : 'Drawing rejected',
+        body: `${req.user.name} ${decision} “${file.name}”`,
+        link: `/projects/${file.projectId}/files`,
+        projectId: file.projectId,
+        meta: {
+          actor: actorSummary(req.user),
+          entityKind: 'file',
+          fileId: String(file._id),
+          fileName: file.name,
+          decision,
+          note: decisionNote,
+        },
+      })
+    }
+
     res.json({ success: true, file })
   }),
 )
@@ -810,6 +1173,35 @@ router.patch(
       )
     }
     res.json({ success: true, file })
+  }),
+)
+
+/**
+ * Removes the record and every version of it. The stored blobs are left in
+ * place deliberately — a version URL may already be referenced from an
+ * activity entry or a shared link, and a dangling file is a smaller problem
+ * than a broken one.
+ */
+router.delete(
+  '/files/:id',
+  requireAuth,
+  requirePermission('files.manage'),
+  asyncHandler(async (req, res) => {
+    const file = await ProjectFile.findById(req.params.id)
+    assertTenantDoc(file, req, 'File')
+
+    const { name, projectId } = file
+    await file.deleteOne()
+
+    await ActivityLog.create(
+      withTenant(req, {
+        projectId,
+        actor: req.user._id,
+        type: 'file_deleted',
+        message: `${req.user.name} deleted ${name}`,
+      }),
+    )
+    res.json({ success: true })
   }),
 )
 
@@ -1409,7 +1801,7 @@ router.get(
       : 0
 
     const pipelineValue = leads
-      .filter((l) => !['won', 'lost'].includes(l.stage))
+      .filter((l) => !CLOSED_LEAD_STAGES.includes(l.stage))
       .reduce((s, l) => s + (l.estimatedValue || 0), 0)
 
     const team = await User.find(
@@ -1515,13 +1907,15 @@ router.get(
         leadStages: [
           'new_enquiry',
           'site_visit',
+          'mood_board',
           'quotation_sent',
           'negotiation',
-          'won',
-          'lost',
+          'hot',
+          'dead',
         ].map((stage) => ({
           stage,
-          count: leads.filter((l) => l.stage === stage).length,
+          count: leads.filter((l) => normalizeLeadStage(l.stage) === stage)
+            .length,
         })),
         vendorPerformance: {
           totalPOs: pos.length,
@@ -1672,6 +2066,12 @@ const CUSTOM_ROLE_BASES = [
   'site_supervisor',
   'vendor',
   'client',
+  'dept_design',
+  'dept_site',
+  'dept_procurement',
+  'dept_accounts',
+  'dept_sales',
+  'dept_admin',
 ]
 
 router.get(
@@ -1704,9 +2104,21 @@ router.post(
     const label = String(req.body.label || '').trim()
     if (label.length < 2) throw new AppError('Role name is required', 400)
 
+    const tenantId = req.user.tenantId || req.tenantId
+    const tenant = await Tenant.findById(tenantId)
+    if (!tenant) throw new AppError('Workspace not found', 404)
+
     const basedOn = String(req.body.basedOn || 'designer').trim()
-    if (!CUSTOM_ROLE_BASES.includes(basedOn)) {
-      throw new AppError('Pick a valid base role template', 400)
+    const knownCustom = (tenant.customRoles || []).map((r) => r.key)
+    // Allow basing on a built-in template or an existing custom role.
+    if (
+      !CUSTOM_ROLE_BASES.includes(basedOn) &&
+      !knownCustom.includes(basedOn)
+    ) {
+      throw new AppError(
+        'Pick a valid base role template or an existing custom role',
+        400,
+      )
     }
 
     let key = slugifyRoleKey(req.body.key || label)
@@ -1715,12 +2127,11 @@ router.post(
       key = `custom_${key}`
     }
 
-    const tenantId = req.user.tenantId || req.tenantId
-    const tenant = await Tenant.findById(tenantId)
-    if (!tenant) throw new AppError('Workspace not found', 404)
-
     if ((tenant.customRoles || []).some((r) => r.key === key)) {
       throw new AppError('A role with this name already exists', 409)
+    }
+    if (basedOn === key) {
+      throw new AppError('A role cannot be based on itself', 400)
     }
 
     const permissions = sanitizePermissionOverrides(req.body.permissions)
@@ -1916,6 +2327,45 @@ router.post(
       user: target.toSafeJSON(),
       tempPassword,
       message: 'Password reset. Share the temporary password securely.',
+    })
+  }),
+)
+
+router.delete(
+  '/admin/users/:id',
+  requireAuth,
+  asyncHandler(async (req, res) => {
+    if (!canManageEmployeeAccess(req.user)) {
+      throw new AppError('Only an Admin or Owner can delete people', 403)
+    }
+
+    if (String(req.user._id) === String(req.params.id)) {
+      throw new AppError('You cannot delete your own account', 400)
+    }
+
+    const target = await User.findOne(
+      tenantFilter(req, {
+        _id: req.params.id,
+        isPlatformAdmin: { $ne: true },
+      }),
+    )
+    if (!target) throw new AppError('Employee not found', 404)
+
+    if (req.user.role === 'admin' && target.role === 'owner') {
+      throw new AppError('Only an Owner can delete another Owner', 403)
+    }
+
+    const removed = {
+      id: String(target._id),
+      name: target.name,
+      email: target.email,
+    }
+    await User.deleteOne({ _id: target._id })
+
+    res.json({
+      success: true,
+      message: `${removed.name} removed from this company`,
+      removed,
     })
   }),
 )

@@ -279,8 +279,11 @@ export const STAGE_LABELS: Record<string, string> = {
   site_visit: 'Site Visit',
   quotation_sent: 'Quotation Sent',
   negotiation: 'Negotiation',
-  won: 'Won',
-  lost: 'Lost',
+  mood_board: 'Mood Board',
+  hot: 'Hot',
+  dead: 'Dead',
+  won: 'Hot',
+  lost: 'Dead',
 }
 
 export function stageLabel(key?: string): string {

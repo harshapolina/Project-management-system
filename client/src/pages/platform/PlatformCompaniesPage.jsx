@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { Building2, KeyRound, Plus, Search } from 'lucide-react'
-import { api } from '../../lib/api'
+import { api, companyLoginUrl } from '../../lib/api'
 import { CompanyControlPanel } from '../../components/platform/CompanyControlPanel'
 import { InviteDetailsModal } from '../../components/layout/GlobalChrome'
 import { Button, Card, Input, toast } from '../../components/ui'
@@ -12,10 +12,6 @@ function generatePassword() {
   let out = ''
   for (let i = 0; i < 12; i += 1) out += chars[Math.floor(Math.random() * chars.length)]
   return out
-}
-
-function companyLoginUrl(workspace) {
-  return `${window.location.origin}/login?portal=admin&tenant=${encodeURIComponent(workspace)}`
 }
 
 export function PlatformCompaniesPage() {
@@ -57,7 +53,7 @@ export function PlatformCompaniesPage() {
         email: res.admin.email,
         tempPassword: res.tempPassword,
         role: 'Admin',
-        loginUrl: companyLoginUrl(res.tenant.slug),
+        loginUrl: companyLoginUrl(res.tenant.slug, 'admin'),
         portal: 'admin',
       })
       setForm({

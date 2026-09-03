@@ -35,6 +35,37 @@ const ROLE_DEFAULTS = {
   project_manager: { impact: true },
   designer: { impact: true },
   site_supervisor: { impact: true },
+  dept_design: {
+    impact: true,
+    boq: true,
+    'files.manage': true,
+    'tasks.create': true,
+  },
+  dept_site: {
+    impact: true,
+    site: true,
+    'tasks.create': true,
+    'tasks.manage': true,
+  },
+  dept_procurement: {
+    impact: true,
+    procurement: true,
+    'tasks.create': true,
+  },
+  dept_accounts: {
+    impact: true,
+    finance: true,
+  },
+  dept_sales: {
+    impact: true,
+    leads: true,
+  },
+  dept_admin: {
+    impact: true,
+    people: true,
+    'projects.create': true,
+    'tasks.create': true,
+  },
 }
 
 function overridesFor(user) {
@@ -46,11 +77,18 @@ function overridesFor(user) {
   return user.permissions
 }
 
-export function defaultPermissionsForRole(role, customRoles = []) {
+export function defaultPermissionsForRole(role, customRoles = [], _seen = null) {
   if (ROLE_DEFAULTS[role]) return { ...ROLE_DEFAULTS[role] }
   const custom = (customRoles || []).find((r) => r.key === role)
   if (!custom) return {}
-  const base = ROLE_DEFAULTS[custom.basedOn] || {}
+  const seen = _seen || new Set()
+  if (seen.has(role)) return {}
+  seen.add(role)
+  const base = defaultPermissionsForRole(
+    custom.basedOn || 'designer',
+    customRoles,
+    seen,
+  )
   const extras =
     custom.permissions && typeof custom.permissions === 'object'
       ? custom.permissions

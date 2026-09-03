@@ -38,6 +38,23 @@ export function errorHandler(err, _req, res, _next) {
     message = 'Already exists'
   }
 
+  // Multer rejects oversized or unexpected uploads with its own error codes.
+  // Untranslated they surface as a bare 500, which tells the person holding a
+  // 20 MB drawing nothing about why it would not upload.
+  if (err?.name === 'MulterError') {
+    status = 400
+    if (err.code === 'LIMIT_FILE_SIZE') {
+      const mb = Math.round((err.limit ?? 0) / (1024 * 1024)) || null
+      message = mb
+        ? `That file is too large. The limit is ${mb} MB per file.`
+        : 'That file is too large.'
+    } else if (err.code === 'LIMIT_UNEXPECTED_FILE') {
+      message = 'Unexpected file field in the upload.'
+    } else {
+      message = err.message || 'Upload failed.'
+    }
+  }
+
   // Vercel does not set NODE_ENV for you, so a deploy that forgets it would
   // otherwise serve stack traces — absolute paths and all — to the public.
   const isProduction =

@@ -63,7 +63,7 @@ Full checklist: **[DEPLOY.md](DEPLOY.md)**
 - API → **Vercel** (`server/`, set `MONGODB_URI`, `CLIENT_URL`, JWT secrets)
 - Database → **MongoDB Atlas**
 
-API production URL: `https://project-management-system-msmw.vercel.app`
+API production URL: `https://project-management-backend-nine-tau.vercel.app`
 
 ## Current progress
 

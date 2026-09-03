@@ -8,6 +8,7 @@ import {
   ArrowRight,
   CheckCircle2,
   MessageCircle,
+  Mail,
   Package,
   Send,
   Pencil,
@@ -24,8 +25,24 @@ import {
   splitPhone,
   whatsappLink,
 } from '../lib/phone'
+import { vendorHelloEmailDraft } from '../lib/composeEmail'
+import { openComposeEmail } from '../store/composeEmailStore'
 import { Stars, SendPoButton } from '../components/VendorBits'
-import { PageToolbar, PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
+import {
+  BoqControlTab,
+  DebitNotesTab,
+  GrnTab,
+  InventoryEmbedTab,
+  InvoicesEmbedTab,
+  MaterialIssuesTab,
+  MaterialRequestsTab,
+  PaymentsTab,
+  ProcurementDashboard,
+  ProcurementTabBar,
+  QcTab,
+  useProcurementTab,
+} from '../components/procurement/ProcurementTabs'
+import { PILL_ACTIVE, PILL_IDLE, PILL_TRACK } from '../components/layout/PageToolbar'
 import { cn } from '../lib/utils'
 import {
   Button,
@@ -50,12 +67,6 @@ const PO_STATUSES = [
 
 const PO_FLOW = ['draft', 'approved', 'ordered', 'in_transit', 'delivered']
 
-const TABS = [
-  { id: 'rfqs', label: 'RFQs', icon: Send },
-  { id: 'orders', label: 'Purchase orders', icon: Package },
-  { id: 'vendors', label: 'Vendors', icon: Store },
-]
-
 function nextPoStatus(status) {
   const i = PO_FLOW.indexOf(status)
   if (i < 0 || i >= PO_FLOW.length - 1) return null
@@ -71,7 +82,7 @@ function statusLabel(status) {
 
 export function MaterialsPage() {
   const qc = useQueryClient()
-  const [tab, setTab] = useState('orders')
+  const [tab, setTab] = useProcurementTab()
   const [poSearch, setPoSearch] = useState('')
   const [poStatus, setPoStatus] = useState('all')
   const [vendorSearch, setVendorSearch] = useState('')
@@ -245,7 +256,7 @@ export function MaterialsPage() {
     })
   }, [vendorList, vendorSearch, category])
 
-  if (isLoading) {
+  if (isLoading && ['rfqs', 'orders', 'vendors'].includes(tab)) {
     return (
       <div className="mx-auto w-full max-w-[1500px] space-y-4 pb-10">
         <SkeletonCard className="h-16" />
@@ -259,7 +270,7 @@ export function MaterialsPage() {
     )
   }
 
-  if (isError) {
+  if (isError && ['rfqs', 'orders', 'vendors'].includes(tab)) {
     return (
       <EmptyState
         icon={AlertCircle}
@@ -285,43 +296,23 @@ export function MaterialsPage() {
         isFetching && 'opacity-90',
       )}
     >
-      <PageToolbar
-        left={
-          <>
-            <div className={PILL_TRACK}>
-              {TABS.map((t) => {
-                const Icon = t.icon
-                const active = tab === t.id
-                return (
-                  <button
-                    key={t.id}
-                    type="button"
-                    onClick={() => setTab(t.id)}
-                    className={cn(
-                      'inline-flex items-center gap-1.5 rounded-full px-3.5 py-1.5 text-[12px] font-semibold transition',
-                      active ? PILL_ACTIVE : PILL_IDLE,
-                    )}
-                  >
-                    <Icon className="h-3.5 w-3.5" />
-                    {t.label}
-                    <span
-                      className={cn(
-                        'ml-0.5 rounded-md px-1.5 py-0.5 text-[10px] font-bold tabular-nums',
-                        active
-                          ? 'bg-black/[0.06] text-primary'
-                          : 'bg-black/[0.04] text-secondary',
-                      )}
-                    >
-                      {t.id === 'rfqs'
-                        ? rfqs.length
-                        : t.id === 'orders'
-                          ? purchaseOrders.length
-                          : vendorList.length}
-                    </span>
-                  </button>
-                )
-              })}
-            </div>
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-[20px] font-semibold tracking-tight text-primary">
+              Materials
+            </h1>
+            <p className="mt-0.5 text-[12.5px] text-secondary">
+              Buy → receive → store → pay — pick a stage below.
+            </p>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {vendorList.length >= 2 ? (
+              <Button variant="secondary" onClick={() => setCompareOpen(true)}>
+                <ArrowLeftRight className="h-4 w-4" />
+                Compare
+              </Button>
+            ) : null}
             <Button
               onClick={() => {
                 setTab('vendors')
@@ -331,44 +322,52 @@ export function MaterialsPage() {
               <Plus className="h-4 w-4" />
               Add vendor
             </Button>
-          </>
-        }
-        right={
-          vendorList.length >= 2 ? (
-            <Button variant="secondary" onClick={() => setCompareOpen(true)}>
-              <ArrowLeftRight className="h-4 w-4" />
-              Compare
-            </Button>
-          ) : null
-        }
-      />
+          </div>
+        </div>
+        <ProcurementTabBar tab={tab} setTab={setTab} />
+      </div>
 
-      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi
-          label="PO value"
-          value={formatInr(stats.totalPoValue)}
-          foot={`${purchaseOrders.length} orders`}
-        />
-        <Kpi
-          label="In pipeline"
-          value={stats.open}
-          accent
-          foot={
-            stats.inTransit
-              ? `${stats.inTransit} in transit`
-              : 'Draft → delivery'
-          }
-        />
-        <Kpi label="Delivered" value={stats.delivered} />
-        <Kpi
-          label="Vendors"
-          value={stats.vendors}
-          foot="Active directory"
-          onClick={() => setTab('vendors')}
-        />
-      </section>
+      {tab === 'dashboard' ||
+      tab === 'boq' ||
+      tab === 'grn' ||
+      tab === 'qc' ||
+      tab === 'debit' ||
+      tab === 'inventory' ||
+      tab === 'requests' ||
+      tab === 'issues' ||
+      tab === 'invoices' ||
+      tab === 'payments' ? null : (
+        <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+          <Kpi
+            label="PO value"
+            value={formatInr(stats.totalPoValue)}
+            foot={`${purchaseOrders.length} orders`}
+          />
+          <Kpi
+            label="In pipeline"
+            value={stats.open}
+            accent
+            foot={
+              stats.inTransit
+                ? `${stats.inTransit} in transit`
+                : 'Draft → delivery'
+            }
+          />
+          <Kpi label="Delivered" value={stats.delivered} />
+          <Kpi
+            label="Vendors"
+            value={stats.vendors}
+            foot="Active directory"
+            onClick={() => setTab('vendors')}
+          />
+        </section>
+      )}
 
-      {tab === 'rfqs' ? (
+      {tab === 'dashboard' ? (
+        <ProcurementDashboard onGo={setTab} />
+      ) : tab === 'boq' ? (
+        <BoqControlTab />
+      ) : tab === 'rfqs' ? (
         <AllRfqsPanel rfqs={rfqs} loading={rfqsLoading} />
       ) : tab === 'orders' ? (
         <OrdersPanel
@@ -380,6 +379,22 @@ export function MaterialsPage() {
           setStatus={setPoStatus}
           onOpen={setSelectedPo}
         />
+      ) : tab === 'grn' ? (
+        <GrnTab />
+      ) : tab === 'qc' ? (
+        <QcTab />
+      ) : tab === 'debit' ? (
+        <DebitNotesTab />
+      ) : tab === 'inventory' ? (
+        <InventoryEmbedTab />
+      ) : tab === 'requests' ? (
+        <MaterialRequestsTab />
+      ) : tab === 'issues' ? (
+        <MaterialIssuesTab />
+      ) : tab === 'invoices' ? (
+        <InvoicesEmbedTab />
+      ) : tab === 'payments' ? (
+        <PaymentsTab />
       ) : (
         <VendorsPanel
           vendors={filteredVendors}
@@ -808,7 +823,7 @@ function VendorsPanel({
                     type="button"
                     title={
                       v.phone
-                        ? `WhatsApp ${v.contact || v.name}`
+                        ? `WhatsApp Web · ${v.contact || v.name}`
                         : 'Add a phone number first'
                     }
                     onClick={() => {
@@ -833,6 +848,19 @@ function VendorsPanel({
                   >
                     <MessageCircle className="h-3.5 w-3.5" />
                     WhatsApp
+                  </button>
+                  <button
+                    type="button"
+                    title={
+                      v.email
+                        ? `Email ${v.contact || v.name}`
+                        : 'Compose email — add vendor email if needed'
+                    }
+                    onClick={() => openComposeEmail(vendorHelloEmailDraft(v))}
+                    className="inline-flex h-8 items-center gap-1.5 rounded-[10px] bg-accent px-2.5 text-[11.5px] font-semibold text-[#171717] transition hover:bg-[#24b47e]"
+                  >
+                    <Mail className="h-3.5 w-3.5" />
+                    Email
                   </button>
                   <button
                     type="button"
@@ -1396,31 +1424,43 @@ function VendorCompareModal({ open, onClose, vendors, purchaseOrders }) {
                 <td className={cn(rowLabel, 'pl-3')} />
                 {chosen.map((v) => (
                   <td key={v._id} className={cell}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const url = whatsappLink(
-                          v.phone,
-                          `Hello ${v.contact || v.name},`,
-                        )
-                        if (!url) {
-                          toast('No phone number saved for this vendor', {
-                            type: 'error',
-                          })
-                          return
+                    <div className="flex flex-wrap gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const url = whatsappLink(
+                            v.phone,
+                            `Hello ${v.contact || v.name},`,
+                          )
+                          if (!url) {
+                            toast('No phone number saved for this vendor', {
+                              type: 'error',
+                            })
+                            return
+                          }
+                          window.open(url, '_blank', 'noopener')
+                        }}
+                        className={cn(
+                          'inline-flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 text-[11.5px] font-semibold text-white transition',
+                          v.phone
+                            ? 'bg-[#25D366] hover:bg-[#1fb958]'
+                            : 'bg-[#a7dcbb] hover:bg-[#98d2ad]',
+                        )}
+                      >
+                        <MessageCircle className="h-3.5 w-3.5" />
+                        WhatsApp
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          openComposeEmail(vendorHelloEmailDraft(v))
                         }
-                        window.open(url, '_blank', 'noopener')
-                      }}
-                      className={cn(
-                        'inline-flex h-8 items-center gap-1.5 rounded-[10px] px-2.5 text-[11.5px] font-semibold text-white transition',
-                        v.phone
-                          ? 'bg-[#25D366] hover:bg-[#1fb958]'
-                          : 'bg-[#a7dcbb] hover:bg-[#98d2ad]',
-                      )}
-                    >
-                      <MessageCircle className="h-3.5 w-3.5" />
-                      WhatsApp
-                    </button>
+                        className="inline-flex h-8 items-center gap-1.5 rounded-[10px] bg-accent px-2.5 text-[11.5px] font-semibold text-[#171717] transition hover:bg-[#24b47e]"
+                      >
+                        <Mail className="h-3.5 w-3.5" />
+                        Email
+                      </button>
+                    </div>
                   </td>
                 ))}
               </tr>

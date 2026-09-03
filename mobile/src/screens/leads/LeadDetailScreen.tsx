@@ -27,7 +27,15 @@ type Nav = CompositeNavigationProp<
   BottomTabNavigationProp<RootTabParamList>
 >
 
-const STAGE_ORDER: LeadStage[] = ['new_enquiry', 'site_visit', 'quotation_sent', 'negotiation', 'won', 'lost']
+const STAGE_ORDER: LeadStage[] = [
+  'new_enquiry',
+  'site_visit',
+  'quotation_sent',
+  'negotiation',
+  'mood_board',
+  'hot',
+  'dead',
+]
 
 function stageColorMap(c: AppColors): Record<LeadStage, string> {
   return {
@@ -35,14 +43,20 @@ function stageColorMap(c: AppColors): Record<LeadStage, string> {
     site_visit: c.accent,
     quotation_sent: c.warning,
     negotiation: c.warning,
+    mood_board: c.accent,
+    hot: c.success,
+    dead: c.danger,
     won: c.success,
     lost: c.danger,
   }
 }
 
 function nextStage(stage: LeadStage): LeadStage | null {
-  const idx = STAGE_ORDER.indexOf(stage)
-  if (idx < 0 || idx >= STAGE_ORDER.indexOf('won') - 1) return null
+  // `won`/`lost` are the legacy names for hot/dead — normalise before ordering.
+  const normalized = stage === 'won' ? 'hot' : stage === 'lost' ? 'dead' : stage
+  const idx = STAGE_ORDER.indexOf(normalized)
+  // Stop before hot/dead — those are explicit actions
+  if (idx < 0 || idx >= STAGE_ORDER.indexOf('hot') - 1) return null
   return STAGE_ORDER[idx + 1]
 }
 

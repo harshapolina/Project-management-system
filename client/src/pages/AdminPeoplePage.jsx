@@ -10,13 +10,14 @@ import {
   UsersRound,
   ChevronRight,
   KeyRound,
+  Trash2,
 } from 'lucide-react'
-import { api, getTenantSlug, useAuthStore } from '../lib/api'
+import { api, getTenantSlug, useAuthStore, companyLoginUrl } from '../lib/api'
 import {
   canInviteUsers,
   capabilitiesForUser,
   ACCESS_TOGGLES,
-  CUSTOM_ROLE_BASE_OPTIONS,
+  customRoleBaseOptions,
   NEW_CUSTOM_ROLE_VALUE,
   inviteRoleOptions,
   roleLabelFor,
@@ -100,7 +101,10 @@ export function AdminPeoplePage() {
         workspace: tenant?.slug || getTenantSlug(),
         email: res.user.email,
         tempPassword: res.tempPassword,
-        loginUrl: `${window.location.origin}/login`,
+        loginUrl: companyLoginUrl(
+          tenant?.slug || getTenantSlug(),
+          ['admin', 'owner', 'hr'].includes(invite.role) ? 'admin' : 'staff',
+        ),
       })
       setInvite({ name: '', email: '', role: 'designer' })
       qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
@@ -224,12 +228,54 @@ export function AdminPeoplePage() {
         workspace: tenant?.slug || getTenantSlug(),
         email: res.user.email,
         tempPassword: res.tempPassword,
-        loginUrl: `${window.location.origin}/login`,
+        loginUrl: companyLoginUrl(
+          tenant?.slug || getTenantSlug(),
+          ['admin', 'owner', 'hr'].includes(selected?.user?.role)
+            ? 'admin'
+            : 'staff',
+        ),
       })
       toast('Temporary password created', { type: 'success' })
     },
     onError: (e) => toast(e.message, { type: 'error' }),
   })
+
+  const deletePerson = useMutation({
+    mutationFn: () =>
+      api(`/admin/users/${selectedId}`, {
+        method: 'DELETE',
+      }),
+    onSuccess: (res) => {
+      const removedId = String(selectedId)
+      setSelectedId('')
+      qc.setQueryData(['admin-team-summary'], (prev) => {
+        if (!prev?.data?.members) return prev
+        const members = prev.data.members.filter(
+          (member) => String(member.user._id) !== removedId,
+        )
+        return {
+          ...prev,
+          data: {
+            ...prev.data,
+            members,
+            totalMembers: members.length,
+            activeMembers: members.filter((m) => m.user?.isActive !== false)
+              .length,
+          },
+        }
+      })
+      qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
+      qc.invalidateQueries({ queryKey: ['users'] })
+      toast(res.message || 'Person deleted', { type: 'success' })
+    },
+    onError: (e) => toast(e.message, { type: 'error' }),
+  })
+
+  const canDeleteSelected =
+    caps.managePeople &&
+    selected &&
+    String(selected.user._id) !== String(user?.id || user?._id) &&
+    !(user?.role === 'admin' && selected.user.role === 'owner')
 
   return (
     <PageLayout>
@@ -551,6 +597,27 @@ export function AdminPeoplePage() {
                             : 'Reset password'}
                         </button>
                       )}
+                    {canDeleteSelected && (
+                      <button
+                        type="button"
+                        disabled={deletePerson.isPending}
+                        onClick={() => {
+                          if (
+                            window.confirm(
+                              `Delete ${selected.user.name} from this company?\n\nThis permanently removes their login. Tasks they own stay, but they can no longer sign in.`,
+                            )
+                          ) {
+                            deletePerson.mutate()
+                          }
+                        }}
+                        className="inline-flex h-10 w-full items-center justify-center gap-2 rounded-[8px] border border-red-200 bg-red-50 text-[12px] font-medium text-red-700 transition hover:bg-red-100 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                        {deletePerson.isPending
+                          ? 'Deleting…'
+                          : `Delete ${selected.user.name.split(' ')[0]}`}
+                      </button>
+                    )}
                   </>
                 ) : (
                   <p className="rounded-[8px] border border-amber-200 bg-amber-50 px-3 py-2.5 text-center text-[11px] text-amber-700">
@@ -697,8 +764,9 @@ export function AdminPeoplePage() {
           }}
         >
           <p className="text-[13px] leading-relaxed text-secondary">
-            Create a company role for invites. Access starts from a base
-            template — you can fine-tune permissions after inviting.
+            Create a company role for invites. Base it on a built-in role, a
+            custom department, or another custom role — then fine-tune access
+            after inviting.
           </p>
           <Input
             label="Role name"
@@ -715,7 +783,7 @@ export function AdminPeoplePage() {
             onChange={(e) =>
               setCustomRoleForm((s) => ({ ...s, basedOn: e.target.value }))
             }
-            options={CUSTOM_ROLE_BASE_OPTIONS}
+            options={customRoleBaseOptions(customRoles)}
           />
           <div className="flex justify-end gap-2 border-t border-border pt-4">
             <Button

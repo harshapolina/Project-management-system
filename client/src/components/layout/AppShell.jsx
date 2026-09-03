@@ -3,6 +3,7 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   LayoutDashboard,
+  Activity,
   FolderKanban,
   CheckSquare,
   Camera,
@@ -57,6 +58,7 @@ import {
 } from '../CreateModals'
 import { LiveNotificationCenter } from '../notifications/LiveNotificationCenter'
 import { TenantNotice } from './TenantNotice'
+import { ComposeEmailModal } from '../ComposeEmailModal'
 import { syncSocketAuth, disconnectSocket } from '../../lib/socket'
 
 const ALL_PRIMARY_NAV = [
@@ -77,6 +79,12 @@ const ALL_PRIMARY_NAV = [
     label: 'Dashboard',
     icon: LayoutDashboard,
     capability: 'portfolio',
+  },
+  {
+    to: '/live-board',
+    label: 'Live board',
+    icon: Activity,
+    capability: 'myWork',
   },
   {
     to: '/projects',
@@ -152,6 +160,7 @@ function navActive(pathname, search, to) {
     return pathname === '/projects' || pathname.startsWith('/projects/')
   }
   if (to === '/portfolio') return pathname.startsWith('/portfolio')
+  if (to === '/live-board') return pathname.startsWith('/live-board')
   if (to === '/company-admin') return pathname.startsWith('/company-admin')
   if (to === '/inventory') {
     return (
@@ -358,7 +367,7 @@ export function AppShell({ children }) {
 
   const navItemClass = (active, collapsed) =>
     cn(
-      'relative flex items-center rounded-[8px] py-2 text-[13px] font-medium transition',
+      'relative flex items-center rounded-[8px] py-1.5 text-[13px] font-medium transition',
       collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
       active
         ? 'bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]'
@@ -376,7 +385,7 @@ export function AppShell({ children }) {
       <>
         <div
           className={cn(
-            'mb-4 border-b border-[var(--shell-border)] pb-4 pt-5',
+            'mb-3 shrink-0 border-b border-[var(--shell-border)] pb-3 pt-4',
             collapsed ? 'px-2' : 'px-3',
           )}
         >
@@ -388,9 +397,10 @@ export function AppShell({ children }) {
           >
             <div
               className={cn(
-                'flex items-center gap-2.5',
-                collapsed && 'justify-center',
+                'flex items-center',
+                collapsed ? 'justify-center' : 'justify-start',
               )}
+              title={brandLabel}
             >
               {/*
                 A logo is usually a transparent PNG, so whatever sits behind it
@@ -402,33 +412,30 @@ export function AppShell({ children }) {
               */}
               <div
                 className={cn(
-                  'flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-[8px]',
-                  !tenant?.brandColor && (tenant?.logoUrl ? 'bg-surface-raised' : 'bg-accent'),
+                  'flex shrink-0 items-center justify-center overflow-hidden rounded-[10px]',
+                  collapsed ? 'h-9 w-9' : 'h-11 w-auto max-w-[160px]',
+                  !tenant?.brandColor &&
+                    (tenant?.logoUrl ? 'bg-transparent' : 'bg-accent'),
                 )}
                 style={tenant?.brandColor ? { backgroundColor: tenant.brandColor } : undefined}
               >
                 {tenant?.logoUrl ? (
                   <img
                     src={assetUrl(tenant.logoUrl)}
-                    alt=""
-                    className="h-full w-full object-contain p-1"
+                    alt={brandLabel}
+                    className={cn(
+                      'object-contain',
+                      collapsed ? 'h-full w-full p-0.5' : 'h-11 w-auto max-w-[160px]',
+                    )}
                   />
                 ) : (
                   <span
-                    className="flex h-full w-full items-center justify-center text-[13px] font-bold"
+                    className="flex h-9 w-9 items-center justify-center text-[13px] font-bold"
                     style={{ color: tenant?.brandColor ? onColor(tenant.brandColor) : '#171717' }}
                   >
                     {brandLabel.charAt(0).toUpperCase()}
                   </span>
                 )}
-              </div>
-              <div className={cn('min-w-0', collapsed && 'sr-only')}>
-                <p className="truncate text-[13px] font-semibold tracking-tight text-[var(--shell-text-strong)]">
-                  {brandLabel}
-                </p>
-                <p className="truncate text-[10px] uppercase tracking-[0.1em] text-[var(--shell-text)]">
-                  {tenant?.slug || 'Editco Project Mgmt'}
-                </p>
               </div>
             </div>
           </FlyoutAnchor>
@@ -442,7 +449,7 @@ export function AppShell({ children }) {
               }}
               title="New project"
               className={cn(
-                'mt-4 flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] bg-accent text-[13px] font-semibold text-[#171717] hover:bg-accent-hover',
+                'mt-3 flex h-9 w-full items-center justify-center gap-1.5 rounded-[8px] bg-accent text-[13px] font-semibold text-[#171717] hover:bg-accent-hover',
                 collapsed && 'px-0',
               )}
             >
@@ -454,7 +461,7 @@ export function AppShell({ children }) {
 
         <nav
           className={cn(
-            'flex flex-1 flex-col gap-0.5 overflow-y-auto pb-4',
+            'flex min-h-0 flex-1 flex-col gap-0 overflow-hidden pb-3',
             collapsed ? 'px-1.5' : 'px-2',
           )}
         >
@@ -784,6 +791,7 @@ export function AppShell({ children }) {
         onClose={() => setProjectModalOpen(false)}
       />
       <LiveNotificationCenter />
+      <ComposeEmailModal />
     </div>
   )
 }

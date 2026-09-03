@@ -10,11 +10,13 @@ import {
   ClipboardCheck,
   Mail,
   AlertCircle,
+  BadgeCheck,
   X,
 } from 'lucide-react'
-import { api, useAuthStore } from '../../lib/api'
+import { api, assetUrl, useAuthStore } from '../../lib/api'
 import { syncSocketAuth } from '../../lib/socket'
 import { cn } from '../../lib/utils'
+import { toast } from '../ui'
 
 const TYPES = {
   task_assigned: {
@@ -24,6 +26,14 @@ const TYPES = {
     iconColor: 'text-accent',
     card: 'border-transparent bg-[var(--nav-active-bg)]',
     cta: 'Review task',
+  },
+  task_moved: {
+    icon: ClipboardCheck,
+    label: 'TASK UPDATED',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-transparent bg-[var(--nav-active-bg)]',
+    cta: 'Open task',
   },
   task: {
     icon: ClipboardCheck,
@@ -57,6 +67,30 @@ const TYPES = {
     card: 'border-transparent bg-[var(--nav-active-bg)]',
     cta: 'Open message',
   },
+  approval_requested: {
+    icon: BadgeCheck,
+    label: 'APPROVAL NEEDED',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-accent/30 bg-[var(--nav-active-bg)]',
+    cta: 'Open inbox',
+  },
+  approval_decided: {
+    icon: BadgeCheck,
+    label: 'DECISION',
+    labelColor: 'text-secondary',
+    iconColor: 'text-secondary',
+    card: 'border-transparent bg-surface-raised',
+    cta: 'View file',
+  },
+  deadline: {
+    icon: AlertCircle,
+    label: 'DEADLINE',
+    labelColor: 'text-accent',
+    iconColor: 'text-accent',
+    card: 'border-amber-500/30 bg-amber-500/10',
+    cta: 'Open task',
+  },
   default: {
     icon: Bell,
     label: 'UPDATE',
@@ -74,7 +108,17 @@ const PRIORITY_LABEL = {
   low: 'Low',
 }
 
-const POPUP_TYPES = new Set(['task_assigned', 'task', 'lead_assigned', 'mention', 'mail'])
+const POPUP_TYPES = new Set([
+  'task_assigned',
+  'task_moved',
+  'task',
+  'lead_assigned',
+  'mention',
+  'mail',
+  'approval_requested',
+  'approval_decided',
+  'deadline',
+])
 const SEEN_KEY = 'cubic-live-notif-seen'
 const RECENT_MS = 10 * 60 * 1000
 
@@ -107,6 +151,7 @@ function contextLine(item) {
   const meta = item.meta || {}
   const bits = []
   if (meta.projectName) bits.push(meta.projectName)
+  if (meta.folder) bits.push(String(meta.folder).replace(/_/g, ' '))
   if (meta.priority && PRIORITY_LABEL[meta.priority]) {
     bits.push(`${PRIORITY_LABEL[meta.priority]} priority`)
   }
@@ -115,12 +160,16 @@ function contextLine(item) {
   return bits.join(' · ')
 }
 
-function AlertRow({ item, onDismiss, onReview }) {
+function AlertRow({ item, onDismiss, onReview, onDecide, deciding }) {
   const config = TYPES[item.type] || TYPES.default
   const Icon = config.icon
   const meta = item.meta || {}
   const actor = meta.actor?.name || ''
   const context = contextLine(item)
+  const isApproval =
+    item.type === 'approval_requested' && meta.entityKind === 'file' && meta.fileId
+  const headline =
+    meta.fileName || meta.taskTitle || item.body || item.title
 
   return (
     <motion.div
@@ -157,32 +206,71 @@ function AlertRow({ item, onDismiss, onReview }) {
               {config.label}
             </span>
             <span className="text-[13px] font-semibold text-primary">
-              {meta.taskTitle || item.body || item.title}
+              {headline}
             </span>
           </div>
 
           <p className="mt-1 text-[12px] leading-relaxed text-secondary">
             {item.type === 'mention' && meta.commentBody
               ? `“${meta.commentBody}”`
-              : item.title}
+              : item.type === 'approval_requested'
+                ? item.body || item.title
+                : item.title}
           </p>
+
+          {meta.note ? (
+            <p className="mt-1 text-[11px] italic text-secondary">
+              “{meta.note}”
+            </p>
+          ) : null}
 
           {context && (
             <p className="mt-1 text-[11px] text-secondary">{context}</p>
           )}
+
+          {meta.previewUrl ? (
+            <button
+              type="button"
+              onClick={() => window.open(assetUrl(meta.previewUrl), '_blank')}
+              className="mt-2 text-[11px] font-semibold text-accent hover:underline"
+            >
+              Open drawing
+            </button>
+          ) : null}
 
           <div className="mt-2 flex flex-wrap items-center justify-between gap-2">
             <p className="text-[11px] text-secondary">
               {actor ? `From ${actor}` : 'Workspace'}
               {item.createdAt ? ` · ${formatDate(item.createdAt)}` : ''}
             </p>
-            <button
-              type="button"
-              onClick={onReview}
-              className="inline-flex h-8 items-center rounded-lg bg-[#3ecf8e] px-3.5 text-[12px] font-semibold text-[#171717] transition hover:bg-[#24b47e]"
-            >
-              {config.cta}
-            </button>
+            {isApproval ? (
+              <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  disabled={deciding}
+                  onClick={() => onDecide(item, 'rejected')}
+                  className="inline-flex h-8 items-center rounded-lg border border-red-500/30 bg-red-500/10 px-3 text-[12px] font-semibold text-red-600 transition hover:bg-red-500/15 disabled:opacity-50"
+                >
+                  Reject
+                </button>
+                <button
+                  type="button"
+                  disabled={deciding}
+                  onClick={() => onDecide(item, 'approved')}
+                  className="inline-flex h-8 items-center rounded-lg bg-[#3ecf8e] px-3.5 text-[12px] font-semibold text-[#171717] transition hover:bg-[#24b47e] disabled:opacity-50"
+                >
+                  Approve
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={onReview}
+                className="inline-flex h-8 items-center rounded-lg bg-[#3ecf8e] px-3.5 text-[12px] font-semibold text-[#171717] transition hover:bg-[#24b47e]"
+              >
+                {config.cta}
+              </button>
+            )}
           </div>
         </div>
       </div>
@@ -196,6 +284,7 @@ export function LiveNotificationCenter() {
   const navigate = useNavigate()
   const qc = useQueryClient()
   const [alerts, setAlerts] = useState([])
+  const [decidingId, setDecidingId] = useState(null)
   const seenIds = useRef(loadSeen())
 
   const enqueue = useCallback(
@@ -215,6 +304,8 @@ export function LiveNotificationCenter() {
       qc.invalidateQueries({ queryKey: ['notifications'] })
       qc.invalidateQueries({ queryKey: ['home'] })
       qc.invalidateQueries({ queryKey: ['tasks'] })
+      qc.invalidateQueries({ queryKey: ['approvals'] })
+      qc.invalidateQueries({ queryKey: ['files'] })
       qc.invalidateQueries({ queryKey: ['mail-threads'] })
       if (payload.type === 'mail') {
         qc.invalidateQueries({ queryKey: ['mail-thread'] })
@@ -254,7 +345,6 @@ export function LiveNotificationCenter() {
     }
   }, [userId, enqueue, qc])
 
-  // Polling fallback so alerts still surface if the socket drops
   useEffect(() => {
     if (!userId) return undefined
     let cancelled = false
@@ -327,7 +417,36 @@ export function LiveNotificationCenter() {
     [markRead, navigate],
   )
 
+  const decide = useCallback(
+    async (item, decision) => {
+      const fileId = item.meta?.fileId
+      if (!fileId) return
+      setDecidingId(item._id)
+      try {
+        await api(`/files/${fileId}/decide`, {
+          method: 'POST',
+          body: JSON.stringify({ decision }),
+        })
+        toast(
+          decision === 'approved' ? 'Drawing approved' : 'Drawing rejected',
+          { type: 'success' },
+        )
+        markRead(item._id)
+        setAlerts((prev) => prev.filter((a) => String(a._id) !== String(item._id)))
+        qc.invalidateQueries({ queryKey: ['files'] })
+        qc.invalidateQueries({ queryKey: ['approvals'] })
+      } catch (e) {
+        toast(e.message || 'Could not decide', { type: 'error' })
+      } finally {
+        setDecidingId(null)
+      }
+    },
+    [markRead, qc],
+  )
+
   if (!userId) return null
+
+  const hasApproval = alerts.some((a) => a.type === 'approval_requested')
 
   return createPortal(
     <AnimatePresence>
@@ -356,10 +475,14 @@ export function LiveNotificationCenter() {
               </span>
               <div className="min-w-0 flex-1">
                 <h2 className="text-[15px] font-semibold text-primary">
-                  New work assigned to you
+                  {hasApproval
+                    ? 'Approval needed'
+                    : 'New work assigned to you'}
                 </h2>
                 <p className="mt-0.5 text-[12px] text-secondary">
-                  Please review and acknowledge these updates to proceed
+                  {hasApproval
+                    ? 'Review the drawing and approve or reject from here'
+                    : 'Please review and acknowledge these updates to proceed'}
                 </p>
               </div>
               <button
@@ -380,6 +503,8 @@ export function LiveNotificationCenter() {
                     item={item}
                     onDismiss={() => dismissOne(item._id)}
                     onReview={() => review(item)}
+                    onDecide={decide}
+                    deciding={decidingId === item._id}
                   />
                 ))}
               </AnimatePresence>

@@ -201,7 +201,7 @@ export interface Project {
   name: string
   clientName: string
   clientPhone?: string
-  type: 'residential' | 'commercial' | 'blank' | string
+  type: 'residential' | 'commercial' | 'renovation' | 'custom' | 'blank' | string
   location?: string
   startDate?: string
   endDate?: string

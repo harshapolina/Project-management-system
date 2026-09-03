@@ -21,8 +21,11 @@ export function stageLabel(key) {
     site_visit: 'Site Visit',
     quotation_sent: 'Quotation Sent',
     negotiation: 'Negotiation',
-    won: 'Won',
-    lost: 'Lost',
+    mood_board: 'Mood Board',
+    hot: 'Hot',
+    dead: 'Dead',
+    won: 'Hot',
+    lost: 'Dead',
   }
   return map[key] || String(key || '').replace(/_/g, ' ')
 }

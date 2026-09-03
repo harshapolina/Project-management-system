@@ -546,4 +546,32 @@ router.post(
   }),
 )
 
+router.delete(
+  '/tenants/:id/users/:userId',
+  asyncHandler(async (req, res) => {
+    const tenant = await Tenant.findById(req.params.id)
+    if (!tenant) throw new AppError('Tenant not found', 404)
+
+    const user = await User.findOne({
+      _id: req.params.userId,
+      tenantId: tenant._id,
+      isPlatformAdmin: { $ne: true },
+    })
+    if (!user) throw new AppError('User not found in this workspace', 404)
+
+    const removed = {
+      id: String(user._id),
+      name: user.name,
+      email: user.email,
+    }
+    await User.deleteOne({ _id: user._id })
+
+    res.json({
+      success: true,
+      message: `${removed.name} deleted from ${tenant.name}`,
+      removed,
+    })
+  }),
+)
+
 export default router

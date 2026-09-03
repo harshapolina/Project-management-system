@@ -23,6 +23,7 @@ import { PlatformLoginPage } from './pages/auth/PlatformLoginPage'
 import { OnboardingPage } from './pages/OnboardingPage'
 import { HomePage } from './pages/HomePage'
 import { PortfolioPage } from './pages/PortfolioPage'
+import { LiveDashboardPage } from './pages/LiveDashboardPage'
 import { ProjectsPage } from './pages/ProjectsPage'
 import { ProjectWorkspace } from './pages/project/ProjectWorkspace'
 import { ProjectOverview } from './pages/project/ProjectOverview'
@@ -39,6 +40,7 @@ import { LeadsPage } from './pages/LeadsPage'
 import { FinancePage } from './pages/MoneyPage'
 import { MaterialsPage } from './pages/MaterialsPage'
 import { BillingPage } from './pages/BillingPage'
+import { TaxInvoicesPage } from './pages/TaxInvoicesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ApprovalsPage } from './pages/ApprovalsPage'
 import { DocsPage } from './pages/DocsPage'
@@ -225,6 +227,16 @@ export default function App() {
               }
             />
             <Route
+              path="/live-board"
+              element={
+                <CapabilityGate capability="myWork">
+                  <PagePad>
+                    <LiveDashboardPage />
+                  </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
               path="/leads"
               element={
                 <CapabilityGate capability="leads">
@@ -335,6 +347,14 @@ export default function App() {
                   <PagePad>
                     <BillingPage />
                   </PagePad>
+                </CapabilityGate>
+              }
+            />
+            <Route
+              path="/billing/tax-invoices"
+              element={
+                <CapabilityGate capability="finance">
+                  <TaxInvoicesPage />
                 </CapabilityGate>
               }
             />

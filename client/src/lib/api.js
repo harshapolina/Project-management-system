@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { persist } from 'zustand/middleware'
-import { compressFormDataImages } from './compressImage'
+import { compressFormDataUploads } from './compressImage'
 
 const API_URL = import.meta.env.VITE_API_URL || '/api'
 
@@ -51,7 +51,32 @@ export function setTenantSlug(slug) {
   else localStorage.removeItem('cubic-tenant-slug')
 }
 
-/** Origin of the API host (no trailing slash), e.g. https://project-management-system-msmw.vercel.app */
+/**
+ * Public app origin for shareable login links.
+ * Prefer VITE_PUBLIC_APP_URL so localhost platform creates still copy the live URL.
+ */
+export function publicAppOrigin() {
+  const fromEnv = String(import.meta.env.VITE_PUBLIC_APP_URL || '')
+    .trim()
+    .replace(/\/$/, '')
+  if (fromEnv) return fromEnv
+  if (typeof window !== 'undefined') return window.location.origin
+  return ''
+}
+
+/** Company login link with workspace (+ optional admin portal). */
+export function companyLoginUrl(workspace, portal = 'staff') {
+  const origin = publicAppOrigin()
+  const slug = String(workspace || getTenantSlug() || 'cubic')
+    .trim()
+    .toLowerCase()
+  const params = new URLSearchParams()
+  if (portal === 'admin') params.set('portal', 'admin')
+  params.set('tenant', slug)
+  return `${origin}/login?${params.toString()}`
+}
+
+/** Origin of the API host (no trailing slash), e.g. https://project-management-backend-nine-tau.vercel.app */
 export function apiOrigin() {
   const raw = (import.meta.env.VITE_API_URL || '').trim()
   if (!raw || raw.startsWith('/')) {
@@ -92,15 +117,32 @@ export const useAuthStore = create(
       accessToken: null,
       refreshToken: null,
       tenant: null,
-      setAuth: ({ user, accessToken, refreshToken, tenant }) =>
+      setAuth: ({ user, accessToken, refreshToken, tenant }) => {
+        if (tenant?.slug) {
+          try {
+            setTenantSlug(tenant.slug)
+          } catch {
+            /* ignore */
+          }
+        }
         set({
           user,
           accessToken,
           refreshToken,
           ...(tenant !== undefined ? { tenant } : {}),
-        }),
+        })
+      },
       setUser: (user) => set({ user }),
-      setTenant: (tenant) => set({ tenant }),
+      setTenant: (tenant) => {
+        if (tenant?.slug) {
+          try {
+            setTenantSlug(tenant.slug)
+          } catch {
+            /* ignore */
+          }
+        }
+        set({ tenant })
+      },
       logout: () => {
         try {
           // Dynamic to avoid circular import at module load
@@ -122,7 +164,13 @@ export const useAuthStore = create(
 )
 
 function tenantHeaders() {
-  return { 'X-Tenant-Slug': getTenantSlug() }
+  // Prefer the logged-in workspace from auth state so a stale localStorage /
+  // VITE_TENANT_SLUG default (often "cubic") cannot 403 every API call.
+  const fromAuth = useAuthStore.getState().tenant?.slug
+  const slug = String(fromAuth || getTenantSlug() || 'cubic')
+    .trim()
+    .toLowerCase()
+  return { 'X-Tenant-Slug': slug }
 }
 
 /**
@@ -197,7 +245,7 @@ export async function api(path, options = {}) {
   // Shrink images once, here, so every upload in the app benefits without each
   // call site remembering to. Non-image parts are passed through untouched, and
   // a failed compression falls back to the original file.
-  const body = isFormData ? await compressFormDataImages(options.body) : options.body
+  const body = isFormData ? await compressFormDataUploads(options.body) : options.body
   const requestInit = { ...options, body, headers }
 
   let res = await fetch(`${API_URL}${path}`, requestInit)

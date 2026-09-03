@@ -1,5 +1,6 @@
 import { Fragment, useMemo } from 'react'
 import { formatInr } from '../../lib/format'
+import { assetUrl } from '../../lib/api'
 
 /* ─────────────────────────── line maths ─────────────────────────── */
 
@@ -135,19 +136,24 @@ const SHEET =
   'cubic-sheet relative mx-auto w-full max-w-[210mm] bg-white px-4 pt-4 text-[#1c1917] shadow-[0_20px_60px_-32px_rgba(28,25,23,0.5)] ring-1 ring-[#e6ded2] print:shadow-none print:ring-0 sm:px-5 sm:pt-5 pb-2'
 
 function LogoSlot({ src, alt, fallback }) {
-  if (src) {
+  const url = src ? assetUrl(src) : ''
+  if (url) {
     return (
       <img
-        src={src}
-        alt={alt}
-        className="max-h-[62px] max-w-full object-contain"
+        src={url}
+        alt={alt || ''}
+        className="max-h-[72px] max-w-full object-contain"
         crossOrigin="anonymous"
       />
     )
   }
+  // No company text in the logo cell — platform logo only when set.
   return (
-    <span className="text-center text-[13px] font-bold uppercase leading-tight tracking-[0.06em] text-[#1c1917]">
-      {fallback}
+    <span
+      className="inline-flex h-[52px] min-w-[120px] items-center justify-center rounded border border-dashed border-[#d8cec0] text-[9px] font-semibold uppercase tracking-[0.12em] text-[#a3988a]"
+      title={fallback || 'Company logo'}
+    >
+      Logo
     </span>
   )
 }
@@ -288,11 +294,15 @@ function PageFoot({ page, total, client }) {
 function ItemTable({ blocks, measured }) {
   // the unit column folds into the quantity cell on phones (commercial only)
   const cols = measured ? 9 : 6
+  const headBg = measured ? '#f4a58a' : '#fde9d9'
   return (
     <div className="overflow-x-auto py-3 print:overflow-visible">
     <table className="w-full border-collapse text-[9.5px] leading-snug">
       <thead>
-        <tr className="bg-[#f4a58a] text-left text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#1c1917]">
+        <tr
+          className="text-left text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#1c1917]"
+          style={{ background: headBg }}
+        >
           <th className="w-9 border border-[#d8cec0] px-1.5 py-1.5 text-center">Sl.</th>
           <th className="border border-[#d8cec0] px-2 py-1.5">
             {measured ? 'Description of item' : 'Items / description / finishes'}
@@ -346,7 +356,11 @@ function ItemTable({ blocks, measured }) {
           }
           if (b.kind === 'section') {
             return (
-              <tr key={`s${i}`} className="break-inside-avoid bg-[#e8f0e4]">
+              <tr
+                key={`s${i}`}
+                className="break-inside-avoid"
+                style={{ background: measured ? '#e8f0e4' : '#fde9d9' }}
+              >
                 <td className="border border-[#d8cec0] px-1.5 py-1.5 text-[9px] font-bold tabular-nums text-[#3d352e]">
                   {b.no || ''}
                 </td>
@@ -383,6 +397,14 @@ function ItemTable({ blocks, measured }) {
                 {it.slNo || ''}
               </td>
               <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 align-top text-[#1c1917]">
+                {it.image ? (
+                  <img
+                    src={assetUrl(it.image)}
+                    alt=""
+                    className="mb-1.5 max-h-[100px] max-w-[140px] rounded border border-[#e6ded2] object-cover print:max-h-[90px]"
+                    crossOrigin="anonymous"
+                  />
+                ) : null}
                 {it.description}
                 {measured && (it.category || no || w || h) ? (
                   <span className="mt-0.5 block text-[8.5px] text-[#a3988a] sm:hidden">
@@ -442,14 +464,15 @@ function ItemTable({ blocks, measured }) {
 
 /* ─────────────────────────── totals & annexures ─────────────────────────── */
 
-function TotalsBlock({ subtotal, charges, chargesLabel, taxable, gst, gstAmount, discount, grand }) {
-  const Row = ({ label, value, strong, rule }) => (
+function TotalsBlock({ subtotal, charges, chargesLabel, taxable, gst, gstAmount, discount, grand, commercial }) {
+  const Row = ({ label, value, strong, rule, mauve }) => (
     <div
       className={[
         'flex items-center justify-between gap-6 px-3 py-1.5 text-[10px]',
         rule ? 'border-t border-[#1c1917]' : 'border-t border-[#e6ded2]',
         strong ? 'font-bold text-[#1c1917]' : 'text-[#3d352e]',
       ].join(' ')}
+      style={mauve ? { background: '#e8b7cd' } : undefined}
     >
       <span className={strong ? 'uppercase tracking-[0.06em]' : ''}>{label}</span>
       <span className="tabular-nums">{value}</span>
@@ -458,29 +481,53 @@ function TotalsBlock({ subtotal, charges, chargesLabel, taxable, gst, gstAmount,
   return (
     <div className="flex justify-end pb-4 pt-3">
       <div className="w-full max-w-[300px] border border-[#d8cec0] bg-[#faf6f0]">
-        <Row label="Sub Total" value={formatInr(subtotal)} strong />
+        <Row label="Sub Total" value={formatInr(subtotal)} strong mauve={commercial} />
         {charges > 0 ? (
-          <Row label={chargesLabel || 'Design & Handling charges'} value={formatInr(charges)} />
+          <Row
+            label={
+              chargesLabel ||
+              (commercial
+                ? 'Handling / Services charges'
+                : 'Design & Handling charges')
+            }
+            value={formatInr(charges)}
+          />
         ) : null}
         {charges > 0 ? (
-          <Row label="Total before GST" value={formatInr(taxable)} strong />
+          <Row
+            label={commercial ? 'Grand Sub Total' : 'Total before GST'}
+            value={formatInr(taxable)}
+            strong
+            mauve={commercial}
+          />
         ) : null}
         {gstAmount > 0 ? (
-          <Row label={`GST @ ${gst}%`} value={formatInr(gstAmount)} />
+          <Row label={`GST @ ${gst}% EXTRA`} value={formatInr(gstAmount)} />
         ) : null}
         {Number(discount) > 0 ? (
           <Row label="Discount" value={`− ${formatInr(discount)}`} />
         ) : null}
-        <Row label="Grand Total" value={formatInr(grand)} strong rule />
+        <Row label="Grand Total" value={formatInr(grand)} strong rule mauve={commercial} />
       </div>
     </div>
   )
 }
 
-function ListPage({ title, note, children }) {
+function ListPage({ title, note, children, termsStyle }) {
   return (
-    <section className="py-4">
-      <h2 className="border-b-2 border-[#1c1917] pb-1.5 text-[11px] font-bold uppercase tracking-[0.16em] text-[#1c1917]">
+    <section
+      className="py-4"
+      style={termsStyle ? { background: '#e2efda', padding: '1rem', borderRadius: '4px' } : undefined}
+    >
+      <h2
+        className="border-b-2 pb-1.5 text-[11px] font-bold uppercase tracking-[0.16em]"
+        style={{
+          borderColor: termsStyle ? '#6b8f5c' : '#1c1917',
+          color: termsStyle ? '#2d5016' : '#1c1917',
+          background: termsStyle ? '#c5deb8' : undefined,
+          padding: termsStyle ? '0.35rem 0.5rem' : undefined,
+        }}
+      >
         {title}
       </h2>
       {note ? <p className="mt-2 text-[9.5px] text-[#7a6d60]">{note}</p> : null}
@@ -510,9 +557,9 @@ function ActualsTable({ items }) {
             </td>
             <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 text-[#1c1917]">
               {it.description}
-              {it.note ? (
+              {it.remarks || it.note ? (
                 <span className="mt-0.5 block whitespace-pre-line text-[8.5px] text-[#a3988a]">
-                  {it.note}
+                  {it.remarks || it.note}
                 </span>
               ) : null}
             </td>
@@ -569,9 +616,12 @@ export function CubicQuoteDocument({
   docMeta = {},
 }) {
   const measured = boqType !== 'commercial'
+  const commercial = !measured
   const meta = template?.meta || {
     propertyType: measured ? 'Residential' : 'Commercial',
-    documentTitle: title || 'QUOTATION FOR INTERIOR & EXECUTION',
+    documentTitle: title || (commercial
+      ? 'Estimate for Interior Works'
+      : 'QUOTATION FOR INTERIOR & EXECUTION'),
   }
 
   const rows = useMemo(
@@ -604,7 +654,11 @@ export function CubicQuoteDocument({
   // residential sheets band in green, commercial estimates in the pink of the
   // source workbook
   const accent = measured ? '#e8f0e4' : '#e8b7cd'
-  const header = { ...docMeta, companyLogo: docMeta.companyLogo || tenant?.logoUrl || '' }
+  const header = {
+    ...docMeta,
+    // Always prefer the platform-admin company logo for the letterhead mark.
+    companyLogo: tenant?.logoUrl || docMeta.companyLogo || '',
+  }
 
   const customerName =
     header.customerName || project?.clientName || tenant?.name || ''
@@ -656,6 +710,7 @@ export function CubicQuoteDocument({
                 gstAmount={gstAmount}
                 discount={discount}
                 grand={grand}
+                commercial={commercial}
               />
             ) : null}
 
@@ -710,14 +765,14 @@ export function CubicQuoteDocument({
               <article key="terms" className={SHEET}>
                 <RunningHead meta={meta} page={n} total={totalPages} doc={meta.documentTitle} />
                 {terms.length ? (
-                  <ListPage title="Terms & conditions">
+                  <ListPage title="Terms & conditions" termsStyle>
                     <ol className="mt-3 space-y-1.5">
                       {terms.map((t, i) => (
                         <li
                           key={i}
-                          className="flex gap-2 text-[10px] leading-relaxed text-[#3d352e]"
+                          className="flex gap-2 text-[10px] leading-relaxed text-[#2d5016]"
                         >
-                          <span className="shrink-0 tabular-nums font-semibold text-[#a3988a]">
+                          <span className="shrink-0 tabular-nums font-semibold text-[#5a7a4a]">
                             {i + 1}.
                           </span>
                           <span>{t}</span>
@@ -727,14 +782,14 @@ export function CubicQuoteDocument({
                   </ListPage>
                 ) : null}
                 {paymentTerms.length ? (
-                  <ListPage title="Payment terms">
+                  <ListPage title="Payment terms" termsStyle>
                     <ol className="mt-3 space-y-1.5">
                       {paymentTerms.map((t, i) => (
                         <li
                           key={i}
-                          className="flex gap-2 text-[10px] leading-relaxed text-[#3d352e]"
+                          className="flex gap-2 text-[10px] leading-relaxed text-[#2d5016]"
                         >
-                          <span className="shrink-0 tabular-nums font-semibold text-[#a3988a]">
+                          <span className="shrink-0 tabular-nums font-semibold text-[#5a7a4a]">
                             {i + 1}.
                           </span>
                           <span>{t}</span>

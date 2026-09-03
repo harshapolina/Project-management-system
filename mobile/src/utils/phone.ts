@@ -13,8 +13,10 @@ export function telLink(phone?: string) {
 export function whatsappLink(phone?: string, message = '') {
   const digits = digitsOnly(phone)
   if (!digits) return ''
-  const q = message ? `?text=${encodeURIComponent(message)}` : ''
-  return `https://wa.me/${digits}${q}`
+  const params = new URLSearchParams()
+  params.set('phone', digits)
+  if (message) params.set('text', message)
+  return `https://web.whatsapp.com/send?${params.toString()}`
 }
 
 export function poWhatsappLink(po: PurchaseOrder) {

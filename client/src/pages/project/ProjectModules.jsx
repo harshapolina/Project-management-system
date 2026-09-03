@@ -114,10 +114,6 @@ export function ProjectProcurement() {
 
   const pendingRows = materialRows.filter((r) => !r.ordered)
   const selectedItems = materialRows.filter((r) => selected.has(r._key))
-  const selectedValue = selectedItems.reduce(
-    (s, it) => s + (Number(it.amount) || 0),
-    0,
-  )
 
   const totalValue = pos.reduce((s, p) => s + (Number(p.value) || 0), 0)
   const delivered = pos.filter((p) => p.status === 'delivered').length
@@ -158,7 +154,7 @@ export function ProjectProcurement() {
           {selectedItems.length > 0 && (
             <Button onClick={() => setRfqOpen(true)}>
               Raise RFQ · {selectedItems.length} item
-              {selectedItems.length === 1 ? '' : 's'} ({formatInr(selectedValue)})
+              {selectedItems.length === 1 ? '' : 's'}
             </Button>
           )}
           <Button
