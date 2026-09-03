@@ -133,7 +133,7 @@ function buildPages(rows) {
 
 /* px here, not on each block — one margin the whole page lines up to */
 const SHEET =
-  'cubic-sheet relative mx-auto w-full max-w-[210mm] bg-white px-4 pt-4 text-[#1c1917] shadow-[0_20px_60px_-32px_rgba(28,25,23,0.5)] ring-1 ring-[#e6ded2] print:shadow-none print:ring-0 sm:px-5 sm:pt-5 pb-2'
+  'cubic-sheet relative mx-auto w-full max-w-[210mm] bg-[#fffffe] px-4 pt-4 text-[#1c1918] shadow-[0_20px_60px_-32px_rgba(28,25,23,0.5)] ring-1 ring-[#e6ded2] print:shadow-none print:ring-0 sm:px-5 sm:pt-5 pb-2'
 
 function LogoSlot({ src, alt, fallback }) {
   const url = src ? assetUrl(src) : ''
@@ -150,7 +150,7 @@ function LogoSlot({ src, alt, fallback }) {
   // No company text in the logo cell — platform logo only when set.
   return (
     <span
-      className="inline-flex h-[52px] min-w-[120px] items-center justify-center rounded border border-dashed border-[#d8cec0] text-[9px] font-semibold uppercase tracking-[0.12em] text-[#a3988a]"
+      className="inline-flex h-[52px] min-w-[120px] items-center justify-center rounded border border-dashed border-[#d8cec0] text-[9px] font-semibold uppercase tracking-[0.12em] text-[#a3988b]"
       title={fallback || 'Company logo'}
     >
       Logo
@@ -180,12 +180,12 @@ function Letterhead({
     docMeta.clientAddress || project?.location || project?.address || '—'
 
   return (
-    <header className="border-2 border-[#1c1917]">
-      <div className="border-b-2 border-[#1c1917] py-1.5 text-center" style={{ background: accent }}>
-        <h1 className="text-[11px] font-bold text-[#1c1917] sm:text-[13px]">{doc}</h1>
+    <header className="border-2 border-[#1c1918]">
+      <div className="border-b-2 border-[#1c1918] py-1.5 text-center" style={{ background: accent }}>
+        <h1 className="text-[11px] font-bold text-[#1c1918] sm:text-[13px]">{doc}</h1>
       </div>
 
-      <div className="grid grid-cols-1 divide-y-2 divide-[#1c1917] sm:grid-cols-[1.5fr_1.25fr_0.9fr] sm:divide-x-2 sm:divide-y-0">
+      <div className="grid grid-cols-1 divide-y-2 divide-[#1c1918] sm:grid-cols-[1.5fr_1.25fr_0.9fr] sm:divide-x-2 sm:divide-y-0">
         <div className="flex min-h-[92px] items-center justify-center px-4 py-3">
           <LogoSlot
             src={docMeta.companyLogo}
@@ -195,43 +195,43 @@ function Letterhead({
         </div>
 
         <div className="flex min-h-[92px] flex-col items-center justify-center px-4 py-3 text-center">
-          <p className="text-[11px] font-bold text-[#1c1917]">Client Address:</p>
-          <p className="mt-1 text-[10.5px] font-bold leading-[1.45] text-[#1c1917]">
+          <p className="text-[11px] font-bold text-[#1c1918]">Client Address:</p>
+          <p className="mt-1 text-[10.5px] font-bold leading-[1.45] text-[#1c1918]">
             {clientAddress}
           </p>
         </div>
 
         <div className="flex min-h-[92px] flex-col items-center justify-center gap-1.5 px-4 py-3 text-center">
-          <p className="text-[11px] font-bold text-[#1c1917]">Client:</p>
+          <p className="text-[11px] font-bold text-[#1c1918]">Client:</p>
           {/* the logo stands in for the name when one has been uploaded */}
           {docMeta.clientLogo ? (
             <LogoSlot src={docMeta.clientLogo} alt={customer || 'Client'} />
           ) : (
-            <p className="text-[11px] font-bold leading-tight text-[#1c1917]">
+            <p className="text-[11px] font-bold leading-tight text-[#1c1918]">
               {customer || '—'}
             </p>
           )}
         </div>
       </div>
 
-      <div className="grid grid-cols-1 border-t-2 border-[#1c1917] divide-y-2 divide-[#1c1917] sm:grid-cols-[1.5fr_1.25fr_0.9fr] sm:divide-x-2 sm:divide-y-0">
-        <p className="flex min-h-[42px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold leading-[1.5] text-[#1c1917]">
+      <div className="grid grid-cols-1 border-t-2 border-[#1c1918] divide-y-2 divide-[#1c1918] sm:grid-cols-[1.5fr_1.25fr_0.9fr] sm:divide-x-2 sm:divide-y-0">
+        <p className="flex min-h-[42px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold leading-[1.5] text-[#1c1918]">
           {address}
           {phone ? `, Phone ${phone}` : ''}
         </p>
-        <p className="flex min-h-[42px] items-center justify-center px-4 py-2 text-center text-[10px] font-bold text-[#1c1917]">
+        <p className="flex min-h-[42px] items-center justify-center px-4 py-2 text-center text-[10px] font-bold text-[#1c1918]">
           Q.No: {quoteNo}
         </p>
-        <p className="flex min-h-[42px] items-center justify-center px-4 py-2 text-center text-[10px] font-bold text-[#1c1917]">
+        <p className="flex min-h-[42px] items-center justify-center px-4 py-2 text-center text-[10px] font-bold text-[#1c1918]">
           Date: {quoteDate}
         </p>
       </div>
 
       {meta.hasMeasurements ? (
-        <div className="grid grid-cols-1 border-t-2 border-[#1c1917] divide-y-2 divide-[#1c1917] sm:grid-cols-[1.5fr_1.25fr_0.9fr] sm:divide-x-2 sm:divide-y-0">
+        <div className="grid grid-cols-1 border-t-2 border-[#1c1918] divide-y-2 divide-[#1c1918] sm:grid-cols-[1.5fr_1.25fr_0.9fr] sm:divide-x-2 sm:divide-y-0">
           {/* The project name fills whichever cell its detail is missing from,
               so it never prints twice. */}
-          <p className="flex min-h-[34px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold leading-[1.5] text-[#1c1917]">
+          <p className="flex min-h-[34px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold leading-[1.5] text-[#1c1918]">
             {docMeta.architect ? (
               <span>
                 ARCHITECT: {docMeta.architect}
@@ -246,14 +246,14 @@ function Letterhead({
               <span>PROJECT: {project?.name || '—'}</span>
             )}
           </p>
-          <p className="flex min-h-[34px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold leading-[1.5] text-[#1c1917]">
+          <p className="flex min-h-[34px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold leading-[1.5] text-[#1c1918]">
             {docMeta.contactNo
               ? `CONTACT NO: ${docMeta.contactNo}`
               : docMeta.architect
                 ? `PROJECT: ${project?.name || '—'}`
                 : ''}
           </p>
-          <p className="flex min-h-[34px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold text-[#1c1917]">
+          <p className="flex min-h-[34px] items-center justify-center px-4 py-2 text-center text-[9.5px] font-bold text-[#1c1918]">
             PE: {meta.propertyType}
           </p>
         </div>
@@ -264,7 +264,7 @@ function Letterhead({
 
 function RunningHead({ meta, page, total, doc }) {
   return (
-    <div className="flex items-center justify-between border-b border-[#d8cec0] py-2 text-[9px] uppercase tracking-[0.14em] text-[#8a7d70]">
+    <div className="flex items-center justify-between border-b border-[#d8cec0] py-2 text-[9px] uppercase tracking-[0.14em] text-[#8a7d71]">
       <span className="truncate font-semibold text-[#5c5148]">{doc}</span>
       <span className="shrink-0">
         {meta.propertyType} · Page {page} of {total}
@@ -277,9 +277,9 @@ const WEBSITE = 'www.cubicassociates.com'
 
 function PageFoot({ page, total, client }) {
   return (
-    <div className="mt-auto grid grid-cols-3 items-center border-t border-[#e6ded2] py-2 text-[8.5px] tracking-[0.1em] text-[#a3988a]">
+    <div className="mt-auto grid grid-cols-3 items-center border-t border-[#e6ded2] py-2 text-[8.5px] tracking-[0.1em] text-[#a3988b]">
       <span className="truncate uppercase">{client || ''}</span>
-      <span className="text-center font-semibold tracking-[0.06em] text-[#8a7d70]">
+      <span className="text-center font-semibold tracking-[0.06em] text-[#8a7d71]">
         {WEBSITE}
       </span>
       <span className="text-right uppercase tabular-nums">
@@ -300,7 +300,7 @@ function ItemTable({ blocks, measured }) {
     <table className="w-full border-collapse text-[9.5px] leading-snug">
       <thead>
         <tr
-          className="text-left text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#1c1917]"
+          className="text-left text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#1c1918]"
           style={{ background: headBg }}
         >
           <th className="w-9 border border-[#d8cec0] px-1.5 py-1.5 text-center">Sl.</th>
@@ -344,10 +344,10 @@ function ItemTable({ blocks, measured }) {
         {blocks.map((b, i) => {
           if (b.kind === 'group') {
             return (
-              <tr key={`g${i}`} className="break-inside-avoid bg-[#1c1917]">
+              <tr key={`g${i}`} className="break-inside-avoid bg-[#1c1918]">
                 <td
                   colSpan={cols}
-                  className="border border-[#1c1917] px-2 py-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#f4efe6]"
+                  className="border border-[#1c1918] px-2 py-1.5 text-[9.5px] font-bold uppercase tracking-[0.14em] text-[#f4efe6]"
                 >
                   {b.title}
                 </td>
@@ -366,7 +366,7 @@ function ItemTable({ blocks, measured }) {
                 </td>
                 <td
                   colSpan={cols - 1}
-                  className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 text-[9.5px] font-bold text-[#1c1917]"
+                  className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 text-[9.5px] font-bold text-[#1c1918]"
                 >
                   {b.title}
                 </td>
@@ -375,7 +375,7 @@ function ItemTable({ blocks, measured }) {
           }
           if (b.kind === 'room') {
             return (
-              <tr key={`r${i}`} className="break-inside-avoid bg-[#faf6f0]">
+              <tr key={`r${i}`} className="break-inside-avoid bg-[#faf6f1]">
                 <td
                   colSpan={cols}
                   className="border border-[#d8cec0] px-2 py-1 text-[9px] font-bold uppercase tracking-[0.08em] text-[#7a6d60]"
@@ -393,10 +393,10 @@ function ItemTable({ blocks, measured }) {
           const h = Number(it.height) || 0
           return (
             <tr key={it._key || b.index} className="break-inside-avoid align-middle">
-              <td className="border border-[#d8cec0] px-1.5 py-1.5 text-center text-[9px] tabular-nums text-[#8a7d70]">
+              <td className="border border-[#d8cec0] px-1.5 py-1.5 text-center text-[9px] tabular-nums text-[#8a7d71]">
                 {it.slNo || ''}
               </td>
-              <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 align-top text-[#1c1917]">
+              <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 align-top text-[#1c1918]">
                 {it.image ? (
                   <img
                     src={assetUrl(it.image)}
@@ -407,7 +407,7 @@ function ItemTable({ blocks, measured }) {
                 ) : null}
                 {it.description}
                 {measured && (it.category || no || w || h) ? (
-                  <span className="mt-0.5 block text-[8.5px] text-[#a3988a] sm:hidden">
+                  <span className="mt-0.5 block text-[8.5px] text-[#a3988b] sm:hidden">
                     {[
                       it.category,
                       no || w || h ? `${nf(no)} × ${nf(w)} × ${nf(h)}` : '',
@@ -442,7 +442,7 @@ function ItemTable({ blocks, measured }) {
               <td className="border border-[#d8cec0] px-1 py-1.5 text-center tabular-nums">
                 {nf(qty)}
                 {measured ? null : (
-                  <span className="block text-[8.5px] text-[#a3988a] sm:hidden">
+                  <span className="block text-[8.5px] text-[#a3988b] sm:hidden">
                     {unitLabel(it)}
                   </span>
                 )}
@@ -469,8 +469,8 @@ function TotalsBlock({ subtotal, charges, chargesLabel, taxable, gst, gstAmount,
     <div
       className={[
         'flex items-center justify-between gap-6 px-3 py-1.5 text-[10px]',
-        rule ? 'border-t border-[#1c1917]' : 'border-t border-[#e6ded2]',
-        strong ? 'font-bold text-[#1c1917]' : 'text-[#3d352e]',
+        rule ? 'border-t border-[#1c1918]' : 'border-t border-[#e6ded2]',
+        strong ? 'font-bold text-[#1c1918]' : 'text-[#3d352e]',
       ].join(' ')}
       style={mauve ? { background: '#e8b7cd' } : undefined}
     >
@@ -480,7 +480,7 @@ function TotalsBlock({ subtotal, charges, chargesLabel, taxable, gst, gstAmount,
   )
   return (
     <div className="flex justify-end pb-4 pt-3">
-      <div className="w-full max-w-[300px] border border-[#d8cec0] bg-[#faf6f0]">
+      <div className="w-full max-w-[300px] border border-[#d8cec0] bg-[#faf6f1]">
         <Row label="Sub Total" value={formatInr(subtotal)} strong mauve={commercial} />
         {charges > 0 ? (
           <Row
@@ -522,8 +522,8 @@ function ListPage({ title, note, children, termsStyle }) {
       <h2
         className="border-b-2 pb-1.5 text-[11px] font-bold uppercase tracking-[0.16em]"
         style={{
-          borderColor: termsStyle ? '#6b8f5c' : '#1c1917',
-          color: termsStyle ? '#2d5016' : '#1c1917',
+          borderColor: termsStyle ? '#6b8f5c' : '#1c1918',
+          color: termsStyle ? '#2d5016' : '#1c1918',
           background: termsStyle ? '#c5deb8' : undefined,
           padding: termsStyle ? '0.35rem 0.5rem' : undefined,
         }}
@@ -541,7 +541,7 @@ function ActualsTable({ items }) {
     <div className="overflow-x-auto print:overflow-visible">
     <table className="mt-3 w-full border-collapse text-[9.5px]">
       <thead>
-        <tr className="bg-[#f4a58a] text-left text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#1c1917]">
+        <tr className="bg-[#f4a58a] text-left text-[8.5px] font-bold uppercase tracking-[0.05em] text-[#1c1918]">
           <th className="w-9 border border-[#d8cec0] px-1.5 py-1.5 text-center">Sl.</th>
           <th className="border border-[#d8cec0] px-2 py-1.5">Description of item</th>
           <th className="w-[62px] border border-[#d8cec0] px-1.5 py-1.5">Category</th>
@@ -552,13 +552,13 @@ function ActualsTable({ items }) {
       <tbody>
         {items.map((it, i) => (
           <tr key={i} className="break-inside-avoid align-top">
-            <td className="border border-[#d8cec0] px-1.5 py-1.5 tabular-nums text-[#8a7d70]">
+            <td className="border border-[#d8cec0] px-1.5 py-1.5 tabular-nums text-[#8a7d71]">
               {it.slNo || i + 1}
             </td>
-            <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 text-[#1c1917]">
+            <td className="whitespace-pre-line border border-[#d8cec0] px-2 py-1.5 text-[#1c1918]">
               {it.description}
               {it.remarks || it.note ? (
-                <span className="mt-0.5 block whitespace-pre-line text-[8.5px] text-[#a3988a]">
+                <span className="mt-0.5 block whitespace-pre-line text-[8.5px] text-[#a3988b]">
                   {it.remarks || it.note}
                 </span>
               ) : null}
@@ -583,14 +583,14 @@ function ActualsTable({ items }) {
 function Signature({ company }) {
   return (
     <div className="mt-8 flex items-end justify-between gap-6 pb-6">
-      <p className="text-[9px] leading-relaxed text-[#a3988a]">
+      <p className="text-[9px] leading-relaxed text-[#a3988b]">
         Computer generated quotation.
         <br />
         Subject to final design sign-off.
       </p>
       <div className="text-right">
         <p className="text-[10px] font-semibold text-[#3d352e]">For {company}</p>
-        <div className="mt-10 w-44 border-t border-[#1c1917] pt-1 text-[9.5px] text-[#5c5148]">
+        <div className="mt-10 w-44 border-t border-[#1c1918] pt-1 text-[9.5px] text-[#5c5148]">
           Authorised Signatory
         </div>
       </div>
@@ -742,7 +742,7 @@ export function CubicQuoteDocument({
                           key={i}
                           className="flex gap-2 border-b border-[#f0e9df] pb-1.5 text-[10px] text-[#3d352e]"
                         >
-                          <span className="shrink-0 tabular-nums text-[#a3988a]">
+                          <span className="shrink-0 tabular-nums text-[#a3988b]">
                             {i + 1}.
                           </span>
                           <span>{t}</span>

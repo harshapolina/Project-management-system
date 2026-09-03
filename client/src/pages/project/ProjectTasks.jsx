@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useOutletContext, useParams, useSearchParams } from 'react-router-dom'
 import { format, isPast, isToday } from 'date-fns'
@@ -368,6 +368,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
   const assigneeName =
     users.find((u) => String(u._id) === String(assigneeId))?.name?.split(' ')[0] ||
     'Anyone'
+  const dateInputRef = useRef(null)
 
   return (
     <div className="px-2.5 py-2 hover:bg-black/[0.02]">
@@ -448,6 +449,7 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
                   : 'Date'}
               </span>
               <input
+                ref={dateInputRef}
                 type="date"
                 disabled={!canManage}
                 value={
@@ -455,6 +457,14 @@ function TaskCard({ task, users, canManage, onOpen, onPatch }) {
                     ? format(new Date(task.dueDate), 'yyyy-MM-dd')
                     : ''
                 }
+                onClick={(e) => {
+                  e.preventDefault()
+                  try {
+                    dateInputRef.current?.showPicker?.()
+                  } catch {
+                    dateInputRef.current?.focus()
+                  }
+                }}
                 onChange={(e) =>
                   onPatch({
                     dueDate: e.target.value

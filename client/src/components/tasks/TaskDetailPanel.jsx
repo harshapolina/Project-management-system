@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { format } from 'date-fns'
 import {
@@ -105,7 +106,21 @@ export function TaskDetailPanel({
   const [comment, setComment] = useState('')
   const [saving, setSaving] = useState(false)
   const [mentionOpen, setMentionOpen] = useState(false)
+  const [mentionQuery, setMentionQuery] = useState('')
+  const [mentionTriggerIndex, setMentionTriggerIndex] = useState(null)
   const [mentionIds, setMentionIds] = useState([])
+  const startDateRef = useRef(null)
+  const dueDateRef = useRef(null)
+  const commentRef = useRef(null)
+
+  const openDatePicker = (ref) => (e) => {
+    e.preventDefault()
+    try {
+      ref.current?.showPicker?.()
+    } catch {
+      ref.current?.focus()
+    }
+  }
   const [addFieldOpen, setAddFieldOpen] = useState(false)
   const [newField, setNewField] = useState({
     name: '',
@@ -411,6 +426,88 @@ export function TaskDetailPanel({
     onError: (e) => toast(e.message, { type: 'error' }),
   })
 
+  const closeMention = () => {
+    setMentionOpen(false)
+    setMentionTriggerIndex(null)
+    setMentionQuery('')
+  }
+
+  const handleCommentChange = (value, cursor) => {
+    setComment(value)
+    const pos = cursor ?? value.length
+    const uptoCursor = value.slice(0, pos)
+    const match = uptoCursor.match(/(?:^|\s)@([^\s@]*)$/)
+    if (match) {
+      setMentionTriggerIndex(uptoCursor.lastIndexOf('@'))
+      setMentionQuery(match[1])
+      setMentionOpen(true)
+    } else {
+      closeMention()
+    }
+  }
+
+  const insertMention = (u) => {
+    const id = String(u._id || u.id)
+    const tag = `@${u.name} `
+    if (mentionTriggerIndex != null) {
+      const before = comment.slice(0, mentionTriggerIndex)
+      const after = comment.slice(mentionTriggerIndex + 1 + mentionQuery.length)
+      const next = `${before}${tag}${after}`
+      setComment(next)
+      const caret = before.length + tag.length
+      requestAnimationFrame(() => {
+        const el = commentRef.current
+        if (el) {
+          el.focus()
+          el.setSelectionRange(caret, caret)
+        }
+      })
+    } else {
+      setComment((prev) =>
+        prev.includes(`@${u.name}`)
+          ? prev
+          : `${prev}${prev && !prev.endsWith(' ') ? ' ' : ''}${tag}`,
+      )
+    }
+    setMentionIds((prev) => (prev.includes(id) ? prev : [...prev, id]))
+    closeMention()
+  }
+
+  const triggerMentionFromButton = () => {
+    if (isCreate) return
+    if (mentionOpen) {
+      closeMention()
+      return
+    }
+    const el = commentRef.current
+    const pos = el?.selectionStart ?? comment.length
+    const before = comment.slice(0, pos)
+    const after = comment.slice(pos)
+    const needsSpace = before.length > 0 && !/\s$/.test(before)
+    const insertAt = before.length + (needsSpace ? 1 : 0)
+    const next = `${before}${needsSpace ? ' ' : ''}@${after}`
+    setComment(next)
+    setMentionTriggerIndex(insertAt)
+    setMentionQuery('')
+    setMentionOpen(true)
+    requestAnimationFrame(() => {
+      if (el) {
+        el.focus()
+        el.setSelectionRange(insertAt + 1, insertAt + 1)
+      }
+    })
+  }
+
+  const mentionMatches = mentionOpen
+    ? users
+        .filter((u) =>
+          mentionQuery
+            ? u.name?.toLowerCase().includes(mentionQuery.toLowerCase())
+            : true,
+        )
+        .slice(0, 8)
+    : []
+
   if (!open) return null
 
   const crumb = isPersonal || !projectId ? 'Personal' : projectName || 'Project'
@@ -499,38 +596,29 @@ export function TaskDetailPanel({
               </AttrRow>
 
               <AttrRow label="Dates" icon={Calendar}>
-                <div className="relative flex min-w-0 items-center gap-1.5 text-[13px]">
-                  {!form.startDate && !form.dueDate ? (
-                    <span className="pointer-events-none absolute left-0 text-secondary">
-                      Start → Due
-                    </span>
-                  ) : null}
-                  <input
-                    type="date"
-                    disabled={!canManageTask}
+                <div className="flex min-w-0 items-center gap-1.5 text-[13px]">
+                  <DateChip
+                    inputRef={startDateRef}
                     value={form.startDate}
+                    placeholder="Start"
+                    disabled={!canManageTask}
+                    onClick={canManageTask ? openDatePicker(startDateRef) : undefined}
                     onChange={(e) =>
                       setForm({ ...form, startDate: e.target.value })
                     }
                     onBlur={() => !isCreate && save()}
-                    className={cn(
-                      'w-[118px] rounded bg-transparent py-1 text-[13px] text-primary outline-none',
-                      !form.startDate && 'text-transparent',
-                    )}
                   />
                   <span className="text-secondary">→</span>
-                  <input
-                    type="date"
-                    disabled={!canManageTask}
+                  <DateChip
+                    inputRef={dueDateRef}
                     value={form.dueDate}
+                    placeholder="Due"
+                    disabled={!canManageTask}
+                    onClick={canManageTask ? openDatePicker(dueDateRef) : undefined}
                     onChange={(e) =>
                       setForm({ ...form, dueDate: e.target.value })
                     }
                     onBlur={() => !isCreate && save()}
-                    className={cn(
-                      'w-[118px] rounded bg-transparent py-1 text-[13px] text-primary outline-none',
-                      !form.dueDate && 'text-transparent',
-                    )}
                   />
                 </div>
               </AttrRow>
@@ -569,7 +657,7 @@ export function TaskDetailPanel({
                     }))
                     if (!isCreate) save({ timeEstimate: mins })
                   }}
-                  className="w-full max-w-[140px] bg-transparent py-1 text-[13px] text-primary outline-none placeholder:text-secondary"
+                  className="w-full max-w-[140px] rounded px-1 py-1 text-[13px] text-primary outline-none transition-colors hover:bg-surface-raised placeholder:text-secondary"
                 />
               </AttrRow>
 
@@ -617,7 +705,7 @@ export function TaskDetailPanel({
                   placeholder="Empty"
                   onChange={(e) => setForm({ ...form, tags: e.target.value })}
                   onBlur={() => !isCreate && save()}
-                  className="min-w-0 flex-1 bg-transparent py-1 text-[13px] text-primary outline-none placeholder:text-secondary"
+                  className="min-w-0 flex-1 rounded px-1 py-1 text-[13px] text-primary outline-none transition-colors hover:bg-surface-raised placeholder:text-secondary"
                 />
               </AttrRow>
 
@@ -825,26 +913,15 @@ export function TaskDetailPanel({
             </div>
 
             <div className="border-t border-border p-3">
-              <div className="relative rounded-xl border border-border bg-surface focus-within:border-[#3ecf8e]">
-                {mentionOpen && users.length > 0 && (
+              <div className="relative rounded-xl border border-border bg-surface focus-within:border-[#3ecf8e] focus-within:ring-2 focus-within:ring-[#3ecf8e]/15">
+                {mentionOpen && mentionMatches.length > 0 && (
                   <div className="absolute bottom-full left-0 right-0 z-20 mb-1 max-h-40 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl">
-                    {users.slice(0, 8).map((u) => (
+                    {mentionMatches.map((u) => (
                       <button
-                        key={u._id}
+                        key={u._id || u.id}
                         type="button"
-                        onClick={() => {
-                          const id = String(u._id || u.id)
-                          const tag = `@${u.name} `
-                          setComment((prev) =>
-                            prev.includes(`@${u.name}`)
-                              ? prev
-                              : `${prev}${prev && !prev.endsWith(' ') ? ' ' : ''}${tag}`,
-                          )
-                          setMentionIds((prev) =>
-                            prev.includes(id) ? prev : [...prev, id],
-                          )
-                          setMentionOpen(false)
-                        }}
+                        onMouseDown={(e) => e.preventDefault()}
+                        onClick={() => insertMention(u)}
                         className="flex w-full items-center gap-2 px-3 py-1.5 text-left text-[12px] text-primary hover:bg-surface-raised"
                       >
                         <Avatar src={u.avatar} name={u.name} size="xs" />
@@ -853,15 +930,28 @@ export function TaskDetailPanel({
                     ))}
                   </div>
                 )}
+                {mentionOpen && mentionMatches.length === 0 && (
+                  <div className="absolute bottom-full left-0 right-0 z-20 mb-1 rounded-lg border border-border bg-surface px-3 py-2 text-[12px] text-secondary shadow-xl">
+                    No matching teammates
+                  </div>
+                )}
                 <textarea
+                  ref={commentRef}
                   value={comment}
-                  onChange={(e) => setComment(e.target.value)}
+                  onChange={(e) => handleCommentChange(e.target.value, e.target.selectionStart)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Escape' && mentionOpen) {
+                      e.stopPropagation()
+                      closeMention()
+                    }
+                  }}
+                  onBlur={() => window.setTimeout(closeMention, 150)}
                   disabled={isCreate}
                   rows={2}
                   placeholder={
                     isCreate
                       ? 'Save the task to comment…'
-                      : 'Write a comment…'
+                      : 'Write a comment… (@ to mention)'
                   }
                   className="w-full resize-none bg-transparent px-3 pt-2.5 text-[13px] text-primary outline-none placeholder:text-secondary disabled:opacity-50"
                 />
@@ -870,7 +960,7 @@ export function TaskDetailPanel({
                     type="button"
                     disabled={isCreate}
                     title="Mention a teammate"
-                    onClick={() => setMentionOpen((v) => !v)}
+                    onClick={triggerMentionFromButton}
                     className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-md text-secondary hover:bg-surface-raised hover:text-primary disabled:opacity-40',
                       mentionOpen && 'bg-[#ecfdf5] text-[#3ecf8e]',
@@ -908,24 +998,95 @@ function formatDateInput(value) {
   }
 }
 
+function DateChip({
+  inputRef,
+  value,
+  placeholder,
+  disabled,
+  onClick,
+  onChange,
+  onBlur,
+}) {
+  return (
+    <div
+      className={cn(
+        'relative flex h-8 w-[108px] shrink-0 items-center gap-1.5 rounded-lg border border-border bg-surface-raised px-2 transition-colors',
+        !disabled && 'hover:border-[#3ecf8e]/60 hover:bg-surface',
+      )}
+    >
+      <Calendar className="h-3.5 w-3.5 shrink-0 text-secondary" />
+      <span
+        className={cn(
+          'min-w-0 flex-1 truncate text-[13px]',
+          value ? 'text-primary' : 'text-secondary',
+        )}
+      >
+        {value ? format(new Date(value), 'dd MMM yyyy') : placeholder}
+      </span>
+      <input
+        ref={inputRef}
+        type="date"
+        disabled={disabled}
+        value={value}
+        onClick={onClick}
+        onChange={onChange}
+        onBlur={onBlur}
+        className={cn(
+          'absolute inset-0 h-full w-full cursor-pointer opacity-0',
+          disabled && 'cursor-default',
+        )}
+      />
+    </div>
+  )
+}
+
 function PersonPicker({ value, users, loading, onChange, label = 'Person' }) {
   const [open, setOpen] = useState(false)
+  const [rect, setRect] = useState(null)
+  const buttonRef = useRef(null)
   const selected = users.find(
     (u) => String(u._id || u.id) === String(value || ''),
   )
 
+  const place = () => {
+    const el = buttonRef.current
+    if (!el) return
+    const r = el.getBoundingClientRect()
+    const width = Math.min(280, window.innerWidth * 0.7)
+    const left = Math.min(r.left, window.innerWidth - width - 8)
+    const maxHeight = 224 // max-h-56
+    const openUpward =
+      window.innerHeight - r.bottom < maxHeight + 8 && r.top > maxHeight + 8
+    setRect({
+      left: Math.max(8, left),
+      width,
+      top: openUpward ? undefined : r.bottom + 4,
+      bottom: openUpward ? window.innerHeight - r.top + 4 : undefined,
+    })
+  }
+
   useEffect(() => {
     if (!open) return undefined
+    place()
     const onDoc = (e) => {
       if (!e.target.closest?.('[data-person-picker]')) setOpen(false)
     }
+    const onReflow = () => place()
     document.addEventListener('mousedown', onDoc)
-    return () => document.removeEventListener('mousedown', onDoc)
+    window.addEventListener('resize', onReflow)
+    window.addEventListener('scroll', onReflow, true)
+    return () => {
+      document.removeEventListener('mousedown', onDoc)
+      window.removeEventListener('resize', onReflow)
+      window.removeEventListener('scroll', onReflow, true)
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open])
 
   return (
     <div className="relative min-w-0 flex-1" data-person-picker>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setOpen((v) => !v)}
         className="flex h-8 w-full min-w-0 items-center gap-2 rounded-md px-0.5 text-left hover:bg-surface-raised"
@@ -944,56 +1105,69 @@ function PersonPicker({ value, users, loading, onChange, label = 'Person' }) {
         <ChevronDown className="ml-auto h-3.5 w-3.5 shrink-0 text-secondary" />
       </button>
 
-      {open && (
-        <div className="absolute left-0 top-[calc(100%+4px)] z-50 max-h-56 w-[min(280px,70vw)] overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl">
-          <button
-            type="button"
-            onClick={() => {
-              onChange(null)
-              setOpen(false)
+      {open &&
+        rect &&
+        createPortal(
+          <div
+            data-person-picker
+            style={{
+              position: 'fixed',
+              left: rect.left,
+              top: rect.top,
+              bottom: rect.bottom,
+              width: rect.width,
             }}
-            className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised"
+            className="z-[200] max-h-56 overflow-y-auto rounded-lg border border-border bg-surface py-1 shadow-xl"
           >
-            Empty
-          </button>
-          {loading && (
-            <p className="px-3 py-2 text-[12px] text-secondary">Loading…</p>
-          )}
-          {!loading && users.length === 0 && (
-            <p className="px-3 py-2 text-[12px] text-secondary">
-              No company members found
-            </p>
-          )}
-          {users.map((u) => {
-            const id = String(u._id || u.id)
-            const active = id === String(value || '')
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => {
-                  onChange(id)
-                  setOpen(false)
-                }}
-                className={cn(
-                  'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-surface-raised',
-                  active && 'bg-[#ecfdf5]',
-                )}
-              >
-                <Avatar src={u.avatar} name={u.name} size="xs" />
-                <span className="min-w-0 flex-1 truncate text-[13px] text-primary">
-                  {u.name}
-                </span>
-                {u.role ? (
-                  <span className="shrink-0 text-[10px] uppercase text-secondary">
-                    {String(u.role).replace(/_/g, ' ')}
+            <button
+              type="button"
+              onClick={() => {
+                onChange(null)
+                setOpen(false)
+              }}
+              className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised"
+            >
+              Empty
+            </button>
+            {loading && (
+              <p className="px-3 py-2 text-[12px] text-secondary">Loading…</p>
+            )}
+            {!loading && users.length === 0 && (
+              <p className="px-3 py-2 text-[12px] text-secondary">
+                No company members found
+              </p>
+            )}
+            {users.map((u) => {
+              const id = String(u._id || u.id)
+              const active = id === String(value || '')
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => {
+                    onChange(id)
+                    setOpen(false)
+                  }}
+                  className={cn(
+                    'flex w-full items-center gap-2 px-3 py-2 text-left hover:bg-surface-raised',
+                    active && 'bg-[#ecfdf5]',
+                  )}
+                >
+                  <Avatar src={u.avatar} name={u.name} size="xs" />
+                  <span className="min-w-0 flex-1 truncate text-[13px] text-primary">
+                    {u.name}
                   </span>
-                ) : null}
-              </button>
-            )
-          })}
-        </div>
-      )}
+                  {u.role ? (
+                    <span className="shrink-0 text-[10px] uppercase text-secondary">
+                      {String(u.role).replace(/_/g, ' ')}
+                    </span>
+                  ) : null}
+                </button>
+              )
+            })}
+          </div>,
+          document.body,
+        )}
     </div>
   )
 }

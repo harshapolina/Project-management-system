@@ -1929,8 +1929,8 @@ function BoqSheet({
                     interiorMode
                       ? '[&>th]:h-10 [&>th]:border-[#eadfce] [&>th]:bg-[#c47a62] [&>th]:text-white'
                       : materialMode
-                        ? '[&>th]:h-10 [&>th]:border-[#d7dee8] [&>th]:bg-[#eef1f5] [&>th]:text-[#5b6b7c]'
-                        : '[&>th]:h-9 [&>th]:border-[#e4eaf3] [&>th]:bg-white/85 [&>th]:backdrop-blur-md [&>th]:text-[#8a98ac]',
+                        ? '[&>th]:h-10 [&>th]:border-[var(--border-subtle)] [&>th]:bg-[var(--bg-surface-raised)] [&>th]:text-[var(--text-secondary)]'
+                        : '[&>th]:h-9 [&>th]:border-[var(--border-subtle)] [&>th]:bg-[var(--bg-surface)]/85 [&>th]:backdrop-blur-md [&>th]:text-[var(--text-secondary)]',
                   )}
                 >
                   <th className="w-10">Sl.</th>
@@ -2042,7 +2042,7 @@ function BoqSheet({
                         <tr
                           key={it._key}
                           data-row={idx}
-                          className="group/row align-top transition-colors [&>td]:border-b [&>td]:border-[#e8eef5] [&>td]:align-top hover:[&>td]:bg-[#fbfcfe]"
+                          className="group/row align-top transition-colors [&>td]:border-b [&>td]:border-[var(--border-subtle)] [&>td]:align-top hover:[&>td]:bg-[var(--bg-surface-raised)]"
                         >
                           <td className="px-2 py-2 text-[11px] tabular-nums text-[#94a3b8]">
                             {idx + 1}
@@ -2939,7 +2939,7 @@ function QuoteHeaderEditor({
 
   const Text = ({ label, k, placeholder, wide }) => (
     <label className={cn('block', wide && 'sm:col-span-2')}>
-      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#a3988a]">
+      <span className="text-[9.5px] font-bold uppercase tracking-[0.12em] text-[#a3988b]">
         {label}
       </span>
       <input
@@ -2947,14 +2947,14 @@ function QuoteHeaderEditor({
         value={docMeta[k] || ''}
         onChange={(e) => setDoc(k, e.target.value)}
         placeholder={placeholder}
-        className="mt-0.5 h-8 w-full rounded-lg border border-[#e0d6c8] bg-white px-2 text-[12px] text-[#1c1917] outline-none transition focus:border-[#c47a62] disabled:opacity-60"
+        className="mt-0.5 h-8 w-full rounded-lg border border-[#e0d6c9] bg-[#fffffe] px-2 text-[12px] text-[#1c1918] outline-none transition focus:border-[#c47a62] disabled:opacity-60"
       />
     </label>
   )
 
   const LogoRow = ({ label, k, inputRef, fallback }) => (
-    <div className="flex items-center gap-3 rounded-xl border border-[#e0d6c8] bg-white p-2.5">
-      <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#faf6f0] ring-1 ring-inset ring-[#efe6d8]">
+    <div className="flex items-center gap-3 rounded-xl border border-[#e0d6c9] bg-[#fffffe] p-2.5">
+      <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#faf6f1] ring-1 ring-inset ring-[#efe6d9]">
         {docMeta[k] ? (
           <img
             src={assetUrl(docMeta[k])}
@@ -2962,19 +2962,19 @@ function QuoteHeaderEditor({
             className="max-h-full max-w-full object-contain"
           />
         ) : (
-          <span className="px-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#b8ab9c]">
+          <span className="px-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#b8ab9d]">
             {fallback}
           </span>
         )}
       </div>
       <div className="min-w-0 flex-1">
-        <p className="text-[11.5px] font-semibold text-[#1c1917]">{label}</p>
+        <p className="text-[11.5px] font-semibold text-[#1c1918]">{label}</p>
         <div className="mt-1 flex flex-wrap gap-1.5">
           <button
             type="button"
             disabled={locked || uploading}
             onClick={() => inputRef.current?.click()}
-            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#cfc2b0] bg-white px-2.5 text-[11px] font-semibold text-[#1c1917] transition hover:bg-[#faf6f0] disabled:opacity-50"
+            className="inline-flex h-7 items-center gap-1.5 rounded-lg border border-[#cfc2b1] bg-[#fffffe] px-2.5 text-[11px] font-semibold text-[#1c1918] transition hover:bg-[#faf6f1] disabled:opacity-50"
           >
             <Upload className="h-3 w-3" />
             {uploading ? 'Uploading…' : docMeta[k] ? 'Replace' : 'Upload'}
@@ -2984,7 +2984,7 @@ function QuoteHeaderEditor({
               type="button"
               disabled={locked}
               onClick={() => setDoc(k, '')}
-              className="inline-flex h-7 items-center rounded-lg px-2 text-[11px] font-semibold text-[#b0705c] transition hover:bg-[#f7ece7] disabled:opacity-50"
+              className="inline-flex h-7 items-center rounded-lg px-2 text-[11px] font-semibold text-[#b0705d] transition hover:bg-[#f7ece8] disabled:opacity-50"
             >
               Remove
             </button>
@@ -3007,7 +3007,7 @@ function QuoteHeaderEditor({
 
   return (
     <div
-      className="fixed inset-0 z-[95] flex items-start justify-center overflow-y-auto bg-[#1c1917]/55 p-4 backdrop-blur-sm print:hidden sm:p-8"
+      className="fixed inset-0 z-[95] flex items-start justify-center overflow-y-auto bg-[#1c1918]/55 p-4 backdrop-blur-sm print:hidden sm:p-8"
       role="presentation"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose()
@@ -3017,19 +3017,19 @@ function QuoteHeaderEditor({
         role="dialog"
         aria-modal="true"
         aria-label="Letterhead"
-        className="my-auto w-full max-w-[640px] rounded-2xl border border-[#e0d6c8] bg-[#faf6f0] p-4 shadow-[0_30px_70px_-25px_rgba(28,25,23,0.6)] sm:p-5"
+        className="my-auto w-full max-w-[640px] rounded-2xl border border-[#e0d6c9] bg-[#faf6f1] p-4 shadow-[0_30px_70px_-25px_rgba(28,25,23,0.6)] sm:p-5"
       >
       <div className="flex items-center gap-2">
         <div className="min-w-0">
-          <p className="text-[13px] font-semibold text-[#1c1917]">Letterhead</p>
-          <p className="text-[11.5px] text-[#a3988a]">
+          <p className="text-[13px] font-semibold text-[#1c1918]">Letterhead</p>
+          <p className="text-[11.5px] text-[#a3988b]">
             Printed above the table on page 1
           </p>
         </div>
         <button
           type="button"
           onClick={onClose}
-          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-[#a3988a] transition hover:bg-white hover:text-[#1c1917]"
+          className="ml-auto flex h-8 w-8 items-center justify-center rounded-lg text-[#a3988b] transition hover:bg-[#fffffe] hover:text-[#1c1918]"
           aria-label="Close letterhead editor"
         >
           <X className="h-4 w-4" />
@@ -3037,8 +3037,8 @@ function QuoteHeaderEditor({
       </div>
 
       <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <div className="flex items-center gap-3 rounded-xl border border-[#e0d6c8] bg-white p-2.5">
-          <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#faf6f0] ring-1 ring-inset ring-[#efe6d8]">
+        <div className="flex items-center gap-3 rounded-xl border border-[#e0d6c9] bg-[#fffffe] p-2.5">
+          <div className="flex h-14 w-24 shrink-0 items-center justify-center overflow-hidden rounded-lg bg-[#faf6f1] ring-1 ring-inset ring-[#efe6d9]">
             {tenant?.logoUrl ? (
               <img
                 src={assetUrl(tenant.logoUrl)}
@@ -3046,16 +3046,16 @@ function QuoteHeaderEditor({
                 className="max-h-full max-w-full object-contain"
               />
             ) : (
-              <span className="px-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#b8ab9c]">
+              <span className="px-1 text-center text-[9px] font-semibold uppercase tracking-[0.08em] text-[#b8ab9d]">
                 No logo
               </span>
             )}
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-[11.5px] font-semibold text-[#1c1917]">
+            <p className="text-[11.5px] font-semibold text-[#1c1918]">
               Company logo
             </p>
-            <p className="mt-0.5 text-[10.5px] leading-snug text-[#a3988a]">
+            <p className="mt-0.5 text-[10.5px] leading-snug text-[#a3988b]">
               From Platform Admin — prints on every quotation. Name text is not
               shown next to it.
             </p>
@@ -3098,7 +3098,7 @@ function QuoteHeaderEditor({
         <button
           type="button"
           onClick={onClose}
-          className="h-9 rounded-lg bg-[#1c1917] px-4 text-[12.5px] font-semibold text-[#f4efe6] transition hover:bg-black"
+          className="h-9 rounded-lg bg-[#1c1918] px-4 text-[12.5px] font-semibold text-[#f4efe6] transition hover:bg-black"
         >
           Done
         </button>

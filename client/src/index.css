@@ -681,6 +681,120 @@ body {
   border-color: rgba(255, 255, 255, 0.04) !important;
 }
 
+/* ── BOQ / Quotation editor — dark mode overrides ──
+ * BoqPage.jsx was authored with hardcoded light-mode hex values instead of
+ * the theme tokens, so it stays near-black-on-dark (illegible) unless every
+ * literal color it uses is remapped here — same technique as the rest of
+ * this file's [data-theme="dark"] overrides above.
+ */
+[data-theme="dark"] .bg-white\/85 {
+  background-color: var(--bg-surface) !important;
+}
+[data-theme="dark"] .text-\[\#0b1220\],
+[data-theme="dark"] .hover\:text-\[\#0b1220\]:hover,
+[data-theme="dark"] .text-\[\#1c1917\],
+[data-theme="dark"] .hover\:text-\[\#1c1917\]:hover {
+  color: var(--text-primary) !important;
+}
+[data-theme="dark"] .text-\[\#9aa7ba\],
+[data-theme="dark"] .text-\[\#8a98ac\],
+[data-theme="dark"] .text-\[\#5b6b80\],
+[data-theme="dark"] .text-\[\#334155\],
+[data-theme="dark"] .text-\[\#b4c0d0\],
+[data-theme="dark"] .text-\[\#a3988a\],
+[data-theme="dark"] .text-\[\#64748b\],
+[data-theme="dark"] .text-\[\#c3ccd9\],
+[data-theme="dark"] .text-\[\#b8ab9c\],
+[data-theme="dark"] .text-\[\#c3cbd6\],
+[data-theme="dark"] .text-\[\#94a3b8\],
+[data-theme="dark"] .text-\[\#7c8ba0\],
+[data-theme="dark"] .text-\[\#5b6b7c\],
+[data-theme="dark"] .text-\[\#475569\],
+[data-theme="dark"] .text-\[\#8a7d70\],
+[data-theme="dark"] .text-\[\#c7c7c7\] {
+  color: var(--text-secondary) !important;
+}
+[data-theme="dark"] .text-\[\#1e3a8a\],
+[data-theme="dark"] .text-\[\#1d4ed8\],
+[data-theme="dark"] .text-\[\#3b6fd4\] {
+  color: #93c5fd !important;
+}
+[data-theme="dark"] .text-\[\#dc2626\],
+[data-theme="dark"] .text-\[\#b0705c\] {
+  color: #f87171 !important;
+}
+[data-theme="dark"] .border-\[\#0b1220\] {
+  border-color: rgba(255, 255, 255, 0.25) !important;
+}
+[data-theme="dark"] .border-\[\#e4eaf3\],
+[data-theme="dark"] .ring-\[\#e4eaf3\],
+[data-theme="dark"] .border-\[\#edf1f7\],
+[data-theme="dark"] .border-\[\#e1e8f1\],
+[data-theme="dark"] .border-\[\#e9eef6\],
+[data-theme="dark"] .border-\[\#dde5ef\],
+[data-theme="dark"] .border-\[\#d7dee8\],
+[data-theme="dark"] .border-\[\#eadfce\],
+[data-theme="dark"] .border-\[\#e0d6c8\],
+[data-theme="dark"] .border-\[\#cfc2b0\],
+[data-theme="dark"] .border-\[\#e8eef5\],
+[data-theme="dark"] .border-\[\#e2eaf5\],
+[data-theme="dark"] .border-\[\#c7c7c7\] {
+  border-color: var(--border-subtle) !important;
+}
+[data-theme="dark"] .border-\[\#f3d7d7\] {
+  border-color: rgba(248, 113, 113, 0.35) !important;
+}
+[data-theme="dark"] .hover\:border-\[\#c7dbfb\]:hover,
+[data-theme="dark"] .focus\:border-\[\#b6cef7\]:focus,
+[data-theme="dark"] .border-\[\#c7dbfb\],
+[data-theme="dark"] .hover\:border-\[\#b6cef7\]:hover,
+[data-theme="dark"] .hover\:border-\[\#d7e0ec\]:hover,
+[data-theme="dark"] .border-\[\#d7e5fc\],
+[data-theme="dark"] .ring-\[\#dbe7fb\] {
+  border-color: rgba(96, 165, 250, 0.4) !important;
+}
+[data-theme="dark"] .ring-\[\#efe6d8\] {
+  --tw-ring-color: rgba(255, 255, 255, 0.08) !important;
+}
+[data-theme="dark"] .bg-\[\#f4f7fb\],
+[data-theme="dark"] .hover\:bg-\[\#f4f7fb\]:hover,
+[data-theme="dark"] .bg-\[\#f7f9fc\],
+[data-theme="dark"] .bg-\[\#fafcfe\],
+[data-theme="dark"] .hover\:bg-\[\#f7faff\]:hover,
+[data-theme="dark"] .hover\:bg-\[\#f2f6fb\]:hover,
+[data-theme="dark"] .bg-\[\#eef1f5\],
+[data-theme="dark"] .hover\:bg-\[\#f9fbfd\]:hover,
+[data-theme="dark"] .hover\:bg-\[\#f5f9ff\]:hover,
+[data-theme="dark"] .bg-\[\#f3f5f8\],
+[data-theme="dark"] .bg-\[\#fbfcfe\],
+[data-theme="dark"] .to-\[\#f7faff\] {
+  background-color: var(--bg-surface-raised) !important;
+}
+[data-theme="dark"] .bg-\[\#eef4ff\],
+[data-theme="dark"] .bg-\[\#eef4ff\]\/85,
+[data-theme="dark"] .hover\:bg-\[\#e0ebff\]:hover,
+[data-theme="dark"] .bg-\[\#dbeafe\],
+[data-theme="dark"] .from-\[\#eef4ff\] {
+  background-color: rgba(59, 130, 246, 0.14) !important;
+}
+[data-theme="dark"] .bg-\[\#0b1220\],
+[data-theme="dark"] .bg-\[\#1c1917\],
+[data-theme="dark"] .bg-\[\#171717\],
+[data-theme="dark"] .hover\:bg-\[\#1f2937\]:hover,
+[data-theme="dark"] .hover\:bg-\[\#3d352e\]:hover {
+  background-color: var(--bg-active) !important;
+}
+[data-theme="dark"] .bg-\[\#faf6f0\],
+[data-theme="dark"] .hover\:bg-\[\#faf6f0\]:hover,
+[data-theme="dark"] .bg-\[\#efe6d8\],
+[data-theme="dark"] .bg-\[\#ebe4d8\],
+[data-theme="dark"] .hover\:bg-\[\#f2ece2\]:hover {
+  background-color: var(--bg-surface-raised) !important;
+}
+[data-theme="dark"] .hover\:bg-\[\#f7ece7\]:hover {
+  background-color: rgba(248, 113, 113, 0.12) !important;
+}
+
 .planner-day-col.planner-drag-over {
   background-color: rgb(62 207 142 / 0.12) !important;
 }
