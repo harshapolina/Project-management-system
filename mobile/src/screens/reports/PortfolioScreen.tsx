@@ -1,3 +1,4 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useNavigation } from '@react-navigation/native'
 import type { CompositeNavigationProp } from '@react-navigation/native'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
@@ -5,9 +6,6 @@ import type { NativeStackNavigationProp } from '@react-navigation/native-stack'
 import { useMemo } from 'react'
 import { Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { SectionLabel } from '../../components/SectionLabel'
 import { StatCard } from '../../components/StatCard'
@@ -43,38 +41,29 @@ export function PortfolioScreen() {
     })
   }
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Portfolio"
-      subtitle="All live work"
-      subtitleIcon="grid-outline"
-      onBack={() => navigation.goBack()}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Portfolio",
+    subtitle: "All live work",
+    subtitleIcon: 'grid-outline' as const,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <LoadingState label="Loading portfolio…" variant="dashboard" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading portfolio…" variant="dashboard" />
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {pageHeader}
-        <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
+      </NestedChrome>
     )
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       <ScrollView
         contentContainerStyle={listContent}
         refreshControl={<RefreshControl refreshing={isRefetching} onRefresh={refetch} tintColor={colors.accent} />}
@@ -149,7 +138,7 @@ export function PortfolioScreen() {
           </SurfaceCard>
         </View>
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 

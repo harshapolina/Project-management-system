@@ -18,6 +18,7 @@ const sizes = {
   sm: 'h-8 px-3 text-xs gap-1.5',
   md: 'h-9 px-4 text-sm gap-2',
   lg: 'h-11 px-5 text-[14px] gap-2',
+  pill: 'h-8 px-3.5 text-[length:var(--text-caption)] gap-1.5 rounded-full',
 }
 
 export const Button = forwardRef(function Button(

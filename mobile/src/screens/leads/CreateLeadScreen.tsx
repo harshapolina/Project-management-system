@@ -50,7 +50,7 @@ export function CreateLeadScreen({ navigation }: Props) {
       title="New enquiry"
       subtitle="Capture a lead and assign follow-up"
       subtitleIcon="people-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Add enquiry"

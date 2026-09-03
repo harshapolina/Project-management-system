@@ -41,7 +41,7 @@ export function CreateApprovalTypeScreen({ navigation }: Props) {
       title="New approval type"
       subtitle="A process of your own"
       subtitleIcon="add-circle-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Add type"

@@ -135,7 +135,71 @@ export const radius = {
   md: 8,
   lg: 12,
   xl: 16,
+  /** Native form-sheet corner radius (options.ts formSheetOptions) */
+  sheet: 22,
   full: 999,
+}
+
+/** Bottom clearance for scroll content above GlassyTabBar */
+export const TAB_BAR_CLEARANCE = 96
+
+/** Home hero palette — matched to AppNavBar NAV_HERO_BG and HomeScreen mock */
+export const heroLight = {
+  bg: '#004838',
+  panel: '#0a5c48',
+  lime: '#C5E966',
+  limeText: '#0a2e24',
+  limeMuted: 'rgba(197,233,102,0.15)',
+  card: '#0a5c48',
+  border: 'rgba(255,255,255,0.14)',
+  text: '#ffffff',
+  textMuted: 'rgba(255,255,255,0.72)',
+  /** @deprecated use text */
+  white: '#ffffff',
+  /** @deprecated use textMuted */
+  mute: 'rgba(255,255,255,0.72)',
+  faint: 'rgba(255,255,255,0.14)',
+}
+
+export const heroDark = heroLight
+
+export function heroFor(_mode: ThemeMode) {
+  return heroLight
+}
+
+/** Inbox / chat hub — matches home hero green + app canvas surfaces. */
+export const chatLight = {
+  headerFrom: '#004838',
+  headerTo: '#0a5c48',
+  headerText: '#ffffff',
+  headerTextMuted: 'rgba(255,255,255,0.72)',
+  headerSearchBg: 'rgba(255,255,255,0.14)',
+  headerSearchBorder: 'rgba(255,255,255,0.14)',
+  headerChipBg: 'rgba(255,255,255,0.12)',
+  headerChipActive: 'rgba(255,255,255,0.22)',
+  listBg: '#f4f4f5',
+  rowPreview: '#71717a',
+  online: '#3ecf8e',
+}
+
+export const chatDark = {
+  headerFrom: '#003d30',
+  headerTo: '#004838',
+  headerText: '#ffffff',
+  headerTextMuted: 'rgba(255,255,255,0.72)',
+  headerSearchBg: 'rgba(255,255,255,0.12)',
+  headerSearchBorder: 'rgba(255,255,255,0.10)',
+  headerChipBg: 'rgba(255,255,255,0.10)',
+  headerChipActive: 'rgba(255,255,255,0.18)',
+  listBg: '#0f0f0f',
+  rowPreview: '#a3a3a3',
+  online: '#3ecf8e',
+}
+
+export type ChatColors = typeof chatLight
+
+export function chatFor(mode: ThemeMode): ChatColors {
+  return mode === 'dark' ? chatDark : chatLight
 }
 
 export const typography = {
@@ -147,6 +211,8 @@ export const typography = {
   caption: { fontSize: 13, fontWeight: '400' as const },
   captionStrong: { fontSize: 13, fontWeight: '600' as const },
   micro: { fontSize: 11, fontWeight: '600' as const, letterSpacing: 0.2 },
+  /** iOS minimum to avoid zoom-on-focus */
+  input: { fontSize: 16, fontWeight: '400' as const, letterSpacing: -0.1 },
 }
 
 export function shadowsFor(mode: ThemeMode) {

@@ -1,4 +1,3 @@
-import { Platform } from 'react-native'
 import { typography, type AppColors } from '../constants/theme'
 
 export function stackScreenOptions(colors: AppColors) {
@@ -30,27 +29,5 @@ export function formSheetOptions(colors: AppColors, title: string) {
     sheetCornerRadius: 22,
     sheetExpandsWhenScrolledToEdge: true,
     contentStyle: { backgroundColor: colors.canvas },
-  }
-}
-
-export function tabBarOptions(colors: AppColors) {
-  return {
-    headerShown: false,
-    tabBarActiveTintColor: colors.accent,
-    tabBarInactiveTintColor: colors.textMuted,
-    tabBarLabelStyle: {
-      fontSize: 11,
-      fontWeight: '600' as const,
-      marginTop: -2,
-      marginBottom: Platform.OS === 'ios' ? 0 : 4,
-    },
-    tabBarStyle: {
-      backgroundColor: colors.surface,
-      borderTopWidth: 1,
-      borderTopColor: colors.border,
-      height: Platform.OS === 'ios' ? 84 : 64,
-      paddingTop: 6,
-      paddingHorizontal: 4,
-    },
   }
 }

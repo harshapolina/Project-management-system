@@ -6,6 +6,9 @@ import { ChangePasswordScreen } from '../screens/profile/ChangePasswordScreen'
 import { PeopleScreen } from '../screens/profile/PeopleScreen'
 import { PersonAccessScreen } from '../screens/profile/PersonAccessScreen'
 import { InvitePersonScreen } from '../screens/profile/InvitePersonScreen'
+import { MailSettingsScreen } from '../screens/settings/MailSettingsScreen'
+import { CreateCustomRoleScreen } from '../screens/profile/CreateCustomRoleScreen'
+import { GoogleCalendarScreen } from '../screens/profile/GoogleCalendarScreen'
 import { formSheetOptions, stackScreenOptions } from './options'
 import { useColors } from '../theme/useColors'
 import type { ProfileStackParamList } from './types'
@@ -26,6 +29,21 @@ export function ProfileNavigator() {
         name="InvitePerson"
         component={InvitePersonScreen}
         options={formSheetOptions(colors, 'Invite teammate')}
+      />
+      <Stack.Screen
+        name="GoogleCalendar"
+        component={GoogleCalendarScreen}
+        options={{ headerShown: false, title: 'Google Calendar' }}
+      />
+      <Stack.Screen
+        name="CreateCustomRole"
+        component={CreateCustomRoleScreen}
+        options={formSheetOptions(colors, 'New custom role')}
+      />
+      <Stack.Screen
+        name="MailSettings"
+        component={MailSettingsScreen}
+        options={{ headerShown: false, title: 'Email & alerts' }}
       />
     </Stack.Navigator>
   )

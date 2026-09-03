@@ -9,11 +9,11 @@ import { useResponsive } from '../theme/useResponsive'
 import { QuickCreateSheet } from './QuickCreateSheet'
 import type { RootTabParamList } from '../navigation/types'
 
-/** Home · Projects · center FAB · Activity · More */
+/** Home · Projects · center FAB · Chat · More */
 const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }> = {
   Home: { on: 'home', off: 'home-outline', label: 'Home' },
   Projects: { on: 'business', off: 'business-outline', label: 'Projects' },
-  Inbox: { on: 'pulse', off: 'pulse-outline', label: 'Activity' },
+  Inbox: { on: 'chatbubbles', off: 'chatbubbles-outline', label: 'Chat' },
   More: { on: 'grid', off: 'grid-outline', label: 'More' },
 }
 

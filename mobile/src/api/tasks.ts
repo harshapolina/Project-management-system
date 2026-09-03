@@ -1,5 +1,5 @@
 import { http } from './client'
-import type { ActivityLogItem, Comment, Task } from '../types/models'
+import type { ActivityLogItem, Comment, LiveBoard, Task } from '../types/models'
 
 export interface CreateTaskPayload {
   title: string
@@ -25,6 +25,10 @@ export const tasksApi = {
 
   update: (id: string, payload: Partial<Task> & { timeTrackingUserId?: string | null }) =>
     http.patch<{ success: true; task: Task }>(`/tasks/${id}`, payload).then((r) => r.data.task),
+
+  /** Live team board — every open task, plus per-person load. Polled. */
+  liveBoard: () =>
+    http.get<{ success: true; data: LiveBoard }>('/tasks/live-board').then((r) => r.data.data),
 
   activeTimer: () =>
     http.get<{ success: true; task: Task | null }>('/tasks/active-timer').then((r) => r.data.task),

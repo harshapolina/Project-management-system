@@ -50,7 +50,7 @@ export function CreateInventoryItemScreen({ navigation }: Props) {
       title="New item"
       subtitle="Add stock to inventory"
       subtitleIcon="cube-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Add item"

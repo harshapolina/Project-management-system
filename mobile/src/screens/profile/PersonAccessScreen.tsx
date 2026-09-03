@@ -1,9 +1,7 @@
-import { useEffect, useMemo, useState } from 'react'
+import { NestedChrome } from '../../components/NestedChrome'
+import { useMemo, useState } from 'react'
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { Avatar } from '../../components/Avatar'
@@ -15,7 +13,7 @@ import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { adminApi } from '../../api/admin'
 import { isApiError } from '../../api/client'
-import { ACCESS_TOGGLES, ROLE_LABELS, capabilitiesForUser } from '../../utils/roles'
+import { ACCESS_TOGGLES, capabilitiesForUser, roleLabelFor } from '../../utils/roles'
 import { useAuthStore } from '../../store/authStore'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { ProfileStackParamList } from '../../navigation/types'
@@ -29,9 +27,12 @@ export function PersonAccessScreen({ route, navigation }: Props) {
 
   const { userId } = route.params
   const me = useAuthStore((s) => s.user)
+  const tenant = useAuthStore((s) => s.tenant)
   const caps = capabilitiesForUser(me)
+  const customRoles = tenant?.customRoles || []
   const qc = useQueryClient()
-  const [draft, setDraft] = useState<Record<string, boolean>>({})
+  /** Null until something is toggled, so the fetched permissions stay the source. */
+  const [edits, setEdits] = useState<Record<string, boolean> | null>(null)
   const [tempPassword, setTempPassword] = useState('')
 
   const summary = useQuery({
@@ -39,13 +40,10 @@ export function PersonAccessScreen({ route, navigation }: Props) {
     queryFn: adminApi.teamSummary,
   })
 
-  useEffect(() => {
-    const found = (summary.data?.members || []).find((m) => m.user._id === userId)
-    if (!found) return
-    setDraft(found.user.effectivePermissions || {})
-  }, [summary.data, userId])
-
   const member = (summary.data?.members || []).find((m) => m.user._id === userId)
+  const draft = edits ?? member?.user.effectivePermissions ?? {}
+  const setDraft = (next: (prev: Record<string, boolean>) => Record<string, boolean>) =>
+    setEdits((prev) => next(prev ?? member?.user.effectivePermissions ?? {}))
 
   const groups = useMemo(() => {
     const map: Record<string, typeof ACCESS_TOGGLES> = {}
@@ -70,50 +68,63 @@ export function PersonAccessScreen({ route, navigation }: Props) {
     onError: (err) => Alert.alert('Could not reset', isApiError(err) ? err.message : 'Try again'),
   })
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Access"
-        subtitle="Permissions & account"
-        subtitleIcon="shield-checkmark-outline"
-        onBack={() => navigation.goBack()}
-      />
-    </>
-  )
+  const remove = useMutation({
+    mutationFn: () => adminApi.deleteUser(userId),
+    onSuccess: (res) => {
+      qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
+      qc.invalidateQueries({ queryKey: ['admin-users'] })
+      qc.invalidateQueries({ queryKey: ['users'] })
+      Alert.alert('Person removed', res.message)
+      navigation.goBack()
+    },
+    onError: (err) => Alert.alert('Could not delete', isApiError(err) ? err.message : 'Try again'),
+  })
+
+  const setActive = useMutation({
+    mutationFn: (isActive: boolean) => adminApi.updatePermissions(userId, { isActive }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['admin-team-summary'] }),
+    onError: (err) => Alert.alert('Could not update', isApiError(err) ? err.message : 'Try again'),
+  })
+
+  const chromeProps = {
+    title: "Access",
+    subtitle: "Permissions & account",
+    subtitleIcon: 'shield-checkmark-outline' as const,
+  }
 
   if (summary.isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading access…" variant="form" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading access…" variant="form" />
+      </NestedChrome>
     )
   }
   if (summary.isError || !member) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState
+      <NestedChrome {...chromeProps}>
+      <ErrorState
           message={isApiError(summary.error) ? summary.error.message : 'Person not found'}
           onRetry={() => summary.refetch()}
         />
-      </Screen>
+      </NestedChrome>
     )
   }
 
   const user = member.user
+  const enabledCount = ACCESS_TOGGLES.filter((item) => draft[item.key]).length
+  const isSelf = userId === me?.id
+  // An admin cannot remove an owner; only an owner can.
+  const canDelete = caps.managePeople && !isSelf && !(me?.role === 'admin' && user.role === 'owner')
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
+    <NestedChrome {...chromeProps}>
       <ScrollView contentContainerStyle={listContent} showsVerticalScrollIndicator={false}>
         <SurfaceCard style={styles.identity}>
           <Avatar name={user.name} uri={user.avatar} size={56} />
           <Text style={styles.name}>{user.name}</Text>
           <Text style={styles.email}>{user.email}</Text>
           <View style={styles.pills}>
-            <Pill label={ROLE_LABELS[user.role] || user.role} />
+            <Pill label={roleLabelFor(user.role, customRoles)} />
             <Pill
               label={user.isActive === false ? 'Inactive' : 'Active'}
               color={user.isActive === false ? colors.danger : colors.success}
@@ -122,6 +133,10 @@ export function PersonAccessScreen({ route, navigation }: Props) {
           <Text style={styles.meta}>
             {member.open} open · {member.overdue} overdue · {member.done} done
           </Text>
+          <View style={styles.enabledPill}>
+            <Text style={styles.enabledCount}>{enabledCount}</Text>
+            <Text style={styles.enabledLabel}>of {ACCESS_TOGGLES.length} enabled</Text>
+          </View>
         </SurfaceCard>
 
         {Object.entries(groups).map(([group, items]) => (
@@ -173,7 +188,7 @@ export function PersonAccessScreen({ route, navigation }: Props) {
           </View>
         ) : null}
 
-        {caps.managePeople && userId !== me?.id ? (
+        {caps.managePeople && !isSelf ? (
           <Pressable
             onPress={() =>
               Alert.alert(
@@ -186,10 +201,7 @@ export function PersonAccessScreen({ route, navigation }: Props) {
                   {
                     text: user.isActive === false ? 'Reactivate' : 'Deactivate',
                     style: user.isActive === false ? 'default' : 'destructive',
-                    onPress: () =>
-                      adminApi.updatePermissions(userId, { isActive: user.isActive === false }).then(() => {
-                        qc.invalidateQueries({ queryKey: ['admin-team-summary'] })
-                      }),
+                    onPress: () => setActive.mutate(user.isActive === false),
                   },
                 ],
               )
@@ -199,8 +211,29 @@ export function PersonAccessScreen({ route, navigation }: Props) {
             <Text style={styles.dangerText}>{user.isActive === false ? 'Reactivate account' : 'Deactivate account'}</Text>
           </Pressable>
         ) : null}
+
+        {canDelete ? (
+          <Pressable
+            disabled={remove.isPending}
+            onPress={() =>
+              Alert.alert(
+                `Delete ${user.name.split(' ')[0]}`,
+                `This permanently removes their login. Tasks they own stay on the project, but they can no longer sign in.`,
+                [
+                  { text: 'Cancel', style: 'cancel' },
+                  { text: 'Delete', style: 'destructive', onPress: () => remove.mutate() },
+                ],
+              )
+            }
+            style={[styles.dangerRow, styles.deleteRow]}
+          >
+            <Text style={styles.dangerText}>
+              {remove.isPending ? 'Deleting…' : `Delete ${user.name.split(' ')[0]} from this company`}
+            </Text>
+          </Pressable>
+        ) : null}
       </ScrollView>
-    </Screen>
+    </NestedChrome>
   )
 }
 
@@ -232,5 +265,18 @@ function createStyles(c: AppColors) {
       borderRadius: radius.xl,
     },
     dangerText: { ...typography.bodyStrong, color: c.danger },
+    deleteRow: { borderWidth: 1, borderColor: c.danger },
+    enabledPill: {
+      flexDirection: 'row',
+      alignItems: 'baseline',
+      gap: 4,
+      marginTop: spacing.sm,
+      paddingHorizontal: spacing.md,
+      paddingVertical: 6,
+      borderRadius: radius.full,
+      backgroundColor: c.accentSoft,
+    },
+    enabledCount: { ...typography.bodyStrong, color: c.accentHover },
+    enabledLabel: { ...typography.micro, color: c.accentHover },
   })
 }

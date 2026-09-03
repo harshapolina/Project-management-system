@@ -46,7 +46,7 @@ export function CreateExpenseScreen({ route, navigation }: Props) {
       title="New expense"
       subtitle="Log a cost against a project"
       subtitleIcon="wallet-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Submit expense"

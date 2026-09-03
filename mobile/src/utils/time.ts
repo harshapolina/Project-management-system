@@ -37,3 +37,42 @@ export function liveTrackedSeconds(timeSpent?: number, timeTrackingStartedAt?: s
   if (!Number.isFinite(started)) return base
   return base + Math.max(0, Math.floor((now - started) / 1000))
 }
+
+/** True when a timestamp falls on the device's current calendar day. */
+export function isToday(date?: string): boolean {
+  if (!date) return false
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return false
+  const now = new Date()
+  return (
+    d.getDate() === now.getDate() &&
+    d.getMonth() === now.getMonth() &&
+    d.getFullYear() === now.getFullYear()
+  )
+}
+
+/** "Today" / "Yesterday" / "Mon, 14 Apr" — day headers for grouped feeds. */
+export function dayLabel(date?: string): string {
+  if (!date) return ''
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return ''
+
+  const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime()
+  const days = Math.round((startOf(new Date()) - startOf(d)) / 86_400_000)
+  if (days === 0) return 'Today'
+  if (days === 1) return 'Yesterday'
+  return d.toLocaleDateString(undefined, {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    ...(d.getFullYear() !== new Date().getFullYear() ? { year: 'numeric' } : {}),
+  })
+}
+
+/** Group key for a timestamp's calendar day (local time). */
+export function dayKey(date?: string): string {
+  if (!date) return 'unknown'
+  const d = new Date(date)
+  if (Number.isNaN(d.getTime())) return 'unknown'
+  return `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`
+}

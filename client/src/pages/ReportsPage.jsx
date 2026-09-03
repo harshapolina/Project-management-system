@@ -241,7 +241,7 @@ export function ReportsPage() {
   if (isError) {
     return (
       <div className="flex min-h-[360px] items-center justify-center">
-        <div className="rounded-2xl bg-white px-8 py-10 text-center ring-1 ring-black/[0.06]">
+        <div className="rounded-2xl bg-white px-8 py-10 text-center border border-border">
           <AlertTriangle className="mx-auto h-7 w-7 text-red-500" />
           <h2 className="mt-3 text-lg font-semibold text-primary">
             Reports could not be loaded
@@ -264,7 +264,7 @@ export function ReportsPage() {
               type="button"
               onClick={() => refetch()}
               disabled={isFetching}
-              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#f5f5f7] px-3 text-[12px] font-semibold text-secondary transition hover:bg-[#ebebed] hover:text-primary disabled:opacity-50"
+              className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-raised px-3 text-[12px] font-semibold text-secondary transition hover:bg-[#ebebed] hover:text-primary disabled:opacity-50"
             >
               <RefreshCw
                 className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')}
@@ -313,9 +313,9 @@ export function ReportsPage() {
 
       {tab === 'overview' && (
         <>
-          <section className="rounded-2xl bg-white p-4 ring-1 ring-black/[0.04] sm:p-5">
+          <section className="rounded-2xl bg-white p-4 border border-border shadow-[var(--shadow-panel)] sm:p-5">
             <div className="flex items-center gap-2.5">
-              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f5f7] text-[#1d1d1f]">
+              <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-raised text-[#1d1d1f]">
                 <Sparkles className="h-4 w-4" />
               </span>
               <div>
@@ -335,7 +335,7 @@ export function ReportsPage() {
               }}
             >
               <Input
-                className="h-10 rounded-xl border-black/[0.08] bg-[#fbfbfd]"
+                className="h-10 rounded-xl border-black/[0.08] bg-surface"
                 placeholder='e.g. "which projects are at risk"'
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
@@ -345,7 +345,7 @@ export function ReportsPage() {
               </Button>
             </form>
             {answer && (
-              <p className="mt-3 rounded-xl bg-[#f5f5f7] px-4 py-3 text-[13px] leading-relaxed text-[#1d1d1f]/90">
+              <p className="mt-3 rounded-xl bg-surface-raised px-4 py-3 text-[13px] leading-relaxed text-[#1d1d1f]/90">
                 {answer}
               </p>
             )}
@@ -429,13 +429,13 @@ export function ReportsPage() {
                 value={peopleSearch}
                 onChange={(e) => setPeopleSearch(e.target.value)}
                 placeholder="Search people…"
-                className="h-9 w-[200px] rounded-full border-0 bg-[#f5f5f7] pl-8 pr-3 text-[12px] outline-none ring-1 ring-black/[0.04] focus:bg-white focus:ring-[#3ecf8e]/40"
+                className="h-9 w-[200px] rounded-full border-0 bg-surface-raised pl-8 pr-3 text-[12px] outline-none border border-border shadow-[var(--shadow-panel)] focus:bg-white focus:ring-[#3ecf8e]/40"
               />
             </div>
             <select
               value={roleFilter}
               onChange={(e) => setRoleFilter(e.target.value)}
-              className="h-9 rounded-full border-0 bg-[#f5f5f7] px-3 text-[12px] font-medium text-secondary outline-none ring-1 ring-black/[0.04]"
+              className="h-9 rounded-full border-0 bg-surface-raised px-3 text-[12px] font-medium text-secondary outline-none border border-border shadow-[var(--shadow-panel)]"
             >
               <option value="all">All roles</option>
               {roles.map((role) => (
@@ -452,7 +452,7 @@ export function ReportsPage() {
           </div>
 
           {!people.length ? (
-            <div className="rounded-2xl bg-white py-2 ring-1 ring-black/[0.04]">
+            <div className="rounded-2xl bg-white py-2 border border-border shadow-[var(--shadow-panel)]">
               <EmptyState
                 icon={Users}
                 title="No people match"
@@ -460,7 +460,7 @@ export function ReportsPage() {
               />
             </div>
           ) : (
-            <ul className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05] divide-y divide-black/[0.04]">
+            <ul className="overflow-hidden rounded-2xl bg-white border border-border divide-y divide-black/[0.04]">
               {people.map((person) => (
                 <li
                   key={person.user._id}
@@ -493,7 +493,7 @@ export function ReportsPage() {
                     <StatChip label="Hrs" value={person.trackedHours} />
                   </div>
                   <div className="flex w-full items-center gap-2 sm:w-36">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f5f5f7]">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-raised">
                       <div
                         className={cn(
                           'h-full rounded-full',
@@ -531,7 +531,7 @@ export function ReportsPage() {
                 value={projectSearch}
                 onChange={(e) => setProjectSearch(e.target.value)}
                 placeholder="Search projects…"
-                className="h-9 w-[220px] rounded-full border-0 bg-[#f5f5f7] pl-8 pr-3 text-[12px] outline-none ring-1 ring-black/[0.04] focus:bg-white focus:ring-[#3ecf8e]/40"
+                className="h-9 w-[220px] rounded-full border-0 bg-surface-raised pl-8 pr-3 text-[12px] outline-none border border-border shadow-[var(--shadow-panel)] focus:bg-white focus:ring-[#3ecf8e]/40"
               />
             </div>
             <span className="text-[11px] text-[#86868b]">
@@ -543,7 +543,7 @@ export function ReportsPage() {
           </div>
 
           {!projects.length ? (
-            <div className="rounded-2xl bg-white py-2 ring-1 ring-black/[0.04]">
+            <div className="rounded-2xl bg-white py-2 border border-border shadow-[var(--shadow-panel)]">
               <EmptyState
                 icon={FolderKanban}
                 title="No projects match"
@@ -555,7 +555,7 @@ export function ReportsPage() {
               {projects.map((project) => (
                 <li
                   key={project._id}
-                  className="rounded-2xl bg-white p-4 ring-1 ring-black/[0.05] transition hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
+                  className="rounded-2xl bg-white p-4 border border-border transition hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -582,7 +582,7 @@ export function ReportsPage() {
                     )}
                   </div>
                   <div className="mt-3 flex items-center gap-2">
-                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-[#f5f5f7]">
+                    <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-surface-raised">
                       <div
                         className={cn(
                           'h-full rounded-full',
@@ -613,12 +613,12 @@ export function ReportsPage() {
 
 function Kpi({ icon: Icon, label, value, hint, progress }) {
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/[0.04] transition hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+    <div className="rounded-2xl bg-white px-4 py-4 border border-border shadow-[var(--shadow-panel)] transition hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
       <div className="flex items-start justify-between gap-2">
         <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
           {label}
         </p>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f5f7] text-[#1d1d1f]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-[#1d1d1f]">
           <Icon className="h-3.5 w-3.5" />
         </span>
       </div>
@@ -627,7 +627,7 @@ function Kpi({ icon: Icon, label, value, hint, progress }) {
       </p>
       {hint && <p className="mt-1 text-[11px] text-[#86868b]">{hint}</p>}
       {progress !== undefined && (
-        <div className="mt-2 h-1 overflow-hidden rounded-full bg-[#f5f5f7]">
+        <div className="mt-2 h-1 overflow-hidden rounded-full bg-surface-raised">
           <div
             className="h-full rounded-full bg-[#3ecf8e]"
             style={{ width: `${Math.max(0, Math.min(100, progress))}%` }}
@@ -640,7 +640,7 @@ function Kpi({ icon: Icon, label, value, hint, progress }) {
 
 function Panel({ title, subtitle, children }) {
   return (
-    <section className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]">
+    <section className="overflow-hidden rounded-2xl bg-white border border-border">
       <div className="border-b border-black/[0.04] px-4 py-3 sm:px-5">
         <h2 className="text-[14px] font-semibold tracking-[-0.01em] text-[#1d1d1f]">
           {title}
@@ -656,8 +656,8 @@ function Panel({ title, subtitle, children }) {
 
 function MiniStat({ icon: Icon, label, value }) {
   return (
-    <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 ring-1 ring-black/[0.04]">
-      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f5f5f7]">
+    <div className="flex items-center gap-3 rounded-2xl bg-white px-4 py-3.5 border border-border shadow-[var(--shadow-panel)]">
+      <span className="flex h-9 w-9 items-center justify-center rounded-full bg-surface-raised">
         <Icon className="h-4 w-4 text-[#1d1d1f]" />
       </span>
       <div>

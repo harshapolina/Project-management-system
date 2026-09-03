@@ -45,6 +45,17 @@ function serializeTenant(tenant) {
     cancelledAt: tenant.cancelledAt || null,
     features: normalizeTenantFeatures(tenant.features),
     logoUrl: tenant.logoUrl || '',
+    brandColor: tenant.brandColor || '',
+    notice: tenant.notice?.active
+      ? {
+          title: tenant.notice.title || '',
+          message: tenant.notice.message || '',
+          variant: tenant.notice.variant || 'info',
+          dismissible: tenant.notice.dismissible !== false,
+          blocking: !!tenant.notice.blocking,
+          updatedAt: tenant.notice.updatedAt || null,
+        }
+      : null,
     customRoles: (tenant.customRoles || []).map((role) => ({
       key: role.key,
       label: role.label,
@@ -209,7 +220,7 @@ router.get(
     let tenant = null
     if (req.user.tenantId) {
       tenant = await Tenant.findById(req.user.tenantId).select(
-        'name slug status seatLimit adminLimit subscriptionPlan cancelledAt features logoUrl customRoles',
+        'name slug status seatLimit adminLimit subscriptionPlan cancelledAt features logoUrl brandColor notice customRoles',
       )
     }
     res.json({

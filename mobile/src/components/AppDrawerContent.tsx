@@ -7,6 +7,7 @@ import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
 import { useAuthStore } from '../store/authStore'
 import { capabilitiesForUser } from '../utils/roles'
+import { openTabScreen } from '../navigation/openProject'
 import { Avatar } from './Avatar'
 
 type DrawerLink = {
@@ -32,17 +33,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
     params?: object,
   ) => {
     navigation.closeDrawer()
-    const nav = navigation as unknown as {
-      navigate: (name: string, params?: object) => void
-    }
-    if (screen) {
-      nav.navigate('MainTabs', {
-        screen: tab,
-        params: params ? { screen, params } : { screen },
-      })
-      return
-    }
-    nav.navigate('MainTabs', { screen: tab })
+    openTabScreen(navigation, tab, screen, params)
   }
 
   const primary: DrawerLink[] = [
@@ -64,8 +55,8 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
       : []),
     {
       key: 'inbox',
-      label: 'Activity',
-      icon: 'pulse-outline',
+      label: 'Chat',
+      icon: 'chatbubbles-outline',
       onPress: () => goTab('Inbox'),
     },
     {
@@ -139,6 +130,12 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
             icon: 'receipt-outline' as const,
             onPress: () => goTab('More', 'Billing'),
           },
+          {
+            key: 'tax-invoices',
+            label: 'Tax invoices',
+            icon: 'document-text-outline' as const,
+            onPress: () => goTab('More', 'TaxInvoices'),
+          },
         ]
       : []),
     ...(caps.siteFeed
@@ -174,6 +171,16 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
             label: 'Reports',
             icon: 'bar-chart-outline' as const,
             onPress: () => goTab('More', 'Reports'),
+          },
+        ]
+      : []),
+    ...(caps.myWork
+      ? [
+          {
+            key: 'live-board',
+            label: 'Live board',
+            icon: 'pulse-outline' as const,
+            onPress: () => goTab('More', 'LiveBoard'),
           },
         ]
       : []),

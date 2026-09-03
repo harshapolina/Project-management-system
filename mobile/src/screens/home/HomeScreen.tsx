@@ -22,7 +22,7 @@ import { SectionLabel } from '../../components/SectionLabel'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { Avatar } from '../../components/Avatar'
 import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { STATUS_LABELS, radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { heroFor, STATUS_LABELS, radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors, useShadows } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { assetUrl } from '../../constants/env'
@@ -35,26 +35,22 @@ import { isApiError } from '../../api/client'
 import { capabilitiesForUser } from '../../utils/roles'
 import type { HomeStackParamList, RootTabParamList } from '../../navigation/types'
 import { openProjectScreen, openMoreScreen } from '../../navigation/openProject'
+import { PageHeader } from '../../components/PageHeader'
+import { MyWorkViews, myWorkHeaderTitle } from './MyWorkViews'
+import { ViewPills, type MyWorkView } from '../../components/ViewPills'
 import type { HomeData, Task } from '../../types/models'
 import type { SiteUpdate, Snag } from '../../types/ops'
 import { timeAgo } from '../../utils/time'
 
-/** Deep green hero + lime accents (home mock). */
-const HERO = {
-  bg: NAV_HERO_BG,
-  panel: '#0a5c48',
-  lime: '#C5E966',
-  limeText: '#0a2e24',
-  white: '#ffffff',
-  mute: 'rgba(255,255,255,0.72)',
-  faint: 'rgba(255,255,255,0.14)',
-} as const
+import { HeroSection } from './sections/HeroSection'
 
+const HERO = heroFor('light')
 type Props = {
   navigation: CompositeNavigationProp<
     NativeStackNavigationProp<HomeStackParamList, 'HomeMain'>,
     BottomTabNavigationProp<RootTabParamList>
   >
+  route: { params?: HomeStackParamList['HomeMain'] }
 }
 
 function firstName(name?: string) {
@@ -117,7 +113,7 @@ type AttentionItem = {
   onPress: () => void
 }
 
-export function HomeScreen({ navigation }: Props) {
+export function HomeScreen({ navigation, route }: Props) {
   const colors = useColors()
   const shadows = useShadows()
   const { height: windowHeight } = useWindowDimensions()
@@ -127,13 +123,13 @@ export function HomeScreen({ navigation }: Props) {
     [colors, shadows, pagePadding, isCompact, windowHeight],
   )
   const scrollY = useRef(new Animated.Value(0)).current
-  const [heroHeight, setHeroHeight] = useState(0)
 
   const user = useAuthStore((s) => s.user)
   const caps = capabilitiesForUser(user)
   const [pickerOpen, setPickerOpen] = useState(false)
   const [tasksOpen, setTasksOpen] = useState(false)
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
+  const [workView, setWorkView] = useState<MyWorkView>(route.params?.view || 'all')
 
   const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['home'],
@@ -306,8 +302,8 @@ export function HomeScreen({ navigation }: Props) {
         key: 'photos',
         label: 'Site Photos',
         icon: 'camera' as const,
-        color: '#3b82f6',
-        bg: 'rgba(59,130,246,0.12)',
+        color: colors.accent,
+        bg: colors.accentSoft,
         visible: caps.siteFeed,
         onPress: () => goMore('SiteFeed', activeProjectId ? { projectId: activeProjectId } : undefined),
       },
@@ -332,6 +328,29 @@ export function HomeScreen({ navigation }: Props) {
     )
   }
 
+  if (workView !== 'all') {
+    return (
+      <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
+        <AppNavBar />
+        <PageHeader
+          title="My work"
+          subtitle={myWorkHeaderTitle(workView)}
+          subtitleIcon="checkbox-outline"
+          onBack={() => setWorkView('all')}
+        />
+        <View style={{ flex: 1, minHeight: 0 }}>
+          <MyWorkViews
+            view={workView}
+            onViewChange={setWorkView}
+            onTaskPress={(t) => navigation.navigate('TaskDetail', { taskId: t._id })}
+            onCreatePersonal={() => navigation.navigate('CreateTask', { isPersonal: true })}
+            onOpenCalendar={() => goMore('ProfileHub', { screen: 'GoogleCalendar' })}
+          />
+        </View>
+      </Screen>
+    )
+  }
+
   const focusStatusColor = focus ? colors.status[focus.status] || colors.accent : colors.accent
   const updateProject =
     recentUpdate?.projectId && typeof recentUpdate.projectId === 'object'
@@ -340,43 +359,20 @@ export function HomeScreen({ navigation }: Props) {
   const updatePhotos = recentUpdate?.photos || []
   const updateThumb = updatePhotos[0]?.url ? assetUrl(updatePhotos[0].url) : null
 
-  const coverRange = Math.max(heroHeight * 0.85, 180)
-  const heroOpacity = scrollY.interpolate({
-    inputRange: [0, coverRange * 0.55, coverRange],
-    outputRange: [1, 0.45, 0],
-    extrapolate: 'clamp',
-  })
-  const heroScale = scrollY.interpolate({
-    inputRange: [0, coverRange],
-    outputRange: [1, 0.96],
-    extrapolate: 'clamp',
-  })
-  const sheetRadius = scrollY.interpolate({
-    inputRange: [0, coverRange * 0.85],
-    outputRange: [36, 12],
-    extrapolate: 'clamp',
-  })
-  /** Slight tuck of white curve under Active project (still clickable above) */
-  const SHEET_OVERLAP = 8
+  const coverRange = 160
 
   return (
-    <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
+    <Screen padded={false} edges={['left', 'right']} background={HERO.bg}>
       <AppNavBar variant="hero" scrollY={scrollY} coverRange={coverRange} />
       <View style={styles.root}>
-        {/* Green canvas behind hero + curve (non-interactive) */}
-        <View
-          pointerEvents="none"
-          style={[
-            styles.heroBleed,
-            { height: Math.max((heroHeight || 320) + 48, Math.round(windowHeight * 0.55)) },
-          ]}
-        />
-
         <Animated.ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scroll}
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
+          nestedScrollEnabled
+          bounces
+          overScrollMode="never"
           keyboardShouldPersistTaps="handled"
           onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollY } } }], {
             useNativeDriver: false,
@@ -392,71 +388,25 @@ export function HomeScreen({ navigation }: Props) {
                 projects.refetch()
               }}
               tintColor={HERO.lime}
+              colors={[HERO.lime]}
             />
           }
         >
           {/* Hero lives in the scroll so CTAs stay tappable */}
-          <Animated.View
-            style={[
-              styles.heroInner,
-              {
-                opacity: heroOpacity,
-                transform: [{ scale: heroScale }],
-              },
-            ]}
-            onLayout={(e) => {
-              const next = Math.ceil(e.nativeEvent.layout.height)
-              if (next > 0 && Math.abs(next - heroHeight) > 2) setHeroHeight(next)
-            }}
+          <HeroSection
+            userName={firstName(user?.name)}
+            heroStat={heroStat}
+            overdueCount={overdueCount}
+            greeting={timeGreeting()}
+            onMyTasks={openMyTasks}
+            onPostUpdate={() =>
+              caps.siteFeed
+                ? goMore('PostSiteUpdate', activeProjectId ? { projectId: activeProjectId } : undefined)
+                : navigation.navigate('Projects' as never)
+            }
+            postUpdateLabel={caps.siteFeed ? 'Post update' : 'Projects'}
+            postUpdateIcon={caps.siteFeed ? 'camera-outline' : 'folder-outline'}
           >
-            <Text style={styles.heroHelloLine}>
-              Hello, <Text style={styles.heroHelloName}>{firstName(user?.name)}</Text>
-            </Text>
-
-            <View style={styles.heroStatBlock}>
-              <Text style={styles.heroStatLabel}>Your work today</Text>
-              <Text style={styles.heroStatValue}>
-                {heroStat}
-                <Text style={styles.heroStatUnit}> open</Text>
-              </Text>
-              <Text style={styles.heroStatHint}>
-                {timeGreeting()}
-                {overdueCount > 0 ? ` · ${overdueCount} overdue` : ' · looking good'}
-              </Text>
-            </View>
-
-            <View style={styles.heroCtas}>
-              <Pressable
-                style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
-                onPress={openMyTasks}
-                accessibilityRole="button"
-                accessibilityLabel="My tasks"
-              >
-                <Ionicons name="checkmark-done-outline" size={18} color={HERO.limeText} />
-                <Text style={styles.heroCtaText}>My tasks</Text>
-              </Pressable>
-              <Pressable
-                style={({ pressed }) => [styles.heroCta, pressed && styles.heroCtaPressed]}
-                onPress={() =>
-                  caps.siteFeed
-                    ? goMore(
-                        'PostSiteUpdate',
-                        activeProjectId ? { projectId: activeProjectId } : undefined,
-                      )
-                    : navigation.navigate('Projects' as never)
-                }
-                accessibilityRole="button"
-                accessibilityLabel={caps.siteFeed ? 'Post update' : 'Projects'}
-              >
-                <Ionicons
-                  name={caps.siteFeed ? 'camera-outline' : 'folder-outline'}
-                  size={18}
-                  color={HERO.limeText}
-                />
-                <Text style={styles.heroCtaText}>{caps.siteFeed ? 'Post update' : 'Projects'}</Text>
-              </Pressable>
-            </View>
-
             {caps.projects ? (
               <View style={styles.heroPanel}>
                 <Text style={styles.heroPanelLabel}>Active project</Text>
@@ -474,19 +424,13 @@ export function HomeScreen({ navigation }: Props) {
                 </Pressable>
               </View>
             ) : null}
-          </Animated.View>
+          </HeroSection>
 
-          {/* Green under rounded corners; sheet scrolls up over the hero */}
-          <View style={[styles.sheetStack, { marginTop: -SHEET_OVERLAP }]}>
-          <Animated.View
-            style={[
-              styles.sheet,
-              {
-                borderTopLeftRadius: sheetRadius,
-                borderTopRightRadius: sheetRadius,
-              },
-            ]}
-          >
+          {/* Sheet contains all dashboard widgets and scrolls smoothly */}
+          <View style={styles.sheet}>
+            <View style={{ marginBottom: spacing.md }}>
+              <ViewPills value={workView} onChange={setWorkView} />
+            </View>
           {/* Project health */}
           <SectionLabel
             action="View Details ›"
@@ -750,7 +694,6 @@ export function HomeScreen({ navigation }: Props) {
               )}
             </>
           ) : null}
-          </Animated.View>
           </View>
         </Animated.ScrollView>
 
@@ -877,34 +820,20 @@ function createStyles(
   return StyleSheet.create({
     root: {
       flex: 1,
-      // Locked white under the sheet / above the tab bar
-      backgroundColor: c.canvas,
-      position: 'relative',
-    },
-    heroBleed: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 0,
-      zIndex: 0,
-      elevation: 0,
       backgroundColor: HERO.bg,
     },
     scrollView: {
       flex: 1,
       backgroundColor: 'transparent',
-      zIndex: 2,
-      ...(Platform.OS === 'web' ? { position: 'relative' as const } : null),
     },
     scroll: {
       flexGrow: 1,
-      paddingBottom: 0,
       backgroundColor: 'transparent',
     },
     heroInner: {
       paddingHorizontal: pagePadding,
       paddingTop: spacing.md,
-      paddingBottom: spacing.xl,
+      paddingBottom: spacing.lg,
       gap: spacing.lg + 4,
     },
     heroHelloLine: {
@@ -994,19 +923,15 @@ function createStyles(
       flex: 1,
       minWidth: 0,
     },
-    sheetStack: {
-      backgroundColor: HERO.bg,
-    },
     sheet: {
       backgroundColor: c.canvas,
+      borderTopLeftRadius: 28,
+      borderTopRightRadius: 28,
       paddingHorizontal: pagePadding,
-      paddingTop: spacing.xl + 4,
+      paddingTop: spacing.xl,
       paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,
       gap: spacing.md,
-      minHeight: Math.max(windowHeight - 80, 520),
-      overflow: 'hidden',
-      borderCurve: 'continuous',
-      ...(Platform.OS === 'web' ? { position: 'relative' as const } : null),
+      minHeight: Math.max(windowHeight - 100, 520),
     },
     healthRow: { flexDirection: 'row', gap: 8 },
     healthTile: {

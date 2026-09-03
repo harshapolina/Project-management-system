@@ -38,7 +38,7 @@ export function CreateSnagScreen({ route, navigation }: Props) {
       title="Log issue"
       subtitle="Capture a snag from the site"
       subtitleIcon="alert-circle-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Log snag"

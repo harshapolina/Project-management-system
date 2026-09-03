@@ -11,6 +11,8 @@ export interface CreateProjectPayload {
   endDate?: string
   budget?: number
   description?: string
+  /** Optional grouping folder — see api/spaces.ts. */
+  spaceId?: string
 }
 
 export const projectsApi = {

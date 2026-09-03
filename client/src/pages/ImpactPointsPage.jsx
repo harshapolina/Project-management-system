@@ -77,7 +77,7 @@ const BADGE_META = {
 }
 
 const FIELD =
-  'h-10 rounded-xl border-black/[0.08] bg-[#fbfbfd] focus:border-[#3ecf8e]/55 focus:bg-white'
+  'h-10 rounded-xl border-black/[0.08] bg-surface focus:border-[#3ecf8e]/55 focus:bg-white'
 
 const CHART_TOOLTIP = {
   background: 'var(--bg-surface)',
@@ -216,12 +216,12 @@ export function ImpactPointsPage() {
   if (isLoading) {
     return (
       <div className="mx-auto w-full max-w-[1500px] space-y-4">
-        <div className="h-12 animate-pulse rounded-2xl bg-white ring-1 ring-black/[0.04]" />
+        <div className="h-12 animate-pulse rounded-2xl bg-white border border-border shadow-[var(--shadow-panel)]" />
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[0, 1, 2, 3].map((i) => (
             <div
               key={i}
-              className="h-24 animate-pulse rounded-2xl bg-white ring-1 ring-black/[0.04]"
+              className="h-24 animate-pulse rounded-2xl bg-white border border-border shadow-[var(--shadow-panel)]"
             />
           ))}
         </div>
@@ -238,7 +238,7 @@ export function ImpactPointsPage() {
             type="button"
             onClick={() => refetch()}
             disabled={isFetching}
-            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#f5f5f7] px-3 text-[12px] font-semibold text-secondary transition hover:bg-[#ebebed] hover:text-primary disabled:opacity-50"
+            className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-raised px-3 text-[12px] font-semibold text-secondary transition hover:bg-[#ebebed] hover:text-primary disabled:opacity-50"
           >
             <RefreshCw
               className={cn('h-3.5 w-3.5', isFetching && 'animate-spin')}
@@ -321,7 +321,7 @@ export function ImpactPointsPage() {
                         'relative overflow-hidden rounded-2xl p-3 text-center ring-1 transition',
                         badge.earned
                           ? 'bg-amber-50/80 ring-amber-200/70'
-                          : 'bg-[#fbfbfd] ring-black/[0.05]',
+                          : 'bg-surface ring-black/[0.05]',
                       )}
                     >
                       <div className="relative mx-auto h-12 w-12">
@@ -401,7 +401,7 @@ export function ImpactPointsPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedUserId('')}
-                        className="rounded-full bg-[#f5f5f7] px-2.5 py-1 text-[11px] font-semibold text-[#0071e3]"
+                        className="rounded-full bg-surface-raised px-2.5 py-1 text-[11px] font-semibold text-[#0071e3]"
                       >
                         Company view
                       </button>
@@ -500,7 +500,7 @@ export function ImpactPointsPage() {
                               {formatPoints(row.points)}
                             </span>
                           </div>
-                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-[#f5f5f7]">
+                          <div className="mt-1.5 h-1.5 overflow-hidden rounded-full bg-surface-raised">
                             <div
                               className={cn(
                                 'h-full rounded-full',
@@ -536,7 +536,7 @@ export function ImpactPointsPage() {
                       <button
                         type="button"
                         onClick={() => setSelectedUserId(String(row.user._id))}
-                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-[#fbfbfd] sm:px-5"
+                        className="flex w-full items-center gap-3 px-4 py-3 text-left transition hover:bg-surface sm:px-5"
                       >
                         <RankBadge rank={row.rank} />
                         <Avatar
@@ -786,13 +786,13 @@ function LeaderboardSection({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search people…"
-            className="h-9 w-[200px] rounded-full border-0 bg-[#f5f5f7] pl-8 pr-3 text-[12px] outline-none ring-1 ring-black/[0.04] focus:bg-white focus:ring-[#3ecf8e]/40"
+            className="h-9 w-[200px] rounded-full border-0 bg-surface-raised pl-8 pr-3 text-[12px] outline-none border border-border shadow-[var(--shadow-panel)] focus:bg-white focus:ring-[#3ecf8e]/40"
           />
         </div>
         <select
           value={roleFilter}
           onChange={(e) => setRoleFilter(e.target.value)}
-          className="h-9 rounded-full border-0 bg-[#f5f5f7] px-3 text-[12px] font-medium text-secondary outline-none ring-1 ring-black/[0.04]"
+          className="h-9 rounded-full border-0 bg-surface-raised px-3 text-[12px] font-medium text-secondary outline-none border border-border shadow-[var(--shadow-panel)]"
         >
           <option value="all">All roles</option>
           {roles.map((role) => (
@@ -808,7 +808,7 @@ function LeaderboardSection({
           Loading leaderboard…
         </p>
       ) : !leaderboard.length ? (
-        <div className="rounded-2xl bg-white py-2 ring-1 ring-black/[0.04]">
+        <div className="rounded-2xl bg-white py-2 border border-border shadow-[var(--shadow-panel)]">
           <EmptyState
             icon={Trophy}
             title="No people match"
@@ -816,7 +816,7 @@ function LeaderboardSection({
           />
         </div>
       ) : (
-        <ul className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05] divide-y divide-black/[0.04]">
+        <ul className="overflow-hidden rounded-2xl bg-white border border-border divide-y divide-black/[0.04]">
           {leaderboard.map((row) => {
             const active = String(row.user._id) === String(profileId)
             return (
@@ -826,7 +826,7 @@ function LeaderboardSection({
                   onClick={() => onSelect(String(row.user._id))}
                   className={cn(
                     'flex w-full flex-col gap-3 px-4 py-3.5 text-left transition sm:flex-row sm:items-center sm:px-5',
-                    active ? 'bg-[#3ecf8e]/08' : 'hover:bg-[#fbfbfd]',
+                    active ? 'bg-[#3ecf8e]/08' : 'hover:bg-surface',
                   )}
                 >
                   <div className="flex min-w-0 flex-1 items-center gap-3">
@@ -899,13 +899,13 @@ function ChampionRewardCard({ champion, isMe }) {
   const monthLabel = now.toLocaleString('en-IN', { month: 'long' })
 
   return (
-    <section className="rounded-2xl bg-white p-5 ring-1 ring-black/[0.05]">
+    <section className="rounded-2xl bg-white p-5 border border-border">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.1em] text-amber-800">
           <Crown className="h-3 w-3" />
           Company Champion
         </span>
-        <span className="rounded-full bg-[#f5f5f7] px-2.5 py-1 text-[10px] font-medium text-[#86868b]">
+        <span className="rounded-full bg-surface-raised px-2.5 py-1 text-[10px] font-medium text-[#86868b]">
           {daysLeft}d left in {monthLabel}
         </span>
       </div>
@@ -929,7 +929,7 @@ function ChampionRewardCard({ champion, isMe }) {
         <Trophy className="h-4 w-4 shrink-0 text-amber-600" />
       </div>
 
-      <div className="mt-3 flex items-center gap-3 rounded-xl bg-[#f5f5f7] p-3">
+      <div className="mt-3 flex items-center gap-3 rounded-xl bg-surface-raised p-3">
         {champion ? (
           <>
             <div className="relative shrink-0">
@@ -974,7 +974,7 @@ function ChampionRewardCard({ champion, isMe }) {
 
 function ScoreHero({ total, weekly, monthly, rank }) {
   return (
-    <section className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/[0.04] md:col-span-2 xl:col-span-1">
+    <section className="rounded-2xl bg-white px-4 py-4 border border-border shadow-[var(--shadow-panel)] md:col-span-2 xl:col-span-1">
       <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
         Your impact
       </p>
@@ -991,7 +991,7 @@ function ScoreHero({ total, weekly, monthly, rank }) {
 
 function MiniMetric({ icon: Icon, label, value }) {
   return (
-    <section className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/[0.04]">
+    <section className="rounded-2xl bg-white px-4 py-4 border border-border shadow-[var(--shadow-panel)]">
       <div className="flex items-start justify-between">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
@@ -1001,7 +1001,7 @@ function MiniMetric({ icon: Icon, label, value }) {
             {value}
           </p>
         </div>
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-[#f5f5f7] text-[#1d1d1f]">
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-surface-raised text-[#1d1d1f]">
           <Icon className="h-3.5 w-3.5" />
         </span>
       </div>
@@ -1013,7 +1013,7 @@ function Panel({ title, subtitle, action, children, className, noPadding }) {
   return (
     <section
       className={cn(
-        'overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05]',
+        'overflow-hidden rounded-2xl bg-white border border-border',
         className,
       )}
     >
@@ -1045,13 +1045,13 @@ function RankBadge({ rank }) {
   }
   if (rank === 2 || rank === 3) {
     return (
-      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f5f5f7] text-[12px] font-bold text-[#1d1d1f]">
+      <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-surface-raised text-[12px] font-bold text-[#1d1d1f]">
         {rank}
       </span>
     )
   }
   return (
-    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-[#f5f5f7] text-[11px] font-semibold text-[#86868b]">
+    <span className="inline-flex h-7 w-7 items-center justify-center rounded-full bg-surface-raised text-[11px] font-semibold text-[#86868b]">
       {rank}
     </span>
   )
@@ -1121,7 +1121,7 @@ function RulesPanel({ rules, onSave }) {
                       [rule._id]: { ...draft, points: Number(e.target.value) },
                     }))
                   }
-                  className="mt-1 h-9 w-full rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-[#3ecf8e]/45"
+                  className="mt-1 h-9 w-full rounded-xl border border-black/[0.08] bg-surface px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-[#3ecf8e]/45"
                 />
               </label>
               <label className="text-[10px] font-semibold uppercase tracking-wide text-[#86868b]">
@@ -1137,7 +1137,7 @@ function RulesPanel({ rules, onSave }) {
                       [rule._id]: { ...draft, weight: Number(e.target.value) },
                     }))
                   }
-                  className="mt-1 h-9 w-full rounded-xl border border-black/[0.08] bg-[#fbfbfd] px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-[#3ecf8e]/45"
+                  className="mt-1 h-9 w-full rounded-xl border border-black/[0.08] bg-surface px-2 text-[12px] font-semibold tabular-nums outline-none focus:border-[#3ecf8e]/45"
                 />
               </label>
               <label className="flex items-end gap-2 pb-1 text-[11px] font-semibold text-[#6e6e73]">

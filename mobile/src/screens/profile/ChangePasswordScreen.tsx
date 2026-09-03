@@ -52,7 +52,7 @@ export function ChangePasswordScreen({ navigation }: Props) {
       subtitle="Update your sign-in credentials"
       subtitleIcon="lock-closed-outline"
       variant="page"
-      onBack={() => navigation.goBack()}
+
       footer={<Button title="Update password" onPress={onSubmit} loading={mutation.isPending} fullWidth />}
     >
       {user?.mustChangePassword ? (

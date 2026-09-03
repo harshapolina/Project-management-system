@@ -37,7 +37,7 @@ const VIEW_FILTERS = [
 ]
 
 const FIELD =
-  'h-10 rounded-xl border-black/[0.08] bg-[#fbfbfd] focus:border-[#3ecf8e]/55 focus:bg-white'
+  'h-10 rounded-xl border-black/[0.08] bg-surface focus:border-[#3ecf8e]/55 focus:bg-white'
 
 const PROJECT_PICK_LIMIT = 8
 
@@ -270,7 +270,7 @@ export function SiteFeedPage() {
       </section>
 
       {/* Project filter — search, never a wall of 100 pills */}
-      <section className="rounded-2xl bg-white p-3 ring-1 ring-black/[0.04] sm:p-4">
+      <section className="rounded-2xl bg-white p-3 border border-border shadow-[var(--shadow-panel)] sm:p-4">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="min-w-0 flex-1">
             <ProjectFilter
@@ -292,7 +292,7 @@ export function SiteFeedPage() {
                 key={site.id}
                 type="button"
                 onClick={() => setProjectId(site.id)}
-                className="inline-flex max-w-[180px] items-center gap-1.5 truncate rounded-full bg-[#f5f5f7] px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] transition hover:bg-[#ebebed]"
+                className="inline-flex max-w-[180px] items-center gap-1.5 truncate rounded-full bg-surface-raised px-2.5 py-1 text-[11px] font-medium text-[#1d1d1f] transition hover:bg-[#ebebed]"
               >
                 <span className="truncate">{site.name}</span>
                 <span className="shrink-0 tabular-nums text-[#86868b]">
@@ -335,7 +335,7 @@ export function SiteFeedPage() {
       </section>
 
       {filtered.length === 0 ? (
-        <div className="rounded-2xl bg-white py-2 ring-1 ring-black/[0.04]">
+        <div className="rounded-2xl bg-white py-2 border border-border shadow-[var(--shadow-panel)]">
           <EmptyState
             icon={Camera}
             title={
@@ -375,7 +375,7 @@ export function SiteFeedPage() {
                   return (
                     <li
                       key={update._id}
-                      className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05] transition duration-200 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
+                      className="overflow-hidden rounded-2xl bg-white border border-border transition duration-200 hover:shadow-[0_10px_30px_rgba(0,0,0,0.05)]"
                     >
                       <div className="flex items-start gap-3 px-4 py-3.5 sm:px-5">
                         <Avatar
@@ -457,7 +457,7 @@ export function SiteFeedPage() {
                                       })
                                     }
                                     className={cn(
-                                      'relative overflow-hidden rounded-xl bg-[#f5f5f7]',
+                                      'relative overflow-hidden rounded-xl bg-surface-raised',
                                       shot.length === 1
                                         ? 'aspect-[16/10] max-h-72'
                                         : 'aspect-square',
@@ -564,9 +564,9 @@ export function SiteFeedPage() {
               type="button"
               disabled={!compose.projectId || uploading}
               onClick={() => fileRef.current?.click()}
-              className="flex w-full items-center gap-3 rounded-xl border border-dashed border-black/10 bg-[#fbfbfd] px-3.5 py-3 text-left transition hover:border-[#3ecf8e]/45 disabled:opacity-50"
+              className="flex w-full items-center gap-3 rounded-xl border border-dashed border-black/10 bg-surface px-3.5 py-3 text-left transition hover:border-[#3ecf8e]/45 disabled:opacity-50"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-border">
                 <ImageIcon className="h-4 w-4 text-[#86868b]" />
               </span>
               <span className="min-w-0 flex-1">
@@ -598,7 +598,7 @@ export function SiteFeedPage() {
                 {photos.map((ph, i) => (
                   <div
                     key={ph.url + i}
-                    className="relative h-16 w-16 overflow-hidden rounded-lg ring-1 ring-black/[0.06]"
+                    className="relative h-16 w-16 overflow-hidden rounded-lg border border-border"
                   >
                     <img
                       src={assetUrl(ph.url)}
@@ -647,7 +647,7 @@ export function SiteFeedPage() {
             <img
               src={lightbox.urls[lightbox.index]}
               alt=""
-              className="max-h-[65vh] w-full rounded-xl object-contain bg-[#f5f5f7]"
+              className="max-h-[65vh] w-full rounded-xl object-contain bg-surface-raised"
             />
             {lightbox.urls.length > 1 && (
               <div className="flex items-center justify-between gap-2">
@@ -729,8 +729,8 @@ function ProjectFilter({ projects, value, selected, onChange }) {
 
   if (value !== 'all' && selected) {
     return (
-      <div className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] px-3 py-2.5 ring-1 ring-black/[0.04]">
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
+      <div className="flex items-center gap-3 rounded-xl bg-surface-raised px-3 py-2.5 border border-border shadow-[var(--shadow-panel)]">
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-border">
           <FolderKanban className="h-4 w-4 text-[#1d1d1f]" />
         </span>
         <div className="min-w-0 flex-1">
@@ -780,13 +780,13 @@ function ProjectFilter({ projects, value, selected, onChange }) {
               ? 'Type a project name or client…'
               : 'Search projects or keep All'
           }
-          className="h-10 w-full rounded-xl border-0 bg-[#f5f5f7] pl-9 pr-9 text-[13px] outline-none ring-1 ring-black/[0.05] placeholder:text-[#86868b] focus:bg-white focus:ring-[#3ecf8e]/45"
+          className="h-10 w-full rounded-xl border-0 bg-surface-raised pl-9 pr-9 text-[13px] outline-none border border-border placeholder:text-muted focus:bg-white focus:ring-[#3ecf8e]/45"
         />
         <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c7c7cc]" />
       </div>
 
       {open && (
-        <div className="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.08]">
+        <div className="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-border">
           <button
             type="button"
             onClick={() => {
@@ -794,7 +794,7 @@ function ProjectFilter({ projects, value, selected, onChange }) {
               setQuery('')
               setOpen(false)
             }}
-            className="flex w-full items-center gap-2 border-b border-black/[0.04] px-3 py-2.5 text-left text-[13px] font-medium text-[#1d1d1f] hover:bg-[#f5f5f7]"
+            className="flex w-full items-center gap-2 border-b border-black/[0.04] px-3 py-2.5 text-left text-[13px] font-medium text-[#1d1d1f] hover:bg-surface-raised"
           >
             All projects
           </button>
@@ -818,7 +818,7 @@ function ProjectFilter({ projects, value, selected, onChange }) {
                       setQuery('')
                       setOpen(false)
                     }}
-                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[#f5f5f7]"
+                    className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-surface-raised"
                   >
                     <FolderKanban className="h-3.5 w-3.5 shrink-0 text-[#86868b]" />
                     <span className="min-w-0 flex-1">
@@ -890,8 +890,8 @@ function ComposeProjectPicker({ projects, value, selected, onChange }) {
       </div>
 
       {selected && value ? (
-        <div className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] px-3 py-2.5 ring-1 ring-black/[0.04]">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
+        <div className="flex items-center gap-3 rounded-xl bg-surface-raised px-3 py-2.5 border border-border shadow-[var(--shadow-panel)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-border">
             <FolderKanban className="h-4 w-4" />
           </span>
           <div className="min-w-0 flex-1">
@@ -935,12 +935,12 @@ function ComposeProjectPicker({ projects, value, selected, onChange }) {
                   ? 'Type project name or client…'
                   : 'Search or pick a project…'
               }
-              className="h-10 w-full rounded-xl border-0 bg-[#f5f5f7] pl-9 pr-9 text-[13px] outline-none ring-1 ring-black/[0.05] focus:bg-white focus:ring-[#3ecf8e]/45"
+              className="h-10 w-full rounded-xl border-0 bg-surface-raised pl-9 pr-9 text-[13px] outline-none border border-border focus:bg-white focus:ring-[#3ecf8e]/45"
             />
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c7c7cc]" />
           </div>
           {open && (
-            <div className="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.08]">
+            <div className="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-border">
               {large && !q && (
                 <p className="border-b border-black/[0.04] px-3 py-2 text-[11px] text-[#86868b]">
                   Type to find any of {projects.length} projects
@@ -956,7 +956,7 @@ function ComposeProjectPicker({ projects, value, selected, onChange }) {
                         setQuery('')
                         setOpen(false)
                       }}
-                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-[#f5f5f7]"
+                      className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left hover:bg-surface-raised"
                     >
                       <FolderKanban className="h-3.5 w-3.5 text-[#86868b]" />
                       <span className="min-w-0 flex-1">
@@ -983,7 +983,7 @@ function ComposeProjectPicker({ projects, value, selected, onChange }) {
 
 function Kpi({ label, value, hint }) {
   return (
-    <div className="rounded-2xl bg-white px-4 py-4 ring-1 ring-black/[0.04] transition duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
+    <div className="rounded-2xl bg-white px-4 py-4 border border-border shadow-[var(--shadow-panel)] transition duration-200 hover:shadow-[0_8px_24px_rgba(0,0,0,0.04)]">
       <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
         {label}
       </p>

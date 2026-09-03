@@ -33,6 +33,9 @@ import {
   toast,
 } from '../components/ui'
 import { InviteDetailsModal } from '../components/layout/GlobalChrome'
+import { PageHeader } from '../components/layout/PageHeader'
+import { PageLayout } from '../components/layout/PageLayout'
+import { SearchField } from '../components/ui'
 import { cn } from '../lib/utils'
 
 export function AdminPeoplePage() {
@@ -275,9 +278,9 @@ export function AdminPeoplePage() {
     !(user?.role === 'admin' && selected.user.role === 'owner')
 
   return (
-    <div className="min-h-full bg-[var(--bg-canvas)]">
-      <div className="mx-auto max-w-[1440px] space-y-5 p-4 md:p-6 lg:p-8">
-        <section className="grid grid-cols-3 gap-3 sm:max-w-md">
+    <PageLayout>
+      <PageHeader title="People" subtitle="Team members, roles, and access" />
+      <section className="grid grid-cols-3 gap-3 sm:max-w-md">
           {[
             {
               label: 'People',
@@ -734,7 +737,6 @@ export function AdminPeoplePage() {
             </Link>
           </section>
         </div>
-      </div>
 
       <InviteDetailsModal
         open={!!inviteResult}
@@ -797,6 +799,6 @@ export function AdminPeoplePage() {
           </div>
         </form>
       </Modal>
-    </div>
+    </PageLayout>
   )
 }

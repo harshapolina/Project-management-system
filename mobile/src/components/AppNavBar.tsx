@@ -24,8 +24,10 @@ import { homeApi } from '../api/home'
 import { adminApi } from '../api/admin'
 import { leadsApi } from '../api/leads'
 import { vendorsApi } from '../api/procurement'
+import { openConversationFromTabs, openTabScreen } from '../navigation/openProject'
 import type { RootDrawerParamList } from '../navigation/types'
 import type { Task } from '../types/models'
+import { ActiveTimerChip } from './ActiveTimerChip'
 import { Avatar } from './Avatar'
 import { isDarkColor } from '../utils/color'
 
@@ -202,7 +204,7 @@ export function AppNavBar({
       goMore('ProfileHub', { screen: 'PersonAccess', params: { userId } })
       return
     }
-    goTab('Inbox', 'Conversation', { userId, userName })
+    openConversationFromTabs(navigation, userId, userName)
   }
 
   const results = useMemo((): SearchHit[] => {
@@ -457,6 +459,8 @@ export function AppNavBar({
               Search tasks, projects, people…
             </Text>
           </Pressable>
+
+          {!onHero ? <ActiveTimerChip /> : null}
 
           <View style={styles.actions}>
             {caps.reports || caps.portfolio ? (

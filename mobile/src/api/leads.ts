@@ -16,6 +16,13 @@ export interface CreateLeadPayload {
 export const leadsApi = {
   list: () => http.get<{ success: true; leads: Lead[] }>('/leads').then((r) => r.data.leads),
 
+  get: async (id: string) => {
+    const leads = await http.get<{ success: true; leads: Lead[] }>('/leads').then((r) => r.data.leads)
+    const lead = leads.find((l) => l._id === id)
+    if (!lead) throw new Error('Enquiry not found')
+    return lead
+  },
+
   create: (payload: CreateLeadPayload) =>
     http.post<{ success: true; lead: Lead }>('/leads', payload).then((r) => r.data.lead),
 
@@ -26,4 +33,6 @@ export const leadsApi = {
     http
       .post<{ success: true; project: Project; quotation: Quotation }>(`/leads/${id}/convert`)
       .then((r) => r.data),
+
+  remove: (id: string) => http.delete<{ success: true }>(`/leads/${id}`).then((r) => r.data),
 }

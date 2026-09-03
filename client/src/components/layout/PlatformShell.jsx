@@ -55,11 +55,11 @@ export function PlatformShell({ children }) {
 
   const navItemClass = (isActive, collapsed) =>
     cn(
-      'flex items-center rounded-xl py-2.5 text-[13px] font-medium transition-colors',
+      'flex items-center rounded-[var(--radius-md)] py-2.5 text-[13px] font-medium transition-colors',
       collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
       isActive
-        ? 'bg-[#202020] text-white'
-        : 'text-secondary hover:bg-white/5 hover:text-white',
+        ? 'bg-accent/15 text-accent'
+        : 'text-secondary hover:bg-white/5 hover:text-primary',
     )
 
   const Sidebar = ({ onNavigate, collapsed = false }) => {

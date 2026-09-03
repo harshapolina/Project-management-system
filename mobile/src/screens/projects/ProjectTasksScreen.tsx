@@ -1,9 +1,7 @@
 import { useState } from 'react'
 import { RefreshControl, ScrollView } from 'react-native'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
+import { NestedChrome } from '../../components/NestedChrome'
 import { SectionLabel } from '../../components/SectionLabel'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { SegmentedControl } from '../../components/SegmentedControl'
@@ -13,7 +11,7 @@ import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { STATUS_LABELS } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
-import { goBackOrHome } from '../../navigation/openProject'
+import { smartGoBack } from '../../navigation/openProject'
 import { tasksApi } from '../../api/tasks'
 import { homeApi } from '../../api/home'
 import { isApiError } from '../../api/client'
@@ -57,15 +55,11 @@ export function ProjectTasksScreen({ route, navigation }: Props) {
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      <AppNavBar />
-      <PageHeader
-        title="Tasks"
+    <NestedChrome title="Tasks"
         subtitle={projectName || 'Project tasks'}
         subtitleIcon="checkbox-outline"
-        onBack={() => goBackOrHome(navigation, route)}
-      />
-      <SegmentedControl options={STATUS_OPTIONS} value={status} onChange={setStatus} />
+        onBack={() => smartGoBack(navigation, route)}>
+<SegmentedControl options={STATUS_OPTIONS} value={status} onChange={setStatus} />
 
       {isLoading ? (
         <LoadingState label="Loading tasks…" variant="rows" />
@@ -102,6 +96,6 @@ export function ProjectTasksScreen({ route, navigation }: Props) {
       {caps.createTask ? (
         <Fab label="Add task" onPress={() => navigation.navigate('CreateTask', { projectId })} />
       ) : null}
-    </Screen>
+    </NestedChrome>
   )
 }

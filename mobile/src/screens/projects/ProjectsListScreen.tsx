@@ -1,11 +1,9 @@
 import { useState } from 'react'
 import { FlatList, RefreshControl } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
+import { NestedChrome } from '../../components/NestedChrome'
 import { ProjectCard } from '../../components/ProjectCard'
 import { SearchField } from '../../components/SearchField'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { IconButton } from '../../components/IconButton'
 import { EmptyState, ErrorState, LoadingState } from '../../components/States'
 import { useColors } from '../../theme/useColors'
@@ -38,29 +36,26 @@ export function ProjectsListScreen({ navigation }: Props) {
     return p.name.toLowerCase().includes(q) || p.clientName.toLowerCase().includes(q)
   })
 
-  return (
-    <Screen padded={false} edges={['left', 'right']}>
-      <AppNavBar />
-      <PageHeader
-        title="Projects"
-        subtitle={data ? `${data.length} live spaces` : 'Your active workspaces'}
-        subtitleIcon="folder-outline"
-        right={
-          caps.createProject ? (
-            <IconButton
-              icon="add-outline"
-              label="Create project"
-              tone="ghost"
-              onPress={() => navigation.navigate('CreateProject')}
-            />
-          ) : null
-        }
+  const chromeProps = {
+    title: 'Projects',
+    subtitle: data ? `${data.length} live spaces` : 'Your active workspaces',
+    subtitleIcon: 'folder-outline' as const,
+    right: caps.createProject ? (
+      <IconButton
+        icon="add-outline"
+        label="Create project"
+        tone="ghost"
+        onPress={() => navigation.navigate('CreateProject')}
       />
+    ) : undefined,
+  }
 
+  return (
+    <NestedChrome {...chromeProps} showBack={false}>
       <SearchField value={search} onChangeText={setSearch} placeholder="Search projects or clients" />
 
       {isLoading ? (
-        <LoadingState label="Loading projects…"  variant="cards" />
+        <LoadingState label="Loading projects…" variant="cards" />
       ) : isError ? (
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
       ) : (
@@ -84,6 +79,6 @@ export function ProjectsListScreen({ navigation }: Props) {
           }
         />
       )}
-    </Screen>
+    </NestedChrome>
   )
 }

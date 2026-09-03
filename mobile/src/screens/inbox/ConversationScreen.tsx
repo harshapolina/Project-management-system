@@ -1,18 +1,15 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
-import { FlatList, Platform, StyleSheet, Text, View } from 'react-native'
+import { FlatList, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
-import { Input } from '../../components/Input'
-import { Button } from '../../components/Button'
-import { KeyboardAwareView } from '../../components/KeyboardAwareView'
+import { Avatar } from '../../components/Avatar'
+import { NestedChrome } from '../../components/NestedChrome'
+import { ChatComposer } from '../../components/inbox/ChatComposer'
 import { LoadingState, ErrorState, EmptyState } from '../../components/States'
-import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
-import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { radius, spacing, typography, type AppColors, type ChatColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
+import { useChatColors } from '../../theme/useChatColors'
 import { useResponsive } from '../../theme/useResponsive'
-import { isKeyboardOpen, useKeyboardInset } from '../../hooks/useKeyboardInset'
+import { formatDayLabel, formatMsgTime, isCurrentUser, mailUserId, sameMessageDay } from '../../utils/chatUtils'
 import { getSocket } from '../../lib/socket'
 import { mailApi } from '../../api/mail'
 import { isApiError } from '../../api/client'
@@ -26,13 +23,12 @@ type ConversationData = Awaited<ReturnType<typeof mailApi.conversation>>
 
 export function ConversationScreen({ route, navigation }: Props) {
   const colors = useColors()
+  const chat = useChatColors()
   const { pagePadding } = useResponsive()
-  const keyboardInset = useKeyboardInset()
-  const keyboardOpen = isKeyboardOpen(keyboardInset)
-  const styles = useMemo(() => createStyles(colors, pagePadding), [colors, pagePadding])
+  const styles = useMemo(() => createStyles(colors, chat, pagePadding), [colors, chat, pagePadding])
   const listRef = useRef<FlatList<Message>>(null)
 
-  const { userId, userName } = route.params
+  const { userId, userName: routeName } = route.params
   const me = useAuthStore((s) => s.user)
   const queryClient = useQueryClient()
   const [body, setBody] = useState('')
@@ -52,9 +48,8 @@ export function ConversationScreen({ route, navigation }: Props) {
     const onMail = (payload: { message?: Message }) => {
       const message = payload?.message
       if (!message) return
-      const peer =
-        String(message.from._id) === String(me.id) ? message.to._id : message.from._id
-      if (String(peer) !== String(userId)) return
+      const peer = isCurrentUser(message.from, me.id) ? mailUserId(message.to) : mailUserId(message.from)
+      if (peer !== String(userId)) return
 
       queryClient.setQueryData<ConversationData>(queryKey, (old) => {
         if (!old) return old
@@ -80,10 +75,11 @@ export function ConversationScreen({ route, navigation }: Props) {
         _id: `temp-${Date.now()}`,
         from: {
           _id: me.id,
+          id: me.id,
           name: me.name,
           email: me.email,
           avatar: me.avatar,
-        },
+        } as Message['from'],
         to: previous.other,
         body: text,
         createdAt: new Date().toISOString(),
@@ -112,48 +108,45 @@ export function ConversationScreen({ route, navigation }: Props) {
     },
   })
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title={userName}
-        subtitle="Direct message"
-        subtitleIcon="chatbubble-outline"
-        onBack={() => navigation.goBack()}
-      />
-    </>
-  )
+  const other = data?.other
+  const displayName = other?.name || routeName || 'Chat'
+  const firstName = displayName.trim().split(/\s+/)[0] || displayName
+  const chromeProps = {
+    title: displayName,
+    subtitle: other?.email || (other ? 'Direct message' : undefined),
+    right: other ? <Avatar name={other.name} uri={other.avatar} size={32} /> : undefined,
+  }
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
+      <NestedChrome {...chromeProps} background={chat.listBg} compactHeader>
         <LoadingState label="Loading conversation…" variant="chat" />
-      </Screen>
+      </NestedChrome>
     )
   }
   if (isError || !data) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
+      <NestedChrome {...chromeProps} background={chat.listBg} compactHeader>
         <ErrorState message={isApiError(error) ? error.message : undefined} onRetry={() => refetch()} />
-      </Screen>
+      </NestedChrome>
     )
   }
 
-  const messages = data.messages
+  /** Newest first for inverted list (newest at bottom). */
+  const messages = [...data.messages].reverse()
+
+  const send = () => {
+    const text = body.trim()
+    if (text && !sendMutation.isPending) sendMutation.mutate(text)
+  }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
-      <KeyboardAwareView
-        style={styles.flex}
-        keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
-      >
-        <FlatList
+    <NestedChrome {...chromeProps} background={chat.listBg} keyboardAvoiding compactHeader>
+      <FlatList
           ref={listRef}
           data={messages}
           inverted={messages.length > 0}
+          automaticallyAdjustKeyboardInsets
           keyExtractor={(m) => m._id}
           contentContainerStyle={[
             styles.listContent,
@@ -161,93 +154,120 @@ export function ConversationScreen({ route, navigation }: Props) {
           ]}
           keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          renderItem={({ item }) => {
-            const mine = String(item.from._id) === String(me?.id)
+          onContentSizeChange={() => {
+            if (messages.length > 0) listRef.current?.scrollToOffset({ offset: 0, animated: true })
+          }}
+          renderItem={({ item, index }) => {
+            const mine = isCurrentUser(item.from, me?.id)
             const pending = String(item._id).startsWith('temp-')
+            const older = messages[index + 1]
+            const showDate =
+              index === messages.length - 1 ||
+              (older && !sameMessageDay(item.createdAt, older.createdAt))
+            const showAvatar = !mine && (!older || mailUserId(older.from) !== mailUserId(item.from))
+
             return (
-              <View style={[styles.bubbleRow, mine && styles.bubbleRowMine]}>
-                <View style={[styles.bubble, mine ? styles.bubbleMine : styles.bubbleTheirs, pending && styles.bubblePending]}>
-                  <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{item.body}</Text>
+              <View>
+                {showDate ? (
+                  <View style={styles.dateRow}>
+                    <View style={[styles.datePill, { backgroundColor: colors.surfaceRaised }]}>
+                      <Text style={[styles.dateText, { color: colors.textMuted }]}>
+                        {formatDayLabel(item.createdAt)}
+                      </Text>
+                    </View>
+                  </View>
+                ) : null}
+                <View style={[styles.bubbleRow, mine ? styles.bubbleRowMine : styles.bubbleRowTheirs]}>
+                  {!mine && showAvatar ? (
+                    <Avatar name={item.from.name} uri={item.from.avatar} size={28} />
+                  ) : !mine ? (
+                    <View style={styles.avatarSpacer} />
+                  ) : null}
+                  <View
+                    style={[
+                      styles.bubble,
+                      mine ? styles.bubbleMine : styles.bubbleTheirs,
+                      pending && styles.bubblePending,
+                    ]}
+                  >
+                    <Text style={[styles.bubbleText, mine && styles.bubbleTextMine]}>{item.body}</Text>
+                    <Text style={[styles.bubbleTime, mine && styles.bubbleTimeMine]}>
+                      {formatMsgTime(item.createdAt)}
+                      {pending ? ' · Sending' : ''}
+                    </Text>
+                  </View>
                 </View>
               </View>
             )
           }}
-          ListEmptyComponent={<EmptyState title="Say hello" body={`Start the conversation with ${userName}.`} />}
+          ListEmptyComponent={
+            <EmptyState
+              icon="chatbubble-ellipses-outline"
+              title="Start the conversation"
+              body={`Send the first message to ${firstName}.`}
+            />
+          }
         />
-        <View
-          style={[
-            styles.composer,
-            { paddingBottom: keyboardOpen ? spacing.md : TAB_BAR_CLEARANCE },
-          ]}
-        >
-          <Input
-            placeholder="Type a message…"
-            value={body}
-            onChangeText={setBody}
-            containerStyle={{ flex: 1 }}
-            multiline
-            onSubmitEditing={() => {
-              const text = body.trim()
-              if (text && !sendMutation.isPending) sendMutation.mutate(text)
-            }}
-            blurOnSubmit={false}
-          />
-          <Button
-            title="Send"
-            size="sm"
-            onPress={() => {
-              const text = body.trim()
-              if (text) sendMutation.mutate(text)
-            }}
-            loading={sendMutation.isPending}
-            disabled={!body.trim()}
-          />
-        </View>
-      </KeyboardAwareView>
-    </Screen>
+        <ChatComposer
+          value={body}
+          onChangeText={setBody}
+          onSend={send}
+          sending={sendMutation.isPending}
+          placeholder={`Message ${firstName}…`}
+        />
+    </NestedChrome>
   )
 }
 
-function createStyles(c: AppColors, pagePadding: number) {
+function createStyles(c: AppColors, chat: ChatColors, pagePadding: number) {
   return StyleSheet.create({
-    flex: { flex: 1, minHeight: 0 },
+    flex: { flex: 1, minHeight: 0, backgroundColor: chat.listBg },
     listContent: {
       paddingHorizontal: pagePadding,
       paddingVertical: spacing.md,
-      gap: spacing.md,
+      gap: spacing.xs,
     },
     listEmpty: {
       flexGrow: 1,
       justifyContent: 'center',
     },
-    bubbleRow: { flexDirection: 'row' },
-    bubbleRowMine: { justifyContent: 'flex-end' },
-    bubble: {
-      maxWidth: '80%',
-      borderRadius: radius.xl,
+    dateRow: { alignItems: 'center', marginVertical: spacing.sm },
+    datePill: {
       paddingHorizontal: spacing.md,
-      paddingVertical: spacing.sm,
+      paddingVertical: 4,
+      borderRadius: radius.full,
+      backgroundColor: c.surfaceRaised,
+    },
+    dateText: { ...typography.micro, fontWeight: '600', color: chat.rowPreview },
+    bubbleRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      gap: spacing.xs,
+      marginBottom: spacing.sm,
+    },
+    bubbleRowMine: { justifyContent: 'flex-end' },
+    bubbleRowTheirs: { justifyContent: 'flex-start' },
+    avatarSpacer: { width: 28 },
+    bubble: {
+      maxWidth: '78%',
+      borderRadius: 20,
+      paddingHorizontal: spacing.md,
+      paddingVertical: spacing.sm + 2,
     },
     bubbleTheirs: {
       backgroundColor: c.surface,
-      borderWidth: 1,
+      borderWidth: StyleSheet.hairlineWidth,
       borderColor: c.border,
-      borderBottomLeftRadius: 4,
+      borderBottomLeftRadius: 6,
     },
-    bubbleMine: { backgroundColor: c.accent, borderBottomRightRadius: 4 },
-    bubblePending: { opacity: 0.72 },
-    bubbleText: { ...typography.body, color: c.textPrimary },
+    bubbleMine: {
+      backgroundColor: c.accent,
+      borderBottomRightRadius: 6,
+    },
+    bubblePending: { opacity: 0.7 },
+    bubbleText: { ...typography.body, color: c.textPrimary, lineHeight: 22 },
     bubbleTextMine: { color: c.textOnAccent },
-    composer: {
-      flexDirection: 'row',
-      alignItems: 'flex-end',
-      gap: spacing.sm,
-      paddingHorizontal: pagePadding,
-      paddingTop: spacing.md,
-      paddingBottom: TAB_BAR_CLEARANCE,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.border,
-      backgroundColor: c.canvas,
-    },
+    bubbleTime: { ...typography.micro, color: chat.rowPreview, marginTop: 4 },
+    bubbleTimeMine: { color: `${c.textOnAccent}99` },
   })
 }

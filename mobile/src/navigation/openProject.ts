@@ -1,19 +1,145 @@
-import type { NavigationProp, ParamListBase, RouteProp } from '@react-navigation/native'
-import type { MoreStackParamList, ProjectStackParamList, RootTabParamList } from './types'
+import { useCallback } from 'react'
+import { useNavigation, type NavigationProp, type ParamListBase, type RouteProp } from '@react-navigation/native'
+import type { MobileHomeTarget, MoreStackParamList, ProjectStackParamList, RootDrawerParamList, RootTabParamList } from './types'
 
 type ProjectParams = { projectId: string; projectName?: string; returnTo?: 'home' }
 
+/** First screen in each tab stack — kept underneath pushed routes so Back always works. */
+export const TAB_ROOT_SCREEN: Record<keyof RootTabParamList, string> = {
+  Home: 'HomeMain',
+  Projects: 'ProjectsList',
+  Inbox: 'InboxHub',
+  More: 'MoreMain',
+}
+
+/** Nested stack roots (ProfileHub, PlatformAdmin, etc.). */
+const NESTED_STACK_ROOTS = ['ProfileMain', 'PlatformOverview'] as const
+
 /**
  * Minimal surface these helpers need to jump between root tabs.
- *
- * Screens inside a tab hold a `CompositeNavigationProp` (their stack + the tab
- * navigator), which react-navigation does not consider assignable to a plain
- * `NavigationProp<RootTabParamList>` — the state and dispatch generics differ.
- * Both shapes can navigate to a tab, so accept that structurally instead of
- * forcing every caller to cast.
  */
 export type TabNavigation = {
   navigate(screen: keyof RootTabParamList, params?: object): void
+}
+
+type MainTabsNavigation = {
+  navigate(screen: 'MainTabs', params?: object): void
+}
+
+function stackWithRoot(root: string, screen: string, params?: object) {
+  return {
+    state: {
+      routes: [{ name: root }, { name: screen, params }],
+      index: 1,
+    },
+  }
+}
+
+/** Navigate to a tab, preserving the tab root under nested screens. Works from drawer or tabs. */
+export function openTabScreen(
+  navigation: TabNavigation | MainTabsNavigation | NavigationProp<RootDrawerParamList>,
+  tab: keyof RootTabParamList,
+  screen?: string,
+  params?: object,
+) {
+  const root = TAB_ROOT_SCREEN[tab]
+
+  if (!screen || screen === root) {
+    ;(navigation as MainTabsNavigation).navigate('MainTabs', {
+      screen: tab,
+      ...(screen ? { params: { screen, params } } : null),
+    })
+    return
+  }
+
+  ;(navigation as MainTabsNavigation).navigate('MainTabs', {
+    screen: tab,
+    params: stackWithRoot(root, screen, params),
+  })
+}
+
+/** Build params for role landing (same stack preservation as openTabScreen). */
+export function landingTabParams(target: MobileHomeTarget) {
+  const root = TAB_ROOT_SCREEN[target.tab]
+  if (!root || target.screen === root) {
+    return { screen: target.screen, params: target.params }
+  }
+  return stackWithRoot(root, target.screen, target.params)
+}
+
+/**
+ * Universal back: pop stack, then parent, then navigate to the nearest tab/stack root.
+ */
+export function smartGoBack(
+  navigation: NavigationProp<ParamListBase>,
+  route?: RouteProp<ParamListBase, string>,
+) {
+  const returnTo = (route?.params as { returnTo?: string } | undefined)?.returnTo
+  if (returnTo === 'home') {
+    if (navigation.canGoBack()) navigation.goBack()
+    const tab = navigation.getParent()
+    if (tab) tab.navigate('Home' as never)
+    else navigation.navigate('Home' as never)
+    return
+  }
+
+  if (navigation.canGoBack()) {
+    navigation.goBack()
+    return
+  }
+
+  const parent = navigation.getParent()
+  if (parent?.canGoBack()) {
+    parent.goBack()
+    return
+  }
+
+  const findRoot = (routeNames?: string[]) => {
+    if (!routeNames) return undefined
+    for (const root of Object.values(TAB_ROOT_SCREEN)) {
+      if (routeNames.includes(root)) return root
+    }
+    for (const root of NESTED_STACK_ROOTS) {
+      if (routeNames.includes(root)) return root
+    }
+    return undefined
+  }
+
+  const ownRoot = findRoot(navigation.getState()?.routeNames as string[] | undefined)
+  if (ownRoot) {
+    navigation.navigate(ownRoot as never)
+    return
+  }
+
+  const parentRoot = findRoot(parent?.getState()?.routeNames as string[] | undefined)
+  if (parentRoot && parent) {
+    parent.navigate(parentRoot as never)
+    return
+  }
+
+  const tabNav = parent?.getParent?.() || parent
+  tabNav?.navigate('Home' as never)
+}
+
+/** @deprecated Use smartGoBack */
+export function goBackOrMoreMain(navigation: NavigationProp<ParamListBase>) {
+  smartGoBack(navigation)
+}
+
+/** @deprecated Use smartGoBack */
+export function goBackOrHome(
+  navigation: NavigationProp<ParamListBase>,
+  route?: RouteProp<ParamListBase, string>,
+) {
+  smartGoBack(navigation, route)
+}
+
+/** Back within stack, or to parent navigator when nested (e.g. platform admin). */
+export function useStackBack() {
+  const navigation = useNavigation()
+  return useCallback(() => {
+    smartGoBack(navigation as NavigationProp<ParamListBase>)
+  }, [navigation])
 }
 
 /**
@@ -40,8 +166,6 @@ export function openProjectScreen(
   const leafParams = { ...params, ...projectParams }
 
   if (opts?.fromHome) {
-    // Keep ProjectsList under the leaf so the Projects tab isn't stuck on a dead-end screen.
-    // Back still jumps to Home via `returnTo`.
     navigation.navigate('Projects', {
       state: {
         routes: [
@@ -74,7 +198,7 @@ export function openProjectScreen(
   })
 }
 
-/** Open a More-tab screen; with `fromHome`, Back returns to Home. */
+/** Open a More-tab screen; always keeps MoreMain under the leaf. */
 export function openMoreScreen(
   navigation: TabNavigation,
   screen: keyof MoreStackParamList,
@@ -83,43 +207,33 @@ export function openMoreScreen(
 ) {
   const nextParams = opts?.fromHome ? { ...params, returnTo: 'home' as const } : params
 
-  if (opts?.fromHome) {
-    // Keep MoreMain under the leaf so the More tab still has its menu root.
-    navigation.navigate('More', {
-      state: {
-        routes: [
-          { name: 'MoreMain' as const },
-          { name: screen, params: nextParams },
-        ],
-        index: 1,
-      },
-    } as never)
-    return
-  }
-
-  navigation.navigate('More', { screen, params: nextParams } as never)
+  navigation.navigate('More', {
+    state: {
+      routes: [
+        { name: 'MoreMain' as const },
+        { name: screen, params: nextParams },
+      ],
+      index: 1,
+    },
+  } as never)
 }
 
-/** Back within stack, or to Home when opened from a Home shortcut. */
-export function goBackOrHome(
-  navigation: NavigationProp<ParamListBase>,
-  route?: RouteProp<ParamListBase, string>,
+type ConversationParams = { userId: string; userName: string }
+
+/** Push a conversation (always fresh params — avoid stale peer from `navigate`). */
+export function pushConversation(
+  navigation: { push: (screen: 'Conversation', params: ConversationParams) => void },
+  userId: string,
+  userName: string,
 ) {
-  const returnTo = (route?.params as { returnTo?: string } | undefined)?.returnTo
-  if (returnTo === 'home') {
-    const tab = navigation.getParent()
-    // Pop this leaf so the tab root (list / More menu) is ready next time.
-    if (navigation.canGoBack()) {
-      navigation.goBack()
-    }
-    if (tab) tab.navigate('Home' as never)
-    else navigation.navigate('Home' as never)
-    return
-  }
-  if (navigation.canGoBack()) {
-    navigation.goBack()
-    return
-  }
-  const tab = navigation.getParent()
-  if (tab) tab.navigate('Home' as never)
+  navigation.push('Conversation', { userId, userName })
+}
+
+/** Open a chat from another tab with InboxHub preserved under the thread. */
+export function openConversationFromTabs(
+  navigation: TabNavigation,
+  userId: string,
+  userName: string,
+) {
+  openTabScreen(navigation, 'Inbox', 'Conversation', { userId, userName })
 }

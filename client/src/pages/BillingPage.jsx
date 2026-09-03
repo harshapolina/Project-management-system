@@ -342,13 +342,13 @@ export function BillingPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search invoice, vendor, PO…"
-                className="h-9 w-[220px] rounded-full border-0 bg-[#f5f5f7] pl-8 pr-3 text-[12px] text-primary outline-none ring-1 ring-black/[0.04] placeholder:text-[#86868b] focus:bg-white focus:ring-[#3ecf8e]/40"
+                className="h-9 w-[220px] rounded-full border-0 bg-surface-raised pl-8 pr-3 text-[12px] text-primary outline-none border border-border shadow-[var(--shadow-panel)] placeholder:text-muted focus:bg-white focus:ring-[#3ecf8e]/40"
               />
             </div>
             <select
               value={projectFilter}
               onChange={(e) => setProjectFilter(e.target.value)}
-              className="h-9 max-w-[180px] rounded-full border-0 bg-[#f5f5f7] px-3 text-[12px] font-medium text-secondary outline-none ring-1 ring-black/[0.04]"
+              className="h-9 max-w-[180px] rounded-full border-0 bg-surface-raised px-3 text-[12px] font-medium text-secondary outline-none border border-border shadow-[var(--shadow-panel)]"
             >
               <option value="all">All projects</option>
               {projects.map((p) => (
@@ -396,7 +396,7 @@ export function BillingPage() {
       </section>
 
       {dueSoon.length > 0 && (
-        <section className="overflow-hidden rounded-2xl bg-[#fbfbfd] ring-1 ring-black/[0.04]">
+        <section className="overflow-hidden rounded-2xl panel-surface">
           <div className="flex items-center justify-between border-b border-black/[0.04] px-4 py-2.5">
             <p className="text-[11px] font-semibold uppercase tracking-[0.06em] text-[#86868b]">
               Due in 7 days
@@ -446,7 +446,7 @@ export function BillingPage() {
         )}
 
         {!listLoading && invoices.length === 0 && (
-          <div className="rounded-2xl bg-white py-4 ring-1 ring-black/[0.04]">
+          <div className="rounded-2xl bg-white py-4 border border-border shadow-[var(--shadow-panel)]">
             <EmptyState
               icon={Receipt}
               title="No invoices yet"
@@ -462,7 +462,7 @@ export function BillingPage() {
           return (
             <article
               key={group.key}
-              className="overflow-hidden rounded-2xl bg-white ring-1 ring-black/[0.05] transition-[box-shadow] duration-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
+              className="overflow-hidden rounded-2xl bg-white border border-border transition-[box-shadow] duration-200 hover:shadow-[0_8px_30px_rgba(0,0,0,0.04)]"
             >
               <button
                 type="button"
@@ -474,7 +474,7 @@ export function BillingPage() {
                 }
                 className="flex w-full items-center gap-3 px-4 py-3.5 text-left sm:px-5"
               >
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f5f5f7] text-[#1d1d1f]">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-raised text-[#1d1d1f]">
                   <FolderKanban className="h-4 w-4" />
                 </span>
                 <div className="min-w-0 flex-1">
@@ -545,8 +545,8 @@ export function BillingPage() {
                             className={cn(
                               'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl transition',
                               fileHref
-                                ? 'bg-[#f5f5f7] text-[#1d1d1f] hover:bg-[#ebebed]'
-                                : 'bg-[#f5f5f7]/60 text-[#c7c7cc]',
+                                ? 'bg-surface-raised text-[#1d1d1f] hover:bg-[#ebebed]'
+                                : 'bg-surface-raised/60 text-[#c7c7cc]',
                             )}
                             title={fileHref ? 'Preview file' : 'No file'}
                           >
@@ -604,7 +604,7 @@ export function BillingPage() {
                                 href={fileHref}
                                 target="_blank"
                                 rel="noreferrer"
-                                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6e6e73] transition hover:bg-[#f5f5f7] hover:text-[#1d1d1f]"
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-full text-[#6e6e73] transition hover:bg-surface-raised hover:text-[#1d1d1f]"
                                 title="Open file"
                               >
                                 <ExternalLink className="h-3.5 w-3.5" />
@@ -794,9 +794,9 @@ export function BillingPage() {
             <button
               type="button"
               onClick={() => fileRef.current?.click()}
-              className="flex w-full items-center gap-3 rounded-xl border border-dashed border-black/10 bg-[#fbfbfd] px-3.5 py-3 text-left transition hover:border-[#3ecf8e]/45 hover:bg-[#3ecf8e]/[0.04]"
+              className="flex w-full items-center gap-3 rounded-xl border border-dashed border-black/10 bg-surface px-3.5 py-3 text-left transition hover:border-[#3ecf8e]/45 hover:bg-[#3ecf8e]/[0.04]"
             >
-              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
+              <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-border">
                 <Upload className="h-4 w-4 text-[#86868b]" />
               </span>
               <span className="min-w-0 flex-1">
@@ -876,7 +876,7 @@ export function BillingPage() {
                 <iframe
                   title={preview.invoiceNumber}
                   src={assetUrl(preview.fileUrl)}
-                  className="h-[60vh] w-full rounded-xl bg-[#f5f5f7]"
+                  className="h-[60vh] w-full rounded-xl bg-surface-raised"
                 />
               ) : (
                 <img
@@ -896,7 +896,7 @@ export function BillingPage() {
                   href={assetUrl(preview.fileUrl)}
                   target="_blank"
                   rel="noreferrer"
-                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-[#f5f5f7] px-4 text-[12px] font-semibold text-primary"
+                  className="inline-flex h-9 items-center gap-1.5 rounded-full bg-surface-raised px-4 text-[12px] font-semibold text-primary"
                 >
                   <ExternalLink className="h-3.5 w-3.5" />
                   Open original
@@ -983,8 +983,8 @@ function ProjectPicker({ projects, value, selected, onChange }) {
       </div>
 
       {selected && value ? (
-        <div className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] px-3 py-2.5 ring-1 ring-black/[0.04]">
-          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white ring-1 ring-black/[0.06]">
+        <div className="flex items-center gap-3 rounded-xl bg-surface-raised px-3 py-2.5 border border-border shadow-[var(--shadow-panel)]">
+          <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-white border border-border">
             <FolderKanban className="h-4 w-4 text-[#1d1d1f]" />
           </span>
           <div className="min-w-0 flex-1">
@@ -1023,13 +1023,13 @@ function ProjectPicker({ projects, value, selected, onChange }) {
                   ? 'Type project name or client…'
                   : 'Search or pick a project…'
               }
-              className="h-10 w-full rounded-xl border-0 bg-[#f5f5f7] pl-9 pr-9 text-[13px] text-primary outline-none ring-1 ring-black/[0.05] placeholder:text-[#86868b] focus:bg-white focus:ring-[#3ecf8e]/45"
+              className="h-10 w-full rounded-xl border-0 bg-surface-raised pl-9 pr-9 text-[13px] text-primary outline-none border border-border placeholder:text-muted focus:bg-white focus:ring-[#3ecf8e]/45"
             />
             <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#c7c7cc]" />
           </div>
 
           {open && (
-            <div className="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] ring-1 ring-black/[0.08]">
+            <div className="absolute left-0 right-0 z-30 mt-1.5 overflow-hidden rounded-xl bg-white shadow-[0_12px_40px_rgba(0,0,0,0.12)] border border-border">
               {largeCatalog && !q && (
                 <p className="border-b border-black/[0.04] px-3 py-2 text-[11px] text-[#86868b]">
                   Showing recent · type to find any of {projects.length}
@@ -1046,7 +1046,7 @@ function ProjectPicker({ projects, value, selected, onChange }) {
                       <button
                         type="button"
                         onClick={() => pick(p)}
-                        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition hover:bg-[#f5f5f7]"
+                        className="flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition hover:bg-surface-raised"
                       >
                         <FolderKanban className="h-3.5 w-3.5 shrink-0 text-[#86868b]" />
                         <span className="min-w-0 flex-1">

@@ -1,10 +1,8 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo } from 'react'
 import { FlatList, Linking, Pressable, RefreshControl, StyleSheet, Text, View } from 'react-native'
 import { useQuery } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { Fab } from '../../components/Fab'
 import { Pill } from '../../components/Badge'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -18,7 +16,7 @@ import { poWhatsappLink } from '../../utils/phone'
 import type { POStatus } from '../../types/ops'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import type { SharedOpsParamList } from '../../navigation/types'
-import { goBackOrHome } from '../../navigation/openProject'
+import { smartGoBack } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<SharedOpsParamList, 'PurchaseOrders'>
 
@@ -44,21 +42,15 @@ export function PurchaseOrdersScreen({ route, navigation }: Props) {
     queryFn: () => purchaseOrdersApi.list(projectId ? { projectId } : undefined),
   })
 
-  const pageHeader = (
-    <>
-      <AppNavBar />
-    <PageHeader
-      title="Purchase orders"
-      subtitle="Material orders"
-      subtitleIcon="cart-outline"
-      onBack={() => goBackOrHome(navigation, route)}
-    />
-    </>
-  )
+  const chromeProps = {
+    title: "Purchase orders",
+    subtitle: "Material orders",
+    subtitleIcon: 'cart-outline' as const,
+    onBack: () => smartGoBack(navigation, route),
+  }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {pageHeader}
+    <NestedChrome {...chromeProps}>
       {isLoading ? (
         <LoadingState label="Loading purchase orders…" variant="list" />
       ) : isError ? (
@@ -109,7 +101,7 @@ export function PurchaseOrdersScreen({ route, navigation }: Props) {
         label="New purchase order"
         onPress={() => navigation.navigate('CreatePurchaseOrder', { projectId, projectName })}
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

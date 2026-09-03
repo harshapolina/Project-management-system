@@ -7,6 +7,8 @@ import { Button } from '../../components/Button'
 import { ProjectPicker } from '../../components/ProjectPicker'
 import { typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
+import * as ImagePicker from 'expo-image-picker'
+import { mediaApi } from '../../api/media'
 import { siteFeedApi } from '../../api/siteFeed'
 import { isApiError } from '../../api/client'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
@@ -22,7 +24,20 @@ export function PostSiteUpdateScreen({ route, navigation }: Props) {
   const [projectId, setProjectId] = useState(params.projectId)
   const [note, setNote] = useState('')
   const [progress, setProgress] = useState('')
+  const [photoUrl, setPhotoUrl] = useState<string | null>(null)
   const [error, setError] = useState('')
+
+  const pickPhoto = async () => {
+    const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 })
+    if (res.canceled || !res.assets[0]) return
+    const asset = res.assets[0]
+    const uploaded = await mediaApi.uploadImage({
+      uri: asset.uri,
+      name: asset.fileName || 'site-photo.jpg',
+      mimeType: asset.mimeType || 'image/jpeg',
+    })
+    setPhotoUrl(uploaded.url)
+  }
 
   const mutation = useMutation({
     mutationFn: () =>
@@ -30,6 +45,7 @@ export function PostSiteUpdateScreen({ route, navigation }: Props) {
         projectId: projectId!,
         note: note.trim(),
         progress: progress ? Number(progress) : undefined,
+        photos: photoUrl ? [{ url: photoUrl }] : undefined,
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['site-updates'] })
@@ -44,7 +60,7 @@ export function PostSiteUpdateScreen({ route, navigation }: Props) {
       title="Post update"
       subtitle="Share progress from the site"
       subtitleIcon="camera-outline"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Post update"
@@ -82,6 +98,7 @@ export function PostSiteUpdateScreen({ route, navigation }: Props) {
         value={progress}
         onChangeText={setProgress}
       />
+      <Button title={photoUrl ? 'Photo attached' : 'Add photo'} variant="secondary" onPress={pickPhoto} fullWidth />
       {error ? <Text style={styles.error}>{error}</Text> : null}
     </FormLayout>
   )

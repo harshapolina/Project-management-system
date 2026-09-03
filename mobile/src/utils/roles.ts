@@ -1,4 +1,5 @@
-import type { Role, User } from '../types/models'
+import type { CustomRole, Role, User } from '../types/models'
+import type { MobileHomeTarget } from '../navigation/types'
 
 /** Ported 1:1 from client/src/lib/roles.js so mobile nav/permissions gates
  * make the same decisions the web app does against the same API responses. */
@@ -156,6 +157,49 @@ export const ROLE_LABELS: Record<Role, string> = {
   vendor: 'Vendor',
 }
 
+/**
+ * Custom roles live on the tenant, so a label lookup has to consider them —
+ * otherwise a "Quantity surveyor" shows up as the raw `quantity_surveyor` key.
+ * Ported from client/src/lib/roles.js roleLabelFor.
+ */
+export function roleLabelFor(role?: string | null, customRoles: CustomRole[] = []): string {
+  if (!role) return '—'
+  const builtIn = (ROLE_LABELS as Record<string, string>)[role]
+  if (builtIn) return builtIn
+  const custom = customRoles.find((r) => r.key === role)
+  if (custom?.label) return custom.label
+  return String(role)
+    .split('_')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+export function canInviteUsers(user: User | null): boolean {
+  if (!user) return false
+  if (user.isPlatformAdmin) return true
+  return ['admin', 'owner', 'hr'].includes(user.role)
+}
+
 export const INVITE_ROLE_OPTIONS: { value: Role; label: string }[] = (
   Object.keys(ROLE_LABELS) as Role[]
 ).map((value) => ({ value, label: ROLE_LABELS[value] }))
+
+/** Mirrors client/src/lib/roles.js homePathForUser for mobile navigation targets. */
+export function homePathForUser(user: User | null, portal: 'staff' | 'admin' = 'staff'): MobileHomeTarget | null {
+  if (!user) return null
+  if (user.mustChangePassword) return { tab: 'More', screen: 'ProfileHub', params: { screen: 'ChangePassword' } }
+  if (!user.onboardingCompleted) return null
+
+  if (portal === 'admin') {
+    if (user.isPlatformAdmin && !isAdminRole(user)) return { tab: 'More', screen: 'PlatformAdmin', params: { screen: 'PlatformOverview' } }
+    if (isCompanyAdmin(user)) return { tab: 'More', screen: 'CompanyAdminDashboard' }
+    if (user.role === 'hr' || isAdminRole(user)) return { tab: 'More', screen: 'ProfileHub', params: { screen: 'People' } }
+    return null
+  }
+
+  if (user.role === 'site_supervisor') return { tab: 'Home', screen: 'SiteSupervisor' }
+  if (user.isPlatformAdmin && !isAdminRole(user)) return { tab: 'More', screen: 'PlatformAdmin', params: { screen: 'PlatformOverview' } }
+  if (isCompanyAdmin(user)) return { tab: 'More', screen: 'CompanyAdminDashboard' }
+  if (user.role === 'hr') return { tab: 'More', screen: 'ProfileHub', params: { screen: 'People' } }
+  return { tab: 'Home', screen: 'HomeMain', params: { view: 'assigned' } }
+}

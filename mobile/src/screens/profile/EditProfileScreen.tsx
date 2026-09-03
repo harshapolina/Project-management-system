@@ -112,7 +112,7 @@ export function EditProfileScreen({ navigation }: Props) {
       subtitle="Photo, name, and contact"
       subtitleIcon="person-outline"
       variant="page"
-      onBack={() => navigation.goBack()}
+
       footer={
         <Button
           title="Save changes"

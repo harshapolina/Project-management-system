@@ -336,7 +336,7 @@ export function LeadsPage() {
           onAction={leads.length === 0 ? () => setCreateOpen(true) : undefined}
         />
       ) : (
-        <div className="flex gap-3 overflow-x-auto pb-2">
+        <div className="kanban-scroll flex gap-3 overflow-x-auto pb-2">
           {PIPELINE.map((stage) => {
             const column = filtered.filter(
               (l) => normalizeStage(l.stage) === stage,

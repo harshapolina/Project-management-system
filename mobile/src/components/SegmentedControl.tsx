@@ -26,6 +26,7 @@ export function SegmentedControl<T extends string>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
+      nestedScrollEnabled
       // RN Web defaults ScrollView to flexGrow:1, which stretches chips into tall columns.
       style={styles.scroll}
       contentContainerStyle={[styles.row, style]}

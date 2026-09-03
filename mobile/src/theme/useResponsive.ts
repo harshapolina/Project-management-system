@@ -1,8 +1,5 @@
 import { useWindowDimensions } from 'react-native'
-import { spacing } from '../constants/theme'
-
-/** Keep in sync with GlassyTabBar.TAB_BAR_CLEARANCE (avoid circular import). */
-const TAB_BAR_CLEARANCE = 96
+import { spacing, TAB_BAR_CLEARANCE } from '../constants/theme'
 
 /** Breakpoints aligned to common phone widths (logical points). */
 export const BREAKPOINTS = {

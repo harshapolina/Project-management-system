@@ -43,6 +43,7 @@ import { BillingPage } from './pages/BillingPage'
 import { TaxInvoicesPage } from './pages/TaxInvoicesPage'
 import { ReportsPage } from './pages/ReportsPage'
 import { ApprovalsPage } from './pages/ApprovalsPage'
+import { DocsPage } from './pages/DocsPage'
 import {
   SettingsPage,
   MobileSupervisorPage,
@@ -157,6 +158,14 @@ export default function App() {
                     <SiteFeedPage />
                   </PagePad>
                 </CapabilityGate>
+              }
+            />
+            <Route
+              path="/docs"
+              element={
+                <PagePad>
+                  <DocsPage />
+                </PagePad>
               }
             />
             <Route

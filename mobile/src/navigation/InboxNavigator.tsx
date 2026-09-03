@@ -1,5 +1,6 @@
 import { useMemo } from 'react'
 import { createNativeStackNavigator } from '@react-navigation/native-stack'
+import { InboxHubScreen } from '../screens/inbox/InboxHubScreen'
 import { ThreadsScreen } from '../screens/inbox/ThreadsScreen'
 import { ConversationScreen } from '../screens/inbox/ConversationScreen'
 import { NewMessageScreen } from '../screens/inbox/NewMessageScreen'
@@ -13,7 +14,8 @@ export function InboxNavigator() {
   const colors = useColors()
   const options = useMemo(() => stackScreenOptions(colors), [colors])
   return (
-    <Stack.Navigator screenOptions={options}>
+    <Stack.Navigator screenOptions={options} initialRouteName="InboxHub">
+      <Stack.Screen name="InboxHub" component={InboxHubScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Threads" component={ThreadsScreen} options={{ headerShown: false }} />
       <Stack.Screen name="Conversation" component={ConversationScreen} options={{ headerShown: false }} />
       <Stack.Screen

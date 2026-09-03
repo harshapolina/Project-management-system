@@ -26,12 +26,33 @@ export interface User {
   createdAt?: string
 }
 
+/** A message the platform owner is showing this whole workspace. */
+export interface TenantNotice {
+  title: string
+  message: string
+  variant: 'info' | 'warning' | 'urgent'
+  dismissible: boolean
+  /** Freezes the app behind the message until the platform owner lifts it. */
+  blocking: boolean
+  /** Identity of this wording — a re-edit re-shows it to people who dismissed. */
+  updatedAt: string | null
+}
+
 export interface Tenant {
   id: string
   name: string
   slug: string
   status?: string
   seatLimit?: number
+  /** How many admin/owner seats the platform allows this workspace. */
+  adminLimit?: number
+  /** Company logo, printed on quotations and tax invoices. */
+  logoUrl?: string
+  /** Sits behind the company logo; empty means use a neutral surface. */
+  brandColor?: string
+  notice?: TenantNotice | null
+  /** Extra roles this workspace defined on top of the built-in set. */
+  customRoles?: CustomRole[]
 }
 
 export type TaskStatus = 'todo' | 'in_progress' | 'review' | 'done'
@@ -59,6 +80,7 @@ export interface Task {
   stage?: string
   tags?: string[]
   checklist?: ChecklistItem[]
+  customFields?: Record<string, unknown>
   timeEstimate?: number | null
   timeSpent?: number
   timeTrackingStartedAt?: string | null
@@ -216,7 +238,17 @@ export interface ProjectFile {
   folder: string
   name: string
   mime?: string
-  status: 'draft' | 'sent' | 'approved' | string
+  status: 'draft' | 'sent' | 'approved' | 'rejected' | string
+  /** Sign-off lifecycle, separate from the folder status. */
+  approvalStatus?: 'none' | 'pending' | 'approved' | 'rejected'
+  approvalType?: string
+  approver?: { _id: string; name: string; avatar?: string } | string | null
+  requestedBy?: { _id: string; name: string } | string | null
+  requestedAt?: string
+  decidedBy?: { _id: string; name: string } | string | null
+  decidedAt?: string
+  approvalNote?: string
+  decisionNote?: string
   clientVisible?: boolean
   currentVersion: number
   versions: { version: number; url: string; note?: string; uploadedBy?: string; createdAt?: string }[]
@@ -230,11 +262,14 @@ export interface Notification {
   body?: string
   link?: string
   read: boolean
+  later?: boolean
+  cleared?: boolean
   createdAt: string
 }
 
 export interface MailUser {
   _id: string
+  id?: string
   name: string
   email: string
   avatar?: string
@@ -314,8 +349,136 @@ export interface ImpactData {
   canManage: boolean
 }
 
+export interface ImpactAchievement {
+  key: string
+  label: string
+  minPoints: number
+  description?: string
+}
+
+export interface ImpactRule {
+  _id: string
+  key: string
+  label: string
+  description?: string
+  category: string
+  points: number
+  weight: number
+  enabled: boolean
+  auto: boolean
+}
+
+export interface ImpactLeaderboardRow {
+  rank: number
+  user: { _id: string; name: string; avatar?: string; role: string; title?: string }
+  totalPoints: number
+  weeklyPoints: number
+  monthlyPoints: number
+  badges: string[]
+  /** Points for the requested period — what the board is ranked on. */
+  points: number
+}
+
+export type ImpactPeriod = 'weekly' | 'monthly' | 'all'
+
+export interface ImpactTimelineEntry {
+  _id: string
+  points: number
+  reason: string
+  category?: string
+  createdAt: string
+  userId?: { _id: string; name: string; avatar?: string; role?: string }
+  awardedBy?: { _id: string; name: string; avatar?: string }
+  projectId?: { _id: string; name: string }
+}
+
+export interface ImpactOverview {
+  me: ImpactScore
+  badges: ImpactBadge[]
+  top: {
+    rank: number
+    user: { _id: string; name: string; avatar?: string; role: string; title?: string }
+    totalPoints: number
+    weeklyPoints: number
+    monthlyPoints: number
+    badges: string[]
+  }[]
+  company: {
+    scope: 'company' | 'self'
+    breakdown: { category: string; points: number; count: number }[]
+    trend: { date: string; points: number }[]
+    timeline: ImpactTimelineEntry[]
+  }
+  rules: ImpactRule[]
+  people: { _id: string; name: string; avatar?: string; role: string; title?: string; isActive?: boolean }[]
+  achievements: ImpactAchievement[]
+  canManage: boolean
+}
+
+export interface ActivityEntry {
+  _id: string
+  action: string
+  entityType?: string
+  entityName?: string
+  actor?: { _id: string; name: string; avatar?: string }
+  projectId?: { _id: string; name: string }
+  createdAt: string
+}
+
+export interface CustomRole {
+  key: string
+  label: string
+  basedOn: string
+  permissions?: Record<string, boolean>
+  createdAt?: string
+}
+
 export interface ApiError {
   status?: number
   message: string
   data?: unknown
+}
+
+/** GET /tasks/live-board — the open workload across the whole company. */
+export interface LiveBoardPerson {
+  user: { _id: string; name: string; avatar?: string; role?: string; title?: string }
+  open: number
+  todo: number
+  in_progress: number
+  review: number
+  urgent: number
+  high: number
+  overdue: number
+  /** 0–100, relative to the busiest person — drives the load bar. */
+  load: number
+}
+
+export interface LiveBoardTask {
+  _id: string
+  title: string
+  status: TaskStatus
+  priority: TaskPriority
+  stage?: string
+  dueDate: string | null
+  updatedAt: string
+  overdue: boolean
+  project: { _id: string; name: string } | null
+  assignee: { _id: string; name: string; avatar?: string } | null
+  assignedBy: { _id: string; name: string; avatar?: string } | null
+}
+
+export interface LiveBoard {
+  generatedAt: string
+  counts: {
+    open: number
+    todo: number
+    in_progress: number
+    review: number
+    urgent: number
+    overdue: number
+    unassigned: number
+    peopleWithWork: number
+  }
+  team: LiveBoardPerson[]
+  tasks: LiveBoardTask[]
 }

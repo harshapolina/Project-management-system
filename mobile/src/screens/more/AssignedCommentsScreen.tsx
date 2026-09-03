@@ -1,11 +1,9 @@
+import { NestedChrome } from '../../components/NestedChrome'
 import { useMemo, useState } from 'react'
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Ionicons } from '@expo/vector-icons'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
-import { Screen } from '../../components/Screen'
-import { AppNavBar } from '../../components/AppNavBar'
-import { PageHeader } from '../../components/PageHeader'
 import { SearchField } from '../../components/SearchField'
 import { SegmentedControl } from '../../components/SegmentedControl'
 import { SurfaceCard } from '../../components/SurfaceCard'
@@ -20,7 +18,7 @@ import { isApiError } from '../../api/client'
 import { timeAgo } from '../../utils/time'
 import type { AssignedComment } from '../../types/models'
 import type { MoreStackParamList } from '../../navigation/types'
-import { goBackOrHome } from '../../navigation/openProject'
+import { smartGoBack } from '../../navigation/openProject'
 
 type Props = NativeStackScreenProps<MoreStackParamList, 'AssignedComments'>
 
@@ -66,17 +64,12 @@ export function AssignedCommentsScreen({ route, navigation }: Props) {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['assigned-comments'] }),
   })
 
-  const header = (
-    <>
-      <AppNavBar />
-      <PageHeader
-        title="Assigned comments"
-        subtitle="Comments waiting on you"
-        subtitleIcon="chatbubbles-outline"
-        onBack={() => goBackOrHome(navigation, route)}
-      />
-    </>
-  )
+  const chromeProps = {
+    title: "Assigned comments",
+    subtitle: "Comments waiting on you",
+    subtitleIcon: 'chatbubbles-outline' as const,
+    onBack: () => smartGoBack(navigation, route),
+  }
 
   const filters = (
     <View style={styles.filters}>
@@ -105,28 +98,25 @@ export function AssignedCommentsScreen({ route, navigation }: Props) {
 
   if (isLoading) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <LoadingState label="Loading comments…" variant="list" />
-      </Screen>
+      <NestedChrome {...chromeProps}>
+      <LoadingState label="Loading comments…" variant="list" />
+      </NestedChrome>
     )
   }
 
   if (isError) {
     return (
-      <Screen padded={false} edges={['left', 'right']}>
-        {header}
-        <ErrorState
+      <NestedChrome {...chromeProps}>
+      <ErrorState
           message={isApiError(error) ? error.message : undefined}
           onRetry={() => refetch()}
         />
-      </Screen>
+      </NestedChrome>
     )
   }
 
   return (
-    <Screen padded={false} edges={['left', 'right']}>
-      {header}
+    <NestedChrome {...chromeProps}>
       <FlatList
         data={data}
         keyExtractor={(c) => c._id}
@@ -203,7 +193,7 @@ export function AssignedCommentsScreen({ route, navigation }: Props) {
           />
         }
       />
-    </Screen>
+    </NestedChrome>
   )
 }
 

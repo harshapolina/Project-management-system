@@ -103,5 +103,5 @@ function createStyles(c: AppColors) {
 }
 
 const styles = StyleSheet.create({
-  fill: { flex: 1 },
+  fill: { flex: 1, minHeight: 0 },
 })
