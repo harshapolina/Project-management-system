@@ -34,7 +34,18 @@
     },
     "plugins": [
       "expo-secure-store",
-      "expo-status-bar"
+      "expo-status-bar",
+      "expo-font",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "extraMavenRepos": [
+              "https://www.jitpack.io"
+            ]
+          }
+        }
+      ]
     ],
     "owner": "editcomedias-team",
     "extra": {
