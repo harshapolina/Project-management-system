@@ -7,6 +7,7 @@ import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { useAuthStore } from '../store/authStore'
 import type { TenantNotice as Notice } from '../types/models'
+import { glyphs, type Glyph } from '../icons'
 
 /**
  * Dismissal is per-device and per-message.
@@ -17,9 +18,9 @@ import type { TenantNotice as Notice } from '../types/models'
  */
 const dismissKey = (stamp?: string | null) => `cubic-notice-dismissed:${stamp || 'none'}`
 
-function iconFor(notice: Notice): keyof typeof Ionicons.glyphMap {
-  if (notice.blocking) return 'lock-closed'
-  return notice.variant === 'info' ? 'information-circle' : 'warning'
+function iconFor(notice: Notice): Glyph {
+  if (notice.blocking) return glyphs.lockFilled
+  return notice.variant === 'info' ? glyphs.info : glyphs.warning
 }
 
 function toneFor(notice: Notice, c: AppColors) {

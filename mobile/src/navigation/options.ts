@@ -11,7 +11,8 @@ export function stackScreenOptions(colors: AppColors) {
     headerStyle: { backgroundColor: colors.canvas },
     headerShadowVisible: false,
     contentStyle: { backgroundColor: colors.canvas },
-    animation: 'slide_from_right' as const,
+    animation: 'fade' as const,
+    animationDuration: 280,
   }
 }
 

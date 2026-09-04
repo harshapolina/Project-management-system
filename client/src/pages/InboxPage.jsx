@@ -21,6 +21,8 @@ import { api, useAuthStore } from '../lib/api'
 import { syncSocketAuth } from '../lib/socket'
 import { Avatar, toast } from '../components/ui'
 import { cn } from '../lib/utils'
+import { motion } from 'framer-motion'
+import { FadeIn } from '../components/motion/FadeIn'
 
 const TABS = [
   { id: 'primary', label: 'Primary', icon: Inbox },
@@ -70,7 +72,12 @@ export function InboxPage() {
   return (
     <div className="flex h-full min-h-0 flex-col">
       {/* ClickUp-style inbox tabs */}
-      <div className="flex shrink-0 items-center gap-1 border-b border-[#2e2e32] px-4">
+      <motion.div
+        className="flex shrink-0 items-center gap-1 border-b border-[#2e2e32] px-4"
+        initial={{ opacity: 0, y: -4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+      >
         {TABS.map((t) => (
           <button
             key={t.id}
@@ -88,7 +95,7 @@ export function InboxPage() {
             )}
           </button>
         ))}
-      </div>
+      </motion.div>
 
       <div className="flex h-9 shrink-0 items-center gap-2 border-b border-[#2e2e32] px-4">
         <p className="text-[12px] text-[#6b6b70]">
@@ -110,7 +117,12 @@ export function InboxPage() {
         </div>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <motion.div
+        className="min-h-0 flex-1 overflow-hidden"
+        initial={{ opacity: 0, y: 4 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.26, delay: 0.04, ease: [0.22, 1, 0.36, 1] }}
+      >
         {tab === 'primary' && <PrimaryNotifications mode="primary" />}
         {tab === 'mail' && (
           <CompanyMail
@@ -123,7 +135,7 @@ export function InboxPage() {
         )}
         {tab === 'later' && <PrimaryNotifications mode="later" />}
         {tab === 'cleared' && <PrimaryNotifications mode="cleared" />}
-      </div>
+      </motion.div>
     </div>
   )
 }
@@ -445,17 +457,35 @@ function CompanyMail({
             icon
           />
         ) : (
-          <MailThread
-            other={activeUser}
-            me={me}
-            onBack={() => onOpenThread('')}
-          />
+          <motion.div
+            key={activeUser._id}
+            className="flex min-h-0 flex-1 flex-col"
+            initial={{ opacity: 0, x: 8 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
+          >
+            <MailThread
+              other={activeUser}
+              me={me}
+              onBack={() => onOpenThread('')}
+            />
+          </motion.div>
         )}
       </div>
 
       {composeOpen && (
-        <div className="absolute inset-0 z-20 flex items-start justify-center bg-black/50 p-4 pt-16">
-          <div className="flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-[#2e2e32] bg-[#1c1c1e] shadow-2xl">
+        <motion.div
+          className="absolute inset-0 z-20 flex items-start justify-center bg-black/50 p-4 pt-16"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+        >
+          <motion.div
+            className="flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-[#2e2e32] bg-[#1c1c1e] shadow-2xl"
+            initial={{ opacity: 0, y: 4, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
+          >
             <div className="flex items-center justify-between border-b border-[#2e2e32] px-4 py-3">
               <p className="text-[14px] font-semibold text-white">New message</p>
               <button
@@ -501,8 +531,8 @@ function CompanyMail({
                 </p>
               )}
             </div>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       )}
     </div>
   )
@@ -514,7 +544,7 @@ function PersonRow({ user, preview, unread, active, onClick }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-colors',
+        'flex w-full items-center gap-2.5 px-3 py-2.5 text-left transition-[background-color,transform] duration-150 ease-out active:scale-[0.99]',
         active ? 'bg-[#2a2a2e]' : 'hover:bg-[#1c1c1e]',
       )}
     >
@@ -595,7 +625,7 @@ function MailThread({ other, me, onBack }) {
         <button
           type="button"
           onClick={onBack}
-          className="rounded-md p-1 text-[#8b8b90] hover:bg-[#1c1c1e]"
+          className="rounded-md p-1 text-[#8b8b90] transition-[background-color,transform,opacity] duration-150 ease-out hover:bg-[#1c1c1e] active:scale-[0.97] active:opacity-80"
         >
           <ArrowLeft className="h-4 w-4" />
         </button>
@@ -734,7 +764,7 @@ function ToolIcon({ children, onClick, title }) {
       type="button"
       title={title}
       onClick={onClick}
-      className="flex h-7 w-7 items-center justify-center rounded-md text-[#8b8b90] hover:bg-[#252528] hover:text-white"
+      className="flex h-7 w-7 items-center justify-center rounded-md text-[#8b8b90] transition-[background-color,color,transform] duration-150 ease-out hover:bg-[#252528] hover:text-white active:scale-[0.97]"
     >
       {children}
     </button>
@@ -743,7 +773,7 @@ function ToolIcon({ children, onClick, title }) {
 
 function EmptyInbox({ title, body, actionLabel, actionTo, icon }) {
   return (
-    <div className="flex h-full flex-col items-center justify-center px-6 text-center">
+    <FadeIn className="flex h-full flex-col items-center justify-center px-6 text-center">
       <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#1c1c1e] text-[#8b8b90]">
         {icon ? (
           <Mail className="h-7 w-7" />
@@ -761,7 +791,7 @@ function EmptyInbox({ title, body, actionLabel, actionTo, icon }) {
           {actionLabel}
         </Link>
       )}
-    </div>
+    </FadeIn>
   )
 }
 

@@ -32,7 +32,7 @@ function MainTabs() {
        * cross-fades and nudges the outgoing screen, which reads as the same
        * family of motion without the lateral travel a tab bar shouldn't imply.
        */
-      screenOptions={{ headerShown: false, animation: 'shift' }}
+        screenOptions={{ headerShown: false, animation: 'fade' }}
     >
       <Tab.Screen name="Home" component={HomeNavigator} />
       {caps.projects ? <Tab.Screen name="Projects" component={ProjectNavigator} /> : null}

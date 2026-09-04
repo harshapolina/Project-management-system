@@ -1,5 +1,6 @@
 import { cn } from '../../lib/utils'
 import { Button } from './Button'
+import { FadeIn } from '../motion/FadeIn'
 
 export function EmptyState({
   icon: Icon,
@@ -10,7 +11,7 @@ export function EmptyState({
   className,
 }) {
   return (
-    <div
+    <FadeIn
       className={cn(
         'flex flex-col items-center justify-center rounded-[18px] border border-dashed border-border bg-surface/50 px-8 py-14 text-center',
         className,
@@ -32,6 +33,6 @@ export function EmptyState({
           {actionLabel}
         </Button>
       )}
-    </div>
+    </FadeIn>
   )
 }

@@ -13,7 +13,7 @@ export const Input = forwardRef(function Input(
       <input
         ref={ref}
         className={cn(
-          'h-9 w-full rounded-[6px] px-3 text-sm outline-none transition-all duration-150',
+          'h-9 w-full rounded-[6px] px-3 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 ease-out',
           'border border-border bg-surface text-primary placeholder:text-muted',
           'focus:border-accent/50 focus:ring-2 focus:ring-accent/15',
           error && 'border-status-delayed focus:border-status-delayed focus:ring-status-delayed/20',

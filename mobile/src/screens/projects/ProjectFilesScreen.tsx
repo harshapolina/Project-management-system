@@ -289,7 +289,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
   const chromeProps = {
     title: "Files",
     subtitle: projectName || 'Project files',
-    subtitleIcon: 'folder-outline' as const,
+    subtitleIcon: 'document-outline' as const,
   }
 
   if (!caps.manageFiles) {
@@ -395,7 +395,7 @@ export function ProjectFilesScreen({ route, navigation }: Props) {
         renderItem={renderItem}
         ListEmptyComponent={
           <EmptyState
-            icon="folder-open-outline"
+            icon="document-outline"
             title={`Nothing in ${folderLabel}`}
             body="Upload drawings, BOQs, and documents — each keeps its own version history."
             action="Upload files"

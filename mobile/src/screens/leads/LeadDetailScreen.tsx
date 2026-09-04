@@ -131,7 +131,7 @@ export function LeadDetailScreen({ route, navigation }: Props) {
   const chromeProps = {
     title: lead?.clientName || 'Enquiry',
     subtitle: "Lead details",
-    subtitleIcon: 'people-outline' as const,
+    subtitleIcon: 'briefcase-outline' as const,
   }
 
   if (isLoading) {

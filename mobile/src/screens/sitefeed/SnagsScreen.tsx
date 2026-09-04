@@ -50,7 +50,7 @@ export function SnagsScreen({ route, navigation }: Props) {
   const chromeProps = {
     title: "Snags",
     subtitle: "Issues to fix",
-    subtitleIcon: 'alert-circle-outline' as const,
+    subtitleIcon: 'warning-outline' as const,
     onBack: () => smartGoBack(navigation, route),
   }
 

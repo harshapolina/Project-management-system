@@ -20,6 +20,7 @@ import { api, getTenantSlug, useAuthStore, companyLoginUrl } from '../lib/api'
 import { InviteDetailsModal } from '../components/layout/GlobalChrome'
 import { PageToolbar } from '../components/layout/PageToolbar'
 import { MailAndAlertsSettings } from '../components/settings/MailAndAlertsSettings'
+import { FadeIn } from '../components/motion/FadeIn'
 import { cn } from '../lib/utils'
 import {
   Avatar,
@@ -231,6 +232,7 @@ export function SettingsPage() {
 
   return (
     <div className="mx-auto w-full max-w-3xl space-y-4 pb-10">
+      <FadeIn>
       <header className="flex flex-wrap items-end justify-between gap-3">
         <div className="min-w-0">
           <h1 className="text-[22px] font-semibold tracking-tight text-primary">
@@ -247,7 +249,9 @@ export function SettingsPage() {
           </div>
         )}
       </header>
+      </FadeIn>
 
+      <FadeIn delay={30}>
       <div className={PILL_TRACK}>
         <button
           type="button"
@@ -273,7 +277,9 @@ export function SettingsPage() {
           </span>
         </button>
       </div>
+      </FadeIn>
 
+      <FadeIn delay={50}>
       {tab === 'email' ? (
         <MailAndAlertsSettings canEdit={canEditMail} />
       ) : (
@@ -492,6 +498,7 @@ export function SettingsPage() {
       <CustomFieldsSettings />
         </>
       )}
+      </FadeIn>
     </div>
   )
 }

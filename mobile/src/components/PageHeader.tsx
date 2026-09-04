@@ -1,14 +1,14 @@
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
+import { glyphs, type Glyph } from '../icons'
+import { Icon } from './Icon'
 
-/** Touch target for the header's icon buttons, and the glyph drawn inside it. */
+/** Touch target for the header's icon buttons. Glyph size lives in `iconSize.back`. */
 const ICON_TARGET = 42
-const ICON_GLYPH = 24
 
 /**
  * Home-aligned page chrome: large title + status subtitle.
@@ -26,7 +26,7 @@ export function PageHeader({
 }: {
   title: ReactNode
   subtitle?: string
-  subtitleIcon?: keyof typeof Ionicons.glyphMap
+  subtitleIcon?: Glyph
   right?: ReactNode
   onBack?: () => void
   backLabel?: string
@@ -50,9 +50,13 @@ export function PageHeader({
             hitSlop={12}
             accessibilityRole="button"
             accessibilityLabel={backLabel}
-            style={[styles.topIconBtn, styles.topBackBtn]}
+            style={({ pressed }) => [
+              styles.topIconBtn,
+              styles.topBackBtn,
+              pressed && { opacity: 0.7, transform: [{ scale: 0.97 }] },
+            ]}
           >
-            <Ionicons name="chevron-back" size={ICON_GLYPH} color={colors.textPrimary} />
+            <Icon name={glyphs.back} size="back" color={colors.textPrimary} decorative />
           </Pressable>
           {useCompactBar ? (
             typeof title === 'string' ? (
@@ -90,7 +94,7 @@ export function PageHeader({
           {subtitle ? (
             <View style={styles.statusRow}>
               {subtitleIcon ? (
-                <Ionicons name={subtitleIcon} size={15} color={colors.accentHover} />
+                <Icon name={subtitleIcon} size="subtitle" color={colors.accentHover} decorative />
               ) : null}
               <Text style={styles.subtitle} numberOfLines={2}>
                 {subtitle}

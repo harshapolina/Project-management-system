@@ -59,7 +59,7 @@ export function HeroSection({
           accessibilityRole="button"
           accessibilityLabel="My tasks"
         >
-          <Ionicons name="checkmark-done-outline" size={18} color={HERO.limeText} />
+          <Ionicons name="checkbox-outline" size={18} color={HERO.limeText} />
           <Text style={styles.heroCtaText}>My tasks</Text>
         </Pressable>
         <Pressable

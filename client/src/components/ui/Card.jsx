@@ -17,7 +17,7 @@ export function Card({
         variant === 'light' && 'bg-light-card text-on-light',
         variant === 'night' && 'bg-surface-raised text-primary',
         padding && 'p-4 sm:p-5',
-        hover && 'cursor-pointer hover:bg-surface-raised',
+        hover && 'cursor-pointer hover:bg-surface-raised active:scale-[0.995]',
         className,
       )}
       {...props}

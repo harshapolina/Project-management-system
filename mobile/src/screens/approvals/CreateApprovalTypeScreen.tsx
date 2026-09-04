@@ -40,7 +40,7 @@ export function CreateApprovalTypeScreen({ navigation }: Props) {
     <FormLayout
       title="New approval type"
       subtitle="A process of your own"
-      subtitleIcon="add-circle-outline"
+      subtitleIcon="add-outline"
 
       footer={
         <Button

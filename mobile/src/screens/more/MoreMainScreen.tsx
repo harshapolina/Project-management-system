@@ -13,6 +13,8 @@ import { NestedChrome } from '../../components/NestedChrome'
 import { NavRow, NavSection } from '../../components/NavRow'
 import { SearchField } from '../../components/SearchField'
 import { EmptyState } from '../../components/States'
+import { IconButton } from '../../components/IconButton'
+import { FadeIn } from '../../motion/FadeIn'
 import { useColors, useThemeMode } from '../../theme/useColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { useUiStore } from '../../store/uiStore'
@@ -192,7 +194,7 @@ export function MoreMainScreen({ navigation }: Props) {
             onPress={() => goMore(tabNav,'Notifications')}
           />
           <NavRow
-            icon="chatbox-ellipses-outline"
+            icon="chatbubble-ellipses-outline"
             label="Assigned comments"
             hint="Comments waiting on you"
             tone={2}
@@ -247,7 +249,7 @@ export function MoreMainScreen({ navigation }: Props) {
                   onPress={() => goMore(tabNav,'MaterialsHub', undefined)}
                 />
                 <NavRow
-                  icon="business-outline"
+                  icon="storefront-outline"
                   label="Vendors"
                   hint="Supplier directory"
                   tone={1}
@@ -303,14 +305,14 @@ export function MoreMainScreen({ navigation }: Props) {
               onPress={() => goMore(tabNav,'SiteFeed', undefined)}
             />
             <NavRow
-              icon="add-circle-outline"
+              icon="add-outline"
               label="Post update"
               hint="Share progress from the field"
               tone={1}
               onPress={() => goMore(tabNav,'PostSiteUpdate', undefined)}
             />
             <NavRow
-              icon="alert-circle-outline"
+              icon="warning-outline"
               label="Snags"
               hint="Issues to fix"
               tone={5}
@@ -502,20 +504,42 @@ export function MoreMainScreen({ navigation }: Props) {
   )
 
   const { nodes, matches } = useMemo(() => filterSections(sections, search), [sections, search])
+  const sectionNodes = useMemo(
+    () =>
+      flattenRows(nodes).filter(
+        (node): node is ReactElement => isValidElement(node) && node.type === NavSection,
+      ),
+    [nodes],
+  )
 
   return (
-    <NestedChrome title="More" subtitle="Account, tools, and company" subtitleIcon="grid-outline" showBack={false}>
+    <NestedChrome
+      title="More"
+      subtitle="Account, tools, and company"
+      subtitleIcon="grid-outline"
+      showBack={false}
+      right={
+        <IconButton
+          icon="help-circle-outline"
+          label="Handbook"
+          tone="ghost"
+          onPress={() => goMore(tabNav, 'Docs')}
+        />
+      }
+    >
       <ScrollView
         contentContainerStyle={tabListContent}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
       >
-        <SearchField
-          value={search}
-          onChangeText={setSearch}
-          placeholder="Search settings and tools"
-          inset={false}
-        />
+        <FadeIn delay={30} distance={4}>
+          <SearchField
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search settings and tools"
+            inset={false}
+          />
+        </FadeIn>
         {matches === 0 ? (
           <EmptyState
             icon="search-outline"
@@ -523,7 +547,11 @@ export function MoreMainScreen({ navigation }: Props) {
             body={`No settings or tools match “${search.trim()}”.`}
           />
         ) : (
-          nodes
+          sectionNodes.map((node, i) => (
+            <FadeIn key={node.key ?? i} delay={50 + Math.min(i, 6) * 25} distance={6}>
+              {node}
+            </FadeIn>
+          ))
         )}
       </ScrollView>
     </NestedChrome>

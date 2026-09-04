@@ -46,7 +46,7 @@ export function CollapsibleSection({
         <Text style={styles.toggleText}>{label}</Text>
         <Ionicons
           name={open ? 'chevron-up' : 'chevron-down'}
-          size={18}
+          size={16}
           color={colors.textMuted}
         />
       </Pressable>

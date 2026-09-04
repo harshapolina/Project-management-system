@@ -24,7 +24,7 @@ export const Select = forwardRef(function Select(
         <select
           ref={ref}
           className={cn(
-            'h-9 w-full appearance-none rounded-[6px] px-3 pr-9 text-sm outline-none transition-all duration-150',
+            'h-9 w-full appearance-none rounded-[6px] px-3 pr-9 text-sm outline-none transition-[border-color,box-shadow,background-color] duration-200 ease-out',
             'border border-border bg-surface text-primary',
             'focus:border-accent/50 focus:ring-2 focus:ring-accent/15',
             'disabled:cursor-not-allowed disabled:opacity-50',

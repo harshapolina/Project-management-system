@@ -27,7 +27,7 @@ export function VendorsScreen({ navigation }: Props) {
   const chromeProps = {
     title: "Vendors",
     subtitle: "Supplier directory",
-    subtitleIcon: 'business-outline' as const,
+    subtitleIcon: 'storefront-outline' as const,
   }
 
   if (isLoading) {

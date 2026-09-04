@@ -39,9 +39,9 @@ export const Button = forwardRef(function Button(
       type={type}
       disabled={disabled || loading}
       className={cn(
-        'inline-flex items-center justify-center rounded-[6px] font-medium transition-all duration-150 ease-out',
+        'inline-flex items-center justify-center rounded-[6px] font-medium transition-[transform,background-color,color,box-shadow,opacity] duration-125 ease-out',
         'disabled:pointer-events-none disabled:border-transparent disabled:bg-surface-raised disabled:text-secondary disabled:shadow-none',
-        'active:scale-[0.98]',
+        'active:scale-[0.97] motion-reduce:active:scale-100',
         variants[variant],
         sizes[size],
         className,

@@ -25,7 +25,7 @@ function iconForAction(action?: string): keyof typeof Ionicons.glyphMap {
   if (a.includes('upload') || a.includes('file')) return 'document-attach-outline'
   if (a.includes('delete') || a.includes('remove')) return 'trash-outline'
   if (a.includes('assign')) return 'person-add-outline'
-  if (a.includes('create') || a.includes('add')) return 'add-circle-outline'
+  if (a.includes('create') || a.includes('add')) return 'add-outline'
   if (a.includes('approve')) return 'shield-checkmark-outline'
   if (a.includes('status') || a.includes('stage') || a.includes('move')) return 'swap-horizontal-outline'
   return 'ellipse-outline'

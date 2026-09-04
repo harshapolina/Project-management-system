@@ -119,16 +119,26 @@ export function HomeScreen({ navigation, route }: Props) {
   const shadows = useShadows()
   const { height: windowHeight } = useWindowDimensions()
   const { pagePadding, isCompact } = useResponsive()
+  /**
+   * Freeze the first measured window height. On web, `useWindowDimensions`
+   * ticks as the browser chrome shows/hides during scroll; rebuilding styles
+   * (sheet minHeight) is what made the green hero judder.
+   */
+  const [stableWindowHeight] = useState(windowHeight)
   const styles = useMemo(
-    () => createStyles(colors, shadows, pagePadding, isCompact, windowHeight),
-    [colors, shadows, pagePadding, isCompact, windowHeight],
+    () => createStyles(colors, shadows, pagePadding, isCompact, stableWindowHeight),
+    [colors, shadows, pagePadding, isCompact, stableWindowHeight],
   )
+  const isWeb = Platform.OS === 'web'
   /**
    * Two values off one scroll, because they can't share a driver. The hero pin
    * has to run on the UI thread or it lands a frame behind every scroll frame
    * and the green card visibly judders; the navbar animates `backgroundColor`,
    * which the native driver can't do at all. So the pin gets the native value
    * and the navbar gets a JS one mirrored from the same event.
+   *
+   * Web skips the transform pin entirely — CSS `position: sticky` keeps the
+   * hero still without fighting the compositor, which is the shake we saw.
    */
   const scrollYNative = useRef(new Animated.Value(0)).current
   const scrollY = useRef(new Animated.Value(0)).current
@@ -142,7 +152,7 @@ export function HomeScreen({ navigation, route }: Props) {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null)
   const [workView, setWorkView] = useState<MyWorkView>(route.params?.view || 'all')
 
-  const { data, isLoading, isError, error, refetch, isRefetching } = useQuery({
+  const { data, isError, error, refetch, isRefetching } = useQuery({
     queryKey: ['home'],
     queryFn: homeApi.get,
   })
@@ -238,7 +248,7 @@ export function HomeScreen({ navigation, route }: Props) {
       items.push({
         key: `snag-${s._id}`,
         tone: 'danger',
-        icon: 'alert-circle',
+        icon: 'warning-outline',
         title: s.title || 'Open snag',
         body: s.assignee?.name ? `Assigned to ${s.assignee.name}` : 'Needs attention on site',
         meta: `${proj || activeProject?.name || 'Site'} · ${timeAgo(s.createdAt)}`,
@@ -251,7 +261,7 @@ export function HomeScreen({ navigation, route }: Props) {
       items.push({
         key: `appr-${a._id}`,
         tone: 'warning',
-        icon: 'time',
+        icon: 'time-outline',
         title: a.title || 'Awaiting approval',
         body: 'Submitted for review',
         meta: `${projectNameOf(a) || activeProject?.name || 'Project'} · ${timeAgo(a.updatedAt || a.createdAt)}`,
@@ -263,7 +273,7 @@ export function HomeScreen({ navigation, route }: Props) {
       items.push({
         key: `n-${n._id}`,
         tone: 'warning',
-        icon: 'cube',
+        icon: 'notifications-outline',
         title: n.title,
         body: n.body || 'Needs a response',
         meta: timeAgo(n.createdAt),
@@ -284,7 +294,7 @@ export function HomeScreen({ navigation, route }: Props) {
       {
         key: 'update',
         label: 'Post Update',
-        icon: 'document-text' as const,
+        icon: 'camera-outline' as const,
         color: colors.accentHover,
         bg: colors.accentSoft,
         visible: caps.siteFeed,
@@ -293,7 +303,7 @@ export function HomeScreen({ navigation, route }: Props) {
       {
         key: 'issue',
         label: 'Log Issue',
-        icon: 'warning' as const,
+        icon: 'warning-outline' as const,
         color: colors.danger,
         bg: colors.dangerSoft,
         visible: caps.siteFeed,
@@ -302,7 +312,7 @@ export function HomeScreen({ navigation, route }: Props) {
       {
         key: 'material',
         label: 'Request Material',
-        icon: 'cube' as const,
+        icon: 'cart-outline' as const,
         color: colors.warning,
         bg: colors.warningSoft,
         visible: caps.procurement,
@@ -312,7 +322,7 @@ export function HomeScreen({ navigation, route }: Props) {
       {
         key: 'photos',
         label: 'Site Photos',
-        icon: 'camera' as const,
+        icon: 'images-outline' as const,
         color: colors.accent,
         bg: colors.accentSoft,
         visible: caps.siteFeed,
@@ -321,7 +331,7 @@ export function HomeScreen({ navigation, route }: Props) {
     ] as const
   ).filter((a) => a.visible)
 
-  if (isLoading) {
+  if (!data && !isError) {
     return (
       <Screen padded={false} edges={['left', 'right']} background={colors.canvas}>
         <AppNavBar variant="hero" />
@@ -375,14 +385,21 @@ export function HomeScreen({ navigation, route }: Props) {
           showsVerticalScrollIndicator={false}
           scrollEventThrottle={16}
           nestedScrollEnabled
-          bounces
+          bounces={!isWeb}
           overScrollMode="never"
           keyboardShouldPersistTaps="handled"
-          onScroll={Animated.event([{ nativeEvent: { contentOffset: { y: scrollYNative } } }], {
-            useNativeDriver: true,
-            listener: (e: NativeSyntheticEvent<NativeScrollEvent>) =>
-              scrollY.setValue(e.nativeEvent.contentOffset.y),
-          })}
+          removeClippedSubviews={false}
+          onScroll={
+            isWeb
+              ? (e: NativeSyntheticEvent<NativeScrollEvent>) => {
+                  scrollY.setValue(e.nativeEvent.contentOffset.y)
+                }
+              : Animated.event([{ nativeEvent: { contentOffset: { y: scrollYNative } } }], {
+                  useNativeDriver: true,
+                  listener: (e: NativeSyntheticEvent<NativeScrollEvent>) =>
+                    scrollY.setValue(e.nativeEvent.contentOffset.y),
+                })
+          }
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -402,8 +419,12 @@ export function HomeScreen({ navigation, route }: Props) {
               is cancelled back out of it so it holds still and the sheet slides
               up over the top. */}
           <Animated.View
-            onLayout={(e) => setHeroHeight(e.nativeEvent.layout.height)}
-            style={[styles.heroLayer, { transform: [{ translateY: heroPin }] }]}
+            collapsable={false}
+            onLayout={(e) => {
+              const h = Math.round(e.nativeEvent.layout.height)
+              setHeroHeight((prev) => (Math.abs(prev - h) < 1 ? prev : h))
+            }}
+            style={[styles.heroLayer, !isWeb && { transform: [{ translateY: heroPin }] }]}
           >
             <HeroSection
               userName={firstName(user?.name)}
@@ -428,7 +449,7 @@ export function HomeScreen({ navigation, route }: Props) {
                     accessibilityRole="button"
                     accessibilityLabel="Select project"
                   >
-                    <Ionicons name="business-outline" size={16} color={HERO.lime} />
+                    <Ionicons name="folder-outline" size={16} color={HERO.lime} />
                     <Text style={styles.heroProjectName} numberOfLines={1}>
                       {activeProject?.name || 'All projects'}
                     </Text>
@@ -504,7 +525,7 @@ export function HomeScreen({ navigation, route }: Props) {
             />
             <HealthTile
               styles={styles}
-              icon="cube-outline"
+              icon="layers-outline"
               iconColor={colors.warning}
               iconBg={colors.warningSoft}
               label="Materials"
@@ -518,7 +539,7 @@ export function HomeScreen({ navigation, route }: Props) {
             />
             <HealthTile
               styles={styles}
-              icon="alert-circle-outline"
+              icon="warning-outline"
               iconColor={colors.danger}
               iconBg={colors.dangerSoft}
               label="Issues"
@@ -569,7 +590,7 @@ export function HomeScreen({ navigation, route }: Props) {
                   onPress={() => navigation.navigate('TaskDetail', { taskId: focus._id })}
                   accessibilityLabel="Open task"
                 >
-                  <Ionicons name="arrow-forward" size={18} color={colors.textOnAccent} />
+                  <Ionicons name="arrow-forward" size={18} color={colors.ctaText} />
                 </Pressable>
               </View>
             </Pressable>
@@ -867,9 +888,19 @@ function createStyles(
      * Sits under the sheet in the same scroll. `zIndex` is what guarantees the
      * sheet paints on top on Android, where the elevation on the cards inside
      * it would otherwise decide the order for us.
+     *
+     * Web uses sticky instead of a JS translateY pin — mapping scroll to a CSS
+     * transform on the same node that is also scrolling is what shook the hero.
      */
     heroLayer: {
       zIndex: 0,
+      ...(Platform.OS === 'web'
+        ? ({
+            position: 'sticky',
+            top: 0,
+            backfaceVisibility: 'hidden',
+          } as object)
+        : { backfaceVisibility: 'hidden' as const }),
     },
     heroInner: {
       paddingHorizontal: pagePadding,
@@ -975,6 +1006,11 @@ function createStyles(
       paddingBottom: TAB_BAR_CLEARANCE + spacing.xl,
       gap: spacing.md,
       minHeight: Math.max(windowHeight - 100, 520),
+      ...(Platform.OS === 'web'
+        ? ({
+            position: 'relative',
+          } as object)
+        : null),
     },
     healthRow: { flexDirection: 'row', gap: 8 },
     healthTile: {
@@ -1060,8 +1096,8 @@ function createStyles(
     focusArrow: {
       width: 36,
       height: 36,
-      borderRadius: radius.md,
-      backgroundColor: c.accent,
+      borderRadius: radius.full,
+      backgroundColor: c.cta,
       alignItems: 'center',
       justifyContent: 'center',
     },

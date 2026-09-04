@@ -1,6 +1,5 @@
 import { useMemo } from 'react'
 import { Modal, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
@@ -8,6 +7,8 @@ import { useColors, useShadows } from '../theme/useColors'
 import { useAuthStore } from '../store/authStore'
 import { capabilitiesForUser } from '../utils/roles'
 import type { RootTabParamList } from '../navigation/types'
+import { type Glyph } from '../icons'
+import { Icon } from './Icon'
 
 type Nav = BottomTabNavigationProp<RootTabParamList>
 
@@ -15,7 +16,7 @@ type Action = {
   key: string
   label: string
   hint: string
-  icon: keyof typeof Ionicons.glyphMap
+  icon: Glyph
   onPress: () => void
 }
 
@@ -77,7 +78,7 @@ export function QuickCreateSheet({ visible, onClose, navigation }: QuickCreateSh
         key: 'lead',
         label: 'New enquiry',
         hint: 'Capture a lead',
-        icon: 'person-add-outline',
+        icon: 'briefcase-outline',
         onPress: () => go('More', 'CreateLead'),
       })
     }
@@ -133,7 +134,7 @@ export function QuickCreateSheet({ visible, onClose, navigation }: QuickCreateSh
                 style={({ pressed }) => [styles.row, pressed && styles.rowPressed]}
               >
                 <View style={styles.iconWell}>
-                  <Ionicons name={action.icon} size={20} color={colors.accentHover} />
+                  <Icon name={action.icon} size="button" color={colors.accentHover} decorative />
                 </View>
                 <View style={styles.rowText}>
                   <Text style={styles.rowLabel}>{action.label}</Text>
@@ -228,13 +229,19 @@ function createStyles(c: AppColors, sh: ReturnType<typeof useShadows>) {
     cancel: {
       marginTop: spacing.sm,
       alignItems: 'center',
-      paddingVertical: 14,
-      borderRadius: radius.lg,
-      backgroundColor: c.surfaceRaised,
+      justifyContent: 'center',
+      height: 52,
+      borderRadius: radius.full,
+      backgroundColor: c.surface,
+      borderWidth: 1,
+      borderColor: c.borderLight,
     },
     cancelText: {
       ...typography.bodyStrong,
-      color: c.textSecondary,
+      fontSize: 16,
+      lineHeight: 20,
+      color: c.textPrimary,
+      letterSpacing: -0.2,
     },
   })
 }

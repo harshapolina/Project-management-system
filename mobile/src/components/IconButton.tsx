@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
-import { outlineName } from './IconWell'
+import { outlineName, type Glyph } from '../icons'
+import { Icon } from './Icon'
 
 export function IconButton({
   icon,
@@ -12,7 +12,7 @@ export function IconButton({
   tone = 'accent',
   badge = 0,
 }: {
-  icon: keyof typeof Ionicons.glyphMap
+  icon: Glyph
   onPress: () => void
   label: string
   tone?: 'accent' | 'muted' | 'ghost'
@@ -22,7 +22,7 @@ export function IconButton({
   const styles = useMemo(() => createStyles(colors), [colors])
   const glyph = tone === 'accent' ? icon : outlineName(icon)
   const iconColor =
-    tone === 'accent' ? colors.textOnAccent : tone === 'ghost' ? colors.textPrimary : colors.textPrimary
+    tone === 'accent' ? colors.ctaText : tone === 'ghost' ? colors.textPrimary : colors.textPrimary
 
   return (
     <Pressable
@@ -34,10 +34,10 @@ export function IconButton({
         styles.btn,
         tone === 'muted' && styles.muted,
         tone === 'ghost' && styles.ghost,
-        pressed && { opacity: 0.8 },
+        pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] },
       ]}
     >
-      <Ionicons name={glyph} size={tone === 'ghost' ? 22 : 20} color={iconColor} />
+      <Icon name={glyph} size={tone === 'ghost' ? 'header' : 'button'} color={iconColor} decorative />
       {badge > 0 ? (
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{badge > 9 ? '9+' : badge}</Text>
@@ -50,10 +50,10 @@ export function IconButton({
 function createStyles(c: AppColors) {
   return StyleSheet.create({
     btn: {
-      width: 40,
-      height: 40,
-      borderRadius: radius.md,
-      backgroundColor: c.accent,
+      width: 42,
+      height: 42,
+      borderRadius: radius.full,
+      backgroundColor: c.cta,
       alignItems: 'center',
       justifyContent: 'center',
     },

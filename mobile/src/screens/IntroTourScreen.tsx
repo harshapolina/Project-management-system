@@ -252,6 +252,8 @@ const styles = StyleSheet.create({
   ctaText: {
     ...typography.bodyStrong,
     fontSize: 16,
+    lineHeight: 20,
     color: BG,
+    letterSpacing: -0.2,
   },
 })

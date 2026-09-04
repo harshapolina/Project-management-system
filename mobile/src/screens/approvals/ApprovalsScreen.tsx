@@ -32,7 +32,7 @@ const TYPE_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   purchase_order: 'cube-outline',
   boq: 'document-text-outline',
   expense: 'wallet-outline',
-  task: 'checkmark-done-outline',
+  task: 'checkbox-outline',
 }
 
 /**
@@ -110,7 +110,7 @@ export function ApprovalsScreen({ route, navigation }: Props) {
     onBack: () => smartGoBack(navigation, route),
     right: (
       <IconButton
-        icon="add"
+        icon="add-outline"
         label="New approval type"
         tone="ghost"
         onPress={() => navigation.navigate('CreateApprovalType')}
@@ -164,7 +164,7 @@ export function ApprovalsScreen({ route, navigation }: Props) {
             <View style={styles.cardTop}>
               <View style={styles.iconWell}>
                 <Ionicons
-                  name={TYPE_ICONS[type.key] || 'business-outline'}
+                  name={TYPE_ICONS[type.key] || 'document-outline'}
                   size={16}
                   color={colors.textSecondary}
                 />

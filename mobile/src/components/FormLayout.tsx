@@ -1,6 +1,7 @@
-import type { ReactNode } from 'react'
-import { useMemo } from 'react'
+import type { ReactElement, ReactNode } from 'react'
+import { Children, cloneElement, isValidElement, useMemo } from 'react'
 import {
+  FlatList,
   Platform,
   Pressable,
   ScrollView,
@@ -9,26 +10,30 @@ import {
   View,
 } from 'react-native'
 import { useNavigation, useRoute, type NavigationProp, type ParamListBase } from '@react-navigation/native'
-import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Screen } from './Screen'
 import { PageHeader } from './PageHeader'
 import { KeyboardAwareView } from './KeyboardAwareView'
+import { LoadingState } from './States'
+import { Icon } from './Icon'
 import { TAB_BAR_CLEARANCE } from './GlassyTabBar'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
 import { isKeyboardOpen, useKeyboardInset } from '../hooks/useKeyboardInset'
 import { smartGoBack } from '../navigation/openProject'
+import { PageEnter } from '../motion/PageEnter'
+import { glyphs, type Glyph } from '../icons'
+import { PageScrollView, mergePageScrollProps } from './PageScrollView'
 
 type FormLayoutProps = {
   title: string
   subtitle?: string
-  subtitleIcon?: keyof typeof Ionicons.glyphMap
+  subtitleIcon?: Glyph
   /** Defaults to smartGoBack (stack root fallback). */
   onBack?: () => void
   children: ReactNode
-  /** Sticky footer (primary button). */
+  /** Primary action, laid out with the form (not a nested sticky overlay). */
   footer?: ReactNode
   /** Wrap fields in a surface card (default true). */
   card?: boolean
@@ -37,8 +42,25 @@ type FormLayoutProps = {
    * `page` — full-screen page header (edit profile, etc.).
    */
   variant?: 'sheet' | 'page'
-  /** Reserve space above the bottom tab bar (default true when a footer is shown). */
+  /** Reserve space above the bottom tab bar (default true). */
   tabBarClearance?: boolean
+  loading?: boolean
+  loadingVariant?: import('./Skeleton').SkeletonVariant
+}
+
+function isVerticalPageScroller(node: ReactNode): node is ReactElement {
+  if (!isValidElement(node)) return false
+  const props = node.props as { horizontal?: boolean }
+  if (props.horizontal) return false
+  const type = node.type as { displayName?: string; name?: string }
+  return (
+    node.type === FlatList ||
+    node.type === ScrollView ||
+    type?.displayName === 'FlatList' ||
+    type?.displayName === 'ScrollView' ||
+    type?.name === 'FlatList' ||
+    type?.name === 'ScrollView'
+  )
 }
 
 /**
@@ -54,6 +76,8 @@ export function FormLayout({
   card = true,
   variant = 'sheet',
   tabBarClearance,
+  loading = false,
+  loadingVariant = 'form',
 }: FormLayoutProps) {
   const navigation = useNavigation()
   const route = useRoute()
@@ -69,18 +93,57 @@ export function FormLayout({
     [colors, shadows, pagePadding],
   )
   const isSheet = variant === 'sheet'
-  // Tab bar is absolute on every main tab screen — always lift footers above it.
-  const reserveTabBar = tabBarClearance ?? !!footer
-  const baseFooterPad =
-    Math.max(insets.bottom, 12) +
-    spacing.md +
-    (reserveTabBar && !keyboardOpen ? TAB_BAR_CLEARANCE : 0)
-  const footerPad = keyboardOpen
-    ? Math.max(insets.bottom, spacing.sm)
-    : baseFooterPad
-  const scrollBottomPad = footer
-    ? spacing.sm + (keyboardOpen ? keyboardInset : 0)
-    : (keyboardOpen ? keyboardInset : 0) + footerPad + spacing.lg
+  // Tab bar is absolute on every main tab screen — always lift content above it.
+  const reserveTabBar = tabBarClearance ?? true
+  const scrollBottomPad = keyboardOpen
+    ? spacing.lg
+    : reserveTabBar
+      ? TAB_BAR_CLEARANCE
+      : Math.max(insets.bottom, 16) + spacing.md
+  const dismissMode = Platform.OS === 'ios' ? ('interactive' as const) : ('on-drag' as const)
+  const childList = Children.toArray(children)
+  const onlyChild = childList[0]
+  const useChildScroller =
+    !loading &&
+    !card &&
+    !footer &&
+    childList.length === 1 &&
+    isVerticalPageScroller(onlyChild)
+
+  let body: ReactNode
+  if (useChildScroller && isValidElement(onlyChild)) {
+    const prev = onlyChild.props as Record<string, unknown>
+    body = cloneElement(
+      onlyChild,
+      mergePageScrollProps({
+        ...prev,
+        style: [styles.scrollView, prev.style],
+        contentContainerStyle: [
+          styles.scroll,
+          { paddingBottom: scrollBottomPad },
+          prev.contentContainerStyle,
+        ],
+        keyboardDismissMode: dismissMode,
+      }) as Record<string, unknown>,
+    )
+  } else {
+    body = (
+      <PageScrollView
+        style={styles.scrollView}
+        contentContainerStyle={[styles.scroll, { paddingBottom: scrollBottomPad }]}
+        keyboardDismissMode={dismissMode}
+      >
+        {loading ? (
+          <LoadingState variant={loadingVariant} />
+        ) : (
+          <PageEnter fill={false} axis="y" distance={6} style={styles.body}>
+            {card ? <View style={styles.card}>{children}</View> : children}
+            {footer ? <View style={styles.footerSlot}>{footer}</View> : null}
+          </PageEnter>
+        )}
+      </PageScrollView>
+    )
+  }
 
   return (
     <Screen
@@ -98,7 +161,7 @@ export function FormLayout({
               {subtitle ? (
                 <View style={styles.sheetSubtitleRow}>
                   {subtitleIcon ? (
-                    <Ionicons name={subtitleIcon} size={14} color={colors.accentHover} />
+                    <Icon name={subtitleIcon} size="subtitle" color={colors.accentHover} decorative />
                   ) : null}
                   <Text style={styles.sheetSubtitle} numberOfLines={2}>
                     {subtitle}
@@ -113,7 +176,7 @@ export function FormLayout({
               accessibilityLabel="Close"
               style={({ pressed }) => [styles.closeBtn, pressed && { opacity: 0.7 }]}
             >
-              <Ionicons name="close" size={20} color={colors.textPrimary} />
+              <Icon name={glyphs.close} size="button" color={colors.textPrimary} decorative />
             </Pressable>
           </View>
         </View>
@@ -125,25 +188,7 @@ export function FormLayout({
         style={styles.flex}
         keyboardVerticalOffset={Platform.OS === 'ios' ? 8 : 0}
       >
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={[
-            styles.scroll,
-            !footer && styles.scrollFill,
-            { paddingBottom: scrollBottomPad },
-            keyboardOpen && styles.scrollWithKeyboard,
-          ]}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode={Platform.OS === 'ios' ? 'interactive' : 'on-drag'}
-          showsVerticalScrollIndicator={false}
-        >
-          {card ? <View style={styles.card}>{children}</View> : children}
-        </ScrollView>
-        {footer ? (
-          <View style={[styles.footer, { paddingBottom: footerPad }]}>
-            {footer}
-          </View>
-        ) : null}
+        {body}
       </KeyboardAwareView>
     </Screen>
   )
@@ -156,7 +201,11 @@ function createStyles(
 ) {
   return StyleSheet.create({
     flex: { flex: 1, minHeight: 0 },
-    scrollView: { flex: 1, minHeight: 0 },
+    scrollView: {
+      flex: 1,
+      minHeight: 0,
+      ...(Platform.OS === 'web' ? ({ overflow: 'auto' } as object) : null),
+    },
     sheetChrome: {
       paddingHorizontal: pagePadding,
       paddingTop: spacing.sm,
@@ -200,15 +249,13 @@ function createStyles(
       justifyContent: 'center',
     },
     scroll: {
+      flexGrow: 1,
       paddingHorizontal: pagePadding,
       gap: spacing.md,
     },
-    scrollFill: {
+    body: {
       flexGrow: 1,
-      paddingBottom: spacing.lg,
-    },
-    scrollWithKeyboard: {
-      flexGrow: 1,
+      gap: spacing.md,
     },
     card: {
       backgroundColor: c.surface,
@@ -217,18 +264,18 @@ function createStyles(
       borderColor: c.border,
       padding: spacing.lg,
       gap: spacing.md,
+      overflow: 'visible',
       ...sh.card,
     },
-    footer: {
-      flexShrink: 0,
-      paddingHorizontal: pagePadding,
-      paddingTop: spacing.sm,
-      borderTopWidth: StyleSheet.hairlineWidth,
-      borderTopColor: c.border,
-      backgroundColor: c.canvas,
-      gap: spacing.sm,
-      zIndex: 2,
-      elevation: 4,
+    /**
+     * Lives in the page scroll, not a sticky overlay. Short forms pin the
+     * action to the bottom of the screen; long forms just keep it after the
+     * last field — one scroll, no nested card scrollbar.
+     */
+    footerSlot: {
+      flexGrow: 1,
+      justifyContent: 'flex-end',
+      minHeight: 48,
     },
   })
 }

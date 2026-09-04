@@ -69,7 +69,7 @@ export function ProfileMainScreen({ navigation }: Props) {
 
         <NavSection title="Account">
           <NavRow
-            icon="person-outline"
+            icon="pencil-outline"
             label="Edit profile"
             hint="Name and photo"
             tone={0}

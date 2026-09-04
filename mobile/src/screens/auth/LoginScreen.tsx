@@ -1,11 +1,15 @@
 import { useMemo, useState } from 'react'
-import { StyleSheet, Text, View } from 'react-native'
+import { Pressable, StyleSheet, Text, View, useWindowDimensions } from 'react-native'
 import type { NativeStackScreenProps } from '@react-navigation/native-stack'
 import { useMutation } from '@tanstack/react-query'
-import { AuthLayout } from '../../components/AuthLayout'
-import { Input } from '../../components/Input'
+import { StatusBar } from 'expo-status-bar'
+import { useSafeAreaInsets } from 'react-native-safe-area-context'
+import { AuthHero } from '../../components/AuthHero'
 import { Button } from '../../components/Button'
-import { radius, spacing, typography, type AppColors } from '../../constants/theme'
+import { Input } from '../../components/Input'
+import { KeyboardAwareView } from '../../components/KeyboardAwareView'
+import { isKeyboardOpen, useKeyboardInset } from '../../hooks/useKeyboardInset'
+import { heroLight, radius, spacing, typography, type AppColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { authApi } from '../../api/auth'
 import { useAuthStore } from '../../store/authStore'
@@ -15,9 +19,20 @@ import type { AuthStackParamList } from '../../navigation/types'
 
 type Props = NativeStackScreenProps<AuthStackParamList, 'Login'>
 
+const CANVAS = '#f7fbf9'
+
+/**
+ * Momento-inspired welcome + sign-in: brand header, project beam hero,
+ * credential form, and pill CTAs — all in Cubic emerald.
+ */
 export function LoginScreen({ navigation }: Props) {
   const colors = useColors()
-  const styles = useMemo(() => createStyles(colors), [colors])
+  const insets = useSafeAreaInsets()
+  const { height: windowHeight } = useWindowDimensions()
+  const keyboardInset = useKeyboardInset()
+  const keyboardOpen = isKeyboardOpen(keyboardInset)
+  const compact = windowHeight < 780
+  const styles = useMemo(() => createStyles(colors, compact), [colors, compact])
 
   const [workspace, setWorkspace] = useState(TENANT_SLUG)
   const [email, setEmail] = useState('')
@@ -50,95 +65,195 @@ export function LoginScreen({ navigation }: Props) {
   }
 
   return (
-    <AuthLayout
-      title="Sign in"
-      subtitle="Use your workspace credentials to continue."
-      brand={
-        <View style={styles.brand}>
-          <View style={styles.logoMark}>
-            <Text style={styles.logoLetter}>C</Text>
+    <View style={[styles.root, { paddingTop: insets.top }]}>
+      <StatusBar style="dark" />
+      <View style={styles.ambient} />
+      <KeyboardAwareView style={styles.flex}>
+        <View
+          style={[
+            styles.body,
+            keyboardOpen && styles.bodyKeyboard,
+            { paddingBottom: Math.max(insets.bottom, spacing.lg) + spacing.md },
+          ]}
+        >
+          <View style={styles.top}>
+            <View style={styles.header}>
+              <Text style={styles.welcome}>Welcome to</Text>
+              <Text style={styles.wordmark}>Cubic</Text>
+              <Text style={styles.tagline}>
+                All your projects, people,{'\n'}and progress — in one place.
+              </Text>
+            </View>
+
+            {!keyboardOpen ? (
+              <View style={styles.hero}>
+                <AuthHero size={compact ? 'sm' : 'md'} animated />
+              </View>
+            ) : null}
           </View>
-          <Text style={styles.brandName}>Cubic</Text>
+
+          <View style={styles.bottom}>
+            <View style={styles.form}>
+              {errors.form ? (
+                <View style={styles.formError}>
+                  <Text style={styles.formErrorText}>{errors.form}</Text>
+                </View>
+              ) : null}
+              <Input
+                label="Workspace"
+                placeholder="your-company"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={workspace}
+                onChangeText={setWorkspace}
+                error={errors.workspace}
+                returnKeyType="next"
+              />
+              <Input
+                label="Email"
+                placeholder="you@company.com"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="email-address"
+                textContentType="emailAddress"
+                value={email}
+                onChangeText={setEmail}
+                error={errors.email}
+                returnKeyType="next"
+              />
+              <Input
+                label="Password"
+                placeholder="Your password"
+                secureTextEntry
+                textContentType="password"
+                value={password}
+                onChangeText={setPassword}
+                error={errors.password}
+                returnKeyType="go"
+                onSubmitEditing={onSubmit}
+              />
+            </View>
+
+            <View style={styles.actions}>
+              <Button title="Sign in" onPress={onSubmit} loading={mutation.isPending} fullWidth />
+              <Button
+                title="Join Now"
+                variant="secondary"
+                onPress={() => navigation.navigate('Register')}
+                fullWidth
+              />
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => navigation.navigate('ForgotPassword')}
+                style={styles.forgot}
+              >
+                <Text style={styles.forgotLabel}>Forgot password?</Text>
+              </Pressable>
+            </View>
+          </View>
         </View>
-      }
-      footer={
-        <>
-          <Button title="Continue" onPress={onSubmit} loading={mutation.isPending} fullWidth />
-          <Button
-            title="Forgot password"
-            variant="ghost"
-            size="sm"
-            onPress={() => navigation.navigate('ForgotPassword')}
-          />
-          <Button
-            title="Invite only — learn more"
-            variant="ghost"
-            size="sm"
-            onPress={() => navigation.navigate('Register')}
-          />
-        </>
-      }
-    >
-      {errors.form ? (
-        <View style={styles.formError}>
-          <Text style={styles.formErrorText}>{errors.form}</Text>
-        </View>
-      ) : null}
-      <Input
-        label="Workspace"
-        placeholder="your-company"
-        autoCapitalize="none"
-        autoCorrect={false}
-        value={workspace}
-        onChangeText={setWorkspace}
-        error={errors.workspace}
-        returnKeyType="next"
-      />
-      <Input
-        label="Email"
-        placeholder="you@company.com"
-        autoCapitalize="none"
-        autoCorrect={false}
-        keyboardType="email-address"
-        textContentType="emailAddress"
-        value={email}
-        onChangeText={setEmail}
-        error={errors.email}
-        returnKeyType="next"
-      />
-      <Input
-        label="Password"
-        placeholder="Your password"
-        secureTextEntry
-        textContentType="password"
-        value={password}
-        onChangeText={setPassword}
-        error={errors.password}
-        returnKeyType="go"
-        onSubmitEditing={onSubmit}
-      />
-    </AuthLayout>
+      </KeyboardAwareView>
+    </View>
   )
 }
 
-function createStyles(c: AppColors) {
+function createStyles(c: AppColors, compact: boolean) {
   return StyleSheet.create({
-    brand: { alignItems: 'center', gap: 8 },
-    logoMark: {
-      width: 64,
-      height: 64,
-      borderRadius: 20,
-      backgroundColor: c.accent,
+    root: {
+      flex: 1,
+      backgroundColor: CANVAS,
+      overflow: 'hidden',
+    },
+    flex: { flex: 1, minHeight: 0, overflow: 'hidden' },
+    ambient: {
+      position: 'absolute',
+      top: '18%',
+      alignSelf: 'center',
+      width: 320,
+      height: 320,
+      borderRadius: 999,
+      backgroundColor: 'rgba(62, 207, 142, 0.11)',
+    },
+    body: {
+      flex: 1,
+      minHeight: 0,
+      overflow: 'hidden',
+      paddingHorizontal: spacing.xl,
+      paddingTop: compact ? spacing.md : spacing.lg,
+      justifyContent: 'space-between',
+      gap: compact ? spacing.sm : spacing.md,
+    },
+    bodyKeyboard: {
+      paddingTop: spacing.md,
+      justifyContent: 'flex-start',
+    },
+    top: {
+      flexShrink: 1,
+      minHeight: 0,
+      alignItems: 'center',
+      gap: compact ? 4 : 8,
+    },
+    bottom: {
+      flexShrink: 0,
+      gap: spacing.md,
+    },
+    header: {
+      alignItems: 'center',
+      width: '100%',
+    },
+    welcome: {
+      ...typography.body,
+      color: c.textSecondary,
+      fontSize: 15,
+      lineHeight: 20,
+      textAlign: 'center',
+    },
+    wordmark: {
+      ...typography.h1,
+      fontSize: compact ? 32 : 38,
+      lineHeight: compact ? 38 : 44,
+      letterSpacing: -0.8,
+      color: heroLight.bg,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginTop: 2,
+    },
+    tagline: {
+      ...typography.body,
+      color: c.textSecondary,
+      textAlign: 'center',
+      fontSize: 15,
+      lineHeight: 22,
+      marginTop: 8,
+      alignSelf: 'center',
+    },
+    hero: {
       alignItems: 'center',
       justifyContent: 'center',
+      marginTop: compact ? -4 : 0,
     },
-    logoLetter: { color: c.textOnAccent, fontSize: 28, fontWeight: '700', letterSpacing: -0.5 },
-    brandName: { ...typography.h1, color: c.textPrimary },
+    form: {
+      gap: 14,
+    },
     formError: {
       backgroundColor: c.dangerSoft,
       borderRadius: radius.md,
       padding: spacing.md,
     },
     formErrorText: { ...typography.caption, color: c.danger },
+    actions: {
+      gap: 10,
+    },
+    forgot: {
+      alignItems: 'center',
+      justifyContent: 'center',
+      paddingVertical: 6,
+    },
+    forgotLabel: {
+      ...typography.caption,
+      color: c.textSecondary,
+      lineHeight: 18,
+      textAlign: 'center',
+    },
   })
 }

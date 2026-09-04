@@ -212,7 +212,7 @@ export function ProjectTeamScreen({ route, navigation }: Props) {
                         {u.email ? ` · ${u.email}` : ''}
                       </Text>
                     </View>
-                    <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+                    <Ionicons name="add-outline" size={22} color={colors.accent} />
                   </Pressable>
                 )}
               />

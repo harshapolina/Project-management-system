@@ -1,9 +1,10 @@
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
+import type { Glyph } from '../icons'
+import { Icon } from './Icon'
 
 export function StatCard({
   label,
@@ -15,7 +16,7 @@ export function StatCard({
   label: string
   value: string | number
   tone?: 'default' | 'danger' | 'success' | 'warning'
-  icon?: keyof typeof Ionicons.glyphMap
+  icon?: Glyph
   onPress?: () => void
 }) {
   const colors = useColors()
@@ -42,7 +43,7 @@ export function StatCard({
     <>
       {icon ? (
         <View style={[styles.iconWell, { backgroundColor: toneSoft }]}>
-          <Ionicons name={icon} size={16} color={toneColor} />
+          <Icon name={icon} size="inline" color={toneColor} decorative />
         </View>
       ) : null}
       <Text

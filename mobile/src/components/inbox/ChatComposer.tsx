@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { ActivityIndicator, Platform, Pressable, StyleSheet, TextInput, View } from 'react-native'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type AppColors, type ChatColors } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
 import { useChatColors } from '../../theme/useChatColors'
 import { useResponsive } from '../../theme/useResponsive'
 import { TAB_BAR_CLEARANCE } from '../GlassyTabBar'
 import { isKeyboardOpen, useKeyboardInset } from '../../hooks/useKeyboardInset'
+import { glyphs } from '../../icons'
+import { Icon } from '../Icon'
 
 export function ChatComposer({
   value,
@@ -62,17 +63,18 @@ export function ChatComposer({
         accessibilityLabel="Send message"
         style={({ pressed }) => [
           styles.send,
-          { backgroundColor: canSend ? colors.accent : colors.surfaceRaised },
+          { backgroundColor: canSend ? colors.cta : colors.surfaceRaised },
           pressed && canSend && { opacity: 0.88, transform: [{ scale: 0.96 }] },
         ]}
       >
         {sending ? (
-          <ActivityIndicator size="small" color={colors.textOnAccent} />
+          <ActivityIndicator size="small" color={colors.ctaText} />
         ) : (
-          <Ionicons
-            name="arrow-up"
-            size={22}
-            color={canSend ? colors.textOnAccent : colors.textMuted}
+          <Icon
+            name={glyphs.sendChat}
+            size="header"
+            color={canSend ? colors.ctaText : colors.textMuted}
+            decorative
           />
         )}
       </Pressable>

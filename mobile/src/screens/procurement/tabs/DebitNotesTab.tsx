@@ -128,7 +128,7 @@ export function DebitNotesTab({ projectId }: TabProps) {
       }}
       ListEmptyComponent={
         <EmptyState
-          icon="alert-circle-outline"
+          icon="return-down-back-outline"
           title="No debit notes"
           body="One is drafted automatically when a quality check finds damage or a shortage."
         />

@@ -114,7 +114,7 @@ export function CreateApprovalRuleScreen({ route, navigation }: Props) {
       )}
 
       <View style={styles.previewRow}>
-        <Ionicons name="funnel-outline" size={14} color={colors.textMuted} />
+        <Ionicons name="filter-outline" size={14} color={colors.textMuted} />
         <Text style={styles.previewText}>
           Applies to: <Text style={styles.previewStrong}>{preview}</Text>
         </Text>

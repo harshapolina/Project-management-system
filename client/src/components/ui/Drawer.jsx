@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { X } from 'lucide-react'
 import { cn } from '../../lib/utils'
+import { EASE_APPLE, useMotion } from '../../lib/motion'
 
 export function Drawer({
   open,
@@ -21,6 +22,7 @@ export function Drawer({
   }, [open, onClose])
 
   const fromRight = side === 'right'
+  const { reduced, modalTransition } = useMotion()
 
   return createPortal(
     <AnimatePresence>
@@ -31,7 +33,7 @@ export function Drawer({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
+            transition={modalTransition}
             onClick={onClose}
           />
           <motion.aside
@@ -41,10 +43,10 @@ export function Drawer({
               width,
               className,
             )}
-            initial={{ x: fromRight ? '100%' : '-100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: fromRight ? '100%' : '-100%' }}
-            transition={{ duration: 0.2, ease: 'easeOut' }}
+            initial={reduced ? { opacity: 0 } : { x: fromRight ? '100%' : '-100%' }}
+            animate={{ x: 0, opacity: 1 }}
+            exit={reduced ? { opacity: 0 } : { x: fromRight ? '100%' : '-100%' }}
+            transition={{ ...modalTransition, ease: EASE_APPLE }}
           >
             <div className="flex items-center justify-between gap-3 border-b border-border px-5 py-4">
               <h2 className="text-base font-semibold tracking-tight">{title}</h2>

@@ -89,7 +89,7 @@ export function RfqsTab({ projectId, navigation }: TabProps) {
         }}
         ListEmptyComponent={
           <EmptyState
-            icon="send-outline"
+            icon="paper-plane-outline"
             title={data?.length ? 'No match' : 'No RFQs yet'}
             body={
               data?.length
@@ -101,7 +101,7 @@ export function RfqsTab({ projectId, navigation }: TabProps) {
           />
         }
       />
-      <Fab label="New RFQ" icon="send-outline" onPress={() => navigation.navigate('CreateRfq', { projectId })} />
+      <Fab label="New RFQ" icon="paper-plane-outline" onPress={() => navigation.navigate('CreateRfq', { projectId })} />
     </>
   )
 }

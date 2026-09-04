@@ -100,10 +100,10 @@ export function MaterialsHubScreen({ route, navigation }: Props) {
     <NestedChrome
       title="Materials"
       subtitle={projectName || 'All projects'}
-      subtitleIcon="cube-outline"
+      subtitleIcon="layers-outline"
       right={
         <IconButton
-          icon="business-outline"
+          icon="folder-outline"
           label="Filter by project"
           tone={projectId ? 'accent' : 'ghost'}
           onPress={() => setPickerOpen(true)}
@@ -163,7 +163,7 @@ export function MaterialsHubScreen({ route, navigation }: Props) {
                     setPickerOpen(false)
                   }}
                 >
-                  <Ionicons name="business-outline" size={18} color={colors.textSecondary} />
+                  <Ionicons name="folder-outline" size={18} color={colors.textSecondary} />
                   <Text style={styles.sheetRowText} numberOfLines={1}>
                     {item.name}
                   </Text>

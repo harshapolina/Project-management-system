@@ -1,6 +1,5 @@
 import { useEffect, useMemo } from 'react'
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import {
   DrawerContentScrollView,
   useDrawerStatus,
@@ -13,11 +12,13 @@ import { useAuthStore } from '../store/authStore'
 import { capabilitiesForUser } from '../utils/roles'
 import { openTabScreen } from '../navigation/openProject'
 import { Avatar } from './Avatar'
+import { glyphs, type Glyph } from '../icons'
+import { Icon } from './Icon'
 
 type DrawerLink = {
   key: string
   label: string
-  icon: keyof typeof Ionicons.glyphMap
+  icon: Glyph
   onPress: () => void
 }
 
@@ -69,7 +70,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
           {
             key: 'projects',
             label: 'Projects',
-            icon: 'business-outline' as const,
+            icon: 'folder-outline' as const,
             onPress: () => goTab('Projects'),
           },
         ]
@@ -126,7 +127,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
           {
             key: 'vendors',
             label: 'Vendors',
-            icon: 'business-outline' as const,
+            icon: 'storefront-outline' as const,
             onPress: () => goTab('More', 'Vendors'),
           },
           {
@@ -170,7 +171,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
           {
             key: 'snags',
             label: 'Snags',
-            icon: 'alert-circle-outline' as const,
+            icon: 'warning-outline' as const,
             onPress: () => goTab('More', 'Snags'),
           },
         ]
@@ -220,7 +221,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
           {
             key: 'company',
             label: 'Company dashboard',
-            icon: 'speedometer-outline' as const,
+            icon: 'stats-chart-outline' as const,
             onPress: () => goTab('More', 'CompanyAdminDashboard'),
           },
         ]
@@ -255,7 +256,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
           pressed && { opacity: 0.7 },
         ]}
       >
-        <Ionicons name="close" size={20} color={colors.textPrimary} />
+        <Icon name={glyphs.close} size="button" color={colors.textPrimary} decorative />
       </Pressable>
       <DrawerContentScrollView
         {...props}
@@ -281,7 +282,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
             {user?.email || 'Signed in'}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
+        <Icon name={glyphs.chevronForward} size="search" color={colors.textMuted} decorative />
       </Pressable>
 
       <Text style={styles.sectionLabel}>Navigate</Text>
@@ -303,7 +304,7 @@ export function AppDrawerContent(props: DrawerContentComponentProps) {
         accessibilityRole="button"
         accessibilityLabel="Sign out"
       >
-        <Ionicons name="log-out-outline" size={20} color={colors.danger} />
+        <Icon name={glyphs.logout} size="button" color={colors.danger} decorative />
         <Text style={styles.logoutText}>Sign out</Text>
       </Pressable>
 
@@ -331,7 +332,7 @@ function DrawerRow({
       accessibilityLabel={item.label}
     >
       <View style={styles.rowIcon}>
-        <Ionicons name={item.icon} size={20} color={colors.textPrimary} />
+        <Icon name={item.icon} size="button" color={colors.textPrimary} decorative />
       </View>
       <Text style={styles.rowLabel}>{item.label}</Text>
     </Pressable>

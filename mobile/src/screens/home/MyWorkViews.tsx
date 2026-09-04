@@ -7,7 +7,7 @@ import { KanbanBoard } from '../../components/KanbanBoard'
 import { ViewPills, type MyWorkView, MY_WORK_LABELS } from '../../components/ViewPills'
 import { SurfaceCard } from '../../components/SurfaceCard'
 import { StatusBadge } from '../../components/Badge'
-import { EmptyState } from '../../components/States'
+import { EmptyState, LoadingState } from '../../components/States'
 import { AgendaCard } from '../../components/AgendaCard'
 import { spacing, typography } from '../../constants/theme'
 import { useColors } from '../../theme/useColors'
@@ -52,7 +52,9 @@ export function MyWorkViews({
     onSuccess: () => qc.invalidateQueries({ queryKey: ['home'] }),
   })
 
-  if (isLoading || !data) return null
+  if (isLoading || !data) {
+    return <LoadingState label="Loading tasks…" variant="rows" />
+  }
 
   const match = (t: Task) => !search.trim() || t.title.toLowerCase().includes(search.toLowerCase())
 

@@ -143,7 +143,7 @@ export function EditTaxInvoiceScreen({ route, navigation }: Props) {
 
   if (isLoading || !invoice) {
     return (
-      <FormLayout title="Edit invoice" subtitle="GST tax invoice" subtitleIcon="create-outline" card={false}>
+      <FormLayout title="Edit invoice" subtitle="GST tax invoice" subtitleIcon="pencil-outline" card={false}>
         <LoadingState label="Loading invoice…" variant="form" />
       </FormLayout>
     )
@@ -153,7 +153,7 @@ export function EditTaxInvoiceScreen({ route, navigation }: Props) {
     <FormLayout
       title="Edit invoice"
       subtitle={invoice.invoiceNumber}
-      subtitleIcon="create-outline"
+      subtitleIcon="pencil-outline"
       card={false}
       footer={
         <Button
@@ -271,7 +271,7 @@ export function EditTaxInvoiceScreen({ route, navigation }: Props) {
           ))}
 
           <Pressable style={styles.addLine} onPress={() => set('items', [...items, { ...EMPTY_LINE }])}>
-            <Ionicons name="add-circle-outline" size={16} color={colors.accentHover} />
+            <Ionicons name="add-outline" size={16} color={colors.accentHover} />
             <Text style={styles.addLineText}>Add line item</Text>
           </Pressable>
 

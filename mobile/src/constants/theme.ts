@@ -70,6 +70,9 @@ export const lightColors = {
   accentSoft: '#e9faf2',
   /** Emerald set as type — the brand green is 2.0:1 on white */
   accentText: '#0d7a52',
+  /** Filled CTA — login Sign in, Apple-style pill */
+  cta: '#004838',
+  ctaText: '#ffffff',
 
   border: '#e7e7ec',
   borderLight: '#d3d3dc',
@@ -114,6 +117,8 @@ export const darkColors = {
   accentHover: '#4ddb9c',
   accentSoft: 'rgba(62,207,142,0.13)',
   accentText: '#5fdca6',
+  cta: '#004838',
+  ctaText: '#ffffff',
 
   border: 'rgba(255,255,255,0.07)',
   borderLight: 'rgba(255,255,255,0.1)',

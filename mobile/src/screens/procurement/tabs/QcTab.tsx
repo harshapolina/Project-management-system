@@ -89,7 +89,7 @@ export function QcTab({ projectId, navigation }: TabProps) {
                 navigation.navigate('CreateQc', { grnId: grn._id, grnNumber: grn.grnNumber })
               }
             >
-              <Ionicons name="checkmark-done-outline" size={14} color={colors.textOnAccent} />
+              <Ionicons name="checkmark-done-outline" size={14} color={colors.ctaText} />
               <Text style={styles.ctaText}>Run quality check</Text>
             </Pressable>
           </SurfaceCard>
@@ -151,10 +151,10 @@ function createStyles(c: AppColors) {
       justifyContent: 'center',
       gap: 6,
       marginTop: spacing.md,
-      paddingVertical: 10,
+      height: 40,
       borderRadius: radius.full,
-      backgroundColor: c.accent,
+      backgroundColor: c.cta,
     },
-    ctaText: { ...typography.captionStrong, color: c.textOnAccent },
+    ctaText: { ...typography.captionStrong, color: c.ctaText },
   })
 }

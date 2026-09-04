@@ -92,7 +92,7 @@ export function BoqControlTab({ projectId, projectName, onPickProject }: TabProp
       ListHeaderComponent={
         <View style={styles.header}>
           <Pressable onPress={onPickProject} style={styles.projectChip}>
-            <Ionicons name="business-outline" size={14} color={colors.accent} />
+            <Ionicons name="folder-outline" size={14} color={colors.accent} />
             <Text style={styles.projectText} numberOfLines={1}>
               {projectName || 'Project'}
             </Text>

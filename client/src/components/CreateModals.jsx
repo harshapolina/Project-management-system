@@ -253,13 +253,15 @@ function ModalShell({ title, onClose, children }) {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         exit={{ opacity: 0 }}
+        transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
         className="fixed inset-0 z-[95] flex items-center justify-center bg-black/60 p-4"
         onClick={onClose}
       >
         <motion.div
-          initial={{ scale: 0.96, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.96, opacity: 0 }}
+          initial={{ scale: 0.98, opacity: 0, y: 4 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          exit={{ scale: 0.98, opacity: 0, y: 4 }}
+          transition={{ duration: 0.24, ease: [0.22, 1, 0.36, 1] }}
           onClick={(e) => e.stopPropagation()}
           className="w-full max-w-md rounded-xl border border-[#2e2e32] bg-[#1c1c1e] p-4 shadow-2xl"
         >

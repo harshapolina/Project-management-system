@@ -46,7 +46,7 @@ export function CreateVendorScreen({ navigation }: Props) {
     <FormLayout
       title="New vendor"
       subtitle="Add a supplier to your directory"
-      subtitleIcon="business-outline"
+      subtitleIcon="storefront-outline"
 
       footer={
         <Button

@@ -184,7 +184,7 @@ export function CreateMaterialIssueScreen({ route, navigation }: Props) {
       })}
 
       <Pressable style={styles.addLine} onPress={() => setPickerOpen(true)}>
-        <Ionicons name="add-circle-outline" size={16} color={colors.accentHover} />
+        <Ionicons name="add-outline" size={16} color={colors.accentHover} />
         <Text style={styles.addLineText}>Add item from inventory</Text>
       </Pressable>
 
@@ -218,7 +218,7 @@ export function CreateMaterialIssueScreen({ route, navigation }: Props) {
                       {item.location ? ` · ${item.location}` : ''}
                     </Text>
                   </View>
-                  <Ionicons name="add-circle-outline" size={22} color={colors.accent} />
+                  <Ionicons name="add-outline" size={22} color={colors.accent} />
                 </Pressable>
               )}
               ListEmptyComponent={

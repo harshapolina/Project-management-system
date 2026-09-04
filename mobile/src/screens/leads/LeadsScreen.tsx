@@ -113,7 +113,7 @@ export function LeadsScreen({ navigation }: Props) {
     <NestedChrome
       title="Enquiries"
       subtitle="Assign and follow up"
-      subtitleIcon="people-outline"
+      subtitleIcon="briefcase-outline"
     >
       {isLoading ? (
         <LoadingState label="Loading enquiries…" variant="list" />

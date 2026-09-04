@@ -9,7 +9,9 @@ import { InboxChatHeader, type ChatContact } from '../../components/inbox/InboxC
 import { type InboxTab } from '../../components/inbox/InboxTabs'
 import { ThreadRow } from '../../components/inbox/ThreadRow'
 import { NotificationTriageRow } from '../../components/NotificationTriageRow'
-import { EmptyState } from '../../components/States'
+import { EmptyState, LoadingState } from '../../components/States'
+import { PageEnter } from '../../motion/PageEnter'
+import { FadeIn } from '../../motion/FadeIn'
 import { TAB_BAR_CLEARANCE } from '../../components/GlassyTabBar'
 import { notificationsApi } from '../../api/notifications'
 import { mailApi } from '../../api/mail'
@@ -30,11 +32,11 @@ const HERO: Record<InboxTab, string> = {
   cleared: 'Recently cleared',
 }
 
-const EMPTY: Record<InboxTab, { title: string; body: string; icon: 'mail-unread-outline' | 'chatbubbles-outline' | 'time-outline' | 'checkmark-done-outline' }> = {
+const EMPTY: Record<InboxTab, { title: string; body: string; icon: 'mail-outline' | 'chatbubbles-outline' | 'time-outline' | 'checkmark-done-outline' }> = {
   primary: {
     title: 'All caught up',
     body: 'Task assigns, mentions, and updates will appear here.',
-    icon: 'mail-unread-outline',
+    icon: 'mail-outline',
   },
   mail: {
     title: 'Start a conversation',
@@ -135,6 +137,7 @@ export function InboxHubScreen({ navigation, route }: Props) {
   )
 
   const empty = EMPTY[tab]
+  const booting = tab === 'mail' ? threadsQuery.isPending : notificationsQuery.isPending
   const isRefreshing =
     tab === 'mail' ? threadsQuery.isRefetching : notificationsQuery.isRefetching
 
@@ -198,6 +201,7 @@ export function InboxHubScreen({ navigation, route }: Props) {
   // letting the shell pad a pale strip above it.
   return (
     <Screen padded={false} edges={['left', 'right']} background={chat.listBg}>
+      <FadeIn delay={0} distance={4} style={{ width: '100%' }}>
       <InboxChatHeader
         title={HERO[tab]}
         tab={tab}
@@ -207,7 +211,9 @@ export function InboxHubScreen({ navigation, route }: Props) {
         onContactPress={(c) => openConversation(c.id, c.name)}
         onMenuPress={openMenu}
       />
+      </FadeIn>
 
+      <PageEnter axis="x" distance={8}>
       <View style={{ flex: 1, minHeight: 0 }}>
         <KeyboardAwareView style={{ flex: 1, minHeight: 0 }}>
       {tab === 'mail' ? (
@@ -233,15 +239,19 @@ export function InboxHubScreen({ navigation, route }: Props) {
             />
           )}
           ListEmptyComponent={
-            <View style={{ paddingHorizontal: pagePadding }}>
-              <EmptyState
-                icon={empty.icon}
-                title={empty.title}
-                body={empty.body}
-                action="New message"
-                onAction={() => navigation.navigate('NewMessage')}
-              />
-            </View>
+            booting ? (
+              <LoadingState label="Loading conversations…" variant="rows" />
+            ) : (
+              <View style={{ paddingHorizontal: pagePadding }}>
+                <EmptyState
+                  icon={empty.icon}
+                  title={empty.title}
+                  body={empty.body}
+                  action="New message"
+                  onAction={() => navigation.navigate('NewMessage')}
+                />
+              </View>
+            )
           }
           contentContainerStyle={{
             paddingBottom: TAB_BAR_CLEARANCE,
@@ -269,9 +279,13 @@ export function InboxHubScreen({ navigation, route }: Props) {
             />
           )}
           ListEmptyComponent={
-            <View style={{ paddingHorizontal: pagePadding }}>
-              <EmptyState icon={empty.icon} title={empty.title} body={empty.body} />
-            </View>
+            booting ? (
+              <LoadingState label="Loading notifications…" variant="rows" />
+            ) : (
+              <View style={{ paddingHorizontal: pagePadding }}>
+                <EmptyState icon={empty.icon} title={empty.title} body={empty.body} />
+              </View>
+            )
           }
           contentContainerStyle={{
             paddingBottom: TAB_BAR_CLEARANCE,
@@ -281,6 +295,7 @@ export function InboxHubScreen({ navigation, route }: Props) {
       )}
         </KeyboardAwareView>
       </View>
+      </PageEnter>
     </Screen>
   )
 }

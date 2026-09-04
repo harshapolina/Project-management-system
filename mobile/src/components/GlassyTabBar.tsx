@@ -1,20 +1,21 @@
 import { useMemo, useState } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import type { BottomTabBarProps, BottomTabNavigationProp } from '@react-navigation/bottom-tabs'
 import { typography, radius, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
+import { glyphs, type Glyph } from '../icons'
+import { Icon } from './Icon'
 import { QuickCreateSheet } from './QuickCreateSheet'
 import type { RootTabParamList } from '../navigation/types'
 
 /** Home · Projects · center FAB · Chat · More */
-const ICONS: Record<string, { on: keyof typeof Ionicons.glyphMap; off: keyof typeof Ionicons.glyphMap; label: string }> = {
-  Home: { on: 'home', off: 'home-outline', label: 'Home' },
-  Projects: { on: 'business', off: 'business-outline', label: 'Projects' },
-  Inbox: { on: 'chatbubbles', off: 'chatbubbles-outline', label: 'Chat' },
-  More: { on: 'grid', off: 'grid-outline', label: 'More' },
+const ICONS: Record<string, { on: Glyph; off: Glyph; label: string }> = {
+  Home: { on: glyphs.homeFilled, off: glyphs.home, label: 'Home' },
+  Projects: { on: glyphs.projectsFilled, off: glyphs.projects, label: 'Projects' },
+  Inbox: { on: glyphs.chatFilled, off: glyphs.chat, label: 'Chat' },
+  More: { on: glyphs.gridFilled, off: glyphs.grid, label: 'More' },
 }
 
 /**
@@ -62,12 +63,13 @@ export function GlassyTabBar({ state, navigation }: BottomTabBarProps) {
         accessibilityState={{ selected: focused }}
         accessibilityLabel={meta.label}
         hitSlop={{ top: 8, bottom: 8, left: 10, right: 10 }}
-        style={({ pressed }) => [styles.item, pressed && { opacity: 0.7 }]}
+        style={({ pressed }) => [styles.item, pressed && { opacity: 0.8, transform: [{ scale: 0.97 }] }]}
       >
-        <Ionicons
+        <Icon
           name={focused ? meta.on : meta.off}
           size={isCompact ? 21 : 23}
           color={focused ? colors.accent : colors.textMuted}
+          decorative
         />
         <Text style={[styles.label, focused && styles.labelActive]} numberOfLines={1}>
           {meta.label}
@@ -93,12 +95,12 @@ export function GlassyTabBar({ state, navigation }: BottomTabBarProps) {
         {/* Center FAB — opens create action sheet */}
         <View style={styles.fabSlot}>
           <Pressable
-            style={({ pressed }) => [styles.fab, pressed && { opacity: 0.9, transform: [{ scale: 0.96 }] }]}
+            style={({ pressed }) => [styles.fab, pressed && { opacity: 0.9, transform: [{ scale: 0.97 }] }]}
             onPress={() => setCreateOpen(true)}
             accessibilityRole="button"
             accessibilityLabel="Quick create"
           >
-            <Ionicons name="add" size={30} color={colors.textOnAccent} />
+            <Icon name={glyphs.add} size="tabFab" color={colors.textOnAccent} decorative />
           </Pressable>
         </View>
 

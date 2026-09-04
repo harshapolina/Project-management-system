@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { NavLink } from 'react-router-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { cn } from '../../lib/utils'
 
 export function useCollapsedFlyout(enabled) {
@@ -95,34 +96,34 @@ export function FlyoutAnchor({
 }
 
 export function CollapsedFlyoutCard({ tip, flyout }) {
-  if (!tip) return null
-
-  const Icon = tip.icon
-  const keepOpen = () => flyout.show(tip)
+  const Icon = tip?.icon
+  const keepOpen = () => {
+    if (tip) flyout.show(tip)
+  }
   const handleClick = () => {
-    tip.onNavigate?.()
-    tip.onSelect?.()
+    tip?.onNavigate?.()
+    tip?.onSelect?.()
     flyout.clear()
   }
 
-  const body = (
+  const body = tip ? (
     <div className="flex items-center gap-2.5">
       {Icon ? <Icon className="h-4 w-4 shrink-0" strokeWidth={1.75} /> : null}
       <span className="truncate">{tip.label}</span>
     </div>
-  )
+  ) : null
 
   const cardClass =
     'relative flex min-w-[160px] max-w-[240px] items-center rounded-[8px] border border-border bg-surface px-3 py-2 text-[13px] font-medium text-primary shadow-[0_10px_28px_rgba(0,0,0,0.14)] hover:bg-surface-raised'
 
-  let card
-  if (tip.to) {
+  let card = null
+  if (tip?.to) {
     card = (
       <NavLink to={tip.to} onClick={handleClick} className={cardClass}>
         {body}
       </NavLink>
     )
-  } else if (tip.href) {
+  } else if (tip?.href) {
     card = (
       <a
         href={tip.href}
@@ -134,30 +135,35 @@ export function CollapsedFlyoutCard({ tip, flyout }) {
         {body}
       </a>
     )
-  } else if (tip.onSelect) {
+  } else if (tip?.onSelect) {
     card = (
       <button type="button" onClick={handleClick} className={cn(cardClass, 'w-full text-left')}>
         {body}
       </button>
     )
-  } else {
+  } else if (tip) {
     card = <div className={cardClass}>{body}</div>
   }
 
   return createPortal(
-    <div
-      className="fixed z-[200]"
-      style={{
-        top: tip.top,
-        left: tip.left,
-        transform: 'translateY(-50%)',
-      }}
-      onMouseEnter={keepOpen}
-      onMouseLeave={flyout.hide}
-    >
-      <div className="absolute -left-3.5 top-0 h-full w-3.5" />
-      {card}
-    </div>,
+    <AnimatePresence>
+      {tip ? (
+        <motion.div
+          key={tip.id || tip.label}
+          className="fixed z-[200]"
+          style={{ top: tip.top, left: tip.left }}
+          initial={{ opacity: 0, y: 'calc(-50% - 4px)', scale: 0.98 }}
+          animate={{ opacity: 1, y: '-50%', scale: 1 }}
+          exit={{ opacity: 0, y: 'calc(-50% - 4px)', scale: 0.98 }}
+          transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+          onMouseEnter={keepOpen}
+          onMouseLeave={flyout.hide}
+        >
+          <div className="absolute -left-3.5 top-0 h-full w-3.5" />
+          {card}
+        </motion.div>
+      ) : null}
+    </AnimatePresence>,
     document.body,
   )
 }

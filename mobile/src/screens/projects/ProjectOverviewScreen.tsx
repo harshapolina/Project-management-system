@@ -93,7 +93,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
   type TabIcon = keyof typeof Ionicons.glyphMap
   const tabs: { key: TabKey; label: string; icon: TabIcon }[] = [
     { key: 'ProjectTasks', label: 'Tasks', icon: 'checkbox-outline' },
-    { key: 'ProjectFiles', label: 'Files', icon: 'folder-outline' },
+    { key: 'ProjectFiles', label: 'Files', icon: 'document-outline' },
     { key: 'ProjectNotes', label: 'Notes', icon: 'chatbubble-ellipses-outline' },
     { key: 'ProjectActivity', label: 'Activity', icon: 'pulse-outline' },
     ...(caps.siteFeed ? [{ key: 'SiteFeed' as const, label: 'Site', icon: 'camera-outline' as const }] : []),
@@ -145,6 +145,7 @@ export function ProjectOverviewScreen({ route, navigation }: Props) {
               style={styles.tabButton}
               onPress={() => openLeaf(t.key)}
               accessibilityRole="button"
+              accessibilityLabel={t.label}
             >
               <Ionicons name={t.icon} size={20} color={colors.accent} />
               <Text style={styles.tabLabel}>{t.label}</Text>

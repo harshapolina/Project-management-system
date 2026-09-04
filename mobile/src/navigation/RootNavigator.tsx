@@ -55,7 +55,12 @@ export function RootNavigator() {
   const locked = isAuthed && !!tenant?.notice?.blocking
 
   return (
-    <View style={{ flex: 1, backgroundColor: showSplash || showTour ? SPLASH_BG : colors.canvas }}>
+    <View
+      style={{
+        flex: 1,
+        backgroundColor: showSplash ? SPLASH_BG : showTour ? '#004838' : colors.canvas,
+      }}
+    >
       {showSplash ? (
         <SplashScreen hold={!bootReady} onFinished={() => setSplashDone(true)} />
       ) : showTour ? (

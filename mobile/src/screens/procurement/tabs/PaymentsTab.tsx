@@ -215,7 +215,7 @@ export function PaymentsTab({ projectId, navigation }: TabProps) {
                       })
                     }
                   >
-                    <Ionicons name="create-outline" size={13} color={colors.accentHover} />
+                    <Ionicons name="pencil-outline" size={13} color={colors.accentHover} />
                     <Text style={styles.actionText}>Adjust & log</Text>
                   </Pressable>
                 ) : null}

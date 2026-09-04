@@ -58,6 +58,7 @@ import {
 import { LiveNotificationCenter } from '../notifications/LiveNotificationCenter'
 import { ComposeEmailModal } from '../ComposeEmailModal'
 import { syncSocketAuth, disconnectSocket } from '../../lib/socket'
+import { AnimatePresence, motion } from 'framer-motion'
 
 const ALL_PRIMARY_NAV = [
   {
@@ -365,7 +366,7 @@ export function AppShell({ children }) {
 
   const navItemClass = (active, collapsed) =>
     cn(
-      'relative flex items-center rounded-[8px] py-1.5 text-[13px] font-medium transition',
+        'relative flex items-center rounded-[8px] py-1.5 text-[13px] font-medium transition-[background-color,color,transform] duration-200 ease-out active:scale-[0.97]',
       collapsed ? 'justify-center px-0' : 'gap-2.5 px-3',
       active
         ? 'bg-[var(--nav-active-bg)] text-[var(--nav-active-fg)]'
@@ -640,7 +641,7 @@ export function AppShell({ children }) {
                 aria-haspopup="menu"
                 aria-expanded={profileMenuOpen}
                 onClick={() => setProfileMenuOpen((open) => !open)}
-                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-accent text-[11px] font-bold text-[#171717]"
+                className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full bg-accent text-[11px] font-bold text-[#171717] transition-transform duration-150 ease-out active:scale-[0.97]"
               >
                 {user?.avatar ? (
                   <img
@@ -653,47 +654,54 @@ export function AppShell({ children }) {
                 )}
               </button>
 
-              {profileMenuOpen && (
-                <div
-                  role="menu"
-                  className="absolute right-0 top-full z-50 mt-1.5 w-52 overflow-hidden rounded-[8px] border border-border bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
-                >
-                  <div className="border-b border-border px-3 py-2.5">
-                    <p className="truncate text-[13px] font-medium text-primary">
-                      {user?.name || 'Account'}
-                    </p>
-                    <p className="truncate text-[11px] text-secondary">
-                      {user?.email || ''}
-                    </p>
-                  </div>
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
-                    onClick={() => {
-                      setProfileMenuOpen(false)
-                      navigate('/settings')
-                    }}
+              <AnimatePresence>
+                {profileMenuOpen ? (
+                  <motion.div
+                    key="profile-menu"
+                    role="menu"
+                    initial={{ opacity: 0, y: -4, scale: 0.98 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: -4, scale: 0.98 }}
+                    transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
+                    className="absolute right-0 top-full z-50 mt-1.5 w-52 origin-top-right overflow-hidden rounded-[8px] border border-border bg-surface py-1 shadow-[0_8px_24px_rgba(0,0,0,0.08)]"
                   >
-                    <Settings className="h-4 w-4" />
-                    Settings
-                  </button>
-                  <div className="my-1 border-t border-border" />
-                  <button
-                    type="button"
-                    role="menuitem"
-                    className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary hover:bg-surface-raised hover:text-primary"
-                    onClick={() => {
-                      setProfileMenuOpen(false)
-                      logout()
-                      navigate('/login')
-                    }}
-                  >
-                    <LogOut className="h-4 w-4" />
-                    Log out
-                  </button>
-                </div>
-              )}
+                    <div className="border-b border-border px-3 py-2.5">
+                      <p className="truncate text-[13px] font-medium text-primary">
+                        {user?.name || 'Account'}
+                      </p>
+                      <p className="truncate text-[11px] text-secondary">
+                        {user?.email || ''}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary transition-colors duration-150 hover:bg-surface-raised hover:text-primary"
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        navigate('/settings')
+                      }}
+                    >
+                      <Settings className="h-4 w-4" />
+                      Settings
+                    </button>
+                    <div className="my-1 border-t border-border" />
+                    <button
+                      type="button"
+                      role="menuitem"
+                      className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-[13px] text-secondary transition-colors duration-150 hover:bg-surface-raised hover:text-primary"
+                      onClick={() => {
+                        setProfileMenuOpen(false)
+                        logout()
+                        navigate('/login')
+                      }}
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Log out
+                    </button>
+                  </motion.div>
+                ) : null}
+              </AnimatePresence>
             </div>
           </div>
         </header>
@@ -724,7 +732,7 @@ export function AppShell({ children }) {
               <button
                 type="button"
                 onClick={() => setProjectModalOpen(true)}
-                className="-mt-3 flex flex-col items-center"
+                className="-mt-3 flex flex-col items-center transition-transform duration-150 ease-out active:scale-[0.97]"
                 aria-label="Create"
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-[12px] bg-accent text-[#171717] shadow-[0_8px_24px_rgba(0,0,0,0.08)]">
@@ -773,7 +781,7 @@ function IconBtn({ children, title, onClick, className }) {
       title={title}
       onClick={onClick}
       className={cn(
-        'flex h-9 w-9 items-center justify-center rounded-[8px] text-[var(--shell-text)] transition-colors hover:bg-[var(--shell-hover)] hover:text-[var(--shell-text-strong)]',
+        'flex h-9 w-9 items-center justify-center rounded-[8px] text-[var(--shell-text)] transition-[background-color,color,transform,opacity] duration-150 ease-out hover:bg-[var(--shell-hover)] hover:text-[var(--shell-text-strong)] active:scale-[0.97] active:opacity-80',
         className,
       )}
     >
@@ -788,11 +796,11 @@ function BottomTab({ label, active, onClick, icon: Icon }) {
       type="button"
       onClick={onClick}
       className={cn(
-        'flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium',
+        'flex flex-col items-center gap-0.5 rounded-xl px-1 py-1.5 text-[10px] font-medium transition-[color,transform] duration-200 ease-out active:scale-[0.97]',
         active ? 'text-accent' : 'text-secondary',
       )}
     >
-      <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} />
+      <Icon className="h-5 w-5 transition-[stroke-width] duration-200" strokeWidth={active ? 2.25 : 1.75} />
       {label}
     </button>
   )

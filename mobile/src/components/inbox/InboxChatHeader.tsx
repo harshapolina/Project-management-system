@@ -9,13 +9,14 @@ import {
   type ViewStyle,
 } from 'react-native'
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type ChatColors } from '../../constants/theme'
 import { useChatColors } from '../../theme/useChatColors'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { useResponsive } from '../../theme/useResponsive'
 import { Avatar } from '../Avatar'
 import { InboxTabs, type InboxTab } from './InboxTabs'
+import { glyphs } from '../../icons'
+import { Icon } from '../Icon'
 
 export type ChatContact = {
   id: string
@@ -78,7 +79,7 @@ export function InboxChatHeader({
               accessibilityLabel="New message"
               style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.8 }]}
             >
-              <Ionicons name="create-outline" size={22} color={chat.headerText} />
+              <Icon name={glyphs.compose} size="header" color={chat.headerText} decorative />
             </Pressable>
           ) : null}
           <Pressable
@@ -88,7 +89,7 @@ export function InboxChatHeader({
             accessibilityLabel="Chat options"
             style={({ pressed }) => [styles.iconBtn, pressed && { opacity: 0.8 }]}
           >
-            <Ionicons name="ellipsis-horizontal" size={22} color={chat.headerText} />
+            <Icon name={glyphs.more} size="header" color={chat.headerText} decorative />
           </Pressable>
         </View>
       </View>
@@ -109,7 +110,7 @@ export function InboxChatHeader({
             accessibilityLabel="New message"
           >
             <View style={styles.addCircle}>
-              <Ionicons name="add" size={24} color={chat.headerText} />
+              <Icon name={glyphs.add} size="feature" color={chat.headerText} decorative />
             </View>
             <Text style={styles.contactName}>New</Text>
           </Pressable>

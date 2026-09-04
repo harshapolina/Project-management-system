@@ -66,8 +66,9 @@ export function SiteSupervisorScreen({ navigation }: Props) {
       title="Site mode"
       subtitle="Quick actions from the field"
       subtitleIcon="phone-portrait-outline"
-
       keyboardAvoiding
+      loading={home.isPending && !home.data}
+      loadingVariant="list"
     >
       {mode === 'tasks' ? (
         <ChromeFill>

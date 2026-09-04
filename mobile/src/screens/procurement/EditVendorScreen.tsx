@@ -69,7 +69,7 @@ export function EditVendorScreen({ route, navigation }: Props) {
 
   if (isLoading || !initialized) {
     return (
-      <FormLayout title="Edit vendor" subtitle="Update supplier details" subtitleIcon="business-outline">
+      <FormLayout title="Edit vendor" subtitle="Update supplier details" subtitleIcon="storefront-outline">
         <ActivityIndicator color={colors.accent} />
       </FormLayout>
     )
@@ -79,7 +79,7 @@ export function EditVendorScreen({ route, navigation }: Props) {
     <FormLayout
       title="Edit vendor"
       subtitle="Update supplier details"
-      subtitleIcon="business-outline"
+      subtitleIcon="storefront-outline"
       variant="page"
 
       footer={

@@ -1,9 +1,10 @@
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { StyleSheet, TextInput, View, type StyleProp, type ViewStyle } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
+import { glyphs } from '../icons'
+import { Icon } from './Icon'
 
 export function SearchField({
   value,
@@ -22,10 +23,11 @@ export function SearchField({
   const colors = useColors()
   const { pagePadding } = useResponsive()
   const styles = useMemo(() => createStyles(colors, pagePadding, inset), [colors, pagePadding, inset])
+  const [focused, setFocused] = useState(false)
 
   return (
-    <View style={[styles.wrap, style]}>
-      <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+    <View style={[styles.wrap, focused && { borderColor: colors.accent }, style]}>
+      <Icon name={glyphs.search} size="search" color={colors.textMuted} decorative />
       <TextInput
         value={value}
         onChangeText={onChangeText}
@@ -35,6 +37,8 @@ export function SearchField({
         returnKeyType="search"
         autoCorrect={false}
         clearButtonMode="while-editing"
+        onFocus={() => setFocused(true)}
+        onBlur={() => setFocused(false)}
       />
     </View>
   )

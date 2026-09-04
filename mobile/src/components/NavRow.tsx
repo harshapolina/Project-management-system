@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
+import { glyphs, type Glyph } from '../icons'
+import { Icon } from './Icon'
 import { IconWell, type IconTone } from './IconWell'
 
 const TONE_BY_INDEX: IconTone[] = ['accent', 'success', 'warning', 'accent', 'muted', 'danger']
@@ -29,7 +30,7 @@ export function NavRow({
   tone = 0,
   last = false,
 }: {
-  icon: keyof typeof Ionicons.glyphMap
+  icon: Glyph
   label: string
   hint?: string
   onPress: () => void
@@ -47,10 +48,11 @@ export function NavRow({
       style={({ pressed }) => [
         styles.row,
         last && styles.rowLast,
-        pressed && { backgroundColor: colors.surfaceRaised },
+        pressed && { backgroundColor: colors.surfaceRaised, transform: [{ scale: 0.99 }] },
       ]}
       onPress={onPress}
       accessibilityRole="button"
+      accessibilityLabel={label}
     >
       <IconWell name={icon} tone={iconTone} size={18} well={36} />
       <View style={styles.copy}>
@@ -61,7 +63,7 @@ export function NavRow({
           </Text>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+      <Icon name={glyphs.chevronForward} size="inline" color={colors.textMuted} decorative />
     </Pressable>
   )
 }

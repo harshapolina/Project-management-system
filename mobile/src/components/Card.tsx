@@ -46,7 +46,7 @@ export function Card({ style, padding, padded, onPress, children, ...props }: Ca
       <Pressable
         onPress={onPress}
         accessibilityRole="button"
-        style={({ pressed }) => [styles.card, pressed && { opacity: 0.92 }, style as StyleProp<ViewStyle>]}
+        style={({ pressed }) => [styles.card, pressed && { opacity: 0.92, transform: [{ scale: 0.97 }] }, style as StyleProp<ViewStyle>]}
       >
         {children}
       </Pressable>

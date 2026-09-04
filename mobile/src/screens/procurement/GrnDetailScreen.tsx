@@ -103,7 +103,7 @@ export function GrnDetailScreen({ route, navigation }: Props) {
             style={styles.cta}
             onPress={() => navigation.navigate('CreateQc', { grnId: grn._id, grnNumber: grn.grnNumber })}
           >
-            <Ionicons name="checkmark-done-outline" size={16} color={colors.textOnAccent} />
+            <Ionicons name="checkmark-done-outline" size={16} color={colors.ctaText} />
             <Text style={styles.ctaText}>Run quality check</Text>
           </Pressable>
         ) : null}
@@ -196,10 +196,10 @@ function createStyles(c: AppColors) {
       alignItems: 'center',
       justifyContent: 'center',
       gap: 6,
-      paddingVertical: 12,
+      height: 52,
       borderRadius: radius.full,
-      backgroundColor: c.accent,
+      backgroundColor: c.cta,
     },
-    ctaText: { ...typography.bodyStrong, color: c.textOnAccent },
+    ctaText: { ...typography.bodyStrong, fontSize: 16, lineHeight: 20, color: c.ctaText },
   })
 }

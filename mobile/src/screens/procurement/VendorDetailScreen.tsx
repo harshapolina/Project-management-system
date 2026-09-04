@@ -61,7 +61,7 @@ export function VendorDetailScreen({ route, navigation }: Props) {
   const chromeProps = {
     title: vendorQuery.data?.name || 'Vendor',
     subtitle: "Supplier profile",
-    subtitleIcon: 'business-outline' as const,
+    subtitleIcon: 'storefront-outline' as const,
   }
 
   if (vendorQuery.isLoading) {

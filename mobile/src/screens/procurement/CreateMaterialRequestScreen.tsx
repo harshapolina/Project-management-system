@@ -154,7 +154,7 @@ export function CreateMaterialRequestScreen({ route, navigation }: Props) {
       ))}
 
       <Pressable style={styles.addLine} onPress={() => setLines((prev) => [...prev, { ...EMPTY_LINE }])}>
-        <Ionicons name="add-circle-outline" size={16} color={colors.accentHover} />
+        <Ionicons name="add-outline" size={16} color={colors.accentHover} />
         <Text style={styles.addLineText}>Add another item</Text>
       </Pressable>
 

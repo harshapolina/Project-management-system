@@ -18,7 +18,7 @@ export function SearchBarWithFilters({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-center gap-2 rounded-[16px] border p-2',
+        'flex flex-wrap items-center gap-2 rounded-[16px] border p-2 transition-[border-color,box-shadow] duration-200 ease-out focus-within:border-accent/40',
         light
           ? 'border-border-light bg-surface'
           : 'border-border bg-surface',
@@ -39,6 +39,7 @@ export function SearchBarWithFilters({
           className={cn(
             'h-10 w-full rounded-[8px] border-0 bg-transparent pl-9 pr-3 text-sm outline-none',
             'text-primary placeholder:text-secondary',
+            'transition-[background-color] duration-200 ease-out focus:bg-surface-raised/60',
           )}
         />
       </div>

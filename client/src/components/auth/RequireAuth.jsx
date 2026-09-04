@@ -3,6 +3,7 @@ import { useAuthStore } from '../../lib/api'
 import { capabilitiesForUser, homePathForUser } from '../../lib/roles'
 import { AppShell } from '../layout/AppShell'
 import { PlatformShell } from '../layout/PlatformShell'
+import { AnimatedPage } from '../motion/AnimatedPage'
 
 export function RequireAuth({ roles }) {
   const user = useAuthStore((s) => s.user)
@@ -26,7 +27,9 @@ export function RequireAuth({ roles }) {
 
   return (
     <AppShell>
-      <Outlet />
+      <AnimatedPage>
+        <Outlet />
+      </AnimatedPage>
     </AppShell>
   )
 }
@@ -87,7 +90,9 @@ export function RequirePlatformAuth() {
 
   return (
     <PlatformShell>
-      <Outlet />
+      <AnimatedPage>
+        <Outlet />
+      </AnimatedPage>
     </PlatformShell>
   )
 }

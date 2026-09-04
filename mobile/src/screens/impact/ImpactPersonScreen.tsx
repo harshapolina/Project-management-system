@@ -42,7 +42,7 @@ export function ImpactPersonScreen({ route, navigation }: Props) {
     subtitleIcon: 'trophy-outline' as const,
     right: canManage ? (
       <IconButton
-        icon="add-circle-outline"
+        icon="add-outline"
         label="Adjust points"
         tone="ghost"
         onPress={() => navigation.navigate('ImpactAdjust', { userId })}

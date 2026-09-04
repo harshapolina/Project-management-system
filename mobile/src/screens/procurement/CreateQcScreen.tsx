@@ -204,7 +204,7 @@ export function CreateQcScreen({ route, navigation }: Props) {
 
       {error ? (
         <View style={styles.errorRow}>
-          <Ionicons name="alert-circle-outline" size={14} color={colors.danger} />
+          <Ionicons name="warning-outline" size={14} color={colors.danger} />
           <Text style={styles.error}>{error}</Text>
         </View>
       ) : null}

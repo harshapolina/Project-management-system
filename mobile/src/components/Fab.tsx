@@ -1,13 +1,14 @@
 import { useMemo } from 'react'
 import { Pressable, StyleSheet, type StyleProp, type ViewStyle } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import { radius, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
+import { glyphs, type Glyph } from '../icons'
+import { Icon } from './Icon'
 import { TAB_BAR_CLEARANCE } from './GlassyTabBar'
 
 type FabProps = {
-  icon?: keyof typeof Ionicons.glyphMap
+  icon?: Glyph
   onPress: () => void
   label: string
   disabled?: boolean
@@ -21,7 +22,7 @@ type FabProps = {
  * so it stays tappable on small phones (SE) through large devices.
  */
 export function Fab({
-  icon = 'add-outline',
+  icon = glyphs.add,
   onPress,
   label,
   disabled,
@@ -52,7 +53,7 @@ export function Fab({
         style,
       ]}
     >
-      <Ionicons name={icon} size={26} color={colors.textOnAccent} />
+      <Icon name={icon} size="fab" color={colors.ctaText} decorative />
     </Pressable>
   )
 }
@@ -64,7 +65,7 @@ function createStyles(c: AppColors, shadows: ReturnType<typeof useShadows>) {
       width: 56,
       height: 56,
       borderRadius: radius.full,
-      backgroundColor: c.accent,
+      backgroundColor: c.cta,
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 20,

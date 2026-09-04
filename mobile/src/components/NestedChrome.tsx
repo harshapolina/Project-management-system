@@ -1,4 +1,4 @@
-import type { ReactNode, ComponentProps } from 'react'
+import type { ReactNode } from 'react'
 import { Fragment, useCallback } from 'react'
 import { Children, cloneElement, isValidElement } from 'react'
 import {
@@ -10,14 +10,18 @@ import {
   type ViewStyle,
 } from 'react-native'
 import { useNavigation, useRoute } from '@react-navigation/native'
-import { Ionicons } from '@expo/vector-icons'
 import { Fab } from './Fab'
 import { PageHeader } from './PageHeader'
 import { Screen } from './Screen'
 import { KeyboardAwareView } from './KeyboardAwareView'
+import { LoadingState } from './States'
+import { PageEnter } from '../motion/PageEnter'
+import { PageScrollView, mergePageScrollProps } from './PageScrollView'
 import { useResponsive } from '../theme/useResponsive'
 import { smartGoBack } from '../navigation/openProject'
 import type { NavigationProp, ParamListBase } from '@react-navigation/native'
+import type { SkeletonVariant } from './Skeleton'
+import type { Glyph } from '../icons'
 
 /** Apply to ScrollView / FlatList inside chrome shells when not using `scroll` prop. */
 export const flexFill = { flex: 1, minHeight: 0 } as const
@@ -36,7 +40,7 @@ export function ChromeFill({
 type NestedChromeProps = {
   title: ReactNode
   subtitle?: string
-  subtitleIcon?: ComponentProps<typeof Ionicons>['name']
+  subtitleIcon?: Glyph
   onBack?: () => void
   /** When false, never show back (tab roots). When true, always show. Default: auto from stack depth. */
   showBack?: boolean
@@ -50,6 +54,9 @@ type NestedChromeProps = {
   contentContainerStyle?: StyleProp<ViewStyle>
   keyboardShouldPersistTaps?: 'always' | 'never' | 'handled'
   compactHeader?: boolean
+  /** Replace the body with a skeleton until data is ready. */
+  loading?: boolean
+  loadingVariant?: SkeletonVariant
 }
 
 const FIXED_CHROME = new Set(['SegmentedControl', 'ViewPills', 'ProcurementTabs', 'SearchField'])
@@ -131,11 +138,16 @@ function layoutChromeBody(children: ReactNode): ReactNode {
   }
 
   const laid = layout.map((child) => {
-    const prev = child.props as { style?: StyleProp<ViewStyle> }
+    const prev = child.props as Record<string, unknown> & { style?: StyleProp<ViewStyle> }
     if (shouldFlexFill(child, layout)) {
-      return cloneElement(child, {
+      const filled = {
+        ...prev,
         style: [flexFill, prev.style],
-      } as Record<string, unknown>)
+      }
+      if (isScrollableElement(child) && !prev.horizontal) {
+        return cloneElement(child, mergePageScrollProps(filled) as Record<string, unknown>)
+      }
+      return cloneElement(child, filled as Record<string, unknown>)
     }
     const name = componentName(child.type)
     if (FIXED_CHROME.has(name)) {
@@ -194,21 +206,24 @@ export function NestedChrome({
   contentContainerStyle,
   keyboardShouldPersistTaps = 'handled',
   compactHeader,
+  loading = false,
+  loadingVariant = 'list',
 }: NestedChromeProps) {
   const { listContent } = useResponsive()
   const resolvedOnBack = useAutoBack(showBack, onBack)
 
   let body: ReactNode
-  if (scroll) {
+  if (loading) {
+    body = <LoadingState variant={loadingVariant} />
+  } else if (scroll) {
     body = (
-      <ScrollView
+      <PageScrollView
         style={flexFill}
         contentContainerStyle={[listContent, contentContainerStyle]}
         keyboardShouldPersistTaps={keyboardShouldPersistTaps}
-        showsVerticalScrollIndicator={false}
       >
         {children}
-      </ScrollView>
+      </PageScrollView>
     )
   } else {
     body = layoutChromeBody(children)
@@ -225,9 +240,13 @@ export function NestedChrome({
         compact={compactHeader}
       />
       {keyboardAvoiding ? (
-        <KeyboardAwareView style={styles.body}>{body}</KeyboardAwareView>
+        <KeyboardAwareView style={styles.body}>
+          <PageEnter key={loading ? 'loading' : 'ready'}>{body}</PageEnter>
+        </KeyboardAwareView>
       ) : (
-        <View style={styles.body}>{body}</View>
+        <View style={styles.body}>
+          <PageEnter key={loading ? 'loading' : 'ready'}>{body}</PageEnter>
+        </View>
       )}
     </Screen>
   )

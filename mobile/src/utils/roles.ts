@@ -192,14 +192,12 @@ export function homePathForUser(user: User | null, portal: 'staff' | 'admin' = '
 
   if (portal === 'admin') {
     if (user.isPlatformAdmin && !isAdminRole(user)) return { tab: 'More', screen: 'PlatformAdmin', params: { screen: 'PlatformOverview' } }
-    if (isCompanyAdmin(user)) return { tab: 'More', screen: 'CompanyAdminDashboard' }
     if (user.role === 'hr' || isAdminRole(user)) return { tab: 'More', screen: 'ProfileHub', params: { screen: 'People' } }
-    return null
+    return { tab: 'Home', screen: 'HomeMain' }
   }
 
   if (user.role === 'site_supervisor') return { tab: 'Home', screen: 'SiteSupervisor' }
   if (user.isPlatformAdmin && !isAdminRole(user)) return { tab: 'More', screen: 'PlatformAdmin', params: { screen: 'PlatformOverview' } }
-  if (isCompanyAdmin(user)) return { tab: 'More', screen: 'CompanyAdminDashboard' }
   if (user.role === 'hr') return { tab: 'More', screen: 'ProfileHub', params: { screen: 'People' } }
   return { tab: 'Home', screen: 'HomeMain', params: { view: 'assigned' } }
 }

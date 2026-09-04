@@ -22,6 +22,7 @@ export function Tabs({ tabs = [], value, onChange, className, variant = 'pill' }
                 <motion.span
                   layoutId="tab-underline"
                   className="absolute inset-x-2 -bottom-px h-0.5 rounded-full bg-accent"
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
                 />
               )}
             </button>
@@ -51,11 +52,11 @@ export function Tabs({ tabs = [], value, onChange, className, variant = 'pill' }
             )}
           >
             {active && (
-              <motion.span
-                layoutId="tab-pill"
-                className="absolute inset-0 rounded-[6px] bg-surface"
-                transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-              />
+                <motion.span
+                  layoutId="tab-pill"
+                  className="absolute inset-0 rounded-[6px] bg-surface"
+                  transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+                />
             )}
             <span className="relative z-10">{tab.label}</span>
           </button>

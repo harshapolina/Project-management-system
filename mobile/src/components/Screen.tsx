@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
-import { ScrollView, StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
+import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { KeyboardAwareView } from './KeyboardAwareView'
+import { LoadingState } from './States'
+import { PageScrollView } from './PageScrollView'
 import { useColors } from '../theme/useColors'
 import { useResponsive } from '../theme/useResponsive'
 
@@ -15,6 +17,8 @@ interface ScreenProps {
   variant?: 'default' | 'stack'
   scroll?: boolean
   contentContainerStyle?: StyleProp<ViewStyle>
+  loading?: boolean
+  loadingVariant?: import('./Skeleton').SkeletonVariant
 }
 
 /**
@@ -30,21 +34,23 @@ export function Screen({
   variant = 'default',
   scroll = false,
   contentContainerStyle,
+  loading = false,
+  loadingVariant = 'list',
 }: ScreenProps) {
   const colors = useColors()
   const { pagePadding, contentMaxWidth, isTablet, listContent } = useResponsive()
   const bg = background ?? colors.canvas
   const resolvedEdges = variant === 'stack' ? (['left', 'right'] as const) : edges
 
-  const inner = scroll ? (
-    <ScrollView
+  const inner = loading ? (
+    <LoadingState variant={loadingVariant} />
+  ) : scroll ? (
+    <PageScrollView
       style={styles.flex}
       contentContainerStyle={[variant === 'stack' ? listContent : null, contentContainerStyle]}
-      keyboardShouldPersistTaps="handled"
-      showsVerticalScrollIndicator={false}
     >
       {children}
-    </ScrollView>
+    </PageScrollView>
   ) : (
     children
   )

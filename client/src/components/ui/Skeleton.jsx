@@ -4,7 +4,7 @@ export function Skeleton({ className }) {
   return (
     <div
       className={cn(
-        'animate-pulse rounded-[12px] bg-surface-raised',
+        'animate-pulse rounded-[12px] bg-surface-raised motion-safe:transition-opacity motion-safe:duration-200',
         className,
       )}
     />

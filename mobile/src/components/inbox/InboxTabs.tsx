@@ -9,7 +9,7 @@ import { useResponsive } from '../../theme/useResponsive'
 export type InboxTab = 'primary' | 'mail' | 'later' | 'cleared'
 
 const TABS: { key: InboxTab; label: string; icon: keyof typeof Ionicons.glyphMap }[] = [
-  { key: 'primary', label: 'Primary', icon: 'mail-unread-outline' },
+  { key: 'primary', label: 'Primary', icon: 'mail-outline' },
   { key: 'mail', label: 'Messages', icon: 'chatbubbles-outline' },
   { key: 'later', label: 'Later', icon: 'time-outline' },
   { key: 'cleared', label: 'Cleared', icon: 'checkmark-done-outline' },

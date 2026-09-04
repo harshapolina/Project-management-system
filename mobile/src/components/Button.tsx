@@ -16,6 +16,10 @@ interface ButtonProps extends Omit<PressableProps, 'style'> {
   icon?: React.ReactNode
 }
 
+/**
+ * Apple-style pill CTAs — same language as Sign in / Join Now on login.
+ * Primary = forest fill + white label. Secondary = white fill + hairline.
+ */
 export function Button({
   title,
   variant = 'primary',
@@ -30,7 +34,7 @@ export function Button({
   const themed = useMemo(() => createThemed(colors), [colors])
   const isDisabled = disabled || loading
   const spinnerColor =
-    variant === 'secondary' || variant === 'ghost' ? colors.accent : colors.textOnAccent
+    variant === 'secondary' || variant === 'ghost' ? colors.cta : colors.ctaText
 
   return (
     <Pressable
@@ -42,7 +46,7 @@ export function Button({
         size === 'sm' ? styles.sm : styles.md,
         themed.variant[variant],
         fullWidth && { alignSelf: 'stretch' },
-        pressed && !isDisabled && { transform: [{ scale: 0.98 }], opacity: 0.92 },
+        pressed && !isDisabled && { transform: [{ scale: 0.97 }], opacity: 0.92 },
         isDisabled && { opacity: 0.45 },
       ]}
       disabled={isDisabled}
@@ -54,7 +58,7 @@ export function Button({
         <View style={styles.content}>
           {icon}
           <Text
-            style={[styles.label, size === 'sm' && { fontSize: 13 }, themed.label[variant]]}
+            style={[styles.label, size === 'sm' && styles.labelSm, themed.label[variant]]}
             numberOfLines={1}
           >
             {title}
@@ -68,15 +72,15 @@ export function Button({
 function createThemed(c: AppColors) {
   return {
     variant: {
-      primary: { backgroundColor: c.accent },
-      secondary: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.border },
+      primary: { backgroundColor: c.cta },
+      secondary: { backgroundColor: c.surface, borderWidth: 1, borderColor: c.borderLight },
       ghost: { backgroundColor: 'transparent' },
       danger: { backgroundColor: c.danger },
     } as Record<Variant, object>,
     label: {
-      primary: { color: c.textOnAccent },
+      primary: { color: c.ctaText },
       secondary: { color: c.textPrimary },
-      ghost: { color: c.accent },
+      ghost: { color: c.cta },
       danger: { color: c.textOnDanger },
     } as Record<Variant, object>,
   }
@@ -84,13 +88,19 @@ function createThemed(c: AppColors) {
 
 const styles = StyleSheet.create({
   base: {
-    borderRadius: radius.lg,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 50,
   },
-  md: { paddingVertical: 14, paddingHorizontal: spacing.lg },
-  sm: { paddingVertical: 9, paddingHorizontal: spacing.md, minHeight: 38 },
+  md: { height: 52, paddingHorizontal: spacing.lg },
+  sm: { height: 40, paddingHorizontal: spacing.md },
   content: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  label: { ...typography.bodyStrong },
+  label: {
+    ...typography.bodyStrong,
+    fontSize: 16,
+    lineHeight: 20,
+    letterSpacing: -0.2,
+    includeFontPadding: false,
+  },
+  labelSm: { fontSize: 14, lineHeight: 18 },
 })

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native'
+import { Alert, Pressable, StyleSheet, Text, View } from 'react-native'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { FormLayout } from '../../components/FormLayout'
 import { Input } from '../../components/Input'
@@ -89,6 +89,7 @@ export function AdjustPointsScreen({ route, navigation }: Props) {
       subtitle="Add or deduct for any teammate"
       subtitleIcon="trophy-outline"
       card={false}
+      loading={overview.isPending && !overview.data}
       footer={
         <Button
           title="Save adjustment"
@@ -121,7 +122,7 @@ export function AdjustPointsScreen({ route, navigation }: Props) {
               placeholder="Search teammates"
               inset={false}
             />
-            <ScrollView style={styles.peopleList} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+            <View style={styles.peopleList}>
               {people.map((p) => (
                 <Pressable
                   key={p._id}
@@ -139,7 +140,7 @@ export function AdjustPointsScreen({ route, navigation }: Props) {
                 </Pressable>
               ))}
               {!people.length ? <Text style={styles.meta}>No teammates match that search.</Text> : null}
-            </ScrollView>
+            </View>
           </>
         )}
       </View>
@@ -242,7 +243,6 @@ function createStyles(c: AppColors) {
       padding: spacing.md,
     },
     peopleList: {
-      maxHeight: 220,
       backgroundColor: c.surface,
       borderWidth: 1,
       borderColor: c.border,

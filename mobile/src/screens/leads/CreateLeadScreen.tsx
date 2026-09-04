@@ -51,7 +51,7 @@ export function CreateLeadScreen({ navigation }: Props) {
     <FormLayout
       title="New enquiry"
       subtitle="Capture a lead and assign follow-up"
-      subtitleIcon="people-outline"
+      subtitleIcon="briefcase-outline"
 
       footer={
         <Button

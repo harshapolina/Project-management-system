@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { StyleSheet, Text, View } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { spacing, typography, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
 import { Button } from './Button'
 import { IconWell } from './IconWell'
 import { SkeletonScreen, type SkeletonVariant } from './Skeleton'
+import { FadeIn } from '../motion/FadeIn'
+import { glyphs, type Glyph } from '../icons'
 
 export type { SkeletonVariant }
 
@@ -30,18 +31,18 @@ export function EmptyState({
   body,
   action,
   onAction,
-  icon = 'file-tray-outline',
+  icon = glyphs.empty,
 }: {
   title: string
   body?: string
   action?: string
   onAction?: () => void
-  icon?: keyof typeof Ionicons.glyphMap
+  icon?: Glyph
 }) {
   const colors = useColors()
   const stylesLocal = useMemo(() => createStyles(colors), [colors])
   return (
-    <View style={stylesLocal.center}>
+    <FadeIn style={stylesLocal.center} distance={6}>
       <View style={{ marginBottom: 6 }}>
         <IconWell name={icon} tone="accent" size={26} well={56} />
       </View>
@@ -58,7 +59,7 @@ export function EmptyState({
           <Button title={action} variant="secondary" size="sm" onPress={onAction} />
         </View>
       ) : null}
-    </View>
+    </FadeIn>
   )
 }
 
@@ -72,8 +73,8 @@ export function ErrorState({
   const colors = useColors()
   const stylesLocal = useMemo(() => createStyles(colors), [colors])
   return (
-    <View style={stylesLocal.center}>
-      <IconWell name="alert-circle-outline" tone="danger" size={26} well={56} />
+    <FadeIn style={stylesLocal.center} distance={6}>
+      <IconWell name={glyphs.error} tone="danger" size={26} well={56} />
       <Text style={stylesLocal.title}>Couldn’t load this</Text>
       <Text style={stylesLocal.muted} numberOfLines={4}>
         {message}
@@ -83,7 +84,7 @@ export function ErrorState({
           <Button title="Try again" onPress={onRetry} size="sm" />
         </View>
       ) : null}
-    </View>
+    </FadeIn>
   )
 }
 

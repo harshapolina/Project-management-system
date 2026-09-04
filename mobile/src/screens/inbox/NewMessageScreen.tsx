@@ -32,7 +32,7 @@ export function NewMessageScreen({ navigation }: Props) {
       <FormLayout
         title="New message"
         subtitle="Pick a teammate to chat with"
-        subtitleIcon="chatbubble-ellipses-outline"
+        subtitleIcon="create-outline"
 
         card={false}
       >
@@ -45,7 +45,7 @@ export function NewMessageScreen({ navigation }: Props) {
       <FormLayout
         title="New message"
         subtitle="Pick a teammate to chat with"
-        subtitleIcon="chatbubble-ellipses-outline"
+        subtitleIcon="create-outline"
 
         card={false}
       >
@@ -58,7 +58,7 @@ export function NewMessageScreen({ navigation }: Props) {
     <FormLayout
       title="New message"
       subtitle="Pick a teammate to chat with"
-      subtitleIcon="chatbubble-ellipses-outline"
+      subtitleIcon="create-outline"
 
       card={false}
     >

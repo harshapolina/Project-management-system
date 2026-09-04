@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react'
 import { useMemo } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, View } from 'react-native'
 import { Screen } from './Screen'
 import { KeyboardAwareView } from './KeyboardAwareView'
+import { PageScrollView } from './PageScrollView'
 import { isKeyboardOpen, useKeyboardInset } from '../hooks/useKeyboardInset'
 import { radius, spacing, typography, type AppColors } from '../constants/theme'
 import { useColors, useShadows } from '../theme/useColors'
@@ -35,15 +36,13 @@ export function AuthLayout({ title, subtitle, children, footer, brand }: AuthLay
   return (
     <Screen padded={false} edges={['top', 'left', 'right', 'bottom']} background={colors.canvas}>
       <KeyboardAwareView style={styles.flex}>
-        <ScrollView
+        <PageScrollView
           contentContainerStyle={[
             styles.scroll,
             keyboardOpen && styles.scrollWithKeyboard,
             { paddingBottom: spacing.xl },
           ]}
-          keyboardShouldPersistTaps="handled"
           keyboardDismissMode="interactive"
-          showsVerticalScrollIndicator={false}
         >
           {brand}
           <View style={styles.card}>
@@ -52,7 +51,7 @@ export function AuthLayout({ title, subtitle, children, footer, brand }: AuthLay
             <View style={styles.fields}>{children}</View>
             {footer}
           </View>
-        </ScrollView>
+        </PageScrollView>
       </KeyboardAwareView>
     </Screen>
   )

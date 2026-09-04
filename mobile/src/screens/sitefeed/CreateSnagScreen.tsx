@@ -37,7 +37,7 @@ export function CreateSnagScreen({ route, navigation }: Props) {
     <FormLayout
       title="Log issue"
       subtitle="Capture a snag from the site"
-      subtitleIcon="alert-circle-outline"
+      subtitleIcon="warning-outline"
 
       footer={
         <Button

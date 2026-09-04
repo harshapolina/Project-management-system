@@ -9,7 +9,6 @@ import {
   TextInput,
   View,
 } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { StatusBar } from 'expo-status-bar'
 import { DrawerActions, useNavigation } from '@react-navigation/native'
 import type { NavigationProp } from '@react-navigation/native'
@@ -30,6 +29,8 @@ import type { Task } from '../types/models'
 import { ActiveTimerChip } from './ActiveTimerChip'
 import { Avatar } from './Avatar'
 import { isDarkColor } from '../utils/color'
+import { glyphs, type Glyph } from '../icons'
+import { Icon } from './Icon'
 
 /** Matches HomeScreen deep-green hero */
 export const NAV_HERO_BG = '#004838'
@@ -43,7 +44,7 @@ type SearchHit = {
   kind: SearchKind
   title: string
   subtitle?: string
-  icon: keyof typeof Ionicons.glyphMap
+  icon: Glyph
   onPress: () => void
 }
 
@@ -297,7 +298,7 @@ export function AppNavBar({
           kind: 'project',
           title: p.name,
           subtitle: p.clientName || p.location || 'Project',
-          icon: 'business-outline',
+          icon: 'folder-outline',
           onPress: () => openProject(p._id, p.name),
         })
       }
@@ -446,7 +447,7 @@ export function AppNavBar({
             accessibilityLabel="Search"
             style={({ pressed }) => [styles.searchPill, pressed && styles.searchPillPressed]}
           >
-            <Ionicons name="search-outline" size={18} color={searchIconColor} />
+            <Icon name={glyphs.search} size="search" color={searchIconColor} decorative />
             <Text style={[styles.searchPlaceholder, { color: searchTextColor }]} numberOfLines={1}>
               Search tasks, projects, people…
             </Text>
@@ -457,7 +458,7 @@ export function AppNavBar({
           <View style={styles.actions}>
             {caps.reports || caps.portfolio ? (
               <CircleAction
-                icon="stats-chart-outline"
+                icon="bar-chart-outline"
                 label="Reports"
                 onPress={openReports}
                 onDark={onDark}
@@ -493,7 +494,7 @@ export function AppNavBar({
         <View style={[styles.modalRoot, { paddingTop: insets.top + spacing.sm }]}>
           <View style={styles.modalBar}>
             <View style={styles.searchField}>
-              <Ionicons name="search-outline" size={18} color={colors.textMuted} />
+              <Icon name={glyphs.search} size="search" color={colors.textMuted} decorative />
               <TextInput
                 autoFocus
                 value={query}
@@ -532,7 +533,7 @@ export function AppNavBar({
                   accessibilityLabel={item.title}
                 >
                   <View style={styles.resultIcon}>
-                    <Ionicons name={item.icon} size={18} color={colors.textPrimary} />
+                    <Icon name={item.icon} size="search" color={colors.textPrimary} decorative />
                   </View>
                   <View style={styles.resultText}>
                     <Text style={styles.resultTitle} numberOfLines={1}>
@@ -544,7 +545,7 @@ export function AppNavBar({
                       </Text>
                     ) : null}
                   </View>
-                  <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+                  <Icon name={glyphs.chevronForward} size="inline" color={colors.textMuted} decorative />
                 </Pressable>
               )
             }}
@@ -564,7 +565,7 @@ function CircleAction({
   colors,
   shadows,
 }: {
-  icon: keyof typeof Ionicons.glyphMap
+  icon: Glyph
   label: string
   onPress: () => void
   onDark: boolean
@@ -590,7 +591,7 @@ function CircleAction({
         pressed && { opacity: 0.85 },
       ]}
     >
-      <Ionicons name={icon} size={18} color={iconColor} />
+      <Icon name={icon} size="button" color={iconColor} decorative />
     </Pressable>
   )
 }

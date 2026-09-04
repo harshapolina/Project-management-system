@@ -36,10 +36,10 @@ export function ToastViewport() {
           return (
             <motion.div
               key={t.id}
-              initial={{ opacity: 0, y: 12, scale: 0.98 }}
+        initial={{ opacity: 0, y: 6, scale: 0.98 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 8 }}
-              transition={{ duration: 0.15 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.2, ease: [0.22, 1, 0.36, 1] }}
               className={cn(
                 'flex items-start gap-3 rounded-[14px] border border-border bg-surface-raised px-4 py-3 shadow-[0_8px_30px_rgba(0,0,0,0.4)]',
               )}

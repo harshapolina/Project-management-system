@@ -147,7 +147,7 @@ export function PurchaseOrdersTab({ projectId, navigation }: TabProps) {
         }}
         ListEmptyComponent={
           <EmptyState
-            icon="cube-outline"
+            icon="cart-outline"
             title={all.length ? 'Nothing in this filter' : 'No purchase orders yet'}
             body={
               all.length ? 'Switch filters to see the rest.' : 'Raise a PO once BOQ items are approved.'
@@ -159,7 +159,7 @@ export function PurchaseOrdersTab({ projectId, navigation }: TabProps) {
       />
       <Fab
         label="New purchase order"
-        icon="cube-outline"
+        icon="cart-outline"
         onPress={() => navigation.navigate('CreatePurchaseOrder', { projectId })}
       />
     </>

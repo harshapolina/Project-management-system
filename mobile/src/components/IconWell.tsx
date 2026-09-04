@@ -1,7 +1,8 @@
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native'
-import { Ionicons } from '@expo/vector-icons'
 import { radius, type AppColors } from '../constants/theme'
 import { useColors } from '../theme/useColors'
+import { iconSize, outlineName, type Glyph } from '../icons'
+import { Icon } from './Icon'
 
 export type IconTone = 'accent' | 'success' | 'warning' | 'danger' | 'muted' | 'neutral'
 
@@ -18,9 +19,9 @@ const TONE_PAIR: Record<
 }
 
 type IconWellProps = {
-  name: keyof typeof Ionicons.glyphMap
+  name: Glyph
   tone?: IconTone
-  /** Visual size of the glyph (default 20). */
+  /** Visual size of the glyph (default well). */
   size?: number
   /** Outer well size (default 40). */
   well?: number
@@ -34,7 +35,7 @@ type IconWellProps = {
 export function IconWell({
   name,
   tone = 'accent',
-  size = 20,
+  size = iconSize.button,
   well = 40,
   style,
 }: IconWellProps) {
@@ -54,28 +55,12 @@ export function IconWell({
         style,
       ]}
     >
-      <Ionicons name={glyph} size={size} color={pair.fg} />
+      <Icon name={glyph} size={size} color={pair.fg} decorative />
     </View>
   )
 }
 
-/** Prefer outline glyphs for chrome; filled only for active/status. */
-export function outlineName(
-  name: keyof typeof Ionicons.glyphMap,
-): keyof typeof Ionicons.glyphMap {
-  const n = String(name)
-  if (
-    n.endsWith('-outline') ||
-    n.endsWith('-sharp') ||
-    n.startsWith('logo-') ||
-    n.includes('filled')
-  ) {
-    return name
-  }
-  const candidate = `${n}-outline` as keyof typeof Ionicons.glyphMap
-  // glyphMap is a runtime object of icon names
-  return (Ionicons.glyphMap as Record<string, number>)[candidate] != null ? candidate : name
-}
+export { outlineName } from '../icons'
 
 const styles = StyleSheet.create({
   well: {

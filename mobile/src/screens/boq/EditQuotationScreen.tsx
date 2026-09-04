@@ -87,7 +87,7 @@ export function EditQuotationScreen({ route, navigation }: Props) {
     <FormLayout
       title="Edit quotation"
       subtitle="Title, version, tax and discount"
-      subtitleIcon="create-outline"
+      subtitleIcon="pencil-outline"
       card={false}
       footer={
         <Button
