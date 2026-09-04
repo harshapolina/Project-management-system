@@ -41,7 +41,12 @@ export function LoginScreen({ navigation }: Props) {
   const setAuth = useAuthStore((s) => s.setAuth)
 
   const mutation = useMutation({
-    mutationFn: () => authApi.login({ email: email.trim().toLowerCase(), password }),
+    mutationFn: () =>
+      authApi.login({
+        email: email.trim().toLowerCase(),
+        password,
+        workspace: workspace.trim().toLowerCase(),
+      }),
     onSuccess: (data) => {
       setAuth({
         user: data.user,

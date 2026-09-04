@@ -4,6 +4,8 @@ import type { Tenant, User } from '../types/models'
 export interface LoginPayload {
   email: string
   password: string
+  /** Workspace slug typed on the login screen — overrides the build-time default tenant. */
+  workspace?: string
 }
 
 export interface AuthResponse {
@@ -15,7 +17,10 @@ export interface AuthResponse {
 }
 
 export const authApi = {
-  login: (payload: LoginPayload) => http.post<AuthResponse>('/auth/login', payload).then((r) => r.data),
+  login: ({ workspace, ...body }: LoginPayload) =>
+    http
+      .post<AuthResponse>('/auth/login', body, workspace ? { headers: { 'X-Tenant-Slug': workspace } } : undefined)
+      .then((r) => r.data),
 
   me: () => http.get<{ success: true; user: User; tenant: Tenant | null }>('/auth/me').then((r) => r.data),
 
